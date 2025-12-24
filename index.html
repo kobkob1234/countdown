@@ -568,6 +568,12 @@
       transform: scale(1.1);
     }
 
+    .event-actions {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
     .empty-state {
       text-align: center;
       padding: 40px 20px;
@@ -641,6 +647,86 @@
       background: #dc2626;
     }
 
+    /* Notes/Description */
+    .input-row-notes {
+      margin-top: 12px;
+    }
+    .input-row-notes textarea {
+      width: 100%;
+      padding: 12px 14px;
+      border: 2px solid var(--border);
+      border-radius: 10px;
+      font-size: 14px;
+      font-family: inherit;
+      resize: vertical;
+      min-height: 60px;
+      max-height: 150px;
+      outline: none;
+      direction: rtl;
+      text-align: right;
+      background: var(--input-bg);
+      color: var(--text);
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .input-row-notes textarea:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(102,126,234,0.15);
+    }
+    .event-notes {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 4px;
+      white-space: pre-wrap;
+      word-break: break-word;
+      max-height: 40px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .event-notes.expanded {
+      max-height: none;
+    }
+    .notes-toggle {
+      font-size: 11px;
+      color: var(--accent);
+      cursor: pointer;
+      margin-top: 2px;
+      display: inline-block;
+    }
+    .notes-toggle:hover {
+      text-decoration: underline;
+    }
+
+    /* Notification permission button */
+    .notif-btn {
+      position: fixed;
+      top: 20px;
+      left: 190px;
+      z-index: 100;
+      width: 40px;
+      height: 40px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--card);
+      color: var(--text);
+      font-size: 18px;
+      cursor: pointer;
+      box-shadow: var(--shadow);
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .notif-btn:hover {
+      background: var(--day-hover);
+    }
+    .notif-btn.enabled {
+      color: var(--success);
+    }
+    .notif-btn.denied {
+      color: var(--danger);
+      opacity: 0.6;
+    }
+
     @media (max-width: 1100px) {
       .sidebar {
         position: fixed;
@@ -656,27 +742,107 @@
     }
 
     @media (max-width: 640px) {
-      .main-content { padding: 16px; }
-      .header h1 { font-size: 24px; }
-      .input-row { flex-wrap: wrap; }
-      .input-row input { width: 100%; }
-      .event-row { flex-wrap: wrap; gap: 10px; }
-      .timer { order: 10; width: 100%; justify-content: center; }
-      .time-unit { min-width: 46px; padding: 5px 8px; }
-      .time-val { font-size: 16px; }
+      .main-content { padding: 12px; padding-top: 70px; }
+      .header { margin-bottom: 20px; }
+      .header h1 { font-size: 22px; }
+      .header p { font-size: 13px; }
+
+      .toggle-sidebar,
+      .theme-toggle,
+      .notif-btn {
+        top: 12px;
+        width: 36px;
+        height: 36px;
+        font-size: 16px;
+        padding: 8px;
+      }
+      .toggle-sidebar { left: 12px; font-size: 12px; }
+      .theme-toggle { left: auto; right: 56px; }
+      .notif-btn { left: auto; right: 12px; }
+
+      .input-panel { padding: 14px; }
+      .input-row { 
+        flex-direction: column;
+        gap: 10px;
+      }
+      .input-row input { 
+        width: 100%;
+        padding: 12px 14px;
+        font-size: 16px;
+      }
+      .input-row .btn {
+        width: 100%;
+        padding: 12px;
+      }
+      .input-row-notes textarea {
+        font-size: 16px;
+      }
+
+      .event-row { 
+        flex-direction: column;
+        align-items: stretch;
+        padding: 14px;
+        gap: 12px;
+      }
+      .color-dot { display: none; }
+      .event-info {
+        order: 1;
+        text-align: center;
+      }
+      .event-name { font-size: 16px; }
+      .timer { 
+        order: 2;
+        width: 100%;
+        justify-content: center;
+        gap: 6px;
+      }
+      .time-unit { 
+        min-width: 50px;
+        padding: 8px 6px;
+        flex: 1;
+      }
+      .time-val { font-size: 18px; }
+      .time-label { font-size: 9px; }
+      .badge {
+        order: 3;
+        align-self: center;
+      }
+      .event-actions {
+        order: 4;
+        display: flex;
+        justify-content: center;
+        gap: 16px;
+        padding-top: 8px;
+        border-top: 1px solid var(--border);
+        width: 100%;
+      }
+      .star-btn, .edit-btn, .delete-btn {
+        width: 40px;
+        height: 40px;
+        font-size: 20px;
+      }
+
       .sidebar {
-        width: 360px;
-        min-width: 280px;
-        max-width: none;
+        width: 100%;
+        min-width: 100%;
+        max-width: 100%;
         resize: none;
       }
-      .calendar-day { min-height: 50px; }
+      .calendar-day { min-height: 48px; padding: 6px; }
+      .calendar-day-number { font-size: 12px; }
+      .calendar-event-chip { font-size: 9px; padding: 2px 4px; }
+      .calendar-grid { gap: 4px; }
+
+      .modal-card { padding: 16px; }
+      .modal-actions { flex-direction: column; }
+      .modal-actions .btn { width: 100%; }
     }
   </style>
 </head>
 <body>
   <button class="toggle-sidebar" id="toggleSidebar">📅 לוח שנה</button>
   <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode">🌙</button>
+  <button class="notif-btn" id="notifBtn" aria-label="Toggle notifications" title="Enable notifications">🔔</button>
 
   <div class="app-layout">
     <div class="main-content">
@@ -693,6 +859,9 @@
             <button class="btn btn-primary" id="addBtn">Add Event</button>
             <button class="btn btn-cancel" id="cancelBtn">Cancel</button>
             <button class="btn btn-ghost" id="clearBtn">Clear All</button>
+          </div>
+          <div class="input-row-notes">
+            <textarea id="eventNotes" placeholder="Notes (optional)..." aria-label="Event notes"></textarea>
           </div>
         </div>
 
@@ -789,10 +958,82 @@
   const confirmClearBtn = $("confirmClearBtn");
   const cancelClearModalBtn = $("cancelClearModalBtn");
   const themeToggle = $("themeToggle");
+  const notifBtn = $("notifBtn");
+  const eventNotes = $("eventNotes");
 
   const STORAGE_KEYS = {
     THEME: 'countdown-theme',
-    SIDEBAR_WIDTH: 'countdown-sidebar-width'
+    SIDEBAR_WIDTH: 'countdown-sidebar-width',
+    NOTIFIED: 'countdown-notified'
+  };
+
+  // Notification system
+  const NOTIFY_BEFORE_MS = 5 * 60 * 1000; // 5 minutes before
+  let notifiedEvents = new Set(JSON.parse(localStorage.getItem(STORAGE_KEYS.NOTIFIED) || '[]'));
+
+  const updateNotifBtn = () => {
+    if (!('Notification' in window)) {
+      notifBtn.style.display = 'none';
+      return;
+    }
+    const perm = Notification.permission;
+    notifBtn.classList.remove('enabled', 'denied');
+    if (perm === 'granted') {
+      notifBtn.classList.add('enabled');
+      notifBtn.title = 'Notifications enabled';
+      notifBtn.textContent = '🔔';
+    } else if (perm === 'denied') {
+      notifBtn.classList.add('denied');
+      notifBtn.title = 'Notifications blocked';
+      notifBtn.textContent = '🔕';
+    } else {
+      notifBtn.title = 'Enable notifications';
+      notifBtn.textContent = '🔔';
+    }
+  };
+  updateNotifBtn();
+
+  notifBtn.onclick = async () => {
+    if (!('Notification' in window)) {
+      alert('Notifications not supported in this browser');
+      return;
+    }
+    if (Notification.permission === 'granted') {
+      new Notification('Notifications already enabled! ✓', { body: 'You will be notified 5 minutes before events.' });
+    } else if (Notification.permission !== 'denied') {
+      const permission = await Notification.requestPermission();
+      updateNotifBtn();
+      if (permission === 'granted') {
+        new Notification('Notifications enabled! ✓', { body: 'You will be notified 5 minutes before events.' });
+      }
+    } else {
+      alert('Notifications are blocked. Please enable them in your browser settings.');
+    }
+  };
+
+  const checkNotifications = () => {
+    if (Notification.permission !== 'granted') return;
+    const now = Date.now();
+    events.forEach(evt => {
+      const evtTime = new Date(evt.date).getTime();
+      const diff = evtTime - now;
+      // Notify if within 5 minutes and not yet notified
+      if (diff > 0 && diff <= NOTIFY_BEFORE_MS && !notifiedEvents.has(evt.id)) {
+        const mins = Math.ceil(diff / 60000);
+        new Notification(`⏰ ${evt.name}`, {
+          body: `Starting in ${mins} minute${mins > 1 ? 's' : ''}!${evt.notes ? '\n' + evt.notes : ''}`,
+          icon: '⏱️',
+          tag: evt.id
+        });
+        notifiedEvents.add(evt.id);
+        localStorage.setItem(STORAGE_KEYS.NOTIFIED, JSON.stringify([...notifiedEvents]));
+      }
+    });
+    // Clean up old notifications (events passed)
+    const activeIds = new Set(events.map(e => e.id));
+    notifiedEvents.forEach(id => {
+      if (!activeIds.has(id)) notifiedEvents.delete(id);
+    });
   };
 
   let editingId = null;
@@ -1043,6 +1284,7 @@
     editingId = id;
     eventName.value = evt.name;
     eventDate.value = toLocalDatetime(evt.date);
+    eventNotes.value = evt.notes || '';
     addBtn.textContent = "Save";
     cancelBtn.style.display = "block";
     clearBtn.style.display = "none";
@@ -1054,6 +1296,7 @@
     editingId = null;
     eventName.value = "";
     eventDate.value = "";
+    eventNotes.value = "";
     addBtn.textContent = "Add Event";
     cancelBtn.style.display = "none";
     clearBtn.style.display = "block";
@@ -1111,6 +1354,24 @@
       info.appendChild(name);
       info.appendChild(date);
 
+      if (evt.notes) {
+        const notes = document.createElement("div");
+        notes.className = "event-notes";
+        notes.textContent = evt.notes;
+        info.appendChild(notes);
+        if (evt.notes.length > 60 || evt.notes.includes('\n')) {
+          const toggle = document.createElement("span");
+          toggle.className = "notes-toggle";
+          toggle.textContent = "הצג עוד";
+          toggle.onclick = (e) => {
+            e.stopPropagation();
+            notes.classList.toggle('expanded');
+            toggle.textContent = notes.classList.contains('expanded') ? "הסתר" : "הצג עוד";
+          };
+          info.appendChild(toggle);
+        }
+      }
+
       const timer = document.createElement("div");
       timer.className = "timer";
 
@@ -1156,13 +1417,17 @@
       deleteBtn.className = "delete-btn";
       deleteBtn.textContent = "×";
 
+      const actions = document.createElement("div");
+      actions.className = "event-actions";
+      actions.appendChild(starBtn);
+      actions.appendChild(editBtn);
+      actions.appendChild(deleteBtn);
+
       row.appendChild(dot);
       row.appendChild(timer);
       row.appendChild(badge);
       row.appendChild(info);
-      row.appendChild(starBtn);
-      row.appendChild(editBtn);
-      row.appendChild(deleteBtn);
+      row.appendChild(actions);
 
       refs.set(evt.id, {
         row,
@@ -1203,10 +1468,16 @@
   }
 
   let tickerHandle = null;
+  let notifCheckCounter = 0;
   function startTicker() {
     if (tickerHandle) clearTimeout(tickerHandle);
     const loop = () => {
       tick();
+      // Check notifications every 10 seconds
+      if (++notifCheckCounter >= 10) {
+        notifCheckCounter = 0;
+        checkNotifications();
+      }
       const msToNext = 1000 - (Date.now() % 1000);
       tickerHandle = setTimeout(loop, msToNext);
     };
@@ -1216,6 +1487,7 @@
   addBtn.onclick = () => {
     const name = eventName.value.trim();
     const dateValue = eventDate.value;
+    const notes = eventNotes.value.trim();
 
     if (!name || !dateValue) {
       alert("Please enter both event name and date");
@@ -1233,6 +1505,7 @@
       updateInCloud(editingId, {
         name,
         date: parsedDate.toISOString(),
+        notes: notes || null,
         highlighted: evt ? evt.highlighted : false
       });
       cancelEdit();
@@ -1240,10 +1513,12 @@
       saveToCloud({
         name,
         date: parsedDate.toISOString(),
+        notes: notes || null,
         highlighted: false
       });
       eventName.value = "";
       eventDate.value = "";
+      eventNotes.value = "";
       eventName.focus();
     }
   };
