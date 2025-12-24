@@ -697,36 +697,6 @@
     }
 
     /* Notification permission button */
-    .notif-btn {
-      position: fixed;
-      top: 20px;
-      left: 190px;
-      z-index: 100;
-      width: 40px;
-      height: 40px;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      background: var(--card);
-      color: var(--text);
-      font-size: 18px;
-      cursor: pointer;
-      box-shadow: var(--shadow);
-      transition: all 0.2s;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    .notif-btn:hover {
-      background: var(--day-hover);
-    }
-    .notif-btn.enabled {
-      color: var(--success);
-    }
-    .notif-btn.denied {
-      color: var(--danger);
-      opacity: 0.6;
-    }
-
     @media (max-width: 1100px) {
       .sidebar {
         position: fixed;
@@ -748,8 +718,7 @@
       .header p { font-size: 13px; }
 
       .toggle-sidebar,
-      .theme-toggle,
-      .notif-btn {
+      .theme-toggle {
         top: 12px;
         width: 36px;
         height: 36px;
@@ -757,8 +726,7 @@
         padding: 8px;
       }
       .toggle-sidebar { left: 12px; font-size: 12px; }
-      .theme-toggle { left: auto; right: 56px; }
-      .notif-btn { left: auto; right: 12px; }
+      .theme-toggle { left: auto; right: 12px; }
 
       .input-panel { padding: 14px; }
       .input-row { 
@@ -842,7 +810,6 @@
 <body>
   <button class="toggle-sidebar" id="toggleSidebar">📅 לוח שנה</button>
   <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode">🌙</button>
-  <button class="notif-btn" id="notifBtn" aria-label="Toggle notifications" title="Enable notifications">🔔</button>
 
   <div class="app-layout">
     <div class="main-content">
@@ -958,82 +925,11 @@
   const confirmClearBtn = $("confirmClearBtn");
   const cancelClearModalBtn = $("cancelClearModalBtn");
   const themeToggle = $("themeToggle");
-  const notifBtn = $("notifBtn");
   const eventNotes = $("eventNotes");
 
   const STORAGE_KEYS = {
     THEME: 'countdown-theme',
-    SIDEBAR_WIDTH: 'countdown-sidebar-width',
-    NOTIFIED: 'countdown-notified'
-  };
-
-  // Notification system
-  const NOTIFY_BEFORE_MS = 5 * 60 * 1000; // 5 minutes before
-  let notifiedEvents = new Set(JSON.parse(localStorage.getItem(STORAGE_KEYS.NOTIFIED) || '[]'));
-
-  const updateNotifBtn = () => {
-    if (!('Notification' in window)) {
-      notifBtn.style.display = 'none';
-      return;
-    }
-    const perm = Notification.permission;
-    notifBtn.classList.remove('enabled', 'denied');
-    if (perm === 'granted') {
-      notifBtn.classList.add('enabled');
-      notifBtn.title = 'Notifications enabled';
-      notifBtn.textContent = '🔔';
-    } else if (perm === 'denied') {
-      notifBtn.classList.add('denied');
-      notifBtn.title = 'Notifications blocked';
-      notifBtn.textContent = '🔕';
-    } else {
-      notifBtn.title = 'Enable notifications';
-      notifBtn.textContent = '🔔';
-    }
-  };
-  updateNotifBtn();
-
-  notifBtn.onclick = async () => {
-    if (!('Notification' in window)) {
-      alert('Notifications not supported in this browser');
-      return;
-    }
-    if (Notification.permission === 'granted') {
-      new Notification('Notifications already enabled! ✓', { body: 'You will be notified 5 minutes before events.' });
-    } else if (Notification.permission !== 'denied') {
-      const permission = await Notification.requestPermission();
-      updateNotifBtn();
-      if (permission === 'granted') {
-        new Notification('Notifications enabled! ✓', { body: 'You will be notified 5 minutes before events.' });
-      }
-    } else {
-      alert('Notifications are blocked. Please enable them in your browser settings.');
-    }
-  };
-
-  const checkNotifications = () => {
-    if (Notification.permission !== 'granted') return;
-    const now = Date.now();
-    events.forEach(evt => {
-      const evtTime = new Date(evt.date).getTime();
-      const diff = evtTime - now;
-      // Notify if within 5 minutes and not yet notified
-      if (diff > 0 && diff <= NOTIFY_BEFORE_MS && !notifiedEvents.has(evt.id)) {
-        const mins = Math.ceil(diff / 60000);
-        new Notification(`⏰ ${evt.name}`, {
-          body: `Starting in ${mins} minute${mins > 1 ? 's' : ''}!${evt.notes ? '\n' + evt.notes : ''}`,
-          icon: '⏱️',
-          tag: evt.id
-        });
-        notifiedEvents.add(evt.id);
-        localStorage.setItem(STORAGE_KEYS.NOTIFIED, JSON.stringify([...notifiedEvents]));
-      }
-    });
-    // Clean up old notifications (events passed)
-    const activeIds = new Set(events.map(e => e.id));
-    notifiedEvents.forEach(id => {
-      if (!activeIds.has(id)) notifiedEvents.delete(id);
-    });
+    SIDEBAR_WIDTH: 'countdown-sidebar-width'
   };
 
   let editingId = null;
@@ -1468,16 +1364,10 @@
   }
 
   let tickerHandle = null;
-  let notifCheckCounter = 0;
   function startTicker() {
     if (tickerHandle) clearTimeout(tickerHandle);
     const loop = () => {
       tick();
-      // Check notifications every 10 seconds
-      if (++notifCheckCounter >= 10) {
-        notifCheckCounter = 0;
-        checkNotifications();
-      }
       const msToNext = 1000 - (Date.now() % 1000);
       tickerHandle = setTimeout(loop, msToNext);
     };
