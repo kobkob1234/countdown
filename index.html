@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Event Countdown Timer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-purple-600 via-pink-500 to-red-500 p-8">
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-5xl font-bold text-white text-center mb-8 drop-shadow-lg">
+            Event Countdown Timer
+        </h1>
+
+        <div class="bg-white rounded-2xl shadow-2xl p-8 mb-8">
+            <h2 class="text-2xl font-semibold text-gray-800 mb-4">Add New Event</h2>
+            <div class="flex flex-col gap-4">
+                <input
+                    type="text"
+                    id="eventName"
+                    placeholder="Event Name"
+                    class="px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-purple-500 text-lg"
+                />
+                <input
+                    type="datetime-local"
+                    id="eventDate"
+                    class="px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-purple-500 text-lg"
+                />
+                <button
+                    onclick="addEvent()"
+                    class="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-3 rounded-lg font-semibold hover:from-purple-700 hover:to-pink-700 transition-all flex items-center justify-center gap-2"
+                >
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                    Add Event
+                </button>
+            </div>
+        </div>
+
+        <div id="eventsContainer" class="space-y-6"></div>
+    </div>
+
+    <script>
+        const colorSchemes = [
+            { from: 'from-purple-500', to: 'to-purple-600', light: 'purple-100' },
+            { from: 'from-blue-500', to: 'to-blue-600', light: 'blue-100' },
+            { from: 'from-green-500', to: 'to-green-600', light: 'green-100' },
+            { from: 'from-pink-500', to: 'to-pink-600', light: 'pink-100' },
+            { from: 'from-orange-500', to: 'to-orange-600', light: 'orange-100' },
+            { from: 'from-red-500', to: 'to-red-600', light: 'red-100' },
+            { from: 'from-teal-500', to: 'to-teal-600', light: 'teal-100' },
+            { from: 'from-indigo-500', to: 'to-indigo-600', light: 'indigo-100' },
+        ];
+
+        let events = [];
+
+        function loadEvents() {
+            const stored = localStorage.getItem('countdownEvents');
+            if (stored) {
+                events = JSON.parse(stored);
+                events = events.map(e => ({...e, date: new Date(e.date)}));
+            }
+        }
+
+        function saveEvents() {
+            localStorage.setItem('countdownEvents', JSON.stringify(events));
+        }
+
+        function addEvent() {
+            const nameInput = document.getElementById('eventName');
+            const dateInput = document.getElementById('eventDate');
+            
+            if (nameInput.value && dateInput.value) {
+                const newEvent = {
+                    id: Date.now(),
+                    name: nameInput.value,
+                    date: new Date(dateInput.value)
+                };
+                events.push(newEvent);
+                saveEvents();
+                nameInput.value = '';
+                dateInput.value = '';
+                renderEvents();
+            }
+        }
+
+        function deleteEvent(id) {
+            events = events.filter(e => e.id !== id);
+            saveEvents();
+            renderEvents();
+        }
+
+        function calculateTimeLeft(targetDate) {
+            const now = new Date();
+            const difference = targetDate - now;
+            
+            if (difference <= 0) {
+                return { days: 0, hours: 0, minutes: 0, seconds: 0, expired: true };
+            }
+
+            return {
+                days: Math.floor(difference / (1000 * 60 * 60 * 24)),
+                hours: Math.floor((difference / (1000 * 60 * 60)) % 24),
+                minutes: Math.floor((difference / 1000 / 60) % 60),
+                seconds: Math.floor((difference / 1000) % 60),
+                expired: false
+            };
+        }
+
+        function renderEvents() {
+            const container = document.getElementById('eventsContainer');
+            
+            if (events.length === 0) {
+                container.innerHTML = `
+                    <div class="bg-white bg-opacity-90 rounded-2xl shadow-xl p-12 text-center">
+                        <p class="text-gray-500 text-xl">No events yet. Add your first event above!</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const sortedEvents = [...events].sort((a, b) => a.date - b.date);
+            
+            container.innerHTML = sortedEvents.map((event, index) => {
+                const timeLeft = calculateTimeLeft(event.date);
+                const colorScheme = colorSchemes[index % colorSchemes.length];
+                
+                return `
+                    <div class="bg-white bg-opacity-95 rounded-2xl shadow-xl p-8 backdrop-blur-sm">
+                        <div class="flex justify-between items-start mb-6">
+                            <h3 class="text-3xl font-bold text-gray-800">${event.name}</h3>
+                            <button
+                                onclick="deleteEvent(${event.id})"
+                                class="text-red-500 hover:text-red-700 transition-colors"
+                            >
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="3 6 5 6 21 6"></polyline>
+                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                </svg>
+                            </button>
+                        </div>
+
+                        ${timeLeft.expired ? `
+                            <div class="text-center py-8">
+                                <p class="text-4xl font-bold text-gray-400">Event Has Passed</p>
+                            </div>
+                        ` : `
+                            <div class="grid grid-cols-4 gap-4">
+                                <div class="bg-gradient-to-br ${colorScheme.from} ${colorScheme.to} rounded-xl p-6 text-center">
+                                    <div class="text-5xl font-bold text-white mb-2">${timeLeft.days}</div>
+                                    <div class="text-${colorScheme.light} text-lg font-medium">Days</div>
+                                </div>
+                                <div class="bg-gradient-to-br ${colorScheme.from} ${colorScheme.to} rounded-xl p-6 text-center">
+                                    <div class="text-5xl font-bold text-white mb-2">${timeLeft.hours}</div>
+                                    <div class="text-${colorScheme.light} text-lg font-medium">Hours</div>
+                                </div>
+                                <div class="bg-gradient-to-br ${colorScheme.from} ${colorScheme.to} rounded-xl p-6 text-center">
+                                    <div class="text-5xl font-bold text-white mb-2">${timeLeft.minutes}</div>
+                                    <div class="text-${colorScheme.light} text-lg font-medium">Minutes</div>
+                                </div>
+                                <div class="bg-gradient-to-br ${colorScheme.from} ${colorScheme.to} rounded-xl p-6 text-center">
+                                    <div class="text-5xl font-bold text-white mb-2">${timeLeft.seconds}</div>
+                                    <div class="text-${colorScheme.light} text-lg font-medium">Seconds</div>
+                                </div>
+                            </div>
+                        `}
+
+                        <div class="mt-4 text-center text-gray-600">
+                            ${event.date.toLocaleString('en-US', {
+                                weekday: 'long',
+                                year: 'numeric',
+                                month: 'long',
+                                day: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                            })}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        loadEvents();
+        renderEvents();
+        setInterval(renderEvents, 1000);
+    </script>
+</body>
+</html>
