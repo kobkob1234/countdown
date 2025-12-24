@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Event Countdowns</title>
+  <title>Shared Event Countdowns</title>
   <style>
     :root {
       --bg: #ffffff;
@@ -303,8 +303,8 @@
 <body>
   <div class="container">
     <header class="header">
-      <h1>⏱️ Event Countdowns</h1>
-      <p>Track your upcoming events with live countdowns</p>
+      <h1>⏱️ Shared Event Countdowns</h1>
+      <p>Events sync live across all devices</p>
     </header>
 
     <div class="input-panel">
@@ -316,7 +316,9 @@
       </div>
     </div>
 
-    <div class="event-list" id="eventList" role="list"></div>
+    <div class="event-list" id="eventList" role="list">
+        <p style="text-align:center; padding: 20px;">Loading shared events...</p>
+    </div>
     
     <div class="empty-state" id="emptyState">
       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -326,18 +328,37 @@
     </div>
   </div>
 
-<script>
-(() => {
-  const STORAGE_KEY = "countdown_events_v5";
-  const COLORS = ['#667eea','#f59e0b','#10b981','#ec4899','#8b5cf6','#06b6d4','#ef4444','#84cc16'];
+<script type="module">
+  // We use the CDN links so this works directly in the browser
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+  import { getDatabase, ref, set, onValue, push, remove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
+  // --- YOUR FIREBASE CONFIGURATION ---
+  const firebaseConfig = {
+    apiKey: "AIzaSyB_IflOD8CwVLQQjqtz_ZKWzbfgCiOm2Js",
+    authDomain: "countdown-463de.firebaseapp.com",
+    databaseURL: "https://countdown-463de-default-rtdb.firebaseio.com",
+    projectId: "countdown-463de",
+    storageBucket: "countdown-463de.firebasestorage.app",
+    messagingSenderId: "1016385864732",
+    appId: "1:1016385864732:web:8a82e771e1f4be567a8bd9"
+  };
+
+  // Initialize Firebase
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+  
+  // NOTE: If you set up "Option A" rules (public read/write), this works immediately.
+  const eventsRef = ref(db, 'events'); 
+
+  // --- APPLICATION LOGIC ---
+  const COLORS = ['#667eea','#f59e0b','#10b981','#ec4899','#8b5cf6','#06b6d4','#ef4444','#84cc16'];
   const $ = id => document.getElementById(id);
   const eventList = $("eventList");
   const emptyState = $("emptyState");
   const eventName = $("eventName");
   const eventDate = $("eventDate");
 
-  // Parse datetime-local input correctly for local timezone
   function parseLocal(value) {
     const match = String(value || "").match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/);
     if (!match) return null;
@@ -346,15 +367,39 @@
   }
 
   let events = [];
-  try {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    events = stored ? JSON.parse(stored) : [];
-    if (!Array.isArray(events)) events = [];
-    // Add highlighted property to existing events if missing
-    events = events.map(e => ({ ...e, highlighted: e.highlighted || false }));
-  } catch { events = []; }
 
-  const save = () => localStorage.setItem(STORAGE_KEY, JSON.stringify(events));
+  // 1. LISTEN FOR CHANGES FROM CLOUD
+  onValue(eventsRef, (snapshot) => {
+    const data = snapshot.val();
+    // Convert object to array
+    if (data) {
+        events = Object.keys(data).map(key => ({
+            id: key,
+            ...data[key]
+        }));
+    } else {
+        events = [];
+    }
+    render();
+  });
+
+  // 2. SAVE TO CLOUD
+  const saveToCloud = (eventData) => {
+      const newEventRef = push(eventsRef);
+      set(newEventRef, eventData);
+  };
+
+  const updateInCloud = (id, data) => {
+      set(ref(db, 'events/' + id), data);
+  };
+
+  const deleteFromCloud = (id) => {
+      remove(ref(db, 'events/' + id));
+  };
+  
+  const clearAllCloud = () => {
+      set(eventsRef, null);
+  }
 
   function formatDate(iso) {
     return new Date(iso).toLocaleString(undefined, {
@@ -383,7 +428,6 @@
 
     const now = Date.now();
     
-    // Sort: upcoming events first (by date), then ended events (by date)
     const sorted = [...events].sort((a, b) => {
       const aTime = new Date(a.date).getTime();
       const bTime = new Date(b.date).getTime();
@@ -396,13 +440,14 @@
     });
 
     sorted.forEach((evt, i) => {
-      const color = COLORS[i % COLORS.length];
+      // Create a stable color based on the ID string
+      const charCode = evt.id.charCodeAt(evt.id.length-1);
+      const color = COLORS[charCode % COLORS.length];
       const t = calcTime(evt.date);
 
       const row = document.createElement("div");
       row.className = `event-row ${evt.highlighted ? 'highlighted' : ''}`;
       row.dataset.id = evt.id;
-      row.setAttribute("role", "listitem");
       
       if (evt.highlighted) {
         row.style.background = color + '12';
@@ -462,14 +507,10 @@
       const starBtn = document.createElement("button");
       starBtn.className = `star-btn ${evt.highlighted ? 'active' : ''}`;
       starBtn.textContent = "★";
-      starBtn.title = evt.highlighted ? "Remove highlight" : "Highlight event";
-      starBtn.setAttribute("aria-label", evt.highlighted ? `Remove highlight from ${evt.name}` : `Highlight ${evt.name}`);
-
+      
       const deleteBtn = document.createElement("button");
       deleteBtn.className = "delete-btn";
       deleteBtn.textContent = "×";
-      deleteBtn.title = "Delete event";
-      deleteBtn.setAttribute("aria-label", `Delete ${evt.name}`);
 
       row.appendChild(dot);
       row.appendChild(timer);
@@ -516,7 +557,6 @@
     });
   }
 
-  // Align ticker to second boundary for stable updates
   let tickerHandle = null;
   function startTicker() {
     if (tickerHandle) clearTimeout(tickerHandle);
@@ -543,15 +583,12 @@
       return;
     }
 
-    events.push({ 
-      id: Date.now().toString(), 
+    saveToCloud({ 
       name, 
       date: parsedDate.toISOString(),
       highlighted: false
     });
     
-    save();
-    render();
     eventName.value = "";
     eventDate.value = "";
     eventName.focus();
@@ -566,10 +603,8 @@
   };
 
   $("clearBtn").onclick = () => {
-    if (events.length && confirm("Clear all events? This cannot be undone.")) {
-      events = [];
-      save();
-      render();
+    if (events.length && confirm("Clear all events for EVERYONE? This cannot be undone.")) {
+      clearAllCloud();
     }
   };
 
@@ -579,22 +614,16 @@
     const id = row.dataset.id;
     
     if (e.target.classList.contains("delete-btn")) {
-      events = events.filter(evt => evt.id !== id);
-      save();
-      render();
+        deleteFromCloud(id);
     } else if (e.target.classList.contains("star-btn")) {
       const evt = events.find(evt => evt.id === id);
       if (evt) {
-        evt.highlighted = !evt.highlighted;
-        save();
-        render();
+        updateInCloud(id, { ...evt, highlighted: !evt.highlighted });
       }
     }
   };
 
-  render();
   startTicker();
-})();
 </script>
 </body>
 </html>
