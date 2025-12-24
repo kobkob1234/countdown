@@ -1,190 +1,544 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Event Countdown Timer</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Event Countdowns</title>
+  <style>
+    :root {
+      --bg: #ffffff;
+      --card: #ffffff;
+      --text: #1a1a2e;
+      --muted: #6b7280;
+      --accent: #667eea;
+      --accent2: #764ba2;
+      --danger: #ef4444;
+      --success: #10b981;
+      --shadow: 0 2px 8px rgba(0,0,0,0.08);
+      --shadow-hover: 0 4px 16px rgba(0,0,0,0.12);
+      --border: #e5e7eb;
+      --font: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      min-height: 100vh;
+      padding: 24px;
+      color: var(--text);
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    /* Header */
+    .header {
+      text-align: center;
+      margin-bottom: 24px;
+      color: var(--text);
+    }
+    .header h1 {
+      font-size: 28px;
+      font-weight: 700;
+      margin-bottom: 6px;
+      letter-spacing: -0.5px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .header p {
+      font-size: 14px;
+      color: var(--muted);
+    }
+
+    /* Input Panel */
+    .input-panel {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 16px;
+      box-shadow: var(--shadow);
+      margin-bottom: 16px;
+    }
+    .input-row {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+    .input-row input {
+      flex: 1;
+      padding: 12px 14px;
+      border: 2px solid #e5e7eb;
+      border-radius: 10px;
+      font-size: 14px;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      outline: none;
+    }
+    .input-row input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(102,126,234,0.15);
+    }
+    .input-row input[type="text"] { min-width: 180px; }
+    .input-row input[type="datetime-local"] { min-width: 200px; }
+
+    .btn {
+      padding: 12px 20px;
+      border: none;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: white;
+      box-shadow: 0 4px 12px rgba(102,126,234,0.3);
+    }
+    .btn-primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 16px rgba(102,126,234,0.4);
+    }
+    .btn-primary:active { transform: translateY(0); }
+    .btn-ghost {
+      background: #fef2f2;
+      color: var(--danger);
+    }
+    .btn-ghost:hover { background: #fee2e2; }
+
+    /* Event List */
+    .event-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .event-row {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      box-shadow: var(--shadow);
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .event-row:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-hover);
+      border-color: #d1d5db;
+    }
+
+    /* Color Indicator */
+    .color-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    /* Event Info */
+    .event-info {
+      flex: 1;
+      min-width: 0;
+    }
+    .event-name {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .event-date {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    /* Countdown Timer */
+    .timer {
+      display: flex;
+      gap: 6px;
+    }
+    .time-unit {
+      text-align: center;
+      background: #f3f4f6;
+      border-radius: 8px;
+      padding: 6px 10px;
+      min-width: 50px;
+      transition: all 0.2s;
+    }
+    .time-unit:hover {
+      background: #e5e7eb;
+      transform: translateY(-1px);
+    }
+    .time-val {
+      display: block;
+      font-size: 18px;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      line-height: 1.2;
+    }
+    .time-label {
+      display: block;
+      font-size: 9px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-top: 2px;
+    }
+
+    /* Status Badge */
+    .badge {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 5px 10px;
+      border-radius: 20px;
+      white-space: nowrap;
+    }
+    .badge-upcoming {
+      background: #ecfdf5;
+      color: #059669;
+    }
+    .badge-ended {
+      background: #fef2f2;
+      color: #dc2626;
+    }
+
+    /* Delete Button */
+    .delete-btn {
+      width: 28px;
+      height: 28px;
+      border: none;
+      background: transparent;
+      color: #9ca3af;
+      font-size: 20px;
+      cursor: pointer;
+      border-radius: 6px;
+      transition: all 0.15s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      line-height: 1;
+    }
+    .delete-btn:hover {
+      background: #fef2f2;
+      color: var(--danger);
+      transform: scale(1.1);
+    }
+
+    /* Empty State */
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      color: var(--muted);
+      display: none;
+    }
+    .empty-state svg {
+      width: 48px;
+      height: 48px;
+      margin-bottom: 12px;
+      opacity: 0.4;
+    }
+    .empty-state p {
+      font-size: 14px;
+    }
+
+    /* Responsive */
+    @media (max-width: 640px) {
+      body { padding: 16px; }
+      .header h1 { font-size: 24px; }
+      .input-row { flex-wrap: wrap; }
+      .input-row input { width: 100%; }
+      .event-row { flex-wrap: wrap; gap: 10px; }
+      .timer { order: 10; width: 100%; justify-content: center; }
+      .time-unit { min-width: 46px; padding: 5px 8px; }
+      .time-val { font-size: 16px; }
+    }
+  </style>
 </head>
-<body class="min-h-screen bg-gradient-to-br from-purple-600 via-pink-500 to-red-500 p-8">
-    <div class="max-w-4xl mx-auto">
-        <h1 class="text-5xl font-bold text-white text-center mb-8 drop-shadow-lg">
-            Event Countdown Timer
-        </h1>
+<body>
+  <div class="container">
+    <header class="header">
+      <h1>⏱️ Event Countdowns</h1>
+      <p>Track your upcoming events with live countdowns</p>
+    </header>
 
-        <div class="bg-white rounded-2xl shadow-2xl p-8 mb-8">
-            <h2 class="text-2xl font-semibold text-gray-800 mb-4">Add New Event</h2>
-            <div class="flex flex-col gap-4">
-                <input
-                    type="text"
-                    id="eventName"
-                    placeholder="Event Name"
-                    class="px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-purple-500 text-lg"
-                />
-                <input
-                    type="datetime-local"
-                    id="eventDate"
-                    class="px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-purple-500 text-lg"
-                />
-                <button
-                    onclick="addEvent()"
-                    class="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-3 rounded-lg font-semibold hover:from-purple-700 hover:to-pink-700 transition-all flex items-center justify-center gap-2"
-                >
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <line x1="12" y1="5" x2="12" y2="19"></line>
-                        <line x1="5" y1="12" x2="19" y2="12"></line>
-                    </svg>
-                    Add Event
-                </button>
-            </div>
-        </div>
-
-        <div id="eventsContainer" class="space-y-6"></div>
+    <div class="input-panel">
+      <div class="input-row">
+        <input type="text" id="eventName" placeholder="Event name..." autocomplete="off" aria-label="Event name" />
+        <input type="datetime-local" id="eventDate" aria-label="Event date and time" />
+        <button class="btn btn-primary" id="addBtn">Add Event</button>
+        <button class="btn btn-ghost" id="clearBtn">Clear All</button>
+      </div>
     </div>
 
-    <script>
-        const colorSchemes = [
-            { from: 'from-purple-500', to: 'to-purple-600', light: 'purple-100' },
-            { from: 'from-blue-500', to: 'to-blue-600', light: 'blue-100' },
-            { from: 'from-green-500', to: 'to-green-600', light: 'green-100' },
-            { from: 'from-pink-500', to: 'to-pink-600', light: 'pink-100' },
-            { from: 'from-orange-500', to: 'to-orange-600', light: 'orange-100' },
-            { from: 'from-red-500', to: 'to-red-600', light: 'red-100' },
-            { from: 'from-teal-500', to: 'to-teal-600', light: 'teal-100' },
-            { from: 'from-indigo-500', to: 'to-indigo-600', light: 'indigo-100' },
-        ];
+    <div class="event-list" id="eventList" role="list"></div>
+    
+    <div class="empty-state" id="emptyState">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+      <p>No events yet. Add your first countdown above! 🎉</p>
+    </div>
+  </div>
 
-        let events = [];
+<script>
+(() => {
+  const STORAGE_KEY = "countdown_events_v5";
+  const COLORS = ['#667eea','#f59e0b','#10b981','#ec4899','#8b5cf6','#06b6d4','#ef4444','#84cc16'];
 
-        function loadEvents() {
-            const stored = localStorage.getItem('countdownEvents');
-            if (stored) {
-                events = JSON.parse(stored);
-                events = events.map(e => ({...e, date: new Date(e.date)}));
-            }
-        }
+  const $ = id => document.getElementById(id);
+  const eventList = $("eventList");
+  const emptyState = $("emptyState");
+  const eventName = $("eventName");
+  const eventDate = $("eventDate");
 
-        function saveEvents() {
-            localStorage.setItem('countdownEvents', JSON.stringify(events));
-        }
+  // Parse datetime-local input correctly for local timezone
+  function parseLocal(value) {
+    const match = String(value || "").match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/);
+    if (!match) return null;
+    const [, Y, Mo, D, H, Mi] = match;
+    return new Date(+Y, +Mo - 1, +D, +H, +Mi, 0, 0);
+  }
 
-        function addEvent() {
-            const nameInput = document.getElementById('eventName');
-            const dateInput = document.getElementById('eventDate');
-            
-            if (nameInput.value && dateInput.value) {
-                const newEvent = {
-                    id: Date.now(),
-                    name: nameInput.value,
-                    date: new Date(dateInput.value)
-                };
-                events.push(newEvent);
-                saveEvents();
-                nameInput.value = '';
-                dateInput.value = '';
-                renderEvents();
-            }
-        }
+  let events = [];
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    events = stored ? JSON.parse(stored) : [];
+    if (!Array.isArray(events)) events = [];
+  } catch { events = []; }
 
-        function deleteEvent(id) {
-            events = events.filter(e => e.id !== id);
-            saveEvents();
-            renderEvents();
-        }
+  const save = () => localStorage.setItem(STORAGE_KEY, JSON.stringify(events));
 
-        function calculateTimeLeft(targetDate) {
-            const now = new Date();
-            const difference = targetDate - now;
-            
-            if (difference <= 0) {
-                return { days: 0, hours: 0, minutes: 0, seconds: 0, expired: true };
-            }
+  function formatDate(iso) {
+    return new Date(iso).toLocaleString(undefined, {
+      weekday: 'short', month: 'short', day: 'numeric',
+      hour: '2-digit', minute: '2-digit'
+    });
+  }
 
-            return {
-                days: Math.floor(difference / (1000 * 60 * 60 * 24)),
-                hours: Math.floor((difference / (1000 * 60 * 60)) % 24),
-                minutes: Math.floor((difference / 1000 / 60) % 60),
-                seconds: Math.floor((difference / 1000) % 60),
-                expired: false
-            };
-        }
+  function calcTime(target) {
+    const diff = Math.max(0, new Date(target).getTime() - Date.now());
+    return {
+      ended: diff === 0,
+      d: Math.floor(diff / 86400000),
+      h: Math.floor((diff % 86400000) / 3600000),
+      m: Math.floor((diff % 3600000) / 60000),
+      s: Math.floor((diff % 60000) / 1000)
+    };
+  }
 
-        function renderEvents() {
-            const container = document.getElementById('eventsContainer');
-            
-            if (events.length === 0) {
-                container.innerHTML = `
-                    <div class="bg-white bg-opacity-90 rounded-2xl shadow-xl p-12 text-center">
-                        <p class="text-gray-500 text-xl">No events yet. Add your first event above!</p>
-                    </div>
-                `;
-                return;
-            }
+  const refs = new Map();
 
-            const sortedEvents = [...events].sort((a, b) => a.date - b.date);
-            
-            container.innerHTML = sortedEvents.map((event, index) => {
-                const timeLeft = calculateTimeLeft(event.date);
-                const colorScheme = colorSchemes[index % colorSchemes.length];
-                
-                return `
-                    <div class="bg-white bg-opacity-95 rounded-2xl shadow-xl p-8 backdrop-blur-sm">
-                        <div class="flex justify-between items-start mb-6">
-                            <h3 class="text-3xl font-bold text-gray-800">${event.name}</h3>
-                            <button
-                                onclick="deleteEvent(${event.id})"
-                                class="text-red-500 hover:text-red-700 transition-colors"
-                            >
-                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <polyline points="3 6 5 6 21 6"></polyline>
-                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                                </svg>
-                            </button>
-                        </div>
+  function render() {
+    refs.clear();
+    eventList.innerHTML = "";
+    emptyState.style.display = events.length ? "none" : "block";
 
-                        ${timeLeft.expired ? `
-                            <div class="text-center py-8">
-                                <p class="text-4xl font-bold text-gray-400">Event Has Passed</p>
-                            </div>
-                        ` : `
-                            <div class="grid grid-cols-4 gap-4">
-                                <div class="bg-gradient-to-br ${colorScheme.from} ${colorScheme.to} rounded-xl p-6 text-center">
-                                    <div class="text-5xl font-bold text-white mb-2">${timeLeft.days}</div>
-                                    <div class="text-${colorScheme.light} text-lg font-medium">Days</div>
-                                </div>
-                                <div class="bg-gradient-to-br ${colorScheme.from} ${colorScheme.to} rounded-xl p-6 text-center">
-                                    <div class="text-5xl font-bold text-white mb-2">${timeLeft.hours}</div>
-                                    <div class="text-${colorScheme.light} text-lg font-medium">Hours</div>
-                                </div>
-                                <div class="bg-gradient-to-br ${colorScheme.from} ${colorScheme.to} rounded-xl p-6 text-center">
-                                    <div class="text-5xl font-bold text-white mb-2">${timeLeft.minutes}</div>
-                                    <div class="text-${colorScheme.light} text-lg font-medium">Minutes</div>
-                                </div>
-                                <div class="bg-gradient-to-br ${colorScheme.from} ${colorScheme.to} rounded-xl p-6 text-center">
-                                    <div class="text-5xl font-bold text-white mb-2">${timeLeft.seconds}</div>
-                                    <div class="text-${colorScheme.light} text-lg font-medium">Seconds</div>
-                                </div>
-                            </div>
-                        `}
+    const now = Date.now();
+    
+    // Sort: upcoming events first (by date), then ended events (by date)
+    const sorted = [...events].sort((a, b) => {
+      const aTime = new Date(a.date).getTime();
+      const bTime = new Date(b.date).getTime();
+      const aEnded = aTime <= now;
+      const bEnded = bTime <= now;
+      
+      if (!aEnded && bEnded) return -1;
+      if (aEnded && !bEnded) return 1;
+      return aTime - bTime;
+    });
 
-                        <div class="mt-4 text-center text-gray-600">
-                            ${event.date.toLocaleString('en-US', {
-                                weekday: 'long',
-                                year: 'numeric',
-                                month: 'long',
-                                day: 'numeric',
-                                hour: '2-digit',
-                                minute: '2-digit'
-                            })}
-                        </div>
-                    </div>
-                `;
-            }).join('');
-        }
+    sorted.forEach((evt, i) => {
+      const color = COLORS[i % COLORS.length];
+      const t = calcTime(evt.date);
 
-        loadEvents();
-        renderEvents();
-        setInterval(renderEvents, 1000);
-    </script>
+      const row = document.createElement("div");
+      row.className = "event-row";
+      row.dataset.id = evt.id;
+      row.setAttribute("role", "listitem");
+
+      const dot = document.createElement("span");
+      dot.className = "color-dot";
+      dot.style.background = color;
+
+      const info = document.createElement("div");
+      info.className = "event-info";
+      
+      const name = document.createElement("div");
+      name.className = "event-name";
+      name.textContent = evt.name;
+      
+      const date = document.createElement("div");
+      date.className = "event-date";
+      date.textContent = formatDate(evt.date);
+      
+      info.appendChild(name);
+      info.appendChild(date);
+
+      const timer = document.createElement("div");
+      timer.className = "timer";
+
+      const units = [
+        { key: 'd', label: 'Days' },
+        { key: 'h', label: 'Hrs' },
+        { key: 'm', label: 'Min' },
+        { key: 's', label: 'Sec' }
+      ];
+
+      units.forEach(({ key, label }) => {
+        const unit = document.createElement("div");
+        unit.className = "time-unit";
+        
+        const val = document.createElement("span");
+        val.className = `time-val time-${key}`;
+        val.style.color = color;
+        val.textContent = key === 'd' ? t[key] : String(t[key]).padStart(2, '0');
+        
+        const lbl = document.createElement("div");
+        lbl.className = "time-label";
+        lbl.textContent = label;
+        
+        unit.appendChild(val);
+        unit.appendChild(lbl);
+        timer.appendChild(unit);
+      });
+
+      const badge = document.createElement("span");
+      badge.className = `badge ${t.ended ? 'badge-ended' : 'badge-upcoming'}`;
+      badge.textContent = t.ended ? 'Ended' : 'Upcoming';
+
+      const deleteBtn = document.createElement("button");
+      deleteBtn.className = "delete-btn";
+      deleteBtn.textContent = "×";
+      deleteBtn.title = "Delete event";
+      deleteBtn.setAttribute("aria-label", `Delete ${evt.name}`);
+
+      row.appendChild(dot);
+      row.appendChild(info);
+      row.appendChild(timer);
+      row.appendChild(badge);
+      row.appendChild(deleteBtn);
+
+      refs.set(evt.id, {
+        row,
+        dEl: row.querySelector(".time-d"),
+        hEl: row.querySelector(".time-h"),
+        mEl: row.querySelector(".time-m"),
+        sEl: row.querySelector(".time-s"),
+        badge: badge,
+        target: new Date(evt.date).getTime()
+      });
+
+      eventList.appendChild(row);
+    });
+
+    tick();
+  }
+
+  function tick() {
+    const now = Date.now();
+    
+    refs.forEach((ref, id) => {
+      const diff = Math.max(0, ref.target - now);
+      const ended = diff === 0;
+      
+      const d = Math.floor(diff / 86400000);
+      const h = Math.floor((diff % 86400000) / 3600000);
+      const m = Math.floor((diff % 3600000) / 60000);
+      const s = Math.floor((diff % 60000) / 1000);
+      
+      ref.dEl.textContent = d;
+      ref.hEl.textContent = String(h).padStart(2, '0');
+      ref.mEl.textContent = String(m).padStart(2, '0');
+      ref.sEl.textContent = String(s).padStart(2, '0');
+      
+      ref.badge.className = `badge ${ended ? 'badge-ended' : 'badge-upcoming'}`;
+      ref.badge.textContent = ended ? 'Ended' : 'Upcoming';
+    });
+  }
+
+  // Align ticker to second boundary for stable updates
+  let tickerHandle = null;
+  function startTicker() {
+    if (tickerHandle) clearTimeout(tickerHandle);
+    const loop = () => {
+      tick();
+      const msToNext = 1000 - (Date.now() % 1000);
+      tickerHandle = setTimeout(loop, msToNext);
+    };
+    loop();
+  }
+
+  $("addBtn").onclick = () => {
+    const name = eventName.value.trim();
+    const dateValue = eventDate.value;
+    
+    if (!name || !dateValue) {
+      alert("Please enter both event name and date");
+      return;
+    }
+
+    const parsedDate = parseLocal(dateValue);
+    if (!parsedDate || isNaN(parsedDate.getTime())) {
+      alert("Invalid date");
+      return;
+    }
+
+    events.push({ 
+      id: Date.now().toString(), 
+      name, 
+      date: parsedDate.toISOString() 
+    });
+    
+    save();
+    render();
+    eventName.value = "";
+    eventDate.value = "";
+    eventName.focus();
+  };
+
+  eventName.onkeypress = e => { 
+    if (e.key === 'Enter') $("addBtn").click(); 
+  };
+  
+  eventDate.onkeypress = e => { 
+    if (e.key === 'Enter') $("addBtn").click(); 
+  };
+
+  $("clearBtn").onclick = () => {
+    if (events.length && confirm("Clear all events? This cannot be undone.")) {
+      events = [];
+      save();
+      render();
+    }
+  };
+
+  eventList.onclick = e => {
+    if (e.target.classList.contains("delete-btn")) {
+      const row = e.target.closest(".event-row");
+      if (!row) return;
+      const id = row.dataset.id;
+      events = events.filter(evt => evt.id !== id);
+      save();
+      render();
+    }
+  };
+
+  render();
+  startTicker();
+})();
+</script>
 </body>
 </html>
