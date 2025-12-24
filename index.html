@@ -551,6 +551,55 @@
       box-shadow: 0 0 0 3px rgba(102,126,234,0.15);
     }
 
+    /* Clear confirmation modal */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.35);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 200;
+      padding: 16px;
+    }
+    .modal-backdrop.open { display: flex; }
+    .modal-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 20px;
+      max-width: 420px;
+      width: 100%;
+      box-shadow: var(--shadow-hover);
+      text-align: center;
+    }
+    .modal-card h3 {
+      font-size: 18px;
+      margin-bottom: 8px;
+      color: var(--text);
+    }
+    .modal-card p {
+      color: var(--muted);
+      margin-bottom: 16px;
+      line-height: 1.4;
+    }
+    .modal-actions {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    .modal-actions .btn {
+      padding: 12px 18px;
+    }
+    .btn-danger {
+      background: #ef4444;
+      color: white;
+    }
+    .btn-danger:hover {
+      background: #dc2626;
+    }
+
     @media (max-width: 1100px) {
       .sidebar {
         position: fixed;
@@ -639,6 +688,17 @@
     </aside>
   </div>
 
+  <div class="modal-backdrop" id="clearModal" role="dialog" aria-modal="true" aria-labelledby="clearModalTitle" aria-describedby="clearModalDesc">
+    <div class="modal-card">
+      <h3 id="clearModalTitle">Clear all shared events?</h3>
+      <p id="clearModalDesc">This removes every event for everyone. Do you want to continue?</p>
+      <div class="modal-actions">
+        <button class="btn btn-danger" id="confirmClearBtn">Yes, clear everything</button>
+        <button class="btn btn-cancel" id="cancelClearModalBtn" style="display:inline-block;">Keep events</button>
+      </div>
+    </div>
+  </div>
+
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
   import { getDatabase, ref, set, onValue, push, remove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
@@ -683,6 +743,9 @@
   const calendarTitle = $("calendarTitle");
   const monthEventsEl = $("monthEvents");
   const monthEventsTitle = $("monthEventsTitle");
+  const clearModal = $("clearModal");
+  const confirmClearBtn = $("confirmClearBtn");
+  const cancelClearModalBtn = $("cancelClearModalBtn");
 
   let editingId = null;
   let events = [];
@@ -1102,11 +1165,25 @@
     if (e.key === 'Enter') addBtn.click();
   };
 
-  clearBtn.onclick = () => {
-    if (events.length && confirm("Clear all events for EVERYONE? This cannot be undone.")) {
-      clearAllCloud();
-    }
+  const openClearModal = () => {
+    if (!events.length) return;
+    clearModal.classList.add("open");
   };
+
+  const closeClearModal = () => {
+    clearModal.classList.remove("open");
+  };
+
+  clearBtn.onclick = openClearModal;
+  cancelClearModalBtn.onclick = closeClearModal;
+  confirmClearBtn.onclick = () => {
+    clearAllCloud();
+    closeClearModal();
+  };
+
+  clearModal.addEventListener("click", (e) => {
+    if (e.target === clearModal) closeClearModal();
+  });
 
   eventList.onclick = e => {
     const row = e.target.closest(".event-row");
