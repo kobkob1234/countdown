@@ -35,7 +35,9 @@
     }
 
     .sidebar {
-      width: 420px;
+      width: 520px;
+      min-width: 360px;
+      max-width: 90vw;
       background: var(--card);
       border-left: 1px solid var(--border);
       padding: 20px;
@@ -43,7 +45,10 @@
       flex-direction: column;
       order: 1;
       transition: transform 0.3s;
-      overflow-y: auto;
+      overflow: auto;
+      resize: horizontal;
+      flex: 0 0 auto;
+      box-sizing: border-box;
     }
 
     .sidebar.hidden {
@@ -114,7 +119,9 @@
       padding: 16px;
       box-shadow: var(--shadow);
       margin-bottom: 20px;
-      flex: 0 0 auto;
+      flex: 1 1 auto;
+      overflow: visible;
+      width: 100%;
     }
     .calendar-header {
       display: flex;
@@ -151,9 +158,12 @@
     .calendar-grid {
       display: grid;
       grid-template-columns: repeat(7, 1fr);
-      grid-auto-rows: minmax(78px, auto);
+      grid-auto-rows: minmax(70px, auto);
       gap: 6px;
       margin-top: 8px;
+      align-items: stretch;
+      width: 100%;
+      box-sizing: border-box;
     }
     .calendar-day-name {
       text-align: center;
@@ -163,7 +173,7 @@
       padding: 10px 0;
     }
     .calendar-day {
-      min-height: 82px;
+      min-height: 72px;
       padding: 8px;
       border: 1px solid #f3f4f6;
       border-radius: 10px;
@@ -172,6 +182,7 @@
       display: flex;
       flex-direction: column;
       background: var(--card);
+      overflow: hidden;
     }
     .calendar-day:hover {
       background: #f9fafb;
@@ -207,12 +218,13 @@
       font-size: 11px;
       padding: 3px 6px;
       border-radius: 6px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
+      white-space: normal;
+      overflow: visible;
+      text-overflow: clip;
       color: white;
       font-weight: 600;
       box-shadow: 0 1px 2px rgba(0,0,0,0.12);
+      line-height: 1.25;
     }
     .calendar-more {
       font-size: 10px;
@@ -562,7 +574,12 @@
       .timer { order: 10; width: 100%; justify-content: center; }
       .time-unit { min-width: 46px; padding: 5px 8px; }
       .time-val { font-size: 16px; }
-      .sidebar { width: 320px; }
+      .sidebar {
+        width: 360px;
+        min-width: 280px;
+        max-width: none;
+        resize: none;
+      }
       .calendar-day { min-height: 50px; }
     }
   </style>
@@ -643,6 +660,14 @@
   const COLORS = ['#667eea','#f59e0b','#10b981','#ec4899','#8b5cf6','#06b6d4','#ef4444','#84cc16'];
   const HEBREW_DAYS = ['א׳', 'ב׳', 'ג׳', 'ד׳', 'ה׳', 'ו׳', 'ש׳'];
   const HEBREW_MONTHS = ['ינואר', 'פברואר', 'מרץ', 'אפריל', 'מאי', 'יוני', 'יולי', 'אוגוסט', 'ספטמבר', 'אוקטובר', 'נובמבר', 'דצמבר'];
+
+  const escapeHtml = (str) => String(str || '').replace(/[&<>"']/g, (c) => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;'
+  })[c]);
 
   const $ = id => document.getElementById(id);
   const eventList = $("eventList");
@@ -774,7 +799,8 @@
       const maxShow = 2;
       dayEvents.slice(0, maxShow).forEach(evt => {
         const color = getEventColor(evt.id);
-        eventsHtml += `<div class="calendar-event-chip" style="background: ${color}">${evt.name}</div>`;
+        const safeName = escapeHtml(evt.name);
+        eventsHtml += `<div class="calendar-event-chip" style="background: ${color}" title="${safeName}" aria-label="${safeName}">${safeName}</div>`;
       });
       if (dayEvents.length > maxShow) {
         eventsHtml += `<div class="calendar-more">+${dayEvents.length - maxShow} עוד</div>`;
