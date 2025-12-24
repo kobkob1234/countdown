@@ -127,12 +127,16 @@
       align-items: center;
       gap: 20px;
       box-shadow: var(--shadow);
-      transition: transform 0.15s, box-shadow 0.15s;
+      transition: transform 0.15s, box-shadow 0.15s, background 0.2s;
     }
     .event-row:hover {
       transform: translateY(-2px);
       box-shadow: var(--shadow-hover);
       border-color: #d1d5db;
+    }
+    .event-row.highlighted {
+      border: 2px solid;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
     }
 
     /* Color Indicator */
@@ -147,6 +151,7 @@
     .event-info {
       flex: 1;
       min-width: 0;
+      text-align: right;
     }
     .event-name {
       font-size: 17px;
@@ -160,6 +165,31 @@
       font-size: 13px;
       color: var(--muted);
       margin-top: 3px;
+    }
+    
+    /* Star Button */
+    .star-btn {
+      width: 32px;
+      height: 32px;
+      border: none;
+      background: transparent;
+      color: #d1d5db;
+      font-size: 22px;
+      cursor: pointer;
+      border-radius: 8px;
+      transition: all 0.15s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      line-height: 1;
+    }
+    .star-btn:hover {
+      background: #fef3c7;
+      color: #f59e0b;
+      transform: scale(1.1);
+    }
+    .star-btn.active {
+      color: #f59e0b;
     }
 
     /* Countdown Timer */
@@ -317,6 +347,8 @@
     const stored = localStorage.getItem(STORAGE_KEY);
     events = stored ? JSON.parse(stored) : [];
     if (!Array.isArray(events)) events = [];
+    // Add highlighted property to existing events if missing
+    events = events.map(e => ({ ...e, highlighted: e.highlighted || false }));
   } catch { events = []; }
 
   const save = () => localStorage.setItem(STORAGE_KEY, JSON.stringify(events));
@@ -365,9 +397,14 @@
       const t = calcTime(evt.date);
 
       const row = document.createElement("div");
-      row.className = "event-row";
+      row.className = `event-row ${evt.highlighted ? 'highlighted' : ''}`;
       row.dataset.id = evt.id;
       row.setAttribute("role", "listitem");
+      
+      if (evt.highlighted) {
+        row.style.background = color + '12';
+        row.style.borderColor = color;
+      }
 
       const dot = document.createElement("span");
       dot.className = "color-dot";
@@ -418,6 +455,12 @@
       const badge = document.createElement("span");
       badge.className = `badge ${t.ended ? 'badge-ended' : 'badge-upcoming'}`;
       badge.textContent = t.ended ? 'Ended' : 'Upcoming';
+      
+      const starBtn = document.createElement("button");
+      starBtn.className = `star-btn ${evt.highlighted ? 'active' : ''}`;
+      starBtn.textContent = "★";
+      starBtn.title = evt.highlighted ? "Remove highlight" : "Highlight event";
+      starBtn.setAttribute("aria-label", evt.highlighted ? `Remove highlight from ${evt.name}` : `Highlight ${evt.name}`);
 
       const deleteBtn = document.createElement("button");
       deleteBtn.className = "delete-btn";
@@ -426,9 +469,10 @@
       deleteBtn.setAttribute("aria-label", `Delete ${evt.name}`);
 
       row.appendChild(dot);
-      row.appendChild(info);
       row.appendChild(timer);
       row.appendChild(badge);
+      row.appendChild(info);
+      row.appendChild(starBtn);
       row.appendChild(deleteBtn);
 
       refs.set(evt.id, {
@@ -499,7 +543,8 @@
     events.push({ 
       id: Date.now().toString(), 
       name, 
-      date: parsedDate.toISOString() 
+      date: parsedDate.toISOString(),
+      highlighted: false
     });
     
     save();
@@ -526,13 +571,21 @@
   };
 
   eventList.onclick = e => {
+    const row = e.target.closest(".event-row");
+    if (!row) return;
+    const id = row.dataset.id;
+    
     if (e.target.classList.contains("delete-btn")) {
-      const row = e.target.closest(".event-row");
-      if (!row) return;
-      const id = row.dataset.id;
       events = events.filter(evt => evt.id !== id);
       save();
       render();
+    } else if (e.target.classList.contains("star-btn")) {
+      const evt = events.find(evt => evt.id === id);
+      if (evt) {
+        evt.highlighted = !evt.highlighted;
+        save();
+        render();
+      }
     }
   };
 
