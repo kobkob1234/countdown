@@ -29,15 +29,13 @@
       color: var(--text);
     }
 
-    /* Layout */
     .app-layout {
       display: flex;
       min-height: 100vh;
     }
 
-    /* Sidebar */
     .sidebar {
-      width: 320px;
+      width: 420px;
       background: var(--card);
       border-left: 1px solid var(--border);
       padding: 20px;
@@ -45,6 +43,7 @@
       flex-direction: column;
       order: 1;
       transition: transform 0.3s;
+      overflow-y: auto;
     }
 
     .sidebar.hidden {
@@ -66,7 +65,6 @@
       margin: 0 auto;
     }
 
-    /* Toggle Button */
     .toggle-sidebar {
       position: fixed;
       top: 20px;
@@ -87,7 +85,6 @@
       background: #f3f4f6;
     }
 
-    /* Header */
     .header {
       text-align: center;
       margin-bottom: 32px;
@@ -119,7 +116,7 @@
       margin-bottom: 16px;
     }
     .calendar-title {
-      font-size: 18px;
+      font-size: 20px;
       font-weight: 600;
       color: var(--text);
     }
@@ -128,13 +125,13 @@
       gap: 8px;
     }
     .calendar-nav button {
-      width: 32px;
-      height: 32px;
+      width: 36px;
+      height: 36px;
       border: 1px solid var(--border);
       border-radius: 6px;
       background: var(--card);
       color: var(--text);
-      font-size: 16px;
+      font-size: 18px;
       cursor: pointer;
       transition: all 0.15s;
     }
@@ -150,80 +147,114 @@
     }
     .calendar-day-name {
       text-align: center;
-      font-size: 12px;
+      font-size: 13px;
       font-weight: 600;
       color: var(--muted);
-      padding: 8px 0;
+      padding: 10px 0;
     }
     .calendar-day {
-      aspect-ratio: 1;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 14px;
+      min-height: 70px;
+      padding: 6px;
+      border: 1px solid #f3f4f6;
       border-radius: 8px;
       cursor: pointer;
       transition: all 0.15s;
-      position: relative;
+      display: flex;
+      flex-direction: column;
+      background: var(--card);
     }
     .calendar-day:hover {
-      background: #f3f4f6;
+      background: #f9fafb;
+      border-color: var(--border);
     }
     .calendar-day.other-month {
-      color: #d1d5db;
+      background: #fafafa;
+      opacity: 0.5;
     }
     .calendar-day.today {
-      background: var(--accent);
+      border: 2px solid var(--accent);
+      background: rgba(102,126,234,0.05);
+    }
+    .calendar-day-number {
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 4px;
+      text-align: right;
+    }
+    .calendar-day.today .calendar-day-number {
+      color: var(--accent);
+    }
+    .calendar-day-events {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      overflow: hidden;
+      flex: 1;
+    }
+    .calendar-event-chip {
+      font-size: 10px;
+      padding: 2px 5px;
+      border-radius: 4px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
       color: white;
-      font-weight: 600;
+      font-weight: 500;
     }
-    .calendar-day.has-event {
-      font-weight: 600;
-    }
-    .calendar-day.has-event::after {
-      content: '';
-      position: absolute;
-      bottom: 4px;
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      background: var(--accent);
-    }
-    .calendar-day.today.has-event::after {
-      background: white;
+    .calendar-more {
+      font-size: 10px;
+      color: var(--muted);
+      text-align: center;
+      margin-top: 2px;
     }
 
-    /* Event List in Sidebar */
+    /* Monthly Event List */
     .sidebar-section {
       margin-top: 20px;
       padding-top: 20px;
       border-top: 1px solid var(--border);
     }
     .sidebar-section-title {
-      font-size: 14px;
+      font-size: 16px;
       font-weight: 600;
-      color: var(--muted);
+      color: var(--text);
       margin-bottom: 12px;
     }
-    .day-events {
+    .month-events {
       display: flex;
       flex-direction: column;
       gap: 8px;
-      max-height: 300px;
+      max-height: 350px;
       overflow-y: auto;
     }
-    .day-event-item {
+    .month-event-item {
       padding: 10px 12px;
       background: #f9fafb;
       border-radius: 8px;
-      border-right: 3px solid var(--accent);
+      border-right: 4px solid var(--accent);
+      display: flex;
+      align-items: center;
+      gap: 10px;
     }
-    .day-event-name {
+    .month-event-color {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .month-event-info {
+      flex: 1;
+      min-width: 0;
+    }
+    .month-event-name {
       font-size: 14px;
       font-weight: 500;
       color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
-    .day-event-time {
+    .month-event-date {
       font-size: 12px;
       color: var(--muted);
       margin-top: 2px;
@@ -299,7 +330,6 @@
     }
     .btn-cancel:hover { background: #e5e7eb; }
 
-    /* Event List */
     .event-list {
       display: flex;
       flex-direction: column;
@@ -491,7 +521,7 @@
       box-shadow: 0 0 0 3px rgba(102,126,234,0.15);
     }
 
-    @media (max-width: 900px) {
+    @media (max-width: 1100px) {
       .sidebar {
         position: fixed;
         right: 0;
@@ -514,7 +544,8 @@
       .timer { order: 10; width: 100%; justify-content: center; }
       .time-unit { min-width: 46px; padding: 5px 8px; }
       .time-val { font-size: 16px; }
-      .sidebar { width: 280px; }
+      .sidebar { width: 320px; }
+      .calendar-day { min-height: 50px; }
     }
   </style>
 </head>
@@ -565,9 +596,9 @@
       </div>
 
       <div class="sidebar-section">
-        <div class="sidebar-section-title" id="selectedDateTitle">אירועים</div>
-        <div class="day-events" id="dayEvents">
-          <div class="no-events-msg">בחר יום לצפייה באירועים</div>
+        <div class="sidebar-section-title" id="monthEventsTitle">אירועי החודש</div>
+        <div class="month-events" id="monthEvents">
+          <div class="no-events-msg">אין אירועים החודש</div>
         </div>
       </div>
     </aside>
@@ -607,15 +638,18 @@
   const sidebar = $("sidebar");
   const calendarGrid = $("calendarGrid");
   const calendarTitle = $("calendarTitle");
-  const dayEventsEl = $("dayEvents");
-  const selectedDateTitle = $("selectedDateTitle");
+  const monthEventsEl = $("monthEvents");
+  const monthEventsTitle = $("monthEventsTitle");
 
   let editingId = null;
   let events = [];
   let currentMonth = new Date();
-  let selectedDate = null;
 
-  // Toggle sidebar
+  function getEventColor(id) {
+    const charCode = id.charCodeAt(id.length - 1);
+    return COLORS[charCode % COLORS.length];
+  }
+
   $("toggleSidebar").onclick = () => {
     sidebar.classList.toggle("hidden");
   };
@@ -638,7 +672,40 @@
     return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
   }
 
-  // Calendar Functions
+  function getMonthEvents() {
+    const year = currentMonth.getFullYear();
+    const month = currentMonth.getMonth();
+    return events.filter(evt => {
+      const d = new Date(evt.date);
+      return d.getFullYear() === year && d.getMonth() === month;
+    }).sort((a, b) => new Date(a.date) - new Date(b.date));
+  }
+
+  function renderMonthEventsList() {
+    const monthEvents = getMonthEvents();
+    monthEventsTitle.textContent = `אירועי ${HEBREW_MONTHS[currentMonth.getMonth()]}`;
+
+    if (monthEvents.length === 0) {
+      monthEventsEl.innerHTML = '<div class="no-events-msg">אין אירועים החודש</div>';
+      return;
+    }
+
+    monthEventsEl.innerHTML = monthEvents.map(evt => {
+      const color = getEventColor(evt.id);
+      const d = new Date(evt.date);
+      const dateStr = `${d.getDate()}/${d.getMonth()+1} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+      return `
+        <div class="month-event-item" style="border-right-color: ${color}">
+          <div class="month-event-color" style="background: ${color}"></div>
+          <div class="month-event-info">
+            <div class="month-event-name">${evt.name}</div>
+            <div class="month-event-date">${dateStr}</div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
   function renderCalendar() {
     const year = currentMonth.getFullYear();
     const month = currentMonth.getMonth();
@@ -653,15 +720,17 @@
     const today = new Date();
     const todayKey = toDateKey(today);
 
-    // Build event date map
-    const eventDates = new Set();
+    // Build event map by date
+    const eventsByDate = {};
     events.forEach(evt => {
-      eventDates.add(toDateKey(evt.date));
+      const key = toDateKey(evt.date);
+      if (!eventsByDate[key]) eventsByDate[key] = [];
+      eventsByDate[key].push(evt);
     });
 
     let html = '';
 
-    // Day names (Sunday first for Hebrew calendar display)
+    // Day names
     for (let i = 0; i < 7; i++) {
       html += `<div class="calendar-day-name">${HEBREW_DAYS[i]}</div>`;
     }
@@ -671,59 +740,44 @@
     const prevDays = prevMonth.getDate();
     for (let i = startDay - 1; i >= 0; i--) {
       const day = prevDays - i;
-      html += `<div class="calendar-day other-month">${day}</div>`;
+      html += `<div class="calendar-day other-month"><div class="calendar-day-number">${day}</div></div>`;
     }
 
     // Current month days
     for (let day = 1; day <= daysInMonth; day++) {
       const dateKey = `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
       const isToday = dateKey === todayKey;
-      const hasEvent = eventDates.has(dateKey);
-      const isSelected = selectedDate === dateKey;
+      const dayEvents = eventsByDate[dateKey] || [];
 
       let classes = 'calendar-day';
       if (isToday) classes += ' today';
-      if (hasEvent) classes += ' has-event';
-      if (isSelected) classes += ' selected';
 
-      html += `<div class="${classes}" data-date="${dateKey}">${day}</div>`;
+      let eventsHtml = '<div class="calendar-day-events">';
+      const maxShow = 2;
+      dayEvents.slice(0, maxShow).forEach(evt => {
+        const color = getEventColor(evt.id);
+        eventsHtml += `<div class="calendar-event-chip" style="background: ${color}">${evt.name}</div>`;
+      });
+      if (dayEvents.length > maxShow) {
+        eventsHtml += `<div class="calendar-more">+${dayEvents.length - maxShow} עוד</div>`;
+      }
+      eventsHtml += '</div>';
+
+      html += `<div class="${classes}" data-date="${dateKey}">
+        <div class="calendar-day-number">${day}</div>
+        ${eventsHtml}
+      </div>`;
     }
 
     // Next month days
     const totalCells = startDay + daysInMonth;
     const remainingCells = totalCells % 7 === 0 ? 0 : 7 - (totalCells % 7);
     for (let i = 1; i <= remainingCells; i++) {
-      html += `<div class="calendar-day other-month">${i}</div>`;
+      html += `<div class="calendar-day other-month"><div class="calendar-day-number">${i}</div></div>`;
     }
 
     calendarGrid.innerHTML = html;
-  }
-
-  function showDayEvents(dateKey) {
-    selectedDate = dateKey;
-    const dayEvents = events.filter(evt => toDateKey(evt.date) === dateKey);
-
-    const d = new Date(dateKey);
-    selectedDateTitle.textContent = `אירועים - ${d.getDate()}/${d.getMonth()+1}`;
-
-    if (dayEvents.length === 0) {
-      dayEventsEl.innerHTML = '<div class="no-events-msg">אין אירועים ביום זה</div>';
-      return;
-    }
-
-    dayEventsEl.innerHTML = dayEvents.map(evt => {
-      const time = new Date(evt.date).toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });
-      const charCode = evt.id.charCodeAt(evt.id.length-1);
-      const color = COLORS[charCode % COLORS.length];
-      return `
-        <div class="day-event-item" style="border-right-color: ${color}">
-          <div class="day-event-name">${evt.name}</div>
-          <div class="day-event-time">${time}</div>
-        </div>
-      `;
-    }).join('');
-
-    renderCalendar();
+    renderMonthEventsList();
   }
 
   $("prevMonth").onclick = () => {
@@ -736,13 +790,6 @@
     renderCalendar();
   };
 
-  calendarGrid.onclick = e => {
-    const dayEl = e.target.closest('.calendar-day:not(.other-month)');
-    if (dayEl && dayEl.dataset.date) {
-      showDayEvents(dayEl.dataset.date);
-    }
-  };
-
   onValue(eventsRef, (snapshot) => {
     const data = snapshot.val();
     if (data) {
@@ -752,7 +799,6 @@
     }
     render();
     renderCalendar();
-    if (selectedDate) showDayEvents(selectedDate);
   });
 
   const saveToCloud = (eventData) => {
@@ -835,8 +881,7 @@
     });
 
     sorted.forEach((evt) => {
-      const charCode = evt.id.charCodeAt(evt.id.length-1);
-      const color = COLORS[charCode % COLORS.length];
+      const color = getEventColor(evt.id);
       const t = calcTime(evt.date);
 
       const row = document.createElement("div");
@@ -988,7 +1033,7 @@
       updateInCloud(editingId, {
         name,
         date: parsedDate.toISOString(),
-        highlighted: evt?.highlighted || false
+        highlighted: evt ? evt.highlighted : false
       });
       cancelEdit();
     } else {
