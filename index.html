@@ -598,6 +598,35 @@
       box-shadow: 0 0 0 3px rgba(102,126,234,0.15);
     }
 
+    /* Undo toast */
+    .undo-toast {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      z-index: 220;
+      display: none;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: white;
+      border-radius: 12px;
+      box-shadow: var(--shadow-hover);
+      font-size: 14px;
+    }
+    .undo-toast.show { display: flex; }
+    .undo-toast button {
+      border: none;
+      background: rgba(255,255,255,0.2);
+      color: white;
+      padding: 8px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: background 0.15s;
+    }
+    .undo-toast button:hover { background: rgba(255,255,255,0.3); }
+
     /* Clear confirmation modal */
     .modal-backdrop {
       position: fixed;
@@ -877,6 +906,11 @@
     </div>
   </div>
 
+  <div class="undo-toast" id="undoToast" role="status" aria-live="polite">
+    <span id="undoToastMsg">Event deleted</span>
+    <button id="undoToastUndo" aria-label="Undo delete">Undo</button>
+  </div>
+
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
   import { getDatabase, ref, set, onValue, push, remove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
@@ -926,6 +960,9 @@
   const cancelClearModalBtn = $("cancelClearModalBtn");
   const themeToggle = $("themeToggle");
   const eventNotes = $("eventNotes");
+  const undoToast = $("undoToast");
+  const undoToastMsg = $("undoToastMsg");
+  const undoToastUndo = $("undoToastUndo");
 
   const STORAGE_KEYS = {
     THEME: 'countdown-theme',
@@ -935,6 +972,33 @@
   let editingId = null;
   let events = [];
   let currentMonth = new Date();
+  const pendingDeletes = new Map();
+  let lastDeletedId = null;
+  const DELETE_TIMEOUT_MS = 10000;
+
+  const getActiveEvents = () => events.filter(evt => !pendingDeletes.has(evt.id));
+
+  const showUndoToast = (name, id) => {
+    undoToastMsg.textContent = `${name} deleted`;
+    lastDeletedId = id;
+    undoToast.classList.add('show');
+  };
+
+  const hideUndoToast = () => {
+    lastDeletedId = null;
+    undoToast.classList.remove('show');
+  };
+
+  undoToastUndo.onclick = () => {
+    if (!lastDeletedId) return;
+    const pending = pendingDeletes.get(lastDeletedId);
+    if (pending) {
+      clearTimeout(pending.timer);
+      pendingDeletes.delete(lastDeletedId);
+      render();
+    }
+    hideUndoToast();
+  };
 
   function getEventColor(id) {
     const charCode = id.charCodeAt(id.length - 1);
@@ -998,7 +1062,7 @@
   function getMonthEvents() {
     const year = currentMonth.getFullYear();
     const month = currentMonth.getMonth();
-    return events.filter(evt => {
+    return getActiveEvents().filter(evt => {
       const d = new Date(evt.date);
       return d.getFullYear() === year && d.getMonth() === month;
     }).sort((a, b) => new Date(a.date) - new Date(b.date));
@@ -1045,7 +1109,7 @@
 
     // Build event map by date
     const eventsByDate = {};
-    events.forEach(evt => {
+    getActiveEvents().forEach(evt => {
       const key = toDateKey(evt.date);
       if (!eventsByDate[key]) eventsByDate[key] = [];
       eventsByDate[key].push(evt);
@@ -1208,7 +1272,7 @@
 
     const now = Date.now();
 
-    const sorted = [...events].sort((a, b) => {
+    const sorted = [...events].filter(e => !pendingDeletes.has(e.id)).sort((a, b) => {
       const aTime = new Date(a.date).getTime();
       const bTime = new Date(b.date).getTime();
       const aEnded = aTime <= now;
@@ -1471,7 +1535,17 @@
 
     if (e.target.classList.contains("delete-btn")) {
       if (editingId === id) cancelEdit();
-      deleteFromCloud(id);
+      const existing = pendingDeletes.get(id);
+      if (existing) clearTimeout(existing.timer);
+      const evt = events.find(evt => evt.id === id);
+      const timer = setTimeout(() => {
+        deleteFromCloud(id);
+        pendingDeletes.delete(id);
+        if (lastDeletedId === id) hideUndoToast();
+      }, DELETE_TIMEOUT_MS);
+      pendingDeletes.set(id, { timer });
+      render();
+      showUndoToast(evt ? evt.name : 'Event', id);
     } else if (e.target.classList.contains("edit-btn")) {
       startEdit(id);
     } else if (e.target.classList.contains("star-btn")) {
