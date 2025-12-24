@@ -113,6 +113,12 @@
       color: var(--danger);
     }
     .btn-ghost:hover { background: #fee2e2; }
+    .btn-cancel {
+      background: #f3f4f6;
+      color: var(--muted);
+      display: none;
+    }
+    .btn-cancel:hover { background: #e5e7eb; }
 
     /* Event List */
     .event-list {
@@ -193,6 +199,28 @@
     }
     .star-btn.active {
       color: #f59e0b;
+    }
+
+    /* Edit Button */
+    .edit-btn {
+      width: 28px;
+      height: 28px;
+      border: none;
+      background: transparent;
+      color: #9ca3af;
+      font-size: 16px;
+      cursor: pointer;
+      border-radius: 6px;
+      transition: all 0.15s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      line-height: 1;
+    }
+    .edit-btn:hover {
+      background: #eff6ff;
+      color: var(--accent);
+      transform: scale(1.1);
     }
 
     /* Countdown Timer */
@@ -287,6 +315,12 @@
       font-size: 14px;
     }
 
+    /* Edit Mode */
+    .input-panel.editing {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(102,126,234,0.15);
+    }
+
     /* Responsive */
     @media (max-width: 640px) {
       body { padding: 16px; }
@@ -307,11 +341,12 @@
       <p>Events sync live across all devices</p>
     </header>
 
-    <div class="input-panel">
+    <div class="input-panel" id="inputPanel">
       <div class="input-row">
         <input type="text" id="eventName" placeholder="Event name..." autocomplete="off" aria-label="Event name" />
         <input type="datetime-local" id="eventDate" aria-label="Event date and time" />
         <button class="btn btn-primary" id="addBtn">Add Event</button>
+        <button class="btn btn-cancel" id="cancelBtn">Cancel</button>
         <button class="btn btn-ghost" id="clearBtn">Clear All</button>
       </div>
     </div>
@@ -329,11 +364,9 @@
   </div>
 
 <script type="module">
-  // We use the CDN links so this works directly in the browser
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
   import { getDatabase, ref, set, onValue, push, remove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-  // --- YOUR FIREBASE CONFIGURATION ---
   const firebaseConfig = {
     apiKey: "AIzaSyB_IflOD8CwVLQQjqtz_ZKWzbfgCiOm2Js",
     authDomain: "countdown-463de.firebaseapp.com",
@@ -344,20 +377,22 @@
     appId: "1:1016385864732:web:8a82e771e1f4be567a8bd9"
   };
 
-  // Initialize Firebase
   const app = initializeApp(firebaseConfig);
   const db = getDatabase(app);
-  
-  // NOTE: If you set up "Option A" rules (public read/write), this works immediately.
   const eventsRef = ref(db, 'events'); 
 
-  // --- APPLICATION LOGIC ---
   const COLORS = ['#667eea','#f59e0b','#10b981','#ec4899','#8b5cf6','#06b6d4','#ef4444','#84cc16'];
   const $ = id => document.getElementById(id);
   const eventList = $("eventList");
   const emptyState = $("emptyState");
   const eventName = $("eventName");
   const eventDate = $("eventDate");
+  const inputPanel = $("inputPanel");
+  const addBtn = $("addBtn");
+  const cancelBtn = $("cancelBtn");
+  const clearBtn = $("clearBtn");
+
+  let editingId = null;
 
   function parseLocal(value) {
     const match = String(value || "").match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/);
@@ -366,24 +401,24 @@
     return new Date(+Y, +Mo - 1, +D, +H, +Mi, 0, 0);
   }
 
+  function toLocalDatetime(isoString) {
+    const d = new Date(isoString);
+    const pad = n => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  }
+
   let events = [];
 
-  // 1. LISTEN FOR CHANGES FROM CLOUD
   onValue(eventsRef, (snapshot) => {
     const data = snapshot.val();
-    // Convert object to array
     if (data) {
-        events = Object.keys(data).map(key => ({
-            id: key,
-            ...data[key]
-        }));
+        events = Object.keys(data).map(key => ({ id: key, ...data[key] }));
     } else {
         events = [];
     }
     render();
   });
 
-  // 2. SAVE TO CLOUD
   const saveToCloud = (eventData) => {
       const newEventRef = push(eventsRef);
       set(newEventRef, eventData);
@@ -421,6 +456,30 @@
 
   const refs = new Map();
 
+  function startEdit(id) {
+    const evt = events.find(e => e.id === id);
+    if (!evt) return;
+    
+    editingId = id;
+    eventName.value = evt.name;
+    eventDate.value = toLocalDatetime(evt.date);
+    addBtn.textContent = "Save";
+    cancelBtn.style.display = "block";
+    clearBtn.style.display = "none";
+    inputPanel.classList.add("editing");
+    eventName.focus();
+  }
+
+  function cancelEdit() {
+    editingId = null;
+    eventName.value = "";
+    eventDate.value = "";
+    addBtn.textContent = "Add Event";
+    cancelBtn.style.display = "none";
+    clearBtn.style.display = "block";
+    inputPanel.classList.remove("editing");
+  }
+
   function render() {
     refs.clear();
     eventList.innerHTML = "";
@@ -439,8 +498,7 @@
       return aTime - bTime;
     });
 
-    sorted.forEach((evt, i) => {
-      // Create a stable color based on the ID string
+    sorted.forEach((evt) => {
       const charCode = evt.id.charCodeAt(evt.id.length-1);
       const color = COLORS[charCode % COLORS.length];
       const t = calcTime(evt.date);
@@ -507,6 +565,11 @@
       const starBtn = document.createElement("button");
       starBtn.className = `star-btn ${evt.highlighted ? 'active' : ''}`;
       starBtn.textContent = "★";
+
+      const editBtn = document.createElement("button");
+      editBtn.className = "edit-btn";
+      editBtn.textContent = "✎";
+      editBtn.title = "Edit";
       
       const deleteBtn = document.createElement("button");
       deleteBtn.className = "delete-btn";
@@ -517,6 +580,7 @@
       row.appendChild(badge);
       row.appendChild(info);
       row.appendChild(starBtn);
+      row.appendChild(editBtn);
       row.appendChild(deleteBtn);
 
       refs.set(evt.id, {
@@ -538,7 +602,7 @@
   function tick() {
     const now = Date.now();
     
-    refs.forEach((ref, id) => {
+    refs.forEach((ref) => {
       const diff = Math.max(0, ref.target - now);
       const ended = diff === 0;
       
@@ -568,7 +632,7 @@
     loop();
   }
 
-  $("addBtn").onclick = () => {
+  addBtn.onclick = () => {
     const name = eventName.value.trim();
     const dateValue = eventDate.value;
     
@@ -583,26 +647,37 @@
       return;
     }
 
-    saveToCloud({ 
-      name, 
-      date: parsedDate.toISOString(),
-      highlighted: false
-    });
-    
-    eventName.value = "";
-    eventDate.value = "";
-    eventName.focus();
+    if (editingId) {
+      const evt = events.find(e => e.id === editingId);
+      updateInCloud(editingId, { 
+        name, 
+        date: parsedDate.toISOString(),
+        highlighted: evt?.highlighted || false
+      });
+      cancelEdit();
+    } else {
+      saveToCloud({ 
+        name, 
+        date: parsedDate.toISOString(),
+        highlighted: false
+      });
+      eventName.value = "";
+      eventDate.value = "";
+      eventName.focus();
+    }
   };
 
+  cancelBtn.onclick = cancelEdit;
+
   eventName.onkeypress = e => { 
-    if (e.key === 'Enter') $("addBtn").click(); 
+    if (e.key === 'Enter') addBtn.click(); 
   };
   
   eventDate.onkeypress = e => { 
-    if (e.key === 'Enter') $("addBtn").click(); 
+    if (e.key === 'Enter') addBtn.click(); 
   };
 
-  $("clearBtn").onclick = () => {
+  clearBtn.onclick = () => {
     if (events.length && confirm("Clear all events for EVERYONE? This cannot be undone.")) {
       clearAllCloud();
     }
@@ -614,7 +689,10 @@
     const id = row.dataset.id;
     
     if (e.target.classList.contains("delete-btn")) {
-        deleteFromCloud(id);
+      if (editingId === id) cancelEdit();
+      deleteFromCloud(id);
+    } else if (e.target.classList.contains("edit-btn")) {
+      startEdit(id);
     } else if (e.target.classList.contains("star-btn")) {
       const evt = events.find(evt => evt.id === id);
       if (evt) {
