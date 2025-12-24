@@ -21,18 +21,70 @@
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    
+
     body {
       font-family: var(--font);
       background: var(--bg);
       min-height: 100vh;
-      padding: 24px;
       color: var(--text);
     }
 
+    /* Layout */
+    .app-layout {
+      display: flex;
+      min-height: 100vh;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      width: 320px;
+      background: var(--card);
+      border-left: 1px solid var(--border);
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      order: 1;
+      transition: transform 0.3s;
+    }
+
+    .sidebar.hidden {
+      transform: translateX(100%);
+      position: absolute;
+      right: 0;
+      top: 0;
+      bottom: 0;
+    }
+
+    .main-content {
+      flex: 1;
+      padding: 24px;
+      overflow-y: auto;
+    }
+
     .container {
-      max-width: 1200px;
+      max-width: 900px;
       margin: 0 auto;
+    }
+
+    /* Toggle Button */
+    .toggle-sidebar {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      z-index: 100;
+      padding: 10px 16px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--card);
+      color: var(--text);
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      box-shadow: var(--shadow);
+      transition: all 0.2s;
+    }
+    .toggle-sidebar:hover {
+      background: #f3f4f6;
     }
 
     /* Header */
@@ -54,6 +106,133 @@
     .header p {
       font-size: 16px;
       color: var(--muted);
+    }
+
+    /* Calendar Styles */
+    .calendar-container {
+      direction: rtl;
+    }
+    .calendar-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+    .calendar-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--text);
+    }
+    .calendar-nav {
+      display: flex;
+      gap: 8px;
+    }
+    .calendar-nav button {
+      width: 32px;
+      height: 32px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: var(--card);
+      color: var(--text);
+      font-size: 16px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .calendar-nav button:hover {
+      background: #f3f4f6;
+      border-color: var(--accent);
+    }
+
+    .calendar-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 4px;
+    }
+    .calendar-day-name {
+      text-align: center;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--muted);
+      padding: 8px 0;
+    }
+    .calendar-day {
+      aspect-ratio: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.15s;
+      position: relative;
+    }
+    .calendar-day:hover {
+      background: #f3f4f6;
+    }
+    .calendar-day.other-month {
+      color: #d1d5db;
+    }
+    .calendar-day.today {
+      background: var(--accent);
+      color: white;
+      font-weight: 600;
+    }
+    .calendar-day.has-event {
+      font-weight: 600;
+    }
+    .calendar-day.has-event::after {
+      content: '';
+      position: absolute;
+      bottom: 4px;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--accent);
+    }
+    .calendar-day.today.has-event::after {
+      background: white;
+    }
+
+    /* Event List in Sidebar */
+    .sidebar-section {
+      margin-top: 20px;
+      padding-top: 20px;
+      border-top: 1px solid var(--border);
+    }
+    .sidebar-section-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--muted);
+      margin-bottom: 12px;
+    }
+    .day-events {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+    .day-event-item {
+      padding: 10px 12px;
+      background: #f9fafb;
+      border-radius: 8px;
+      border-right: 3px solid var(--accent);
+    }
+    .day-event-name {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text);
+    }
+    .day-event-time {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+    .no-events-msg {
+      font-size: 13px;
+      color: var(--muted);
+      text-align: center;
+      padding: 20px;
     }
 
     /* Input Panel */
@@ -148,7 +327,6 @@
       box-shadow: 0 4px 20px rgba(0,0,0,0.1);
     }
 
-    /* Color Indicator */
     .color-dot {
       width: 12px;
       height: 12px;
@@ -156,7 +334,6 @@
       flex-shrink: 0;
     }
 
-    /* Event Info */
     .event-info {
       flex: 1;
       min-width: 0;
@@ -175,8 +352,7 @@
       color: var(--muted);
       margin-top: 3px;
     }
-    
-    /* Star Button */
+
     .star-btn {
       width: 32px;
       height: 32px;
@@ -201,7 +377,6 @@
       color: #f59e0b;
     }
 
-    /* Edit Button */
     .edit-btn {
       width: 28px;
       height: 28px;
@@ -223,7 +398,6 @@
       transform: scale(1.1);
     }
 
-    /* Countdown Timer */
     .timer {
       display: flex;
       gap: 8px;
@@ -256,7 +430,6 @@
       margin-top: 3px;
     }
 
-    /* Status Badge */
     .badge {
       font-size: 11px;
       font-weight: 600;
@@ -273,7 +446,6 @@
       color: #dc2626;
     }
 
-    /* Delete Button */
     .delete-btn {
       width: 28px;
       height: 28px;
@@ -295,7 +467,6 @@
       transform: scale(1.1);
     }
 
-    /* Empty State */
     .empty-state {
       text-align: center;
       padding: 40px 20px;
@@ -315,15 +486,27 @@
       font-size: 14px;
     }
 
-    /* Edit Mode */
     .input-panel.editing {
       border-color: var(--accent);
       box-shadow: 0 0 0 3px rgba(102,126,234,0.15);
     }
 
-    /* Responsive */
+    @media (max-width: 900px) {
+      .sidebar {
+        position: fixed;
+        right: 0;
+        top: 0;
+        bottom: 0;
+        z-index: 50;
+        box-shadow: -4px 0 20px rgba(0,0,0,0.1);
+      }
+      .sidebar.hidden {
+        transform: translateX(100%);
+      }
+    }
+
     @media (max-width: 640px) {
-      body { padding: 16px; }
+      .main-content { padding: 16px; }
       .header h1 { font-size: 24px; }
       .input-row { flex-wrap: wrap; }
       .input-row input { width: 100%; }
@@ -331,36 +514,63 @@
       .timer { order: 10; width: 100%; justify-content: center; }
       .time-unit { min-width: 46px; padding: 5px 8px; }
       .time-val { font-size: 16px; }
+      .sidebar { width: 280px; }
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <header class="header">
-      <h1>⏱️ Shared Event Countdowns</h1>
-      <p>Events sync live across all devices</p>
-    </header>
+  <button class="toggle-sidebar" id="toggleSidebar">📅 לוח שנה</button>
 
-    <div class="input-panel" id="inputPanel">
-      <div class="input-row">
-        <input type="text" id="eventName" placeholder="Event name..." autocomplete="off" aria-label="Event name" />
-        <input type="datetime-local" id="eventDate" aria-label="Event date and time" />
-        <button class="btn btn-primary" id="addBtn">Add Event</button>
-        <button class="btn btn-cancel" id="cancelBtn">Cancel</button>
-        <button class="btn btn-ghost" id="clearBtn">Clear All</button>
+  <div class="app-layout">
+    <div class="main-content">
+      <div class="container">
+        <header class="header">
+          <h1>⏱️ Shared Event Countdowns</h1>
+          <p>Events sync live across all devices</p>
+        </header>
+
+        <div class="input-panel" id="inputPanel">
+          <div class="input-row">
+            <input type="text" id="eventName" placeholder="Event name..." autocomplete="off" aria-label="Event name" />
+            <input type="datetime-local" id="eventDate" aria-label="Event date and time" />
+            <button class="btn btn-primary" id="addBtn">Add Event</button>
+            <button class="btn btn-cancel" id="cancelBtn">Cancel</button>
+            <button class="btn btn-ghost" id="clearBtn">Clear All</button>
+          </div>
+        </div>
+
+        <div class="event-list" id="eventList" role="list">
+          <p style="text-align:center; padding: 20px;">Loading shared events...</p>
+        </div>
+
+        <div class="empty-state" id="emptyState">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <p>No events yet. Add your first countdown above! 🎉</p>
+        </div>
       </div>
     </div>
 
-    <div class="event-list" id="eventList" role="list">
-        <p style="text-align:center; padding: 20px;">Loading shared events...</p>
-    </div>
-    
-    <div class="empty-state" id="emptyState">
-      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-      </svg>
-      <p>No events yet. Add your first countdown above! 🎉</p>
-    </div>
+    <aside class="sidebar" id="sidebar">
+      <div class="calendar-container">
+        <div class="calendar-header">
+          <div class="calendar-nav">
+            <button id="nextMonth">›</button>
+            <button id="prevMonth">‹</button>
+          </div>
+          <div class="calendar-title" id="calendarTitle"></div>
+        </div>
+        <div class="calendar-grid" id="calendarGrid"></div>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-section-title" id="selectedDateTitle">אירועים</div>
+        <div class="day-events" id="dayEvents">
+          <div class="no-events-msg">בחר יום לצפייה באירועים</div>
+        </div>
+      </div>
+    </aside>
   </div>
 
 <script type="module">
@@ -379,9 +589,12 @@
 
   const app = initializeApp(firebaseConfig);
   const db = getDatabase(app);
-  const eventsRef = ref(db, 'events'); 
+  const eventsRef = ref(db, 'events');
 
   const COLORS = ['#667eea','#f59e0b','#10b981','#ec4899','#8b5cf6','#06b6d4','#ef4444','#84cc16'];
+  const HEBREW_DAYS = ['א׳', 'ב׳', 'ג׳', 'ד׳', 'ה׳', 'ו׳', 'ש׳'];
+  const HEBREW_MONTHS = ['ינואר', 'פברואר', 'מרץ', 'אפריל', 'מאי', 'יוני', 'יולי', 'אוגוסט', 'ספטמבר', 'אוקטובר', 'נובמבר', 'דצמבר'];
+
   const $ = id => document.getElementById(id);
   const eventList = $("eventList");
   const emptyState = $("emptyState");
@@ -391,8 +604,21 @@
   const addBtn = $("addBtn");
   const cancelBtn = $("cancelBtn");
   const clearBtn = $("clearBtn");
+  const sidebar = $("sidebar");
+  const calendarGrid = $("calendarGrid");
+  const calendarTitle = $("calendarTitle");
+  const dayEventsEl = $("dayEvents");
+  const selectedDateTitle = $("selectedDateTitle");
 
   let editingId = null;
+  let events = [];
+  let currentMonth = new Date();
+  let selectedDate = null;
+
+  // Toggle sidebar
+  $("toggleSidebar").onclick = () => {
+    sidebar.classList.toggle("hidden");
+  };
 
   function parseLocal(value) {
     const match = String(value || "").match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/);
@@ -407,34 +633,144 @@
     return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
   }
 
-  let events = [];
+  function toDateKey(date) {
+    const d = new Date(date);
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  }
+
+  // Calendar Functions
+  function renderCalendar() {
+    const year = currentMonth.getFullYear();
+    const month = currentMonth.getMonth();
+
+    calendarTitle.textContent = `${HEBREW_MONTHS[month]} ${year}`;
+
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const startDay = firstDay.getDay();
+    const daysInMonth = lastDay.getDate();
+
+    const today = new Date();
+    const todayKey = toDateKey(today);
+
+    // Build event date map
+    const eventDates = new Set();
+    events.forEach(evt => {
+      eventDates.add(toDateKey(evt.date));
+    });
+
+    let html = '';
+
+    // Day names (Sunday first for Hebrew calendar display)
+    for (let i = 0; i < 7; i++) {
+      html += `<div class="calendar-day-name">${HEBREW_DAYS[i]}</div>`;
+    }
+
+    // Previous month days
+    const prevMonth = new Date(year, month, 0);
+    const prevDays = prevMonth.getDate();
+    for (let i = startDay - 1; i >= 0; i--) {
+      const day = prevDays - i;
+      html += `<div class="calendar-day other-month">${day}</div>`;
+    }
+
+    // Current month days
+    for (let day = 1; day <= daysInMonth; day++) {
+      const dateKey = `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+      const isToday = dateKey === todayKey;
+      const hasEvent = eventDates.has(dateKey);
+      const isSelected = selectedDate === dateKey;
+
+      let classes = 'calendar-day';
+      if (isToday) classes += ' today';
+      if (hasEvent) classes += ' has-event';
+      if (isSelected) classes += ' selected';
+
+      html += `<div class="${classes}" data-date="${dateKey}">${day}</div>`;
+    }
+
+    // Next month days
+    const totalCells = startDay + daysInMonth;
+    const remainingCells = totalCells % 7 === 0 ? 0 : 7 - (totalCells % 7);
+    for (let i = 1; i <= remainingCells; i++) {
+      html += `<div class="calendar-day other-month">${i}</div>`;
+    }
+
+    calendarGrid.innerHTML = html;
+  }
+
+  function showDayEvents(dateKey) {
+    selectedDate = dateKey;
+    const dayEvents = events.filter(evt => toDateKey(evt.date) === dateKey);
+
+    const d = new Date(dateKey);
+    selectedDateTitle.textContent = `אירועים - ${d.getDate()}/${d.getMonth()+1}`;
+
+    if (dayEvents.length === 0) {
+      dayEventsEl.innerHTML = '<div class="no-events-msg">אין אירועים ביום זה</div>';
+      return;
+    }
+
+    dayEventsEl.innerHTML = dayEvents.map(evt => {
+      const time = new Date(evt.date).toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });
+      const charCode = evt.id.charCodeAt(evt.id.length-1);
+      const color = COLORS[charCode % COLORS.length];
+      return `
+        <div class="day-event-item" style="border-right-color: ${color}">
+          <div class="day-event-name">${evt.name}</div>
+          <div class="day-event-time">${time}</div>
+        </div>
+      `;
+    }).join('');
+
+    renderCalendar();
+  }
+
+  $("prevMonth").onclick = () => {
+    currentMonth.setMonth(currentMonth.getMonth() - 1);
+    renderCalendar();
+  };
+
+  $("nextMonth").onclick = () => {
+    currentMonth.setMonth(currentMonth.getMonth() + 1);
+    renderCalendar();
+  };
+
+  calendarGrid.onclick = e => {
+    const dayEl = e.target.closest('.calendar-day:not(.other-month)');
+    if (dayEl && dayEl.dataset.date) {
+      showDayEvents(dayEl.dataset.date);
+    }
+  };
 
   onValue(eventsRef, (snapshot) => {
     const data = snapshot.val();
     if (data) {
-        events = Object.keys(data).map(key => ({ id: key, ...data[key] }));
+      events = Object.keys(data).map(key => ({ id: key, ...data[key] }));
     } else {
-        events = [];
+      events = [];
     }
     render();
+    renderCalendar();
+    if (selectedDate) showDayEvents(selectedDate);
   });
 
   const saveToCloud = (eventData) => {
-      const newEventRef = push(eventsRef);
-      set(newEventRef, eventData);
+    const newEventRef = push(eventsRef);
+    set(newEventRef, eventData);
   };
 
   const updateInCloud = (id, data) => {
-      set(ref(db, 'events/' + id), data);
+    set(ref(db, 'events/' + id), data);
   };
 
   const deleteFromCloud = (id) => {
-      remove(ref(db, 'events/' + id));
+    remove(ref(db, 'events/' + id));
   };
-  
+
   const clearAllCloud = () => {
-      set(eventsRef, null);
-  }
+    set(eventsRef, null);
+  };
 
   function formatDate(iso) {
     return new Date(iso).toLocaleString(undefined, {
@@ -454,12 +790,10 @@
     };
   }
 
-  const refs = new Map();
-
   function startEdit(id) {
     const evt = events.find(e => e.id === id);
     if (!evt) return;
-    
+
     editingId = id;
     eventName.value = evt.name;
     eventDate.value = toLocalDatetime(evt.date);
@@ -480,19 +814,21 @@
     inputPanel.classList.remove("editing");
   }
 
+  const refs = new Map();
+
   function render() {
     refs.clear();
     eventList.innerHTML = "";
     emptyState.style.display = events.length ? "none" : "block";
 
     const now = Date.now();
-    
+
     const sorted = [...events].sort((a, b) => {
       const aTime = new Date(a.date).getTime();
       const bTime = new Date(b.date).getTime();
       const aEnded = aTime <= now;
       const bEnded = bTime <= now;
-      
+
       if (!aEnded && bEnded) return -1;
       if (aEnded && !bEnded) return 1;
       return aTime - bTime;
@@ -506,7 +842,7 @@
       const row = document.createElement("div");
       row.className = `event-row ${evt.highlighted ? 'highlighted' : ''}`;
       row.dataset.id = evt.id;
-      
+
       if (evt.highlighted) {
         row.style.background = color + '12';
         row.style.borderColor = color;
@@ -518,15 +854,15 @@
 
       const info = document.createElement("div");
       info.className = "event-info";
-      
+
       const name = document.createElement("div");
       name.className = "event-name";
       name.textContent = evt.name;
-      
+
       const date = document.createElement("div");
       date.className = "event-date";
       date.textContent = formatDate(evt.date);
-      
+
       info.appendChild(name);
       info.appendChild(date);
 
@@ -543,16 +879,16 @@
       units.forEach(({ key, label }) => {
         const unit = document.createElement("div");
         unit.className = "time-unit";
-        
+
         const val = document.createElement("span");
         val.className = `time-val time-${key}`;
         val.style.color = color;
         val.textContent = key === 'd' ? t[key] : String(t[key]).padStart(2, '0');
-        
+
         const lbl = document.createElement("div");
         lbl.className = "time-label";
         lbl.textContent = label;
-        
+
         unit.appendChild(val);
         unit.appendChild(lbl);
         timer.appendChild(unit);
@@ -561,7 +897,7 @@
       const badge = document.createElement("span");
       badge.className = `badge ${t.ended ? 'badge-ended' : 'badge-upcoming'}`;
       badge.textContent = t.ended ? 'Ended' : 'Upcoming';
-      
+
       const starBtn = document.createElement("button");
       starBtn.className = `star-btn ${evt.highlighted ? 'active' : ''}`;
       starBtn.textContent = "★";
@@ -570,7 +906,7 @@
       editBtn.className = "edit-btn";
       editBtn.textContent = "✎";
       editBtn.title = "Edit";
-      
+
       const deleteBtn = document.createElement("button");
       deleteBtn.className = "delete-btn";
       deleteBtn.textContent = "×";
@@ -601,21 +937,21 @@
 
   function tick() {
     const now = Date.now();
-    
+
     refs.forEach((ref) => {
       const diff = Math.max(0, ref.target - now);
       const ended = diff === 0;
-      
+
       const d = Math.floor(diff / 86400000);
       const h = Math.floor((diff % 86400000) / 3600000);
       const m = Math.floor((diff % 3600000) / 60000);
       const s = Math.floor((diff % 60000) / 1000);
-      
+
       ref.dEl.textContent = d;
       ref.hEl.textContent = String(h).padStart(2, '0');
       ref.mEl.textContent = String(m).padStart(2, '0');
       ref.sEl.textContent = String(s).padStart(2, '0');
-      
+
       ref.badge.className = `badge ${ended ? 'badge-ended' : 'badge-upcoming'}`;
       ref.badge.textContent = ended ? 'Ended' : 'Upcoming';
     });
@@ -635,7 +971,7 @@
   addBtn.onclick = () => {
     const name = eventName.value.trim();
     const dateValue = eventDate.value;
-    
+
     if (!name || !dateValue) {
       alert("Please enter both event name and date");
       return;
@@ -649,15 +985,15 @@
 
     if (editingId) {
       const evt = events.find(e => e.id === editingId);
-      updateInCloud(editingId, { 
-        name, 
+      updateInCloud(editingId, {
+        name,
         date: parsedDate.toISOString(),
         highlighted: evt?.highlighted || false
       });
       cancelEdit();
     } else {
-      saveToCloud({ 
-        name, 
+      saveToCloud({
+        name,
         date: parsedDate.toISOString(),
         highlighted: false
       });
@@ -669,12 +1005,12 @@
 
   cancelBtn.onclick = cancelEdit;
 
-  eventName.onkeypress = e => { 
-    if (e.key === 'Enter') addBtn.click(); 
+  eventName.onkeypress = e => {
+    if (e.key === 'Enter') addBtn.click();
   };
-  
-  eventDate.onkeypress = e => { 
-    if (e.key === 'Enter') addBtn.click(); 
+
+  eventDate.onkeypress = e => {
+    if (e.key === 'Enter') addBtn.click();
   };
 
   clearBtn.onclick = () => {
@@ -687,7 +1023,7 @@
     const row = e.target.closest(".event-row");
     if (!row) return;
     const id = row.dataset.id;
-    
+
     if (e.target.classList.contains("delete-btn")) {
       if (editingId === id) cancelEdit();
       deleteFromCloud(id);
@@ -701,6 +1037,7 @@
     }
   };
 
+  renderCalendar();
   startTicker();
 </script>
 </body>
