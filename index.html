@@ -3230,6 +3230,17 @@
     calendarGrid.querySelectorAll('.calendar-event-chip').forEach(chip => {
       chip.addEventListener('click', (e) => {
         e.stopPropagation(); // Don't trigger day click
+        
+        // If it's a task chip, open the day drawer
+        if (chip.classList.contains('calendar-task-chip')) {
+          const dayEl = chip.closest('.calendar-day');
+          if (dayEl && dayEl.dataset.date) {
+            openDayDrawer(dayEl.dataset.date);
+          }
+          return;
+        }
+        
+        // Otherwise, scroll to the event
         const eventId = chip.dataset.eventId;
         if (eventId) {
           const eventRow = document.querySelector(`.event-row[data-id="${eventId}"]`);
@@ -3378,11 +3389,12 @@
           closeDayDrawer();
           // Open task manager and highlight task
           setTimeout(() => {
-            if (!taskManagerOverlay.classList.contains('open')) {
-              taskManagerOverlay.classList.add('open');
-              renderSubjectsSidebar();
-              renderTasks();
-              startTaskTicker();
+            const tmOverlay = $("taskManagerOverlay");
+            if (!tmOverlay.classList.contains('open')) {
+              tmOverlay.classList.add('open');
+              if (typeof renderSubjectsSidebar === 'function') renderSubjectsSidebar();
+              if (typeof renderTasks === 'function') renderTasks();
+              if (typeof startTaskTicker === 'function') startTaskTicker();
             }
             setTimeout(() => {
               const taskItem = document.querySelector(`.task-item[data-id="${taskId}"]`);
@@ -3427,15 +3439,19 @@
     if (!selectedDayKey) return;
     closeDayDrawer();
     // Open task manager
-    taskManagerOverlay.classList.add('open');
-    renderSubjectsSidebar();
-    renderTasks();
-    startTaskTicker();
+    const tmOverlay = $("taskManagerOverlay");
+    tmOverlay.classList.add('open');
+    if (typeof renderSubjectsSidebar === 'function') renderSubjectsSidebar();
+    if (typeof renderTasks === 'function') renderTasks();
+    if (typeof startTaskTicker === 'function') startTaskTicker();
     // Pre-fill the due date
     setTimeout(() => {
-      newTaskDue.value = selectedDayKey + 'T23:59';
-      newTaskTitle.focus();
-      quickAddRow.style.display = 'flex';
+      const taskDueInput = $("newTaskDue");
+      const taskTitleInput = $("newTaskTitle");
+      const quickRow = $("quickAddRow");
+      if (taskDueInput) taskDueInput.value = selectedDayKey + 'T23:59';
+      if (taskTitleInput) taskTitleInput.focus();
+      if (quickRow) quickRow.style.display = 'flex';
     }, 200);
   };
 
