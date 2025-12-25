@@ -1609,8 +1609,13 @@
     
     .subject-list-header .collapse-arrow {
       font-size: 10px;
-      transition: transform 0.2s;
+      transition: transform 0.25s ease;
       opacity: 0.6;
+      cursor: pointer;
+    }
+    
+    .subject-list-header .collapse-arrow:hover {
+      opacity: 1;
     }
     
     .subject-list-item.expanded .collapse-arrow {
@@ -1618,13 +1623,18 @@
     }
     
     .subject-list-children {
-      display: none;
       padding-right: 20px;
-      margin-top: 4px;
+      margin-top: 0;
+      overflow: hidden;
+      max-height: 0;
+      opacity: 0;
+      transition: max-height 0.3s ease, opacity 0.25s ease, margin-top 0.25s ease;
     }
     
     .subject-list-item.expanded .subject-list-children {
-      display: block;
+      max-height: 500px; /* Large enough for many children */
+      opacity: 1;
+      margin-top: 4px;
     }
     
     .subject-child-item {
@@ -1633,13 +1643,15 @@
       padding: 8px 12px;
       border-radius: 6px;
       cursor: pointer;
-      transition: all 0.15s;
+      transition: all 0.2s ease;
       gap: 8px;
       margin-bottom: 2px;
+      transform: translateX(0);
     }
     
     .subject-child-item:hover {
       background: var(--day-hover);
+      transform: translateX(-2px);
     }
     
     .subject-child-item.active {
@@ -4111,12 +4123,15 @@
   }
   
   function toggleSubjectExpanded(subjectId) {
+    const item = subjectsList.querySelector(`.subject-list-item[data-subject-id="${subjectId}"]`);
+    
     if (expandedSubjects.has(subjectId)) {
       expandedSubjects.delete(subjectId);
+      if (item) item.classList.remove('expanded');
     } else {
       expandedSubjects.add(subjectId);
+      if (item) item.classList.add('expanded');
     }
-    renderSubjectsSidebar();
   }
   
   function setupSmartViewsHandlers() {
