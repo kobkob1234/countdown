@@ -3428,8 +3428,9 @@
   // Add event to selected day
   addEventToDay.onclick = () => {
     if (!selectedDayKey) return;
+    const dateToUse = selectedDayKey; // Save before closing
     closeDayDrawer();
-    eventDate.value = selectedDayKey + 'T12:00';
+    eventDate.value = dateToUse + 'T12:00';
     eventName.focus();
     inputPanel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   };
@@ -3437,6 +3438,7 @@
   // Add task to selected day
   addTaskToDay.onclick = () => {
     if (!selectedDayKey) return;
+    const dateToUse = selectedDayKey; // Save before closing
     closeDayDrawer();
     // Open task manager
     const tmOverlay = $("taskManagerOverlay");
@@ -3449,7 +3451,7 @@
       const taskDueInput = $("newTaskDue");
       const taskTitleInput = $("newTaskTitle");
       const quickRow = $("quickAddRow");
-      if (taskDueInput) taskDueInput.value = selectedDayKey + 'T23:59';
+      if (taskDueInput) taskDueInput.value = dateToUse + 'T23:59';
       if (taskTitleInput) taskTitleInput.focus();
       if (quickRow) quickRow.style.display = 'flex';
     }, 200);
@@ -3807,15 +3809,41 @@
     if (e.target === clearModal) closeClearModal();
   });
 
-  // Escape key handler
+  // Escape key handler (consolidated)
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
+      // Close context menus first (highest priority)
+      if (typeof hideContextMenu === 'function') hideContextMenu();
+      if (typeof hideAddEventContextMenu === 'function') hideAddEventContextMenu();
+      if (typeof hideEventContextMenu === 'function') hideEventContextMenu();
+      
+      // Task edit modal (check first since it's on top)
+      const tEditModal = $("taskEditModal");
+      if (tEditModal && tEditModal.classList.contains('open')) {
+        if (typeof closeTaskEditModal === 'function') closeTaskEditModal();
+        return;
+      }
+      // Task manager overlay
+      const tmOverlay = $("taskManagerOverlay");
+      if (tmOverlay && tmOverlay.classList.contains('open')) {
+        tmOverlay.classList.remove('open');
+        if (typeof stopTaskTicker === 'function') stopTaskTicker();
+        return;
+      }
+      // Day drawer
       if (dayDrawer.classList.contains('open')) {
         closeDayDrawer();
-      } else if (clearModal.classList.contains('open')) {
+        return;
+      }
+      // Clear modal
+      if (clearModal.classList.contains('open')) {
         closeClearModal();
-      } else if (editingId) {
+        return;
+      }
+      // Event editing
+      if (editingId) {
         cancelEdit();
+        return;
       }
     }
   });
@@ -3903,24 +3931,6 @@
     taskManagerOverlay.classList.remove('open');
     stopTaskTicker();
   };
-  
-  // Close on escape - handles all menus
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') {
-      // Close context menus first (highest priority)
-      if (typeof hideContextMenu === 'function') hideContextMenu();
-      if (typeof hideAddEventContextMenu === 'function') hideAddEventContextMenu();
-      if (typeof hideEventContextMenu === 'function') hideEventContextMenu();
-      
-      // Then modals
-      if (taskEditModal.classList.contains('open')) {
-        closeTaskEditModal();
-      } else if (taskManagerOverlay.classList.contains('open')) {
-        taskManagerOverlay.classList.remove('open');
-        stopTaskTicker();
-      }
-    }
-  });
   
   // Quick add task - show full form on focus
   newTaskTitle.addEventListener('focus', () => {
