@@ -21,6 +21,9 @@
       --input-bg: #ffffff;
       --day-other: #fafafa;
       --day-hover: #f9fafb;
+      --btn-secondary-bg: #f3f4f6;
+      --btn-secondary-hover: #e5e7eb;
+      --focus-ring: 0 0 0 3px rgba(102, 126, 234, 0.4);
     }
 
     body.dark {
@@ -34,6 +37,24 @@
       --input-bg: #1e293b;
       --day-other: #1a2535;
       --day-hover: #273548;
+      --btn-secondary-bg: #334155;
+      --btn-secondary-hover: #475569;
+      --focus-ring: 0 0 0 3px rgba(102, 126, 234, 0.5);
+    }
+
+    /* Accessibility: Focus visible */
+    :focus-visible {
+      outline: none;
+      box-shadow: var(--focus-ring);
+    }
+    
+    /* Reduced motion for users who prefer it */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
     }
 
     /* Priority Colors */
@@ -211,7 +232,7 @@
       transition: all 0.15s;
     }
     .calendar-nav button:hover {
-      background: #f3f4f6;
+      background: var(--day-hover);
       border-color: var(--accent);
     }
 
@@ -235,7 +256,7 @@
     .calendar-day {
       min-height: 56px;
       padding: 6px 8px;
-      border: 1px solid #f3f4f6;
+      border: 1px solid var(--border);
       border-radius: 10px;
       cursor: pointer;
       transition: all 0.15s;
@@ -416,11 +437,11 @@
     }
     .btn-ghost:hover { background: #fee2e2; }
     .btn-cancel {
-      background: #f3f4f6;
+      background: var(--btn-secondary-bg);
       color: var(--muted);
       display: none;
     }
-    .btn-cancel:hover { background: #e5e7eb; }
+    .btn-cancel:hover { background: var(--btn-secondary-hover); }
 
     .event-list {
       display: flex;
@@ -1535,39 +1556,62 @@
     /* Subject Action Buttons */
     .subject-actions {
       display: flex;
-      gap: 2px;
+      gap: 4px;
       opacity: 0;
-      transition: opacity 0.15s;
+      transition: opacity 0.2s;
       margin-right: auto;
     }
     
     .subject-action-btn {
-      width: 24px;
-      height: 24px;
-      border: none;
-      background: transparent;
-      border-radius: 4px;
+      width: 28px;
+      height: 28px;
+      border: 1px solid transparent;
+      background: rgba(0,0,0,0.05);
+      border-radius: 6px;
       cursor: pointer;
-      font-size: 12px;
+      font-size: 14px;
       display: flex;
       align-items: center;
       justify-content: center;
-      transition: all 0.15s;
-      color: inherit;
-      opacity: 0.6;
+      transition: all 0.2s;
+      color: var(--text);
+      opacity: 0.8;
+    }
+    
+    body.dark .subject-action-btn {
+      background: rgba(255,255,255,0.1);
     }
     
     .subject-action-btn:hover {
-      background: rgba(0,0,0,0.1);
+      background: rgba(0,0,0,0.15);
       opacity: 1;
+      transform: scale(1.1);
+      border-color: var(--border);
     }
     
-    .subject-list-header.active .subject-action-btn:hover {
+    body.dark .subject-action-btn:hover {
       background: rgba(255,255,255,0.2);
     }
     
+    .subject-list-header.active .subject-action-btn {
+      background: rgba(255,255,255,0.15);
+      color: white;
+    }
+    
+    .subject-list-header.active .subject-action-btn:hover {
+      background: rgba(255,255,255,0.3);
+    }
+    
     .subject-action-btn.delete:hover {
+      background: rgba(239, 68, 68, 0.15);
       color: var(--danger);
+      border-color: var(--danger);
+    }
+    
+    .subject-child-item .subject-action-btn {
+      width: 26px;
+      height: 26px;
+      font-size: 13px;
     }
     
     .subject-child-item:hover .subject-actions {
@@ -2332,7 +2376,7 @@
         <button class="filter-pill" data-filter="active">פעיל</button>
         <button class="filter-pill" data-filter="completed">הושלם</button>
       </div>
-      <button class="task-manager-close" id="closeTaskManager">×</button>
+      <button class="task-manager-close" id="closeTaskManager" aria-label="סגור מנהל משימות">×</button>
     </div>
     
     <!-- Task Manager Layout with Sidebar -->
@@ -2498,13 +2542,13 @@
         <div class="task-checklist" id="editTaskChecklist"></div>
         <div class="checklist-add">
           <input type="text" id="newChecklistItem" placeholder="Add subtask..." />
-          <button class="btn btn-primary" id="addChecklistItem" style="padding: 10px 16px;">+</button>
+          <button class="btn btn-primary" id="addChecklistItem" style="padding: 10px 16px;" aria-label="הוסף פריט">+</button>
         </div>
       </div>
       
       <div class="task-edit-footer">
         <div style="display: flex; gap: 8px;">
-          <button class="task-action-btn delete" id="deleteTaskBtn" title="Delete">🗑️</button>
+          <button class="task-action-btn delete" id="deleteTaskBtn" title="Delete" aria-label="מחק משימה">🗑️</button>
         </div>
         <button class="btn btn-primary" id="saveTaskBtn">Save</button>
       </div>
@@ -2625,8 +2669,9 @@
       <div class="calendar-container">
         <div class="calendar-header">
           <div class="calendar-nav">
-            <button id="prevMonth" aria-label="Previous month">‹</button>
-            <button id="nextMonth" aria-label="Next month">›</button>
+            <button id="prevMonth" aria-label="חודש קודם">‹</button>
+            <button id="todayBtn" aria-label="היום" title="היום">●</button>
+            <button id="nextMonth" aria-label="חודש הבא">›</button>
           </div>
           <div class="calendar-title" id="calendarTitle"></div>
         </div>
@@ -2888,10 +2933,14 @@
 
       let eventsHtml = '<div class="calendar-day-events">';
       const maxShow = 2;
+      const showTime = dayEvents.length > 1; // Show time when multiple events on same day
       dayEvents.slice(0, maxShow).forEach(evt => {
         const color = getEventColor(evt.id);
         const safeName = escapeHtml(evt.name);
-        eventsHtml += `<div class="calendar-event-chip" style="background: ${color}" title="${safeName}" aria-label="${safeName}">${safeName}</div>`;
+        const evtDate = new Date(evt.date);
+        const timeStr = showTime ? `${String(evtDate.getHours()).padStart(2,'0')}:${String(evtDate.getMinutes()).padStart(2,'0')} ` : '';
+        const displayText = timeStr + safeName;
+        eventsHtml += `<div class="calendar-event-chip" style="background: ${color}" title="${safeName}" aria-label="${safeName}" data-event-id="${evt.id}">${displayText}</div>`;
       });
       if (dayEvents.length > maxShow) {
         eventsHtml += `<div class="calendar-more">+${dayEvents.length - maxShow} עוד</div>`;
@@ -2914,9 +2963,32 @@
     calendarGrid.innerHTML = html;
     renderMonthEventsList();
 
+    // Click calendar chip to scroll to event in main list
+    calendarGrid.querySelectorAll('.calendar-event-chip').forEach(chip => {
+      chip.addEventListener('click', (e) => {
+        e.stopPropagation(); // Don't trigger day click
+        const eventId = chip.dataset.eventId;
+        if (eventId) {
+          const eventRow = document.querySelector(`.event-row[data-id="${eventId}"]`);
+          if (eventRow) {
+            eventRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            // Flash highlight
+            eventRow.style.transition = 'background 0.3s';
+            eventRow.style.background = 'var(--accent)';
+            setTimeout(() => {
+              eventRow.style.background = '';
+            }, 800);
+          }
+        }
+      });
+    });
+
     // Click calendar day to add event
     calendarGrid.querySelectorAll('.calendar-day:not(.other-month)').forEach(dayEl => {
-      dayEl.addEventListener('click', () => {
+      dayEl.addEventListener('click', (e) => {
+        // Don't trigger if clicking on a chip
+        if (e.target.classList.contains('calendar-event-chip')) return;
+        
         const dateKey = dayEl.dataset.date;
         if (!dateKey) return;
         // Set date picker to clicked date at noon
@@ -2937,6 +3009,15 @@
     currentMonth.setMonth(currentMonth.getMonth() + 1);
     renderCalendar();
   };
+  
+  // Today button - jump to current month
+  const todayBtn = $("todayBtn");
+  if (todayBtn) {
+    todayBtn.onclick = () => {
+      currentMonth = new Date();
+      renderCalendar();
+    };
+  }
 
   onValue(eventsRef, (snapshot) => {
     const data = snapshot.val();
@@ -3366,9 +3447,15 @@
     stopTaskTicker();
   };
   
-  // Close on escape
+  // Close on escape - handles all menus
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
+      // Close context menus first (highest priority)
+      if (typeof hideContextMenu === 'function') hideContextMenu();
+      if (typeof hideAddEventContextMenu === 'function') hideAddEventContextMenu();
+      if (typeof hideEventContextMenu === 'function') hideEventContextMenu();
+      
+      // Then modals
       if (taskEditModal.classList.contains('open')) {
         closeTaskEditModal();
       } else if (taskManagerOverlay.classList.contains('open')) {
@@ -3399,8 +3486,8 @@
     selectedTaskPriority = option.dataset.priority;
   });
   
-  // Add task
-  addTaskBtn.onclick = () => {
+  // ============ UNIFIED ADD TASK FUNCTION ============
+  function addTask() {
     const title = newTaskTitle.value.trim();
     if (!title) return;
     
@@ -3412,6 +3499,7 @@
       content: '',
       priority: selectedTaskPriority,
       dueDate: dueDate ? dueDate.toISOString() : null,
+      subject: newTaskSubject ? newTaskSubject.value || '' : '',
       checklist: [],
       completed: false,
       createdAt: new Date().toISOString()
@@ -3423,12 +3511,15 @@
     // Reset form
     newTaskTitle.value = '';
     newTaskDue.value = '';
+    if (newTaskSubject) newTaskSubject.value = '';
+    if (quickAddRow) quickAddRow.style.display = 'none';
     selectedTaskPriority = 'medium';
     taskPriorityPicker.querySelectorAll('.priority-option').forEach(o => o.classList.remove('selected'));
     taskPriorityPicker.querySelector('[data-priority="medium"]').classList.add('selected');
-  };
+  }
   
-  // Note: NLP Enter handler is defined later in the file
+  // Hook button to unified function
+  addTaskBtn.onclick = addTask;
   
   // Filter pills
   document.querySelectorAll('.filter-pill').forEach(pill => {
@@ -3585,8 +3676,7 @@
       tasksEmpty.style.display = 'none';
     }
     
-    // Add event handlers
-    attachTaskEventHandlers();
+    // Event delegation is set up once below, no need to call attachTaskEventHandlers
   }
   
   function renderTaskItem(task, showSubjectTag = false) {
@@ -3668,73 +3758,66 @@
           ${subtasksHtml}
         </div>
         <div class="task-actions">
-          <button class="task-action-btn" data-action="edit" title="Edit">✏️</button>
-          <button class="task-action-btn delete" data-action="delete" title="Delete">🗑️</button>
+          <button class="task-action-btn" data-action="edit" title="Edit" aria-label="עריכה">✏️</button>
+          <button class="task-action-btn delete" data-action="delete" title="Delete" aria-label="מחק">🗑️</button>
         </div>
       </div>
     `;
   }
   
-  function attachTaskEventHandlers() {
-    document.querySelectorAll('.task-item').forEach(item => {
-      const taskId = item.dataset.id;
+  // ============ EVENT DELEGATION FOR TASK LIST ============
+  // Single click handler for all task interactions - much more efficient than per-item listeners
+  function setupTaskEventDelegation() {
+    const containers = [activeTasks, completedTasks];
+    
+    containers.forEach(container => {
+      if (!container) return;
       
-      // Toggle complete
-      const checkbox = item.querySelector('.task-checkbox');
-      if (checkbox) {
-        checkbox.addEventListener('click', (e) => {
+      container.addEventListener('click', (e) => {
+        const taskItem = e.target.closest('.task-item');
+        if (!taskItem) return;
+        
+        const taskId = taskItem.dataset.id;
+        const task = tasks.find(t => t.id === taskId);
+        if (!task) return;
+        
+        // Check what was clicked
+        const action = e.target.closest('[data-action]')?.dataset.action;
+        const isSubtaskCheckbox = e.target.closest('.task-subtask input[type="checkbox"]');
+        const isMainArea = e.target.closest('.task-main') && !isSubtaskCheckbox;
+        
+        if (action === 'toggle' || e.target.closest('.task-checkbox')) {
+          // Toggle complete
           e.stopPropagation();
-          const task = tasks.find(t => t.id === taskId);
-          if (task) {
-            // Remove id before saving to Firebase (id is the key, not data)
-            const { id, ...cleanTask } = task;
-            set(ref(db, 'tasks/' + taskId), { ...cleanTask, completed: !task.completed });
-          }
-        });
-      }
-      
-      // Edit button
-      const editBtn = item.querySelector('[data-action="edit"]');
-      if (editBtn) {
-        editBtn.addEventListener('click', (e) => {
+          const { id, ...cleanTask } = task;
+          set(ref(db, 'tasks/' + taskId), { ...cleanTask, completed: !task.completed });
+        } else if (action === 'edit') {
+          // Edit button
           e.stopPropagation();
           openTaskEditModal(taskId);
-        });
-      }
-      
-      // Delete button
-      const deleteBtn = item.querySelector('[data-action="delete"]');
-      if (deleteBtn) {
-        deleteBtn.addEventListener('click', (e) => {
+        } else if (action === 'delete') {
+          // Delete button
           e.stopPropagation();
           remove(ref(db, 'tasks/' + taskId));
-        });
-      }
-      
-      // Click on main area to edit
-      const mainArea = item.querySelector('.task-main');
-      if (mainArea) {
-        mainArea.addEventListener('click', () => {
-          openTaskEditModal(taskId);
-        });
-      }
-      
-      // Subtask checkboxes
-      item.querySelectorAll('.task-subtask input[type="checkbox"]').forEach(cb => {
-        cb.addEventListener('click', (e) => {
+        } else if (isSubtaskCheckbox) {
+          // Subtask checkbox
           e.stopPropagation();
-          const idx = parseInt(cb.dataset.index);
-          const task = tasks.find(t => t.id === taskId);
-          if (task && task.checklist) {
-            task.checklist[idx].checked = cb.checked;
-            // Remove id before saving to Firebase
+          const idx = parseInt(isSubtaskCheckbox.dataset.index);
+          if (task.checklist && task.checklist[idx] !== undefined) {
+            task.checklist[idx].checked = isSubtaskCheckbox.checked;
             const { id, ...cleanTask } = task;
             set(ref(db, 'tasks/' + taskId), cleanTask);
           }
-        });
+        } else if (isMainArea) {
+          // Click on main area to edit
+          openTaskEditModal(taskId);
+        }
       });
     });
   }
+  
+  // Initialize event delegation once
+  setupTaskEventDelegation();
   
   // Task countdown ticker
   function startTaskTicker() {
@@ -4015,9 +4098,9 @@
             <span class="subject-name">${escapeHtml(s.name)}</span>
             ${taskCount > 0 ? `<span class="subject-count">${taskCount}</span>` : ''}
             <div class="subject-actions">
-              <button class="subject-action-btn" data-action="add-sub" title="הוסף תת-נושא">➕</button>
-              <button class="subject-action-btn" data-action="edit" title="עריכה">✏️</button>
-              <button class="subject-action-btn delete" data-action="delete" title="מחק">🗑️</button>
+              <button class="subject-action-btn" data-action="add-sub" title="הוסף תת-נושא" aria-label="הוסף תת-נושא">➕</button>
+              <button class="subject-action-btn" data-action="edit" title="עריכה" aria-label="עריכה">✏️</button>
+              <button class="subject-action-btn delete" data-action="delete" title="מחק" aria-label="מחק">🗑️</button>
             </div>
           </div>
           ${hasChildren ? `
@@ -4051,16 +4134,26 @@
   }
   
   function setupSubjectsSidebarHandlers() {
-    // Subject headers click - select subject
+    // Subject headers click - toggle collapse OR select subject
     subjectsList.querySelectorAll('.subject-list-header').forEach(header => {
       header.addEventListener('click', (e) => {
-        // Don't select if clicking action buttons or collapse arrow
-        if (e.target.classList.contains('collapse-arrow') || e.target.closest('.subject-actions')) {
+        // Don't do anything if clicking action buttons
+        if (e.target.closest('.subject-actions')) {
           return;
         }
         
+        const subjectId = header.dataset.subject;
+        const subjectItem = header.closest('.subject-list-item');
+        const hasChildren = subjectItem.querySelector('.subject-list-children');
+        
+        // If has children, toggle collapse on single click
+        if (hasChildren) {
+          toggleSubjectExpanded(subjectItem.dataset.subjectId);
+        }
+        
+        // Always select the subject
         currentSmartView = null;
-        currentSubject = header.dataset.subject;
+        currentSubject = subjectId;
         renderSubjectsSidebar();
         renderTasks();
       });
@@ -4072,10 +4165,10 @@
       });
     });
     
-    // Collapse arrows
+    // Collapse arrows - clicking arrow only toggles (doesn't select)
     subjectsList.querySelectorAll('.collapse-arrow').forEach(arrow => {
       arrow.addEventListener('click', (e) => {
-        e.stopPropagation();
+        e.stopPropagation(); // Prevent header click from also firing
         const subjectId = arrow.closest('.subject-list-item').dataset.subjectId;
         toggleSubjectExpanded(subjectId);
       });
@@ -4637,38 +4730,6 @@
       editTaskSubject.value = editingTask.subject || '';
     }
   };
-  
-  // Update add task to include subject AND natural language parsing
-  addTaskBtn.onclick = () => {
-    const title = newTaskTitle.value.trim();
-    if (!title) return;
-    
-    const dueValue = newTaskDue.value;
-    const dueDate = dueValue ? parseLocal(dueValue) : null;
-    
-    const taskData = {
-      title,
-      content: '',
-      priority: selectedTaskPriority,
-      dueDate: dueDate ? dueDate.toISOString() : null,
-      subject: newTaskSubject.value || '',
-      checklist: [],
-      completed: false,
-      createdAt: new Date().toISOString()
-    };
-    
-    const newTaskRef = push(tasksRef);
-    set(newTaskRef, taskData);
-    
-    // Reset form
-    newTaskTitle.value = '';
-    newTaskDue.value = '';
-    newTaskSubject.value = '';
-    quickAddRow.style.display = 'none';
-    selectedTaskPriority = 'medium';
-    taskPriorityPicker.querySelectorAll('.priority-option').forEach(o => o.classList.remove('selected'));
-    taskPriorityPicker.querySelector('[data-priority="medium"]').classList.add('selected');
-  };
 
   // ============ IMPROVED NATURAL LANGUAGE PARSING (Hebrew + English RTL-Safe) ============
   function parseNaturalLanguage(input) {
@@ -5096,3 +5157,4 @@
 </script>
 </body>
 </html>
+
