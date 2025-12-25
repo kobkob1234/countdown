@@ -3144,15 +3144,6 @@
       if (!eventsByDate[key]) eventsByDate[key] = [];
       eventsByDate[key].push(evt);
     });
-    
-    // Build task map by due date
-    const tasksByDate = {};
-    const allTasks = typeof tasks !== 'undefined' ? tasks : [];
-    allTasks.filter(t => t.dueDate && !t.completed).forEach(task => {
-      const key = toDateKey(task.dueDate);
-      if (!tasksByDate[key]) tasksByDate[key] = [];
-      tasksByDate[key].push(task);
-    });
 
     let html = '';
 
@@ -3174,18 +3165,13 @@
       const dateKey = `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
       const isToday = dateKey === todayKey;
       const dayEvents = eventsByDate[dateKey] || [];
-      const dayTasks = tasksByDate[dateKey] || [];
-      const totalItems = dayEvents.length + dayTasks.length;
 
       let classes = 'calendar-day';
       if (isToday) classes += ' today';
 
       let eventsHtml = '<div class="calendar-day-events">';
       const maxShow = 2;
-      const showTime = totalItems > 1; // Show time when multiple items on same day
-      
-      // Show events first
-      let shown = 0;
+      const showTime = dayEvents.length > 1; // Show time when multiple events on same day
       dayEvents.slice(0, maxShow).forEach(evt => {
         const color = getEventColor(evt.id);
         const safeName = escapeHtml(evt.name);
@@ -3193,20 +3179,9 @@
         const timeStr = showTime ? `${String(evtDate.getHours()).padStart(2,'0')}:${String(evtDate.getMinutes()).padStart(2,'0')} ` : '';
         const displayText = timeStr + safeName;
         eventsHtml += `<div class="calendar-event-chip" style="background: ${color}" title="${safeName}" aria-label="${safeName}" data-event-id="${evt.id}">${displayText}</div>`;
-        shown++;
       });
-      
-      // Show task indicator if there are tasks
-      if (dayTasks.length > 0 && shown < maxShow) {
-        const taskCount = dayTasks.length;
-        eventsHtml += `<div class="calendar-event-chip calendar-task-chip" style="background: var(--success)" title="${taskCount} משימות" aria-label="${taskCount} משימות">✅ ${taskCount} משימות</div>`;
-        shown++;
-      }
-      
-      // Show "more" indicator
-      const remaining = totalItems - shown;
-      if (remaining > 0) {
-        eventsHtml += `<div class="calendar-more">+${remaining} עוד</div>`;
+      if (dayEvents.length > maxShow) {
+        eventsHtml += `<div class="calendar-more">+${dayEvents.length - maxShow} עוד</div>`;
       }
       eventsHtml += '</div>';
 
@@ -3230,17 +3205,6 @@
     calendarGrid.querySelectorAll('.calendar-event-chip').forEach(chip => {
       chip.addEventListener('click', (e) => {
         e.stopPropagation(); // Don't trigger day click
-        
-        // If it's a task chip, open the day drawer
-        if (chip.classList.contains('calendar-task-chip')) {
-          const dayEl = chip.closest('.calendar-day');
-          if (dayEl && dayEl.dataset.date) {
-            openDayDrawer(dayEl.dataset.date);
-          }
-          return;
-        }
-        
-        // Otherwise, scroll to the event
         const eventId = chip.dataset.eventId;
         if (eventId) {
           const eventRow = document.querySelector(`.event-row[data-id="${eventId}"]`);
@@ -3257,15 +3221,19 @@
       });
     });
 
-    // Click calendar day to open day drawer
+    // Click calendar day to add event
     calendarGrid.querySelectorAll('.calendar-day:not(.other-month)').forEach(dayEl => {
       dayEl.addEventListener('click', (e) => {
-        // Don't trigger if clicking on a chip (chip has its own handler)
+        // Don't trigger if clicking on a chip
         if (e.target.classList.contains('calendar-event-chip')) return;
         
         const dateKey = dayEl.dataset.date;
         if (!dateKey) return;
-        openDayDrawer(dateKey);
+        // Set date picker to clicked date at noon
+        eventDate.value = dateKey + 'T12:00';
+        eventName.focus();
+        // Scroll to input if needed
+        inputPanel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       });
     });
   }
