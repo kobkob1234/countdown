@@ -2832,7 +2832,7 @@
         <div class="month-event-item" style="border-right-color: ${color}">
           <div class="month-event-color" style="background: ${color}"></div>
           <div class="month-event-info">
-            <div class="month-event-name">${evt.name}</div>
+            <div class="month-event-name">${escapeHtml(evt.name)}</div>
             <div class="month-event-date">${dateStr}</div>
           </div>
         </div>
@@ -4137,6 +4137,12 @@
   function setupSmartViewsHandlers() {
     if (!smartViewsList) return;
     
+    // Clone and replace to remove all old event listeners
+    smartViewsList.querySelectorAll('.smart-view-item').forEach(item => {
+      const newItem = item.cloneNode(true);
+      item.parentNode.replaceChild(newItem, item);
+    });
+    
     smartViewsList.querySelectorAll('.smart-view-item').forEach(item => {
       item.addEventListener('click', () => {
         const view = item.dataset.view;
@@ -4260,8 +4266,10 @@
         targetDate.setHours(12, 0, 0, 0);
       }
       
-      // Pre-fill the date and focus on name (use local time, not UTC)
-      eventDate.value = toLocalDatetime(targetDate.toISOString());
+      // Pre-fill the date - format from local date directly (not via ISO/UTC)
+      const pad = n => String(n).padStart(2, '0');
+      const localDateStr = `${targetDate.getFullYear()}-${pad(targetDate.getMonth()+1)}-${pad(targetDate.getDate())}T${pad(targetDate.getHours())}:${pad(targetDate.getMinutes())}`;
+      eventDate.value = localDateStr;
       eventName.focus();
       
       hideAddEventContextMenu();
@@ -4675,10 +4683,10 @@
 
     // ============ STEP 1: EXTRACT & REMOVE PRIORITY ============
     const priorityPatterns = [
-      { level: 'urgent', patterns: [/\b(דחוף|מיידי|urgent|asap|!)\b/gi] },
-      { level: 'high', patterns: [/\b(גבוה|חשוב|high|important)\b/gi] },
-      { level: 'medium', patterns: [/\b(בינוני|רגיל|medium|normal)\b/gi] },
-      { level: 'low', patterns: [/\b(נמוך|לא דחוף|low)\b/gi] }
+      { level: 'urgent', patterns: [/\b(דחוף|מיידי|urgent|asap|!)\b/i] },
+      { level: 'high', patterns: [/\b(גבוה|חשוב|high|important)\b/i] },
+      { level: 'medium', patterns: [/\b(בינוני|רגיל|medium|normal)\b/i] },
+      { level: 'low', patterns: [/\b(נמוך|לא דחוף|low)\b/i] }
     ];
 
     for (const { level, patterns } of priorityPatterns) {
@@ -4715,16 +4723,17 @@
     }
 
     // ============ STEP 3: EXTRACT & REMOVE DATE ============
+    // Note: Using 'i' flag only (not 'gi') to avoid stateful regex issues with .test()
     const dateKeywords = [
-      { patterns: [/\bהיום\b/gi, /\btoday\b/gi], days: 0 },
-      { patterns: [/\bמחר\b/gi, /\btomorrow\b/gi], days: 1 },
-      { patterns: [/\bמחרתיים\b/gi], days: 2 },
-      { patterns: [/\bבעוד יומיים\b/gi, /\bin 2 days\b/gi], days: 2 },
-      { patterns: [/\bבעוד 3 ימים\b/gi, /\bin 3 days\b/gi], days: 3 },
-      { patterns: [/\bהשבוע\b/gi, /\bבשבוע הבא\b/gi, /\bthis week\b/gi, /\bnext week\b/gi], days: 7 },
-      { patterns: [/\bבעוד שבוע\b/gi], days: 7 },
-      { patterns: [/\bבעוד שבועיים\b/gi, /\bin 2 weeks\b/gi], days: 14 },
-      { patterns: [/\bבעוד חודש\b/gi, /\bin a month\b/gi], days: 30 },
+      { patterns: [/\bהיום\b/i, /\btoday\b/i], days: 0 },
+      { patterns: [/\bמחר\b/i, /\btomorrow\b/i], days: 1 },
+      { patterns: [/\bמחרתיים\b/i], days: 2 },
+      { patterns: [/\bבעוד יומיים\b/i, /\bin 2 days\b/i], days: 2 },
+      { patterns: [/\bבעוד 3 ימים\b/i, /\bin 3 days\b/i], days: 3 },
+      { patterns: [/\bהשבוע\b/i, /\bבשבוע הבא\b/i, /\bthis week\b/i, /\bnext week\b/i], days: 7 },
+      { patterns: [/\bבעוד שבוע\b/i], days: 7 },
+      { patterns: [/\bבעוד שבועיים\b/i, /\bin 2 weeks\b/i], days: 14 },
+      { patterns: [/\bבעוד חודש\b/i, /\bin a month\b/i], days: 30 },
     ];
 
     for (const { patterns, days } of dateKeywords) {
@@ -4911,6 +4920,7 @@
   function findBestSubjectMatch(searchTerm, sortedSubjects) {
     const normalize = (str) => str.replace(/\s+/g, '').toLowerCase();
     const searchNorm = normalize(searchTerm);
+    const searchLower = searchTerm.toLowerCase().trim(); // Define searchLower for fuzzy matching
     
     // 1. Exact match (space-insensitive)
     let found = sortedSubjects.find(s => normalize(s.name) === searchNorm);
@@ -4928,11 +4938,11 @@
     found = sortedSubjects.find(s => normalize(s.name).includes(searchNorm));
     if (found) return found;
     
-    // 6. Reverse contains
+    // 5. Reverse contains
     found = sortedSubjects.find(s => searchLower.includes(s.name.toLowerCase()));
     if (found) return found;
     
-    // 7. Fuzzy match - check if all words from search appear in subject name
+    // 6. Fuzzy match - check if all words from search appear in subject name
     const searchWords = searchLower.split(/\s+/);
     found = sortedSubjects.find(s => {
       const subjectLower = s.name.toLowerCase();
