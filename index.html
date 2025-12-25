@@ -1868,16 +1868,54 @@
     
     /* Natural Language Input Hint */
     .nl-hint {
-      font-size: 11px;
+      font-size: 12px;
       color: var(--muted);
-      margin-top: 6px;
+      margin-top: 8px;
       direction: rtl;
+      line-height: 1.6;
     }
     .nl-hint code {
       background: var(--day-other);
       padding: 2px 6px;
       border-radius: 4px;
-      font-family: monospace;
+      font-family: inherit;
+      color: var(--accent);
+      font-weight: 500;
+    }
+    .nl-hint-toggle {
+      color: var(--accent);
+      cursor: pointer;
+      text-decoration: underline;
+      margin-right: 8px;
+    }
+    .nl-hint-examples {
+      display: none;
+      margin-top: 8px;
+      padding: 12px;
+      background: var(--day-other);
+      border-radius: 8px;
+      font-size: 11px;
+    }
+    .nl-hint-examples.show {
+      display: block;
+    }
+    .nl-hint-examples div {
+      margin-bottom: 6px;
+      padding-bottom: 6px;
+      border-bottom: 1px solid var(--border);
+    }
+    .nl-hint-examples div:last-child {
+      margin-bottom: 0;
+      padding-bottom: 0;
+      border-bottom: none;
+    }
+    .nl-hint-examples .example-input {
+      font-weight: 600;
+      color: var(--text);
+    }
+    .nl-hint-examples .example-result {
+      color: var(--muted);
+      font-size: 10px;
     }
     
     .add-subject-btn {
@@ -2336,7 +2374,35 @@
       <div class="task-manager-body">
       <div class="quick-add-task" id="quickAddTask">
         <input type="text" id="newTaskTitle" placeholder="הוסף משימה... (לדוגמה: להגיש תרגיל מחר 23:00 #מתמטיקה דחוף)" dir="auto" />
-        <div class="nl-hint">💡 טיפ: כתוב בשפה טבעית עם תאריך, #נושא או #נושא/תת_נושא ורמת דחיפות (דחוף/גבוה/בינוני/נמוך)</div>
+        <div class="nl-hint">
+          💡 <strong>קצרת דרך:</strong> כתוב בשפה טבעית ולחץ Enter!
+          <span class="nl-hint-toggle" onclick="document.getElementById('nlExamples').classList.toggle('show')">דוגמאות ▼</span>
+          <div class="nl-hint-examples" id="nlExamples">
+            <div>
+              <div class="example-input">להגיש תרגיל מחר 23:59 #מתמטיקה דחוף</div>
+              <div class="example-result">→ מחר ב-23:59, נושא: מתמטיקה, עדיפות: דחוף</div>
+            </div>
+            <div>
+              <div class="example-input">לקרוא פרק 5 ביום ראשון #"סטטיסטיקה 2"</div>
+              <div class="example-result">→ יום ראשון הקרוב, נושא: סטטיסטיקה 2 (עם רווח במרכאות)</div>
+            </div>
+            <div>
+              <div class="example-input">מבחן היום 14:00 גבוה</div>
+              <div class="example-result">→ היום ב-14:00, עדיפות: גבוהה</div>
+            </div>
+            <div>
+              <div class="example-input">פגישה עם יועץ בשבוע הבא</div>
+              <div class="example-result">→ עוד 7 ימים</div>
+            </div>
+            <div style="border-bottom: none; padding-top: 8px; color: var(--text);">
+              <strong>מילות מפתח:</strong><br>
+              📅 <code>היום</code> <code>מחר</code> <code>מחרתיים</code> <code>בשבוע הבא</code> <code>ביום ראשון/שני/...</code><br>
+              ⏰ <code>14:30</code> <code>23:59</code> (שעה אופציונלית)<br>
+              🏷️ <code>#נושא</code> <code>#"נושא עם רווח"</code> <code>#נושא/תת-נושא</code><br>
+              🚨 <code>דחוף</code> <code>גבוה</code> <code>בינוני</code> <code>נמוך</code>
+            </div>
+          </div>
+        </div>
         <div class="quick-add-row" id="quickAddRow" style="display: none;">
           <div class="priority-selector" id="taskPriorityPicker">
             <div class="priority-option" data-priority="urgent">🔴 דחוף</div>
@@ -2937,7 +3003,8 @@
   function render() {
     refs.clear();
     eventList.innerHTML = "";
-    emptyState.style.display = events.length ? "none" : "block";
+    // Use getActiveEvents() to account for pending deletes
+    emptyState.style.display = getActiveEvents().length ? "none" : "block";
 
     const now = Date.now();
 
@@ -3349,9 +3416,7 @@
     taskPriorityPicker.querySelector('[data-priority="medium"]').classList.add('selected');
   };
   
-  newTaskTitle.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') addTaskBtn.click();
-  });
+  // Note: NLP Enter handler is defined later in the file
   
   // Filter pills
   document.querySelectorAll('.filter-pill').forEach(pill => {
@@ -3524,27 +3589,30 @@
       dueDateHtml = `<span class="task-due ${urgencyClass}">📅 ${dateStr}</span>`;
     }
     
-    // Subject tag for suggested tasks
-    let subjectTagHtml = '';
-    if (showSubjectTag && task.subject) {
-      const taskSubject = subjects.find(s => s.id === task.subject);
-      if (taskSubject) {
-        // If it's a sub-subject, show parent > child
-        let subjectName = taskSubject.name;
-        if (taskSubject.parentId) {
-          const parent = subjects.find(s => s.id === taskSubject.parentId);
-          if (parent) {
-            subjectName = `${parent.name} › ${taskSubject.name}`;
-          }
-        }
-        subjectTagHtml = `<span class="task-subject-tag"><span class="tag-dot" style="background: ${taskSubject.color};"></span>${escapeHtml(subjectName)}</span>`;
-      }
-    }
-    
     let countdownHtml = '';
     if (countdown) {
       const countdownClass = countdown.overdue ? 'overdue' : (countdown.urgency === 'soon' ? 'soon' : '');
       countdownHtml = `<span class="task-countdown ${countdownClass}" data-due="${task.dueDate}">${countdown.text}</span>`;
+    }
+    
+    // Subject badge - show when viewing "all" OR when explicitly requested (suggested tasks)
+    let subjectHtml = '';
+    if (task.subject) {
+      const subj = subjects.find(s => s.id === task.subject);
+      if (subj) {
+        const shouldShow = (currentSubject === 'all') || showSubjectTag;
+        if (shouldShow) {
+          // If it's a sub-subject and showing tag, show parent > child
+          let displayName = subj.name;
+          if (showSubjectTag && subj.parentId) {
+            const parent = subjects.find(s => s.id === subj.parentId);
+            if (parent) {
+              displayName = `${parent.name} › ${subj.name}`;
+            }
+          }
+          subjectHtml = `<span class="task-subject-badge" style="--subject-color: ${subj.color};">${escapeHtml(displayName)}</span>`;
+        }
+      }
     }
     
     let subtasksHtml = '';
@@ -3578,8 +3646,8 @@
         <div class="task-main">
           <div class="task-title-row">
             <span class="task-title">${escapeHtml(task.title)}</span>
+            ${subjectHtml}
             ${priorityBadge}
-            ${subjectTagHtml}
           </div>
           <div class="task-meta">
             ${dueDateHtml}
@@ -3606,7 +3674,9 @@
           e.stopPropagation();
           const task = tasks.find(t => t.id === taskId);
           if (task) {
-            set(ref(db, 'tasks/' + taskId), { ...task, completed: !task.completed });
+            // Remove id before saving to Firebase (id is the key, not data)
+            const { id, ...cleanTask } = task;
+            set(ref(db, 'tasks/' + taskId), { ...cleanTask, completed: !task.completed });
           }
         });
       }
@@ -3645,7 +3715,9 @@
           const task = tasks.find(t => t.id === taskId);
           if (task && task.checklist) {
             task.checklist[idx].checked = cb.checked;
-            set(ref(db, 'tasks/' + taskId), task);
+            // Remove id before saving to Firebase
+            const { id, ...cleanTask } = task;
+            set(ref(db, 'tasks/' + taskId), cleanTask);
           }
         });
       });
@@ -3792,7 +3864,9 @@
       editingTask.dueDate = null;
     }
     
-    set(ref(db, 'tasks/' + editingTaskId), editingTask);
+    // Remove id before saving to Firebase (id is the key, not data)
+    const { id, ...cleanTask } = editingTask;
+    set(ref(db, 'tasks/' + editingTaskId), cleanTask);
     closeTaskEditModal();
   };
 
@@ -3887,7 +3961,7 @@
     const overdueCount = activeTasks.filter(t => {
       if (!t.dueDate) return false;
       const due = new Date(t.dueDate);
-      return due < today;
+      return due < now; // Use 'now' for accurate overdue detection
     }).length;
     const noDateCount = activeTasks.filter(t => !t.dueDate).length;
     
@@ -4171,9 +4245,8 @@
         targetDate.setHours(12, 0, 0, 0);
       }
       
-      // Pre-fill the date and focus on name
-      const dateStr = targetDate.toISOString().slice(0, 16);
-      eventDate.value = dateStr;
+      // Pre-fill the date and focus on name (use local time, not UTC)
+      eventDate.value = toLocalDatetime(targetDate.toISOString());
       eventName.focus();
       
       hideAddEventContextMenu();
@@ -4533,83 +4606,6 @@
     closeSubjectModal();
   };
   
-  // Update task rendering to show subject badge
-  const originalRenderTaskItem = renderTaskItem;
-  renderTaskItem = function(task) {
-    const priority = task.priority || 'none';
-    const countdown = calcTaskCountdown(task.dueDate);
-    
-    let dueDateHtml = '';
-    if (task.dueDate) {
-      const dueDate = new Date(task.dueDate);
-      const dateStr = dueDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
-      const urgencyClass = countdown?.overdue ? 'overdue' : (countdown?.urgency === 'soon' ? 'soon' : '');
-      dueDateHtml = `<span class="task-due ${urgencyClass}">📅 ${dateStr}</span>`;
-    }
-    
-    let countdownHtml = '';
-    if (countdown) {
-      const countdownClass = countdown.overdue ? 'overdue' : (countdown.urgency === 'soon' ? 'soon' : '');
-      countdownHtml = `<span class="task-countdown ${countdownClass}" data-due="${task.dueDate}">${countdown.text}</span>`;
-    }
-    
-    // Subject badge
-    let subjectHtml = '';
-    if (task.subject && currentSubject === 'all') {
-      const subject = subjects.find(s => s.id === task.subject);
-      if (subject) {
-        subjectHtml = `<span class="task-subject-badge" style="--subject-color: ${subject.color};">${escapeHtml(subject.name)}</span>`;
-      }
-    }
-    
-    let subtasksHtml = '';
-    if (task.checklist && task.checklist.length > 0) {
-      const checked = task.checklist.filter(c => c.checked).length;
-      const total = task.checklist.length;
-      const maxShow = 3;
-      const items = task.checklist.slice(0, maxShow);
-      
-      subtasksHtml = `
-        <div class="task-subtasks">
-          <div class="task-subtask-progress">${checked}/${total} completed</div>
-          ${items.map((item, i) => `
-            <div class="task-subtask ${item.checked ? 'checked' : ''}">
-              <input type="checkbox" ${item.checked ? 'checked' : ''} data-index="${i}" />
-              <span>${escapeHtml(item.text)}</span>
-            </div>
-          `).join('')}
-          ${task.checklist.length > maxShow ? `<div style="font-size: 12px; color: var(--muted);">+${task.checklist.length - maxShow} more</div>` : ''}
-        </div>
-      `;
-    }
-    
-    const priorityBadge = priority !== 'none' 
-      ? `<span class="task-priority-badge">${PRIORITY_LABELS[priority]}</span>` 
-      : '';
-    
-    return `
-      <div class="task-item priority-${priority} ${task.completed ? 'completed' : ''}" data-id="${task.id}">
-        <div class="task-checkbox" data-action="toggle">${task.completed ? '✓' : ''}</div>
-        <div class="task-main">
-          <div class="task-title-row">
-            <span class="task-title">${escapeHtml(task.title)}</span>
-            ${subjectHtml}
-            ${priorityBadge}
-          </div>
-          <div class="task-meta">
-            ${dueDateHtml}
-            ${countdownHtml}
-          </div>
-          ${subtasksHtml}
-        </div>
-        <div class="task-actions">
-          <button class="task-action-btn" data-action="edit" title="Edit">✏️</button>
-          <button class="task-action-btn delete" data-action="delete" title="Delete">🗑️</button>
-        </div>
-      </div>
-    `;
-  };
-  
   // Update openTaskEditModal to set subject
   const originalOpenTaskEditModal = openTaskEditModal;
   openTaskEditModal = function(taskId) {
@@ -4651,147 +4647,285 @@
     taskPriorityPicker.querySelector('[data-priority="medium"]').classList.add('selected');
   };
 
-  // ============ NATURAL LANGUAGE PARSING (Hebrew + English) ============
+  // ============ IMPROVED NATURAL LANGUAGE PARSING (Hebrew + English RTL-Safe) ============
   function parseNaturalLanguage(input) {
     let title = input;
     let dueDate = null;
     let priority = 'medium';
     let subjectId = '';
-    
-    // Priority patterns (Hebrew and English)
-    const priorityPatterns = {
-      urgent: /\b(דחוף|urgent|asap|מיידי)\b/gi,
-      high: /\b(גבוה|high|חשוב|important)\b/gi,
-      medium: /\b(בינוני|medium|רגיל)\b/gi,
-      low: /\b(נמוך|low|לא דחוף)\b/gi
-    };
-    
-    for (const [level, pattern] of Object.entries(priorityPatterns)) {
-      if (pattern.test(input)) {
-        priority = level;
-        title = title.replace(pattern, '').trim();
+
+    // Helper: Normalize text by removing ALL spaces and converting to lowercase
+    // This makes "סטטיסטיקה 2" == "סטטיסטיקה2" == "סטטיסטיקה  2"
+    const normalize = (str) => str.replace(/\s+/g, '').toLowerCase();
+
+    // ============ STEP 1: EXTRACT & REMOVE PRIORITY ============
+    const priorityPatterns = [
+      { level: 'urgent', patterns: [/\b(דחוף|מיידי|urgent|asap|!)\b/gi] },
+      { level: 'high', patterns: [/\b(גבוה|חשוב|high|important)\b/gi] },
+      { level: 'medium', patterns: [/\b(בינוני|רגיל|medium|normal)\b/gi] },
+      { level: 'low', patterns: [/\b(נמוך|לא דחוף|low)\b/gi] }
+    ];
+
+    for (const { level, patterns } of priorityPatterns) {
+      for (const pattern of patterns) {
+        if (pattern.test(title)) {
+          priority = level;
+          title = title.replace(pattern, ' ').trim();
+          break;
+        }
+      }
+      if (priority !== 'medium') break;
+    }
+
+    // ============ STEP 2: EXTRACT & REMOVE TIME ============
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    let hours = 23, minutes = 59;
+
+    const timePatterns = [
+      /\b(בשעה\s*)?(\d{1,2}):(\d{2})\b/i,
+      /\bat\s*(\d{1,2}):(\d{2})\b/i
+    ];
+
+    for (const pattern of timePatterns) {
+      const match = title.match(pattern);
+      if (match) {
+        const hourIdx = match[2] ? 2 : 1;
+        const minIdx = match[2] ? 3 : 2;
+        hours = parseInt(match[hourIdx]);
+        minutes = parseInt(match[minIdx]);
+        title = title.replace(match[0], ' ').trim();
         break;
       }
     }
-    
-    // Subject pattern: #subject or #נושא (supports multi-word subjects with underscores or spaces)
-    // Match #subject_name or #"נושא משנה" or #נושא
-    const subjectMatchQuoted = input.match(/#"([^"]+)"/);
-    const subjectMatchSimple = input.match(/#([\u0590-\u05FFa-zA-Z0-9_-]+)/);
-    
-    let subjectSearchTerm = null;
-    if (subjectMatchQuoted) {
-      subjectSearchTerm = subjectMatchQuoted[1];
-      title = title.replace(/#"[^"]+"/, '').trim();
-    } else if (subjectMatchSimple) {
-      subjectSearchTerm = subjectMatchSimple[1].replace(/_/g, ' ');
-      title = title.replace(/#[\u0590-\u05FFa-zA-Z0-9_-]+/, '').trim();
+
+    // ============ STEP 3: EXTRACT & REMOVE DATE ============
+    const dateKeywords = [
+      { patterns: [/\bהיום\b/gi, /\btoday\b/gi], days: 0 },
+      { patterns: [/\bמחר\b/gi, /\btomorrow\b/gi], days: 1 },
+      { patterns: [/\bמחרתיים\b/gi], days: 2 },
+      { patterns: [/\bבעוד יומיים\b/gi, /\bin 2 days\b/gi], days: 2 },
+      { patterns: [/\bבעוד 3 ימים\b/gi, /\bin 3 days\b/gi], days: 3 },
+      { patterns: [/\bהשבוע\b/gi, /\bבשבוע הבא\b/gi, /\bthis week\b/gi, /\bnext week\b/gi], days: 7 },
+      { patterns: [/\bבעוד שבוע\b/gi], days: 7 },
+      { patterns: [/\bבעוד שבועיים\b/gi, /\bin 2 weeks\b/gi], days: 14 },
+      { patterns: [/\bבעוד חודש\b/gi, /\bin a month\b/gi], days: 30 },
+    ];
+
+    for (const { patterns, days } of dateKeywords) {
+      for (const pattern of patterns) {
+        if (pattern.test(title)) {
+          dueDate = new Date(today);
+          dueDate.setDate(dueDate.getDate() + days);
+          dueDate.setHours(hours, minutes, 0, 0);
+          title = title.replace(pattern, ' ').trim();
+          break;
+        }
+      }
+      if (dueDate) break;
     }
-    
-    if (subjectSearchTerm) {
-      const searchLower = subjectSearchTerm.toLowerCase();
+
+    // Hebrew & English day names
+    if (!dueDate) {
+      const hebrewDays = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
+      const englishDays = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
       
-      // First try exact match
-      let foundSubject = subjects.find(s => s.name.toLowerCase() === searchLower);
-      
-      // Then try starts with
-      if (!foundSubject) {
-        foundSubject = subjects.find(s => s.name.toLowerCase().startsWith(searchLower));
-      }
-      
-      // Then try contains
-      if (!foundSubject) {
-        foundSubject = subjects.find(s => s.name.toLowerCase().includes(searchLower));
-      }
-      
-      // Try reverse contains (search term contains subject name)
-      if (!foundSubject) {
-        foundSubject = subjects.find(s => searchLower.includes(s.name.toLowerCase()));
-      }
-      
-      // Try matching by parent/child hierarchy: "parent/child" or "parent-child"
-      if (!foundSubject && (searchLower.includes('/') || searchLower.includes('-'))) {
-        const parts = searchLower.split(/[\/\-]/);
-        if (parts.length === 2) {
-          const parentName = parts[0].trim();
-          const childName = parts[1].trim();
+      for (let i = 0; i < 7; i++) {
+        const hebrewPattern = new RegExp(`(ביום\\s+|יום\\s+)?${hebrewDays[i]}`, 'gi');
+        const englishPattern = new RegExp(`(on\\s+)?${englishDays[i]}`, 'gi');
+        
+        if (hebrewPattern.test(title) || englishPattern.test(title)) {
+          const currentDay = today.getDay();
+          let daysToAdd = i - currentDay;
+          if (daysToAdd <= 0) daysToAdd += 7;
           
-          // Find parent first
-          const parent = subjects.find(s => !s.parentId && s.name.toLowerCase().includes(parentName));
-          if (parent) {
-            // Find child of this parent
-            foundSubject = subjects.find(s => 
-              s.parentId === parent.id && s.name.toLowerCase().includes(childName)
-            );
+          dueDate = new Date(today);
+          dueDate.setDate(dueDate.getDate() + daysToAdd);
+          dueDate.setHours(hours, minutes, 0, 0);
+          title = title.replace(hebrewPattern, ' ').replace(englishPattern, ' ').trim();
+          break;
+        }
+      }
+    }
+
+    // ============ STEP 4: SMART SUBJECT DETECTION ============
+    // Sort subjects by length (longest first) to prevent partial matches
+    const sortedSubjects = [...subjects].sort((a, b) => b.name.length - a.name.length);
+    let matchedSubject = null;
+    let textToRemove = '';
+
+    // METHOD 1: Explicit Hashtag with character-by-character matching
+    const hashIndex = title.indexOf('#');
+    
+    if (hashIndex !== -1) {
+      const afterHash = title.substring(hashIndex + 1);
+      const afterHashNormalized = normalize(afterHash);
+
+      for (const subject of sortedSubjects) {
+        const subjectNormalized = normalize(subject.name);
+        
+        // Check if text after # starts with subject name (space-insensitive)
+        if (afterHashNormalized.startsWith(subjectNormalized)) {
+          matchedSubject = subject;
+          
+          // Calculate exact length to remove from original string
+          // by matching characters while skipping spaces
+          let matchLength = 0;
+          let subjectCharIdx = 0;
+          const subjectNoSpaces = subject.name.replace(/\s+/g, '').toLowerCase();
+          
+          for (let i = 0; i < afterHash.length; i++) {
+            const char = afterHash[i].toLowerCase();
+            if (/\s/.test(char)) {
+              matchLength++;
+              continue;
+            }
+            if (char === subjectNoSpaces[subjectCharIdx]) {
+              matchLength++;
+              subjectCharIdx++;
+              if (subjectCharIdx >= subjectNoSpaces.length) break;
+            } else {
+              break;
+            }
+          }
+          
+          textToRemove = '#' + afterHash.substring(0, matchLength);
+          break;
+        }
+      }
+      
+      // METHOD 2: Quoted format #"נושא עם רווחים"
+      if (!matchedSubject) {
+        const quotedMatch = title.match(/#"([^"]+)"/);
+        if (quotedMatch) {
+          const searchNorm = normalize(quotedMatch[1]);
+          matchedSubject = sortedSubjects.find(s => normalize(s.name) === searchNorm);
+          if (matchedSubject) {
+            textToRemove = quotedMatch[0];
           }
         }
       }
       
-      if (foundSubject) {
-        subjectId = foundSubject.id;
+      // METHOD 3: Hierarchy format #parent/child
+      if (!matchedSubject) {
+        const hierarchyMatch = title.match(/#([^\s\/]+)\/([^\s]+)/);
+        if (hierarchyMatch) {
+          const parentSearch = normalize(hierarchyMatch[1].replace(/_/g, ' '));
+          const childSearch = normalize(hierarchyMatch[2].replace(/_/g, ' '));
+          
+          const parent = sortedSubjects.find(s => 
+            !s.parentId && normalize(s.name).includes(parentSearch)
+          );
+          
+          if (parent) {
+            matchedSubject = subjects.find(s => 
+              s.parentId === parent.id && normalize(s.name).includes(childSearch)
+            );
+            if (matchedSubject) {
+              textToRemove = hierarchyMatch[0];
+            }
+          }
+        }
       }
-    }
-    
-    // Date patterns (Hebrew)
-    const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    
-    // Time pattern: HH:MM
-    const timeMatch = input.match(/(\d{1,2}):(\d{2})/);
-    let hours = 23, minutes = 59;
-    if (timeMatch) {
-      hours = parseInt(timeMatch[1]);
-      minutes = parseInt(timeMatch[2]);
-      title = title.replace(/\d{1,2}:\d{2}/, '').trim();
-    }
-    
-    // Date patterns
-    const datePatterns = [
-      { pattern: /\b(היום|today)\b/gi, days: 0 },
-      { pattern: /\b(מחר|tomorrow)\b/gi, days: 1 },
-      { pattern: /\b(מחרתיים)\b/gi, days: 2 },
-      { pattern: /\b(בעוד יומיים|in 2 days)\b/gi, days: 2 },
-      { pattern: /\b(בעוד שלושה ימים|in 3 days)\b/gi, days: 3 },
-      { pattern: /\b(השבוע|this week)\b/gi, days: 7 },
-      { pattern: /\b(בשבוע הבא|next week)\b/gi, days: 7 },
-    ];
-    
-    for (const { pattern, days } of datePatterns) {
-      if (pattern.test(input)) {
-        dueDate = new Date(today);
-        dueDate.setDate(dueDate.getDate() + days);
-        dueDate.setHours(hours, minutes, 0, 0);
-        title = title.replace(pattern, '').trim();
-        break;
-      }
-    }
-    
-    // Day names (Hebrew)
-    const hebrewDays = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
-    const englishDays = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
-    
-    for (let i = 0; i < 7; i++) {
-      const hebrewPattern = new RegExp(`\\b(ביום\\s+)?${hebrewDays[i]}\\b`, 'gi');
-      const englishPattern = new RegExp(`\\b(on\\s+)?${englishDays[i]}\\b`, 'gi');
       
-      if (hebrewPattern.test(input) || englishPattern.test(input)) {
-        const targetDay = i;
-        const currentDay = today.getDay();
-        let daysToAdd = targetDay - currentDay;
-        if (daysToAdd <= 0) daysToAdd += 7;
+      // METHOD 4: Fallback - text after # until keyword
+      if (!matchedSubject) {
+        const stopKeywords = ['דחוף', 'גבוה', 'בינוני', 'נמוך', 'היום', 'מחר', 'urgent', 'high', 'low', 'today', 'tomorrow'];
+        let afterHashClean = afterHash;
         
-        dueDate = new Date(today);
-        dueDate.setDate(dueDate.getDate() + daysToAdd);
-        dueDate.setHours(hours, minutes, 0, 0);
-        title = title.replace(hebrewPattern, '').replace(englishPattern, '').trim();
-        break;
+        for (const keyword of stopKeywords) {
+          const keywordIndex = afterHashClean.toLowerCase().indexOf(keyword.toLowerCase());
+          if (keywordIndex > 0) {
+            afterHashClean = afterHashClean.substring(0, keywordIndex);
+          }
+        }
+        
+        afterHashClean = afterHashClean.trim();
+        if (afterHashClean) {
+          const searchNorm = normalize(afterHashClean);
+          matchedSubject = sortedSubjects.find(s => normalize(s.name) === searchNorm);
+          if (!matchedSubject) {
+            matchedSubject = sortedSubjects.find(s => normalize(s.name).includes(searchNorm) || searchNorm.includes(normalize(s.name)));
+          }
+          if (matchedSubject) {
+            textToRemove = '#' + afterHashClean;
+          }
+        }
       }
     }
-    
-    // Clean up extra spaces
+
+    // METHOD 5: Auto-detect without hashtag
+    if (!matchedSubject) {
+      for (const subject of sortedSubjects) {
+        // Create flexible regex that allows spaces between letters
+        const escapedName = subject.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const flexiblePattern = escapedName.replace(/\s+/g, '\\s*');
+        const regex = new RegExp(flexiblePattern, 'i');
+        
+        const match = title.match(regex);
+        if (match) {
+          matchedSubject = subject;
+          textToRemove = match[0];
+          break;
+        }
+      }
+    }
+
+    // Apply subject match
+    if (matchedSubject) {
+      subjectId = matchedSubject.id;
+      if (textToRemove) {
+        title = title.replace(textToRemove, ' ').trim();
+      }
+    }
+
+    // ============ STEP 5: FINAL CLEANUP ============
+    title = title.replace(/#\s*/g, ' ');
     title = title.replace(/\s+/g, ' ').trim();
-    
+    title = title.replace(/^[,.:;\-]+\s*/, '').replace(/\s*[,.:;\-]+$/, '').trim();
+
     return { title, dueDate, priority, subjectId };
+  }
+  
+  // Legacy helper - kept for compatibility
+  function normalizeForComparison(text) {
+    return text.toLowerCase().replace(/\s+/g, '').trim();
+  }
+  
+  // Helper function to find best matching subject (used by some methods)
+  function findBestSubjectMatch(searchTerm, sortedSubjects) {
+    const normalize = (str) => str.replace(/\s+/g, '').toLowerCase();
+    const searchNorm = normalize(searchTerm);
+    
+    // 1. Exact match (space-insensitive)
+    let found = sortedSubjects.find(s => normalize(s.name) === searchNorm);
+    if (found) return found;
+    
+    // 2. Starts with
+    found = sortedSubjects.find(s => normalize(s.name).startsWith(searchNorm));
+    if (found) return found;
+    
+    // 3. Search term starts with subject name
+    found = sortedSubjects.find(s => searchNorm.startsWith(normalize(s.name)));
+    if (found) return found;
+    
+    // 4. Contains
+    found = sortedSubjects.find(s => normalize(s.name).includes(searchNorm));
+    if (found) return found;
+    
+    // 6. Reverse contains
+    found = sortedSubjects.find(s => searchLower.includes(s.name.toLowerCase()));
+    if (found) return found;
+    
+    // 7. Fuzzy match - check if all words from search appear in subject name
+    const searchWords = searchLower.split(/\s+/);
+    found = sortedSubjects.find(s => {
+      const subjectLower = s.name.toLowerCase();
+      return searchWords.every(word => subjectLower.includes(word));
+    });
+    if (found) return found;
+    
+    return null;
   }
   
   // Smart quick add with natural language
