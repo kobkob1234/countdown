@@ -528,6 +528,79 @@
       margin-top: 3px;
     }
 
+    /* Inline editing helpers */
+    .inline-edit-input {
+      font: inherit;
+      color: var(--text);
+      background: var(--input-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 6px 8px;
+      min-width: 160px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+    .inline-edit-input:focus {
+      outline: 2px solid var(--accent);
+      border-color: var(--accent);
+    }
+    .inline-edit-input.small { min-width: 120px; }
+
+    .priority-popover {
+      position: fixed;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-hover);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      z-index: 9999;
+      min-width: 180px;
+    }
+    .priority-popover button {
+      padding: 10px 12px;
+      background: transparent;
+      border: none;
+      text-align: right;
+      font: inherit;
+      cursor: pointer;
+    }
+    .priority-popover button:hover { background: var(--btn-secondary-bg); }
+
+    .conflict-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--danger);
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .conflict-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--danger);
+      display: inline-block;
+      box-shadow: 0 0 0 4px rgba(239,68,68,0.18);
+    }
+
+    @media (max-width: 768px) {
+      .event-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+      }
+      .event-actions {
+        width: 100%;
+        justify-content: flex-end;
+      }
+      .timer {
+        width: 100%;
+        justify-content: space-between;
+      }
+      .event-info { width: 100%; }
+    }
+
     .star-btn {
       width: 32px;
       height: 32px;
@@ -3537,9 +3610,12 @@
       return aTime - bTime;
     });
 
+    const conflicts = findConflictingEvents(sorted);
+
     sorted.forEach((evt) => {
       const color = getEventColor(evt.id);
       const t = calcTime(evt.date);
+      const hasConflict = conflicts.has(evt.id);
 
       const row = document.createElement("div");
       row.className = `event-row ${evt.highlighted ? 'highlighted' : ''}`;
@@ -3563,10 +3639,18 @@
 
       const date = document.createElement("div");
       date.className = "event-date";
+      date.dataset.iso = evt.date;
       date.textContent = formatDate(evt.date);
 
       info.appendChild(name);
       info.appendChild(date);
+
+      if (hasConflict) {
+        const conflict = document.createElement("div");
+        conflict.className = "conflict-badge";
+        conflict.innerHTML = `<span class="conflict-dot"></span><span>חפיפה עם אירוע קרוב</span>`;
+        info.appendChild(conflict);
+      }
 
       if (evt.notes) {
         const notes = document.createElement("div");
@@ -3642,6 +3726,9 @@
       row.appendChild(badge);
       row.appendChild(info);
       row.appendChild(actions);
+
+      enableInlineEventTitle(name, evt.id);
+      enableInlineEventDate(date, evt.id);
       
       // Right-click context menu for events
       row.addEventListener('contextmenu', (e) => {
@@ -3663,6 +3750,97 @@
     });
 
     tick();
+  }
+
+  function findConflictingEvents(list, thresholdMinutes = 30) {
+    if (!Array.isArray(list) || list.length < 2) return new Set();
+    const thresholdMs = thresholdMinutes * 60000;
+    const sorted = [...list].sort((a, b) => new Date(a.date) - new Date(b.date));
+    const conflicts = new Set();
+
+    for (let i = 0; i < sorted.length - 1; i++) {
+      const current = sorted[i];
+      const next = sorted[i + 1];
+      const diff = Math.abs(new Date(next.date) - new Date(current.date));
+      if (diff < thresholdMs) {
+        conflicts.add(current.id);
+        conflicts.add(next.id);
+      }
+    }
+    return conflicts;
+  }
+
+  function inlineEdit(el, { type = 'text', value = '', className = 'inline-edit-input', step, onSave }) {
+    el.style.cursor = 'text';
+    el.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (el.dataset.editing === '1') return;
+      el.dataset.editing = '1';
+
+      const input = document.createElement('input');
+      input.type = type;
+      input.value = value;
+      input.className = className;
+      if (step) input.step = step;
+
+      const original = el.textContent;
+      el.replaceWith(input);
+      input.focus();
+      input.select();
+
+      let cancelled = false;
+      const finish = (commit) => {
+        if (input.parentElement) input.replaceWith(el);
+        delete el.dataset.editing;
+        if (commit && typeof onSave === 'function') onSave(input.value, original, el);
+      };
+
+      input.addEventListener('keydown', (ev) => {
+        if (ev.key === 'Enter') finish(true);
+        else if (ev.key === 'Escape') {
+          cancelled = true;
+          finish(false);
+        }
+      });
+      input.addEventListener('blur', () => finish(!cancelled));
+    });
+  }
+
+  function enableInlineEventTitle(el, eventId) {
+    inlineEdit(el, {
+      value: el.textContent.trim(),
+      onSave: (val, original) => {
+        const newName = val.trim();
+        const evt = events.find(e => e.id === eventId);
+        if (!evt || !newName) {
+          el.textContent = original;
+          return;
+        }
+        el.textContent = newName;
+        updateInCloud(eventId, { ...evt, name: newName });
+      }
+    });
+  }
+
+  function enableInlineEventDate(el, eventId) {
+    inlineEdit(el, {
+      type: 'datetime-local',
+      value: toLocalDatetime(el.dataset.iso || events.find(e => e.id === eventId)?.date || new Date().toISOString()),
+      className: 'inline-edit-input small',
+      step: 60,
+      onSave: (val, original) => {
+        const parsed = parseLocal(val);
+        const evt = events.find(e => e.id === eventId);
+        if (!evt || !parsed || isNaN(parsed.getTime())) {
+          el.textContent = original;
+          return;
+        }
+        const iso = parsed.toISOString();
+        el.textContent = formatDate(iso);
+        el.dataset.iso = iso;
+        updateInCloud(eventId, { ...evt, date: iso });
+      }
+    });
   }
 
   function tick() {
@@ -4122,12 +4300,12 @@
     const priority = task.priority || 'none';
     const countdown = calcTaskCountdown(task.dueDate);
     
-    let dueDateHtml = '';
+    let dueDateHtml = `<span class="task-due add" data-due-iso="">+ תאריך</span>`;
     if (task.dueDate) {
       const dueDate = new Date(task.dueDate);
       const dateStr = dueDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
       const urgencyClass = countdown?.overdue ? 'overdue' : (countdown?.urgency === 'soon' ? 'soon' : '');
-      dueDateHtml = `<span class="task-due ${urgencyClass}">📅 ${dateStr}</span>`;
+      dueDateHtml = `<span class="task-due ${urgencyClass}" data-due-iso="${task.dueDate}">📅 ${dateStr}</span>`;
     }
     
     let countdownHtml = '';
@@ -4177,9 +4355,7 @@
       `;
     }
     
-    const priorityBadge = priority !== 'none' 
-      ? `<span class="task-priority-badge">${PRIORITY_LABELS[priority]}</span>` 
-      : '';
+    const priorityBadge = `<span class="task-priority-badge ${priority === 'none' ? 'muted' : ''}" data-priority="${priority}">${priority === 'none' ? 'קבע עדיפות' : PRIORITY_LABELS[priority]}</span>`;
     
     return `
       <div class="task-item priority-${priority} ${task.completed ? 'completed' : ''}" data-id="${task.id}">
@@ -4203,6 +4379,132 @@
       </div>
     `;
   }
+
+  function formatTaskDueDisplay(dueIso) {
+    if (!dueIso) return '+ תאריך';
+    const dueDate = new Date(dueIso);
+    return dueDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+  }
+
+  function startInlineTaskTitleEdit(titleEl, task) {
+    if (titleEl.dataset.editing === '1') return;
+    titleEl.dataset.editing = '1';
+
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.value = task.title || '';
+    input.className = 'inline-edit-input';
+    titleEl.replaceWith(input);
+    input.focus();
+    input.select();
+
+    const finish = (commit) => {
+      input.replaceWith(titleEl);
+      delete titleEl.dataset.editing;
+      if (commit) {
+        const newTitle = input.value.trim() || task.title;
+        titleEl.textContent = newTitle;
+        const { id, ...clean } = task;
+        set(ref(db, 'tasks/' + task.id), { ...clean, title: newTitle });
+      }
+    };
+
+    input.addEventListener('keydown', (ev) => {
+      if (ev.key === 'Enter') finish(true);
+      else if (ev.key === 'Escape') finish(false);
+    });
+    input.addEventListener('blur', () => finish(true));
+  }
+
+  function startInlineTaskDueEdit(dueEl, task) {
+    if (dueEl.dataset.editing === '1') return;
+    dueEl.dataset.editing = '1';
+
+    const input = document.createElement('input');
+    input.type = 'datetime-local';
+    input.value = task.dueDate ? toLocalDatetime(task.dueDate) : '';
+    input.className = 'inline-edit-input small';
+    dueEl.replaceWith(input);
+    input.focus();
+
+    const finish = (commit) => {
+      input.replaceWith(dueEl);
+      delete dueEl.dataset.editing;
+      if (commit) {
+        let newDue = null;
+        if (input.value) {
+          const parsed = parseLocal(input.value);
+          if (parsed && !isNaN(parsed.getTime())) {
+            newDue = parsed.toISOString();
+          } else {
+            // invalid -> keep original display
+            dueEl.textContent = dueEl.textContent || '+ תאריך';
+            return;
+          }
+        }
+        const { id, ...clean } = task;
+        set(ref(db, 'tasks/' + task.id), { ...clean, dueDate: newDue });
+        dueEl.dataset.dueIso = newDue || '';
+        dueEl.textContent = newDue ? `📅 ${formatTaskDueDisplay(newDue)}` : '+ תאריך';
+        dueEl.classList.toggle('add', !newDue);
+      }
+    };
+
+    input.addEventListener('keydown', (ev) => {
+      if (ev.key === 'Enter') finish(true);
+      else if (ev.key === 'Escape') finish(false);
+    });
+    input.addEventListener('blur', () => finish(true));
+  }
+
+  let activePriorityPopover = null;
+
+  function closePriorityPopover() {
+    if (activePriorityPopover) {
+      activePriorityPopover.remove();
+      activePriorityPopover = null;
+    }
+  }
+
+  function startInlineTaskPriorityEdit(badgeEl, task) {
+    closePriorityPopover();
+
+    const pop = document.createElement('div');
+    pop.className = 'priority-popover';
+
+    ['urgent', 'high', 'medium', 'low', 'none'].forEach(key => {
+      const btn = document.createElement('button');
+      btn.textContent = key === 'none' ? 'ללא עדיפות' : (PRIORITY_LABELS[key] || key);
+      btn.dataset.priority = key;
+      btn.onclick = (ev) => {
+        ev.stopPropagation();
+        const { id, ...clean } = task;
+        set(ref(db, 'tasks/' + task.id), { ...clean, priority: key });
+        badgeEl.textContent = key === 'none' ? 'קבע עדיפות' : (PRIORITY_LABELS[key] || key);
+        badgeEl.dataset.priority = key;
+        badgeEl.classList.toggle('muted', key === 'none');
+        closePriorityPopover();
+      };
+      pop.appendChild(btn);
+    });
+
+    const rect = badgeEl.getBoundingClientRect();
+    pop.style.top = `${rect.bottom + 8}px`;
+    pop.style.left = `${Math.max(8, rect.left - 60)}px`;
+
+    document.body.appendChild(pop);
+    activePriorityPopover = pop;
+
+    setTimeout(() => {
+      const outsideHandler = (ev) => {
+        if (!pop.contains(ev.target)) {
+          closePriorityPopover();
+          document.removeEventListener('click', outsideHandler);
+        }
+      };
+      document.addEventListener('click', outsideHandler);
+    }, 0);
+  }
   
   // ============ EVENT DELEGATION FOR TASK LIST ============
   // Single click handler for all task interactions - much more efficient than per-item listeners
@@ -4219,6 +4521,27 @@
         const taskId = taskItem.dataset.id;
         const task = tasks.find(t => t.id === taskId);
         if (!task) return;
+
+        const titleEl = e.target.closest('.task-title');
+        if (titleEl) {
+          e.stopPropagation();
+          startInlineTaskTitleEdit(titleEl, task);
+          return;
+        }
+
+        const dueEl = e.target.closest('.task-due');
+        if (dueEl) {
+          e.stopPropagation();
+          startInlineTaskDueEdit(dueEl, task);
+          return;
+        }
+
+        const priorityEl = e.target.closest('.task-priority-badge');
+        if (priorityEl) {
+          e.stopPropagation();
+          startInlineTaskPriorityEdit(priorityEl, task);
+          return;
+        }
         
         // Check what was clicked
         const action = e.target.closest('[data-action]')?.dataset.action;
