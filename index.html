@@ -36,27 +36,63 @@
       --day-hover: #273548;
     }
 
-    .theme-toggle {
+    /* Priority Colors */
+    .priority-urgent { --priority-color: #ef4444; --priority-bg: #fef2f2; }
+    .priority-high { --priority-color: #f97316; --priority-bg: #fff7ed; }
+    .priority-medium { --priority-color: #eab308; --priority-bg: #fefce8; }
+    .priority-low { --priority-color: #22c55e; --priority-bg: #f0fdf4; }
+    .priority-none { --priority-color: #6b7280; --priority-bg: var(--day-other); }
+    
+    body.dark .priority-urgent { --priority-bg: rgba(239, 68, 68, 0.15); }
+    body.dark .priority-high { --priority-bg: rgba(249, 115, 22, 0.15); }
+    body.dark .priority-medium { --priority-bg: rgba(234, 179, 8, 0.15); }
+    body.dark .priority-low { --priority-bg: rgba(34, 197, 94, 0.15); }
+    body.dark .priority-none { --priority-bg: var(--day-other); }
+
+    /* Fixed Header Bar */
+    .fixed-header-bar {
       position: fixed;
-      top: 20px;
-      left: 140px;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 60px;
+      background: var(--card);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      padding: 0 20px;
+      gap: 12px;
       z-index: 100;
-      width: 40px;
-      height: 40px;
+      box-shadow: var(--shadow);
+    }
+    .header-btn {
+      padding: 10px 16px;
       border: 1px solid var(--border);
       border-radius: 8px;
       background: var(--card);
       color: var(--text);
-      font-size: 18px;
+      font-size: 14px;
+      font-weight: 500;
       cursor: pointer;
-      box-shadow: var(--shadow);
       transition: all 0.2s;
       display: flex;
       align-items: center;
-      justify-content: center;
+      gap: 6px;
+      white-space: nowrap;
     }
-    .theme-toggle:hover {
+    .header-btn:hover {
       background: var(--day-hover);
+      border-color: var(--accent);
+    }
+    .header-btn.icon-only {
+      width: 40px;
+      height: 40px;
+      padding: 0;
+      justify-content: center;
+      font-size: 18px;
+    }
+    .header-spacer {
+      flex: 1;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -109,24 +145,9 @@
       margin: 0 auto;
     }
 
-    .toggle-sidebar {
-      position: fixed;
-      top: 20px;
-      left: 20px;
-      z-index: 100;
-      padding: 10px 16px;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      background: var(--card);
-      color: var(--text);
-      font-size: 14px;
-      font-weight: 500;
-      cursor: pointer;
-      box-shadow: var(--shadow);
-      transition: all 0.2s;
-    }
-    .toggle-sidebar:hover {
-      background: #f3f4f6;
+    /* Body offset for fixed header */
+    body {
+      padding-top: 60px;
     }
 
     .header {
@@ -725,6 +746,1307 @@
       text-decoration: underline;
     }
 
+    /* Task Manager Fullscreen Modal */
+    .task-manager-overlay {
+      position: fixed;
+      inset: 0;
+      background: var(--bg);
+      z-index: 300;
+      display: none;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .task-manager-overlay.open {
+      display: flex;
+    }
+    
+    .task-manager-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 24px;
+      background: var(--card);
+      border-bottom: 1px solid var(--border);
+      box-shadow: var(--shadow);
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    
+    .task-manager-title {
+      font-size: 24px;
+      font-weight: 700;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .task-manager-close {
+      width: 40px;
+      height: 40px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--card);
+      color: var(--text);
+      font-size: 24px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+    }
+    .task-manager-close:hover {
+      background: #fef2f2;
+      color: var(--danger);
+    }
+    
+    .task-search-bar {
+      flex: 1;
+      max-width: 500px;
+      position: relative;
+    }
+    .task-search-bar input {
+      width: 100%;
+      padding: 12px 16px 12px 44px;
+      border: 2px solid var(--border);
+      border-radius: 10px;
+      font-size: 15px;
+      background: var(--input-bg);
+      color: var(--text);
+      outline: none;
+      transition: all 0.2s;
+    }
+    .task-search-bar input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(102,126,234,0.15);
+    }
+    .task-search-bar::before {
+      content: '🔍';
+      position: absolute;
+      left: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 16px;
+    }
+    
+    .task-manager-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 24px;
+    }
+    
+    /* Quick Add Task */
+    .quick-add-task {
+      max-width: 600px;
+      margin: 0 auto 32px auto;
+      background: var(--card);
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      box-shadow: var(--shadow);
+      transition: all 0.2s;
+    }
+    .quick-add-task:focus-within {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(102,126,234,0.15);
+    }
+    .quick-add-task input[type="text"] {
+      width: 100%;
+      border: none;
+      font-size: 16px;
+      padding: 8px 0;
+      background: transparent;
+      color: var(--text);
+      outline: none;
+    }
+    .quick-add-task input[type="text"]::placeholder {
+      color: var(--muted);
+    }
+    .quick-add-row {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .quick-add-row .btn {
+      padding: 10px 18px;
+      font-size: 14px;
+    }
+    
+    /* Color Picker */
+    .color-picker {
+      display: flex;
+      gap: 6px;
+    }
+    .color-option {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      border: 3px solid transparent;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .color-option:hover {
+      transform: scale(1.15);
+    }
+    .color-option.selected {
+      border-color: var(--text);
+      box-shadow: 0 0 0 2px var(--card);
+    }
+    
+    /* Label/Tag Input */
+    .label-input-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--day-other);
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 13px;
+    }
+    .label-input-wrapper input {
+      border: none;
+      background: transparent;
+      font-size: 13px;
+      width: 80px;
+      color: var(--text);
+      outline: none;
+    }
+    
+    /* Task List */
+    .task-sections {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    .task-section-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 16px;
+      padding-left: 8px;
+    }
+    .task-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 32px;
+    }
+    
+    /* Task Item (List style) */
+    .task-item {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px 20px;
+      box-shadow: var(--shadow);
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      border-left: 4px solid var(--priority-color, var(--border));
+    }
+    .task-item:hover {
+      box-shadow: var(--shadow-hover);
+      background: var(--priority-bg, var(--card));
+    }
+    .task-item.completed {
+      opacity: 0.6;
+      background: var(--day-other);
+    }
+    
+    .task-checkbox {
+      width: 24px;
+      height: 24px;
+      border: 2px solid var(--priority-color, var(--border));
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: all 0.2s;
+      background: transparent;
+      color: transparent;
+      font-size: 14px;
+    }
+    .task-checkbox:hover {
+      background: var(--priority-bg, var(--day-hover));
+    }
+    .task-item.completed .task-checkbox {
+      background: var(--priority-color, var(--success));
+      border-color: var(--priority-color, var(--success));
+      color: white;
+    }
+    
+    .task-main {
+      flex: 1;
+      min-width: 0;
+      cursor: pointer;
+    }
+    .task-title-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 4px;
+    }
+    .task-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text);
+      word-break: break-word;
+    }
+    .task-item.completed .task-title {
+      text-decoration: line-through;
+      color: var(--muted);
+    }
+    .task-priority-badge {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      background: var(--priority-color);
+      color: white;
+      flex-shrink: 0;
+    }
+    
+    .task-meta {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .task-due {
+      font-size: 13px;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .task-due.overdue {
+      color: var(--danger);
+      font-weight: 600;
+    }
+    .task-due.soon {
+      color: #f97316;
+      font-weight: 600;
+    }
+    .task-countdown {
+      font-size: 12px;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 16px;
+      background: var(--day-other);
+      color: var(--text);
+      font-variant-numeric: tabular-nums;
+    }
+    .task-countdown.overdue {
+      background: #fef2f2;
+      color: var(--danger);
+    }
+    .task-countdown.soon {
+      background: #fff7ed;
+      color: #f97316;
+    }
+    
+    .task-subtasks {
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px dashed var(--border);
+    }
+    .task-subtask {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 4px 0;
+      font-size: 14px;
+      color: var(--text);
+    }
+    .task-subtask input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      accent-color: var(--accent);
+      cursor: pointer;
+    }
+    .task-subtask.checked span {
+      text-decoration: line-through;
+      color: var(--muted);
+    }
+    .task-subtask-progress {
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+    
+    .task-actions {
+      display: flex;
+      gap: 4px;
+      flex-shrink: 0;
+    }
+    .task-action-btn {
+      width: 32px;
+      height: 32px;
+      border: none;
+      background: transparent;
+      color: var(--muted);
+      font-size: 16px;
+      cursor: pointer;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s;
+    }
+    .task-action-btn:hover {
+      background: var(--day-hover);
+      color: var(--text);
+    }
+    .task-action-btn.delete:hover {
+      background: #fef2f2;
+      color: var(--danger);
+    }
+    
+    /* Task Edit Modal */
+    .task-edit-modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 400;
+      padding: 20px;
+    }
+    .task-edit-modal.open {
+      display: flex;
+    }
+    .task-edit-card {
+      background: var(--card);
+      border-radius: 16px;
+      padding: 24px;
+      max-width: 600px;
+      width: 100%;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    }
+    .task-edit-card input[type="text"],
+    .task-edit-card textarea {
+      width: 100%;
+      border: none;
+      background: transparent;
+      color: var(--text);
+      outline: none;
+      resize: none;
+    }
+    .task-edit-card input[type="text"] {
+      font-size: 20px;
+      font-weight: 600;
+      padding: 8px 0;
+    }
+    .task-edit-card textarea {
+      font-size: 15px;
+      line-height: 1.6;
+      min-height: 150px;
+      margin-top: 16px;
+    }
+    
+    .task-edit-section {
+      margin-top: 20px;
+      padding-top: 16px;
+      border-top: 1px solid var(--border);
+    }
+    .task-edit-section-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--muted);
+      margin-bottom: 12px;
+    }
+    
+    .checklist-add {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 12px;
+    }
+    .checklist-add input {
+      flex: 1;
+      padding: 10px 14px;
+      border: 2px solid var(--border);
+      border-radius: 8px;
+      font-size: 14px;
+      background: var(--input-bg);
+      color: var(--text);
+      outline: none;
+    }
+    .checklist-add input:focus {
+      border-color: var(--accent);
+    }
+    
+    .task-edit-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 24px;
+      padding-top: 16px;
+      border-top: 1px solid var(--border);
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    
+    /* Empty Tasks State */
+    .tasks-empty {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--muted);
+    }
+    .tasks-empty-icon {
+      font-size: 64px;
+      margin-bottom: 16px;
+      opacity: 0.5;
+    }
+    .tasks-empty h3 {
+      font-size: 20px;
+      color: var(--text);
+      margin-bottom: 8px;
+    }
+    .tasks-empty p {
+      font-size: 14px;
+    }
+    
+    /* Suggested Tasks Banner */
+    .suggested-tasks-banner {
+      background: linear-gradient(135deg, rgba(102,126,234,0.1), rgba(118,75,162,0.1));
+      border: 1px solid var(--accent);
+      border-radius: 10px;
+      padding: 12px 16px;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 13px;
+      color: var(--text);
+    }
+    .suggested-tasks-banner .suggested-icon {
+      font-size: 18px;
+    }
+    
+    /* Task Subject Tag (when showing suggested) */
+    .task-subject-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: rgba(102,126,234,0.15);
+      color: var(--accent);
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-size: 11px;
+      margin-left: 8px;
+    }
+    .task-subject-tag .tag-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+    }
+    
+    /* Filter Pills */
+    .task-filters {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .filter-pill {
+      padding: 8px 16px;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      background: var(--card);
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .filter-pill:hover {
+      background: var(--day-hover);
+    }
+    .filter-pill.active {
+      background: var(--accent);
+      color: white;
+      border-color: var(--accent);
+    }
+    
+    /* Priority Selector */
+    .priority-selector {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .priority-option {
+      padding: 8px 16px;
+      border: 2px solid transparent;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .priority-option:hover {
+      transform: scale(1.05);
+    }
+    .priority-option.selected {
+      border-color: var(--text);
+    }
+    .priority-option[data-priority="urgent"] { background: #fef2f2; color: #ef4444; }
+    .priority-option[data-priority="high"] { background: #fff7ed; color: #f97316; }
+    .priority-option[data-priority="medium"] { background: #fefce8; color: #eab308; }
+    .priority-option[data-priority="low"] { background: #f0fdf4; color: #22c55e; }
+    .priority-option[data-priority="none"] { background: var(--day-other); color: var(--muted); }
+    
+    /* Task Checklist in Edit Modal */
+    .task-checklist {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .task-checklist-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 14px;
+      padding: 8px 0;
+    }
+    .task-checklist-item input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      accent-color: var(--accent);
+      cursor: pointer;
+    }
+    .task-checklist-item.checked span {
+      text-decoration: line-through;
+      color: var(--muted);
+    }
+    
+    /* Subject Tabs */
+    .subject-tabs-container {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 24px;
+      border-bottom: 1px solid var(--border);
+      overflow-x: auto;
+      background: var(--card);
+      flex-wrap: wrap;
+    }
+    .subject-tabs {
+      display: flex;
+      gap: 8px;
+      flex: 1;
+      overflow-x: auto;
+      padding: 4px 0;
+      flex-wrap: wrap;
+    }
+    .subject-tabs::-webkit-scrollbar {
+      height: 4px;
+    }
+    .subject-tabs::-webkit-scrollbar-thumb {
+      background: var(--border);
+      border-radius: 4px;
+    }
+    .subject-tab {
+      padding: 8px 16px;
+      border: 2px solid var(--border);
+      border-radius: 20px;
+      background: var(--card);
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      position: relative;
+    }
+    .subject-tab:hover {
+      background: var(--day-hover);
+      border-color: var(--accent);
+    }
+    .subject-tab.active {
+      background: var(--accent);
+      color: white;
+      border-color: var(--accent);
+    }
+    .subject-tab.smart-view {
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: white;
+      border: none;
+    }
+    .subject-tab.smart-view:not(.active) {
+      background: var(--day-other);
+      color: var(--muted);
+    }
+    .subject-tab .tab-count {
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: 10px;
+      background: rgba(255,255,255,0.25);
+      min-width: 18px;
+      text-align: center;
+    }
+    .subject-tab:not(.active) .tab-count {
+      background: var(--day-other);
+      color: var(--muted);
+    }
+    .subject-tab .tab-color,
+    .subject-tab-color {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    
+    /* Smart Views Section */
+    .smart-views-section {
+      display: flex;
+      gap: 6px;
+      padding-right: 12px;
+      border-right: 1px solid var(--border);
+      margin-right: 4px;
+    }
+    
+    /* Subject with sub-subjects */
+    .subject-tab.has-children .subject-tab-inner {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .subject-tab .expand-arrow {
+      font-size: 8px;
+      transition: transform 0.2s;
+      opacity: 0.7;
+    }
+    .subject-tab.expanded .expand-arrow {
+      transform: rotate(180deg);
+    }
+    
+    /* Sub-subjects list (inline chips) */
+    .sub-subjects-inline {
+      display: flex;
+      gap: 4px;
+      flex-wrap: wrap;
+      margin-left: 4px;
+      padding-left: 8px;
+      border-left: 2px solid var(--border);
+    }
+    .sub-subject-chip {
+      padding: 4px 10px;
+      border-radius: 12px;
+      background: var(--day-other);
+      color: var(--text);
+      font-size: 12px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.15s;
+    }
+    .sub-subject-chip:hover {
+      background: var(--day-hover);
+    }
+    .sub-subject-chip.active {
+      background: var(--accent);
+      color: white;
+    }
+    .sub-subject-chip .chip-color {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+    
+    /* Task Manager Layout with Sidebar */
+    .task-manager-layout {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+    
+    .task-manager-sidebar {
+      width: 260px;
+      min-width: 200px;
+      background: var(--card);
+      border-left: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    
+    .task-manager-sidebar-header {
+      padding: 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    
+    .task-manager-sidebar-header h3 {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text);
+      margin: 0;
+    }
+    
+    .task-manager-sidebar-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px;
+    }
+    
+    /* Collapsible Subject List */
+    .subject-list-item {
+      margin-bottom: 4px;
+    }
+    
+    .subject-list-header {
+      display: flex;
+      align-items: center;
+      padding: 10px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.15s;
+      gap: 8px;
+    }
+    
+    .subject-list-header:hover {
+      background: var(--day-hover);
+    }
+    
+    .subject-list-header:hover .subject-actions {
+      opacity: 1;
+    }
+    
+    /* Subject Action Buttons */
+    .subject-actions {
+      display: flex;
+      gap: 2px;
+      opacity: 0;
+      transition: opacity 0.15s;
+      margin-right: auto;
+    }
+    
+    .subject-action-btn {
+      width: 24px;
+      height: 24px;
+      border: none;
+      background: transparent;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s;
+      color: inherit;
+      opacity: 0.6;
+    }
+    
+    .subject-action-btn:hover {
+      background: rgba(0,0,0,0.1);
+      opacity: 1;
+    }
+    
+    .subject-list-header.active .subject-action-btn:hover {
+      background: rgba(255,255,255,0.2);
+    }
+    
+    .subject-action-btn.delete:hover {
+      color: var(--danger);
+    }
+    
+    .subject-child-item:hover .subject-actions {
+      opacity: 1;
+    }
+    
+    .subject-list-header.active {
+      background: var(--accent);
+      color: white;
+    }
+    
+    .subject-list-header .subject-color-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    
+    .subject-list-header .subject-name {
+      flex: 1;
+      font-size: 13px;
+      font-weight: 500;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    
+    .subject-list-header .subject-count {
+      font-size: 11px;
+      padding: 2px 6px;
+      border-radius: 8px;
+      background: rgba(0,0,0,0.1);
+      color: inherit;
+    }
+    
+    .subject-list-header.active .subject-count {
+      background: rgba(255,255,255,0.2);
+    }
+    
+    .subject-list-header .collapse-arrow {
+      font-size: 10px;
+      transition: transform 0.2s;
+      opacity: 0.6;
+    }
+    
+    .subject-list-item.expanded .collapse-arrow {
+      transform: rotate(180deg);
+    }
+    
+    .subject-list-children {
+      display: none;
+      padding-right: 20px;
+      margin-top: 4px;
+    }
+    
+    .subject-list-item.expanded .subject-list-children {
+      display: block;
+    }
+    
+    .subject-child-item {
+      display: flex;
+      align-items: center;
+      padding: 8px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.15s;
+      gap: 8px;
+      margin-bottom: 2px;
+    }
+    
+    .subject-child-item:hover {
+      background: var(--day-hover);
+    }
+    
+    .subject-child-item.active {
+      background: var(--accent);
+      color: white;
+    }
+    
+    .subject-child-item .child-color {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+    
+    .subject-child-item .child-name {
+      flex: 1;
+      font-size: 12px;
+    }
+    
+    .subject-child-item .child-count {
+      font-size: 10px;
+      opacity: 0.7;
+    }
+    
+    /* Smart Views in Sidebar */
+    .smart-views-list {
+      margin-bottom: 16px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    
+    .smart-view-item {
+      display: flex;
+      align-items: center;
+      padding: 10px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.15s;
+      gap: 8px;
+      margin-bottom: 2px;
+    }
+    
+    .smart-view-item:hover {
+      background: var(--day-hover);
+    }
+    
+    .smart-view-item.active {
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: white;
+    }
+    
+    .smart-view-item .view-icon {
+      font-size: 14px;
+    }
+    
+    .smart-view-item .view-name {
+      flex: 1;
+      font-size: 13px;
+      font-weight: 500;
+    }
+    
+    .smart-view-item .view-count {
+      font-size: 11px;
+      padding: 2px 6px;
+      border-radius: 8px;
+      background: rgba(0,0,0,0.1);
+    }
+    
+    .smart-view-item.active .view-count {
+      background: rgba(255,255,255,0.2);
+    }
+    
+    .subjects-list-title {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      padding: 8px 12px 4px;
+    }
+    
+    /* Add Subject Button in Sidebar */
+    .add-subject-sidebar-btn {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 12px;
+      border: 2px dashed var(--border);
+      border-radius: 8px;
+      background: transparent;
+      color: var(--muted);
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.15s;
+      width: 100%;
+      margin-top: 8px;
+    }
+    
+    .add-subject-sidebar-btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: rgba(102,126,234,0.05);
+    }
+    
+    /* Context Menu */
+    .context-menu {
+      position: fixed;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.2);
+      padding: 8px;
+      min-width: 180px;
+      z-index: 1000;
+      display: none;
+    }
+    .context-menu.open {
+      display: block;
+    }
+    .context-menu-item {
+      padding: 10px 14px;
+      border-radius: 8px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--text);
+      font-size: 13px;
+      transition: background 0.1s;
+    }
+    .context-menu-item:hover {
+      background: var(--day-hover);
+    }
+    .context-menu-item.danger {
+      color: var(--danger);
+    }
+    .context-menu-item.danger:hover {
+      background: #fef2f2;
+    }
+    .context-menu-divider {
+      height: 1px;
+      background: var(--border);
+      margin: 6px 0;
+    }
+    
+    /* Daily Reminder Modal */
+    .reminder-modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.6);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 600;
+      padding: 20px;
+    }
+    .reminder-modal.open {
+      display: flex;
+    }
+    .reminder-card {
+      background: var(--card);
+      border-radius: 20px;
+      padding: 28px;
+      max-width: 500px;
+      width: 100%;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      text-align: center;
+    }
+    .reminder-card h2 {
+      font-size: 24px;
+      margin-bottom: 8px;
+      color: var(--text);
+    }
+    .reminder-card .reminder-date {
+      color: var(--muted);
+      font-size: 14px;
+      margin-bottom: 20px;
+    }
+    .reminder-section {
+      text-align: right;
+      margin-bottom: 16px;
+    }
+    .reminder-section h3 {
+      font-size: 14px;
+      color: var(--accent);
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .reminder-task-item {
+      padding: 12px;
+      background: var(--day-other);
+      border-radius: 10px;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-align: right;
+    }
+    .reminder-task-item .task-priority-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .reminder-task-item .task-info {
+      flex: 1;
+    }
+    .reminder-task-item .task-title {
+      font-weight: 600;
+      color: var(--text);
+      font-size: 14px;
+    }
+    .reminder-task-item .task-time {
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .reminder-empty {
+      color: var(--muted);
+      font-size: 14px;
+      padding: 12px;
+    }
+    .reminder-actions {
+      margin-top: 20px;
+    }
+    
+    /* Natural Language Input Hint */
+    .nl-hint {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 6px;
+      direction: rtl;
+    }
+    .nl-hint code {
+      background: var(--day-other);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: monospace;
+    }
+    
+    .add-subject-btn {
+      width: 36px;
+      height: 36px;
+      border: 2px dashed var(--border);
+      border-radius: 50%;
+      background: transparent;
+      color: var(--muted);
+      font-size: 20px;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .add-subject-btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: rgba(102,126,234,0.1);
+    }
+    
+    /* Subject Modal */
+    .subject-modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 500;
+      padding: 20px;
+    }
+    .subject-modal.open {
+      display: flex;
+    }
+    .subject-modal-card {
+      background: var(--card);
+      border-radius: 16px;
+      padding: 24px;
+      max-width: 400px;
+      width: 100%;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    }
+    .subject-modal-card h3 {
+      font-size: 20px;
+      margin-bottom: 20px;
+      color: var(--text);
+    }
+    .subject-modal-card input {
+      width: 100%;
+      padding: 14px 16px;
+      border: 2px solid var(--border);
+      border-radius: 10px;
+      font-size: 15px;
+      background: var(--input-bg);
+      color: var(--text);
+      outline: none;
+      margin-bottom: 16px;
+    }
+    .subject-modal-card input:focus {
+      border-color: var(--accent);
+    }
+    .subject-color-picker {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+    .subject-color-option {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      border: 3px solid transparent;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .subject-color-option:hover {
+      transform: scale(1.15);
+    }
+    .subject-color-option.selected {
+      border-color: var(--text);
+      box-shadow: 0 0 0 2px var(--card);
+    }
+    .subject-modal-actions {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+    }
+    .subject-modal-actions .btn {
+      padding: 12px 20px;
+    }
+    
+    /* Subject badge in task item */
+    .task-subject-badge {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 3px 10px;
+      border-radius: 12px;
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: color-mix(in srgb, var(--subject-color, #667eea) 15%, transparent);
+      color: var(--subject-color, #667eea);
+      border: 1px solid color-mix(in srgb, var(--subject-color, #667eea) 30%, transparent);
+    }
+    .task-subject-badge::before {
+      content: '';
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--subject-color, #667eea);
+      flex-shrink: 0;
+    }
+    .task-subject-badge .badge-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+    
+    /* Subject selector in quick add */
+    .subject-selector {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .subject-selector-option {
+      padding: 6px 14px;
+      border: 2px solid var(--border);
+      border-radius: 16px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .subject-selector-option:hover {
+      border-color: var(--accent);
+    }
+    .subject-selector-option.selected {
+      border-color: var(--text);
+      background: var(--day-hover);
+    }
+    .subject-selector-option .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
+    
+    /* Edit subject button */
+    .edit-subject-btn {
+      padding: 4px 8px;
+      border: none;
+      background: transparent;
+      color: var(--muted);
+      font-size: 12px;
+      cursor: pointer;
+      border-radius: 4px;
+      margin-left: 4px;
+    }
+    .edit-subject-btn:hover {
+      background: var(--day-hover);
+      color: var(--text);
+    }
+
     /* Notification permission button */
     @media (max-width: 1100px) {
       .sidebar {
@@ -746,16 +2068,52 @@
       .header h1 { font-size: 22px; }
       .header p { font-size: 13px; }
 
-      .toggle-sidebar,
-      .theme-toggle {
-        top: 12px;
+      .fixed-header-bar {
+        height: 50px;
+        padding: 0 12px;
+        gap: 8px;
+      }
+      .header-btn {
+        padding: 8px 12px;
+        font-size: 12px;
+      }
+      .header-btn.icon-only {
         width: 36px;
         height: 36px;
-        font-size: 16px;
-        padding: 8px;
       }
-      .toggle-sidebar { left: 12px; font-size: 12px; }
-      .theme-toggle { left: auto; right: 12px; }
+      body {
+        padding-top: 50px;
+      }
+
+      .task-manager-header {
+        padding: 12px 16px;
+      }
+      .task-manager-title {
+        font-size: 18px;
+      }
+      .task-search-bar {
+        order: 10;
+        max-width: 100%;
+        flex-basis: 100%;
+      }
+      .quick-add-task {
+        margin: 0 0 24px 0;
+      }
+      .task-item {
+        flex-wrap: wrap;
+      }
+      .task-main {
+        width: 100%;
+        order: 2;
+      }
+      .task-actions {
+        order: 3;
+        width: 100%;
+        justify-content: center;
+        padding-top: 12px;
+        border-top: 1px solid var(--border);
+        margin-top: 12px;
+      }
 
       .input-panel { padding: 14px; }
       .input-row { 
@@ -821,10 +2179,77 @@
 
       .sidebar {
         width: 100%;
-        min-width: 100%;
-        max-width: 100%;
-        resize: none;
       }
+      
+      /* Task manager sidebar on mobile */
+      .task-manager-layout {
+        flex-direction: column;
+      }
+      
+      .task-manager-sidebar {
+        width: 100%;
+        max-height: 200px;
+        border-left: none;
+        border-bottom: 1px solid var(--border);
+      }
+      
+      .task-manager-sidebar-content {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        padding: 8px;
+      }
+      
+      .smart-views-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+        border-bottom: none;
+        margin-bottom: 0;
+        padding-bottom: 0;
+      }
+      
+      .smart-view-item {
+        padding: 6px 10px;
+        font-size: 12px;
+      }
+      
+      .subjects-list-title {
+        display: none;
+      }
+      
+      .subjects-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+      }
+      
+      .subject-list-item {
+        margin-bottom: 0;
+      }
+      
+      .subject-list-header {
+        padding: 6px 10px;
+      }
+      
+      .subject-list-children {
+        position: absolute;
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        box-shadow: var(--shadow);
+        padding: 8px;
+        z-index: 100;
+        padding-right: 0;
+        margin-top: 0;
+      }
+      
+      .add-subject-sidebar-btn {
+        padding: 6px 10px;
+        font-size: 12px;
+        margin-top: 0;
+      }
+      
       .calendar-day { min-height: 48px; padding: 6px; }
       .calendar-day-number { font-size: 12px; }
       .calendar-event-chip { font-size: 9px; padding: 2px 4px; }
@@ -837,8 +2262,252 @@
   </style>
 </head>
 <body>
-  <button class="toggle-sidebar" id="toggleSidebar">📅 לוח שנה</button>
-  <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode">🌙</button>
+  <!-- Fixed Header Bar -->
+  <div class="fixed-header-bar">
+    <button class="header-btn" id="toggleSidebar">📅 לוח שנה</button>
+    <button class="header-btn" id="toggleTasks">📝 משימות</button>
+    <div class="header-spacer"></div>
+    <button class="header-btn icon-only" id="themeToggle" aria-label="Toggle dark mode">🌙</button>
+  </div>
+
+  <!-- Task Manager Fullscreen -->
+  <div class="task-manager-overlay" id="taskManagerOverlay">
+    <div class="task-manager-header">
+      <div class="task-manager-title">📝 Task Manager</div>
+      <div class="task-search-bar">
+        <input type="text" id="taskSearch" placeholder="חיפוש משימות... / Search tasks..." />
+      </div>
+      <div class="task-filters">
+        <button class="filter-pill active" data-filter="all">הכל</button>
+        <button class="filter-pill" data-filter="active">פעיל</button>
+        <button class="filter-pill" data-filter="completed">הושלם</button>
+      </div>
+      <button class="task-manager-close" id="closeTaskManager">×</button>
+    </div>
+    
+    <!-- Task Manager Layout with Sidebar -->
+    <div class="task-manager-layout">
+      <!-- Sidebar -->
+      <div class="task-manager-sidebar" id="taskSidebar">
+        <div class="task-manager-sidebar-header">
+          <h3>📚 נושאים</h3>
+        </div>
+        <div class="task-manager-sidebar-content">
+          <!-- Smart Views -->
+          <div class="smart-views-list" id="smartViewsList">
+            <div class="smart-view-item" data-view="all">
+              <span class="view-icon">📋</span>
+              <span class="view-name">כל המשימות</span>
+              <span class="view-count" id="countAll">0</span>
+            </div>
+            <div class="smart-view-item" data-view="today">
+              <span class="view-icon">📅</span>
+              <span class="view-name">היום</span>
+              <span class="view-count" id="countToday">0</span>
+            </div>
+            <div class="smart-view-item" data-view="week">
+              <span class="view-icon">📆</span>
+              <span class="view-name">7 ימים הבאים</span>
+              <span class="view-count" id="countWeek">0</span>
+            </div>
+            <div class="smart-view-item" data-view="overdue">
+              <span class="view-icon">⚠️</span>
+              <span class="view-name">באיחור</span>
+              <span class="view-count" id="countOverdue">0</span>
+            </div>
+            <div class="smart-view-item" data-view="nodate">
+              <span class="view-icon">📭</span>
+              <span class="view-name">ללא תאריך</span>
+              <span class="view-count" id="countNoDate">0</span>
+            </div>
+          </div>
+          
+          <!-- Subjects List -->
+          <div class="subjects-list-title">נושאים</div>
+          <div class="subjects-list" id="subjectsList"></div>
+          <button class="add-subject-sidebar-btn" id="addSubjectSidebarBtn">
+            <span>+</span>
+            <span>הוסף נושא</span>
+          </button>
+        </div>
+      </div>
+      
+      <!-- Main Content -->
+      <div class="task-manager-body">
+      <div class="quick-add-task" id="quickAddTask">
+        <input type="text" id="newTaskTitle" placeholder="הוסף משימה... (לדוגמה: להגיש תרגיל מחר 23:00 #מתמטיקה דחוף)" dir="auto" />
+        <div class="nl-hint">💡 טיפ: כתוב בשפה טבעית עם תאריך, #נושא או #נושא/תת_נושא ורמת דחיפות (דחוף/גבוה/בינוני/נמוך)</div>
+        <div class="quick-add-row" id="quickAddRow" style="display: none;">
+          <div class="priority-selector" id="taskPriorityPicker">
+            <div class="priority-option" data-priority="urgent">🔴 דחוף</div>
+            <div class="priority-option" data-priority="high">🟠 גבוה</div>
+            <div class="priority-option selected" data-priority="medium">🟡 בינוני</div>
+            <div class="priority-option" data-priority="low">🟢 נמוך</div>
+            <div class="priority-option" data-priority="none">⚪ ללא</div>
+          </div>
+          <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap; width: 100%;">
+            <div class="label-input-wrapper" style="flex-shrink: 0;">
+              <span>📁</span>
+              <select id="newTaskSubject" style="border: none; background: transparent; color: var(--text); font-size: 13px; outline: none; cursor: pointer;">
+                <option value="">ללא נושא</option>
+              </select>
+            </div>
+            <div class="label-input-wrapper">
+              <span>📅</span>
+              <input type="datetime-local" id="newTaskDue" style="width: 180px; border: none; background: transparent; color: var(--text);" />
+            </div>
+            <button class="btn btn-primary" id="addTaskBtn">הוסף</button>
+          </div>
+        </div>
+      </div>
+      
+      <div class="task-sections" id="taskSections">
+        <!-- Active Tasks -->
+        <div id="activeSection">
+          <div class="task-section-title">📋 משימות פעילות</div>
+          <div class="task-list" id="activeTasks"></div>
+        </div>
+        
+        <!-- Completed Tasks -->
+        <div id="completedSection" style="display: none;">
+          <div class="task-section-title">✅ הושלמו</div>
+          <div class="task-list" id="completedTasks"></div>
+        </div>
+        
+        <!-- Empty State -->
+        <div class="tasks-empty" id="tasksEmpty" style="display: none;">
+          <div class="tasks-empty-icon">📝</div>
+          <h3>אין משימות עדיין</h3>
+          <p>הוסף משימה ראשונה למעלה כדי להתחיל!</p>
+        </div>
+      </div>
+    </div>
+    </div><!-- close task-manager-layout -->
+  </div>
+  
+  <!-- Task Edit Modal -->
+  <div class="task-edit-modal" id="taskEditModal">
+    <div class="task-edit-card" id="taskEditCard">
+      <input type="text" id="editTaskTitle" placeholder="Task title..." />
+      <textarea id="editTaskContent" placeholder="Add notes..."></textarea>
+      
+      <div class="task-edit-section">
+        <div class="task-edit-section-title">Subject</div>
+        <select id="editTaskSubject" style="padding: 12px 14px; border: 2px solid var(--border); border-radius: 10px; font-size: 14px; background: var(--input-bg); color: var(--text); outline: none; width: 100%; max-width: 250px; cursor: pointer;">
+          <option value="">No Subject</option>
+        </select>
+      </div>
+      
+      <div class="task-edit-section">
+        <div class="task-edit-section-title">Priority</div>
+        <div class="priority-selector" id="editTaskPriority">
+          <div class="priority-option" data-priority="urgent">🔴 Urgent</div>
+          <div class="priority-option" data-priority="high">🟠 High</div>
+          <div class="priority-option" data-priority="medium">🟡 Medium</div>
+          <div class="priority-option" data-priority="low">🟢 Low</div>
+          <div class="priority-option" data-priority="none">⚪ None</div>
+        </div>
+      </div>
+      
+      <div class="task-edit-section">
+        <div class="task-edit-section-title">Due Date</div>
+        <input type="datetime-local" id="editTaskDue" style="padding: 12px 14px; border: 2px solid var(--border); border-radius: 10px; font-size: 14px; background: var(--input-bg); color: var(--text); outline: none; width: 100%; max-width: 250px;" />
+        <button class="btn" id="clearDueBtn" style="margin-left: 8px; padding: 10px 14px; background: var(--day-other); color: var(--muted);">Clear</button>
+      </div>
+      
+      <div class="task-edit-section">
+        <div class="task-edit-section-title">Subtasks / Checklist</div>
+        <div class="task-checklist" id="editTaskChecklist"></div>
+        <div class="checklist-add">
+          <input type="text" id="newChecklistItem" placeholder="Add subtask..." />
+          <button class="btn btn-primary" id="addChecklistItem" style="padding: 10px 16px;">+</button>
+        </div>
+      </div>
+      
+      <div class="task-edit-footer">
+        <div style="display: flex; gap: 8px;">
+          <button class="task-action-btn delete" id="deleteTaskBtn" title="Delete">🗑️</button>
+        </div>
+        <button class="btn btn-primary" id="saveTaskBtn">Save</button>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Subject Modal -->
+  <div class="subject-modal" id="subjectModal">
+    <div class="subject-modal-card">
+      <h3 id="subjectModalTitle">הוסף נושא חדש</h3>
+      <input type="text" id="subjectNameInput" placeholder="שם הנושא (לדוגמה: מתמטיקה, עבודה, אישי)" dir="auto" />
+      
+      <div class="task-edit-section-title" style="margin: 16px 0 10px 0;">נושא אב (אופציונלי)</div>
+      <select id="parentSubjectSelect" style="width: 100%; padding: 12px 14px; border: 2px solid var(--border); border-radius: 10px; font-size: 14px; background: var(--input-bg); color: var(--text); outline: none; cursor: pointer; margin-bottom: 16px;">
+        <option value="">ללא (נושא ראשי)</option>
+      </select>
+      
+      <div class="task-edit-section-title" style="margin-bottom: 10px;">צבע</div>
+      <div class="subject-color-picker" id="subjectColorPicker">
+        <div class="subject-color-option selected" style="background: #667eea;" data-color="#667eea"></div>
+        <div class="subject-color-option" style="background: #ef4444;" data-color="#ef4444"></div>
+        <div class="subject-color-option" style="background: #f97316;" data-color="#f97316"></div>
+        <div class="subject-color-option" style="background: #eab308;" data-color="#eab308"></div>
+        <div class="subject-color-option" style="background: #22c55e;" data-color="#22c55e"></div>
+        <div class="subject-color-option" style="background: #06b6d4;" data-color="#06b6d4"></div>
+        <div class="subject-color-option" style="background: #8b5cf6;" data-color="#8b5cf6"></div>
+        <div class="subject-color-option" style="background: #ec4899;" data-color="#ec4899"></div>
+      </div>
+      <div class="subject-modal-actions">
+        <button class="btn" id="cancelSubjectBtn" style="background: var(--day-other); color: var(--muted);">ביטול</button>
+        <button class="btn btn-danger" id="deleteSubjectBtn" style="display: none;">מחק</button>
+        <button class="btn btn-primary" id="saveSubjectBtn">שמור</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Context Menu for Subjects -->
+  <div class="context-menu" id="contextMenu">
+    <div class="context-menu-item" data-action="edit">✏️ עריכה</div>
+    <div class="context-menu-item" data-action="add-sub">➕ הוסף תת-נושא</div>
+    <div class="context-menu-divider"></div>
+    <div class="context-menu-item danger" data-action="delete">🗑️ מחק</div>
+  </div>
+  
+  <!-- Context Menu for Countdown Events -->
+  <div class="context-menu" id="eventContextMenu">
+    <div class="context-menu-item" data-action="star">⭐ סמן כמועדף</div>
+    <div class="context-menu-item" data-action="edit">✏️ עריכה</div>
+    <div class="context-menu-item" data-action="duplicate">📋 שכפל</div>
+    <div class="context-menu-divider"></div>
+    <div class="context-menu-item danger" data-action="delete">🗑️ מחק</div>
+  </div>
+  
+  <!-- Context Menu for Adding New Event -->
+  <div class="context-menu" id="addEventContextMenu">
+    <div class="context-menu-item" data-action="add">➕ הוסף אירוע חדש</div>
+    <div class="context-menu-item" data-action="add-tomorrow">📅 אירוע למחר</div>
+    <div class="context-menu-item" data-action="add-week">📆 אירוע לשבוע הבא</div>
+  </div>
+
+  <!-- Daily Reminder Modal -->
+  <div class="reminder-modal" id="reminderModal">
+    <div class="reminder-card">
+      <h2>☀️ בוקר טוב!</h2>
+      <div class="reminder-date" id="reminderDate"></div>
+      
+      <div class="reminder-section" id="todayTasksSection">
+        <h3>📅 משימות להיום</h3>
+        <div id="todayTasksList"></div>
+      </div>
+      
+      <div class="reminder-section" id="tomorrowTasksSection">
+        <h3>📆 משימות למחר</h3>
+        <div id="tomorrowTasksList"></div>
+      </div>
+      
+      <div class="reminder-actions">
+        <button class="btn btn-primary" id="closeReminderBtn" style="width: 100%;">הבנתי, תודה! 👍</button>
+      </div>
+    </div>
+  </div>
 
   <div class="app-layout">
     <div class="main-content">
@@ -1388,6 +3057,12 @@
       row.appendChild(badge);
       row.appendChild(info);
       row.appendChild(actions);
+      
+      // Right-click context menu for events
+      row.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        showEventContextMenu(e.clientX, e.clientY, evt.id);
+      });
 
       refs.set(evt.id, {
         row,
@@ -1558,6 +3233,1707 @@
 
   renderCalendar();
   startTicker();
+
+  // ============ TASK MANAGER ============
+  const tasksRef = ref(db, 'tasks');
+  
+  const taskManagerOverlay = $("taskManagerOverlay");
+  const closeTaskManager = $("closeTaskManager");
+  const toggleTasks = $("toggleTasks");
+  const taskSearch = $("taskSearch");
+  const quickAddTask = $("quickAddTask");
+  const quickAddRow = $("quickAddRow");
+  const newTaskTitle = $("newTaskTitle");
+  const newTaskDue = $("newTaskDue");
+  const addTaskBtn = $("addTaskBtn");
+  const taskPriorityPicker = $("taskPriorityPicker");
+  const activeTasks = $("activeTasks");
+  const completedTasks = $("completedTasks");
+  const activeSection = $("activeSection");
+  const completedSection = $("completedSection");
+  const tasksEmpty = $("tasksEmpty");
+  const taskEditModal = $("taskEditModal");
+  const editTaskTitle = $("editTaskTitle");
+  const editTaskContent = $("editTaskContent");
+  const editTaskChecklist = $("editTaskChecklist");
+  const newChecklistItem = $("newChecklistItem");
+  const addChecklistItem = $("addChecklistItem");
+  const editTaskPriority = $("editTaskPriority");
+  const editTaskDue = $("editTaskDue");
+  const clearDueBtn = $("clearDueBtn");
+  const deleteTaskBtn = $("deleteTaskBtn");
+  const saveTaskBtn = $("saveTaskBtn");
+  
+  let tasks = [];
+  let editingTaskId = null;
+  let editingTask = null;
+  let selectedTaskPriority = 'medium';
+  let currentFilter = 'all';
+  let taskTickerHandle = null;
+  
+  const PRIORITY_ORDER = { urgent: 0, high: 1, medium: 2, low: 3, none: 4 };
+  const PRIORITY_LABELS = { urgent: 'Urgent', high: 'High', medium: 'Medium', low: 'Low', none: '' };
+  
+  // Open/Close Task Manager
+  toggleTasks.onclick = () => {
+    taskManagerOverlay.classList.add('open');
+    renderSubjectsSidebar();
+    renderTasks();
+    startTaskTicker();
+  };
+  
+  closeTaskManager.onclick = () => {
+    taskManagerOverlay.classList.remove('open');
+    stopTaskTicker();
+  };
+  
+  // Close on escape
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      if (taskEditModal.classList.contains('open')) {
+        closeTaskEditModal();
+      } else if (taskManagerOverlay.classList.contains('open')) {
+        taskManagerOverlay.classList.remove('open');
+        stopTaskTicker();
+      }
+    }
+  });
+  
+  // Quick add task - show full form on focus
+  newTaskTitle.addEventListener('focus', () => {
+    quickAddRow.style.display = 'flex';
+  });
+  
+  // Collapse quick add when clicking outside
+  taskManagerOverlay.addEventListener('click', (e) => {
+    if (!quickAddTask.contains(e.target) && !newTaskTitle.value.trim()) {
+      quickAddRow.style.display = 'none';
+    }
+  });
+  
+  // Priority picker in quick add
+  taskPriorityPicker.addEventListener('click', (e) => {
+    const option = e.target.closest('.priority-option');
+    if (!option) return;
+    taskPriorityPicker.querySelectorAll('.priority-option').forEach(o => o.classList.remove('selected'));
+    option.classList.add('selected');
+    selectedTaskPriority = option.dataset.priority;
+  });
+  
+  // Add task
+  addTaskBtn.onclick = () => {
+    const title = newTaskTitle.value.trim();
+    if (!title) return;
+    
+    const dueValue = newTaskDue.value;
+    const dueDate = dueValue ? parseLocal(dueValue) : null;
+    
+    const taskData = {
+      title,
+      content: '',
+      priority: selectedTaskPriority,
+      dueDate: dueDate ? dueDate.toISOString() : null,
+      checklist: [],
+      completed: false,
+      createdAt: new Date().toISOString()
+    };
+    
+    const newTaskRef = push(tasksRef);
+    set(newTaskRef, taskData);
+    
+    // Reset form
+    newTaskTitle.value = '';
+    newTaskDue.value = '';
+    selectedTaskPriority = 'medium';
+    taskPriorityPicker.querySelectorAll('.priority-option').forEach(o => o.classList.remove('selected'));
+    taskPriorityPicker.querySelector('[data-priority="medium"]').classList.add('selected');
+  };
+  
+  newTaskTitle.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') addTaskBtn.click();
+  });
+  
+  // Filter pills
+  document.querySelectorAll('.filter-pill').forEach(pill => {
+    pill.addEventListener('click', () => {
+      document.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
+      pill.classList.add('active');
+      currentFilter = pill.dataset.filter;
+      renderTasks();
+    });
+  });
+  
+  // Search
+  taskSearch.addEventListener('input', () => {
+    renderTasks();
+  });
+  
+  // Listen to tasks from Firebase
+  onValue(tasksRef, (snapshot) => {
+    const data = snapshot.val();
+    if (data) {
+      tasks = Object.keys(data).map(key => ({ id: key, ...data[key] }));
+    } else {
+      tasks = [];
+    }
+    if (taskManagerOverlay.classList.contains('open')) {
+      renderTasks();
+    }
+  });
+  
+  function getFilteredTasks() {
+    let filtered = [...tasks];
+    
+    // Apply search filter
+    const searchTerm = taskSearch.value.trim().toLowerCase();
+    if (searchTerm) {
+      filtered = filtered.filter(t => 
+        t.title.toLowerCase().includes(searchTerm) ||
+        (t.content && t.content.toLowerCase().includes(searchTerm))
+      );
+    }
+    
+    // Apply status filter
+    if (currentFilter === 'active') {
+      filtered = filtered.filter(t => !t.completed);
+    } else if (currentFilter === 'completed') {
+      filtered = filtered.filter(t => t.completed);
+    }
+    
+    return filtered;
+  }
+  
+  function sortTasks(taskList) {
+    // Sort by: priority first (urgent first), then by due date (soonest first), then by created date (newest first)
+    return taskList.sort((a, b) => {
+      // Priority comparison
+      const priorityA = PRIORITY_ORDER[a.priority || 'none'];
+      const priorityB = PRIORITY_ORDER[b.priority || 'none'];
+      if (priorityA !== priorityB) return priorityA - priorityB;
+      
+      // Due date comparison (tasks with due dates come first, soonest first)
+      if (a.dueDate && !b.dueDate) return -1;
+      if (!a.dueDate && b.dueDate) return 1;
+      if (a.dueDate && b.dueDate) {
+        const dueDiff = new Date(a.dueDate) - new Date(b.dueDate);
+        if (dueDiff !== 0) return dueDiff;
+      }
+      
+      // Created date (newest first)
+      return new Date(b.createdAt) - new Date(a.createdAt);
+    });
+  }
+  
+  function calcTaskCountdown(dueDate) {
+    if (!dueDate) return null;
+    const now = Date.now();
+    const due = new Date(dueDate).getTime();
+    const diff = due - now;
+    
+    if (diff <= 0) {
+      return { overdue: true, text: 'Overdue', urgency: 'overdue' };
+    }
+    
+    const days = Math.floor(diff / 86400000);
+    const hours = Math.floor((diff % 86400000) / 3600000);
+    const mins = Math.floor((diff % 3600000) / 60000);
+    
+    let text = '';
+    let urgency = '';
+    
+    if (days > 0) {
+      text = `${days}d ${hours}h`;
+    } else if (hours > 0) {
+      text = `${hours}h ${mins}m`;
+    } else {
+      text = `${mins}m`;
+    }
+    
+    // Urgency levels for styling
+    if (days === 0 && hours < 6) {
+      urgency = 'soon';
+    } else if (days === 0) {
+      urgency = 'today';
+    }
+    
+    return { overdue: false, text, urgency, days, hours, mins };
+  }
+  
+  function renderTasks() {
+    const filtered = getFilteredTasks();
+    const active = filtered.filter(t => !t.completed);
+    const completed = filtered.filter(t => t.completed);
+    
+    // Update sidebar counts
+    updateSmartViewCounts();
+    renderSubjectsSidebar();
+    
+    // Sort tasks
+    sortTasks(active);
+    sortTasks(completed);
+    
+    // Check if showing suggested tasks for empty sub-subject
+    const showingSuggested = window.showingSuggestedTasks;
+    
+    // Active tasks section
+    if (active.length > 0 || currentFilter === 'all' || currentFilter === 'active') {
+      activeSection.style.display = 'block';
+      let suggestedBanner = '';
+      if (showingSuggested && active.length > 0) {
+        suggestedBanner = `
+          <div class="suggested-tasks-banner">
+            <span class="suggested-icon">💡</span>
+            <span>אין משימות בתת-נושא זה. מוצגות משימות דחופות מכל הנושאים:</span>
+          </div>
+        `;
+      }
+      activeTasks.innerHTML = suggestedBanner + active.map(t => renderTaskItem(t, showingSuggested)).join('');
+    } else {
+      activeSection.style.display = 'none';
+    }
+    
+    // Completed tasks section
+    if (completed.length > 0 && (currentFilter === 'all' || currentFilter === 'completed') && !showingSuggested) {
+      completedSection.style.display = 'block';
+      completedTasks.innerHTML = completed.map(t => renderTaskItem(t)).join('');
+    } else {
+      completedSection.style.display = 'none';
+    }
+    
+    // Empty state
+    if (filtered.length === 0 && !showingSuggested) {
+      tasksEmpty.style.display = 'block';
+      activeSection.style.display = 'none';
+    } else {
+      tasksEmpty.style.display = 'none';
+    }
+    
+    // Add event handlers
+    attachTaskEventHandlers();
+  }
+  
+  function renderTaskItem(task, showSubjectTag = false) {
+    const priority = task.priority || 'none';
+    const countdown = calcTaskCountdown(task.dueDate);
+    
+    let dueDateHtml = '';
+    if (task.dueDate) {
+      const dueDate = new Date(task.dueDate);
+      const dateStr = dueDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+      const urgencyClass = countdown?.overdue ? 'overdue' : (countdown?.urgency === 'soon' ? 'soon' : '');
+      dueDateHtml = `<span class="task-due ${urgencyClass}">📅 ${dateStr}</span>`;
+    }
+    
+    // Subject tag for suggested tasks
+    let subjectTagHtml = '';
+    if (showSubjectTag && task.subject) {
+      const taskSubject = subjects.find(s => s.id === task.subject);
+      if (taskSubject) {
+        // If it's a sub-subject, show parent > child
+        let subjectName = taskSubject.name;
+        if (taskSubject.parentId) {
+          const parent = subjects.find(s => s.id === taskSubject.parentId);
+          if (parent) {
+            subjectName = `${parent.name} › ${taskSubject.name}`;
+          }
+        }
+        subjectTagHtml = `<span class="task-subject-tag"><span class="tag-dot" style="background: ${taskSubject.color};"></span>${escapeHtml(subjectName)}</span>`;
+      }
+    }
+    
+    let countdownHtml = '';
+    if (countdown) {
+      const countdownClass = countdown.overdue ? 'overdue' : (countdown.urgency === 'soon' ? 'soon' : '');
+      countdownHtml = `<span class="task-countdown ${countdownClass}" data-due="${task.dueDate}">${countdown.text}</span>`;
+    }
+    
+    let subtasksHtml = '';
+    if (task.checklist && task.checklist.length > 0) {
+      const checked = task.checklist.filter(c => c.checked).length;
+      const total = task.checklist.length;
+      const maxShow = 3;
+      const items = task.checklist.slice(0, maxShow);
+      
+      subtasksHtml = `
+        <div class="task-subtasks">
+          <div class="task-subtask-progress">${checked}/${total} completed</div>
+          ${items.map((item, i) => `
+            <div class="task-subtask ${item.checked ? 'checked' : ''}">
+              <input type="checkbox" ${item.checked ? 'checked' : ''} data-index="${i}" />
+              <span>${escapeHtml(item.text)}</span>
+            </div>
+          `).join('')}
+          ${task.checklist.length > maxShow ? `<div style="font-size: 12px; color: var(--muted);">+${task.checklist.length - maxShow} more</div>` : ''}
+        </div>
+      `;
+    }
+    
+    const priorityBadge = priority !== 'none' 
+      ? `<span class="task-priority-badge">${PRIORITY_LABELS[priority]}</span>` 
+      : '';
+    
+    return `
+      <div class="task-item priority-${priority} ${task.completed ? 'completed' : ''}" data-id="${task.id}">
+        <div class="task-checkbox" data-action="toggle">${task.completed ? '✓' : ''}</div>
+        <div class="task-main">
+          <div class="task-title-row">
+            <span class="task-title">${escapeHtml(task.title)}</span>
+            ${priorityBadge}
+            ${subjectTagHtml}
+          </div>
+          <div class="task-meta">
+            ${dueDateHtml}
+            ${countdownHtml}
+          </div>
+          ${subtasksHtml}
+        </div>
+        <div class="task-actions">
+          <button class="task-action-btn" data-action="edit" title="Edit">✏️</button>
+          <button class="task-action-btn delete" data-action="delete" title="Delete">🗑️</button>
+        </div>
+      </div>
+    `;
+  }
+  
+  function attachTaskEventHandlers() {
+    document.querySelectorAll('.task-item').forEach(item => {
+      const taskId = item.dataset.id;
+      
+      // Toggle complete
+      const checkbox = item.querySelector('.task-checkbox');
+      if (checkbox) {
+        checkbox.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const task = tasks.find(t => t.id === taskId);
+          if (task) {
+            set(ref(db, 'tasks/' + taskId), { ...task, completed: !task.completed });
+          }
+        });
+      }
+      
+      // Edit button
+      const editBtn = item.querySelector('[data-action="edit"]');
+      if (editBtn) {
+        editBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          openTaskEditModal(taskId);
+        });
+      }
+      
+      // Delete button
+      const deleteBtn = item.querySelector('[data-action="delete"]');
+      if (deleteBtn) {
+        deleteBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          remove(ref(db, 'tasks/' + taskId));
+        });
+      }
+      
+      // Click on main area to edit
+      const mainArea = item.querySelector('.task-main');
+      if (mainArea) {
+        mainArea.addEventListener('click', () => {
+          openTaskEditModal(taskId);
+        });
+      }
+      
+      // Subtask checkboxes
+      item.querySelectorAll('.task-subtask input[type="checkbox"]').forEach(cb => {
+        cb.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const idx = parseInt(cb.dataset.index);
+          const task = tasks.find(t => t.id === taskId);
+          if (task && task.checklist) {
+            task.checklist[idx].checked = cb.checked;
+            set(ref(db, 'tasks/' + taskId), task);
+          }
+        });
+      });
+    });
+  }
+  
+  // Task countdown ticker
+  function startTaskTicker() {
+    if (taskTickerHandle) return;
+    const tick = () => {
+      document.querySelectorAll('.task-countdown[data-due]').forEach(el => {
+        const dueDate = el.dataset.due;
+        const countdown = calcTaskCountdown(dueDate);
+        if (countdown) {
+          el.textContent = countdown.text;
+          el.className = 'task-countdown ' + (countdown.overdue ? 'overdue' : (countdown.urgency === 'soon' ? 'soon' : ''));
+        }
+      });
+    };
+    tick();
+    taskTickerHandle = setInterval(tick, 60000); // Update every minute
+  }
+  
+  function stopTaskTicker() {
+    if (taskTickerHandle) {
+      clearInterval(taskTickerHandle);
+      taskTickerHandle = null;
+    }
+  }
+  
+  // Task Edit Modal
+  function openTaskEditModal(taskId) {
+    editingTaskId = taskId;
+    editingTask = JSON.parse(JSON.stringify(tasks.find(t => t.id === taskId)));
+    if (!editingTask) return;
+    
+    editTaskTitle.value = editingTask.title || '';
+    editTaskContent.value = editingTask.content || '';
+    
+    // Set priority
+    editTaskPriority.querySelectorAll('.priority-option').forEach(o => {
+      o.classList.toggle('selected', o.dataset.priority === (editingTask.priority || 'none'));
+    });
+    
+    // Set due date
+    if (editingTask.dueDate) {
+      editTaskDue.value = toLocalDatetime(editingTask.dueDate);
+    } else {
+      editTaskDue.value = '';
+    }
+    
+    // Render checklist
+    renderEditChecklist();
+    
+    taskEditModal.classList.add('open');
+  }
+  
+  function closeTaskEditModal() {
+    taskEditModal.classList.remove('open');
+    editingTaskId = null;
+    editingTask = null;
+  }
+  
+  taskEditModal.addEventListener('click', (e) => {
+    if (e.target === taskEditModal) closeTaskEditModal();
+  });
+  
+  // Edit modal priority picker
+  editTaskPriority.addEventListener('click', (e) => {
+    const option = e.target.closest('.priority-option');
+    if (!option || !editingTask) return;
+    editTaskPriority.querySelectorAll('.priority-option').forEach(o => o.classList.remove('selected'));
+    option.classList.add('selected');
+    editingTask.priority = option.dataset.priority;
+  });
+  
+  // Clear due date
+  clearDueBtn.onclick = () => {
+    editTaskDue.value = '';
+    if (editingTask) editingTask.dueDate = null;
+  };
+  
+  function renderEditChecklist() {
+    if (!editingTask.checklist) editingTask.checklist = [];
+    editTaskChecklist.innerHTML = editingTask.checklist.map((item, i) => `
+      <div class="task-checklist-item ${item.checked ? 'checked' : ''}">
+        <input type="checkbox" ${item.checked ? 'checked' : ''} data-index="${i}" />
+        <span>${escapeHtml(item.text)}</span>
+        <button class="task-action-btn delete" data-index="${i}" style="margin-left: auto;">×</button>
+      </div>
+    `).join('');
+    
+    // Add handlers
+    editTaskChecklist.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+      cb.addEventListener('change', () => {
+        const idx = parseInt(cb.dataset.index);
+        editingTask.checklist[idx].checked = cb.checked;
+        renderEditChecklist();
+      });
+    });
+    
+    editTaskChecklist.querySelectorAll('.task-action-btn.delete').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const idx = parseInt(btn.dataset.index);
+        editingTask.checklist.splice(idx, 1);
+        renderEditChecklist();
+      });
+    });
+  }
+  
+  addChecklistItem.onclick = () => {
+    const text = newChecklistItem.value.trim();
+    if (!text || !editingTask) return;
+    editingTask.checklist.push({ text, checked: false });
+    newChecklistItem.value = '';
+    renderEditChecklist();
+  };
+  
+  newChecklistItem.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') addChecklistItem.click();
+  });
+  
+  // Delete task
+  deleteTaskBtn.onclick = () => {
+    if (!editingTaskId) return;
+    remove(ref(db, 'tasks/' + editingTaskId));
+    closeTaskEditModal();
+  };
+  
+  // Save task
+  saveTaskBtn.onclick = () => {
+    if (!editingTaskId || !editingTask) return;
+    
+    editingTask.title = editTaskTitle.value.trim() || 'Untitled';
+    editingTask.content = editTaskContent.value.trim();
+    editingTask.subject = editTaskSubject.value || '';
+    
+    // Update due date
+    const dueValue = editTaskDue.value;
+    if (dueValue) {
+      const parsedDue = parseLocal(dueValue);
+      editingTask.dueDate = parsedDue ? parsedDue.toISOString() : null;
+    } else {
+      editingTask.dueDate = null;
+    }
+    
+    set(ref(db, 'tasks/' + editingTaskId), editingTask);
+    closeTaskEditModal();
+  };
+
+  // ============ SUBJECTS / CATEGORIES ============
+  const subjectsRef = ref(db, 'subjects');
+  
+  const subjectTabs = $("subjectTabs");
+  const addSubjectBtn = $("addSubjectBtn");
+  const addSubjectSidebarBtn = $("addSubjectSidebarBtn");
+  const subjectsList = $("subjectsList");
+  const smartViewsList = $("smartViewsList");
+  const subjectModal = $("subjectModal");
+  const subjectModalTitle = $("subjectModalTitle");
+  const subjectNameInput = $("subjectNameInput");
+  const subjectColorPicker = $("subjectColorPicker");
+  const cancelSubjectBtn = $("cancelSubjectBtn");
+  const deleteSubjectBtn = $("deleteSubjectBtn");
+  const saveSubjectBtn = $("saveSubjectBtn");
+  const newTaskSubject = $("newTaskSubject");
+  const editTaskSubject = $("editTaskSubject");
+  const parentSubjectSelect = $("parentSubjectSelect");
+  const contextMenu = $("contextMenu");
+  const eventContextMenu = $("eventContextMenu");
+  const reminderModal = $("reminderModal");
+  
+  let subjects = [];
+  let currentSubject = 'all';
+  let currentSmartView = null; // 'today', 'week', 'overdue', 'nodate'
+  let editingSubjectId = null;
+  let selectedSubjectColor = '#667eea';
+  let contextMenuTarget = null;
+  let eventContextMenuTarget = null;
+  let expandedSubjects = new Set(); // Track which subjects are expanded
+  
+  // Listen to subjects from Firebase
+  onValue(subjectsRef, (snapshot) => {
+    const data = snapshot.val();
+    if (data) {
+      subjects = Object.keys(data).map(key => ({ id: key, ...data[key] }));
+    } else {
+      subjects = [];
+    }
+    renderSubjectsSidebar();
+    updateSubjectSelectors();
+    updateParentSubjectSelector();
+  });
+  
+  // Get top-level subjects (no parent)
+  function getTopLevelSubjects() {
+    return subjects.filter(s => !s.parentId);
+  }
+  
+  // Get children of a subject
+  function getChildSubjects(parentId) {
+    return subjects.filter(s => s.parentId === parentId);
+  }
+  
+  // Count tasks for a subject including children
+  function countSubjectTasks(subjectId, includeChildren = true) {
+    let count = tasks.filter(t => t.subject === subjectId && !t.completed).length;
+    if (includeChildren) {
+      const children = getChildSubjects(subjectId);
+      children.forEach(c => {
+        count += tasks.filter(t => t.subject === c.id && !t.completed).length;
+      });
+    }
+    return count;
+  }
+  
+  // ============ SMART VIEWS COUNTS ============
+  function updateSmartViewCounts() {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const weekLater = new Date(today);
+    weekLater.setDate(weekLater.getDate() + 7);
+    
+    const activeTasks = tasks.filter(t => !t.completed);
+    
+    const allCount = activeTasks.length;
+    const todayCount = activeTasks.filter(t => {
+      if (!t.dueDate) return false;
+      const due = new Date(t.dueDate);
+      return due >= today && due < tomorrow;
+    }).length;
+    const weekCount = activeTasks.filter(t => {
+      if (!t.dueDate) return false;
+      const due = new Date(t.dueDate);
+      return due >= today && due < weekLater;
+    }).length;
+    const overdueCount = activeTasks.filter(t => {
+      if (!t.dueDate) return false;
+      const due = new Date(t.dueDate);
+      return due < today;
+    }).length;
+    const noDateCount = activeTasks.filter(t => !t.dueDate).length;
+    
+    // Update counts
+    const countAll = $('countAll');
+    const countToday = $('countToday');
+    const countWeek = $('countWeek');
+    const countOverdue = $('countOverdue');
+    const countNoDate = $('countNoDate');
+    
+    if (countAll) countAll.textContent = allCount;
+    if (countToday) countToday.textContent = todayCount;
+    if (countWeek) countWeek.textContent = weekCount;
+    if (countOverdue) countOverdue.textContent = overdueCount;
+    if (countNoDate) countNoDate.textContent = noDateCount;
+  }
+  
+  // ============ SIDEBAR SUBJECTS RENDERING ============
+  function renderSubjectsSidebar() {
+    if (!subjectsList) return;
+    
+    updateSmartViewCounts();
+    
+    let html = '';
+    const topLevel = getTopLevelSubjects();
+    
+    topLevel.forEach(s => {
+      const children = getChildSubjects(s.id);
+      const hasChildren = children.length > 0;
+      const isExpanded = expandedSubjects.has(s.id);
+      const isActive = currentSubject === s.id && !currentSmartView;
+      const taskCount = countSubjectTasks(s.id, true);
+      
+      html += `
+        <div class="subject-list-item ${isExpanded ? 'expanded' : ''}" data-subject-id="${s.id}">
+          <div class="subject-list-header ${isActive ? 'active' : ''}" data-subject="${s.id}">
+            ${hasChildren ? `<span class="collapse-arrow">▼</span>` : ''}
+            <span class="subject-color-dot" style="background: ${s.color};"></span>
+            <span class="subject-name">${escapeHtml(s.name)}</span>
+            ${taskCount > 0 ? `<span class="subject-count">${taskCount}</span>` : ''}
+            <div class="subject-actions">
+              <button class="subject-action-btn" data-action="add-sub" title="הוסף תת-נושא">➕</button>
+              <button class="subject-action-btn" data-action="edit" title="עריכה">✏️</button>
+              <button class="subject-action-btn delete" data-action="delete" title="מחק">🗑️</button>
+            </div>
+          </div>
+          ${hasChildren ? `
+            <div class="subject-list-children">
+              ${children.map(c => {
+                const childCount = tasks.filter(t => t.subject === c.id && !t.completed).length;
+                const childActive = currentSubject === c.id && !currentSmartView;
+                return `
+                  <div class="subject-child-item ${childActive ? 'active' : ''}" data-subject="${c.id}">
+                    <span class="child-color" style="background: ${c.color};"></span>
+                    <span class="child-name">${escapeHtml(c.name)}</span>
+                    ${childCount > 0 ? `<span class="child-count">${childCount}</span>` : ''}
+                    <div class="subject-actions">
+                      <button class="subject-action-btn" data-action="edit" title="עריכה">✏️</button>
+                      <button class="subject-action-btn delete" data-action="delete" title="מחק">🗑️</button>
+                    </div>
+                  </div>
+                `;
+              }).join('')}
+            </div>
+          ` : ''}
+        </div>
+      `;
+    });
+    
+    subjectsList.innerHTML = html;
+    
+    // Setup event handlers
+    setupSubjectsSidebarHandlers();
+    setupSmartViewsHandlers();
+  }
+  
+  function setupSubjectsSidebarHandlers() {
+    // Subject headers click - select subject
+    subjectsList.querySelectorAll('.subject-list-header').forEach(header => {
+      header.addEventListener('click', (e) => {
+        // Don't select if clicking action buttons or collapse arrow
+        if (e.target.classList.contains('collapse-arrow') || e.target.closest('.subject-actions')) {
+          return;
+        }
+        
+        currentSmartView = null;
+        currentSubject = header.dataset.subject;
+        renderSubjectsSidebar();
+        renderTasks();
+      });
+      
+      // Right-click context menu
+      header.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        showContextMenu(e.clientX, e.clientY, header.dataset.subject);
+      });
+    });
+    
+    // Collapse arrows
+    subjectsList.querySelectorAll('.collapse-arrow').forEach(arrow => {
+      arrow.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const subjectId = arrow.closest('.subject-list-item').dataset.subjectId;
+        toggleSubjectExpanded(subjectId);
+      });
+    });
+    
+    // Subject action buttons (edit, delete, add-sub)
+    subjectsList.querySelectorAll('.subject-action-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const action = btn.dataset.action;
+        const subjectId = btn.closest('[data-subject]').dataset.subject;
+        
+        if (action === 'edit') {
+          openSubjectModal(subjectId);
+        } else if (action === 'add-sub') {
+          openSubjectModal(null, subjectId);
+        } else if (action === 'delete') {
+          if (confirm('האם אתה בטוח שברצונך למחוק את הנושא הזה?')) {
+            deleteSubjectById(subjectId);
+          }
+        }
+      });
+    });
+    
+    // Child items click
+    subjectsList.querySelectorAll('.subject-child-item').forEach(child => {
+      child.addEventListener('click', (e) => {
+        // Don't select if clicking action buttons
+        if (e.target.closest('.subject-actions')) {
+          return;
+        }
+        
+        currentSmartView = null;
+        currentSubject = child.dataset.subject;
+        renderSubjectsSidebar();
+        renderTasks();
+      });
+      
+      // Right-click context menu
+      child.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        showContextMenu(e.clientX, e.clientY, child.dataset.subject);
+      });
+    });
+  }
+  
+  function toggleSubjectExpanded(subjectId) {
+    if (expandedSubjects.has(subjectId)) {
+      expandedSubjects.delete(subjectId);
+    } else {
+      expandedSubjects.add(subjectId);
+    }
+    renderSubjectsSidebar();
+  }
+  
+  function setupSmartViewsHandlers() {
+    if (!smartViewsList) return;
+    
+    smartViewsList.querySelectorAll('.smart-view-item').forEach(item => {
+      item.addEventListener('click', () => {
+        const view = item.dataset.view;
+        if (view === 'all') {
+          currentSmartView = null;
+          currentSubject = 'all';
+        } else {
+          currentSmartView = view;
+          currentSubject = 'all';
+        }
+        
+        // Update active states
+        smartViewsList.querySelectorAll('.smart-view-item').forEach(i => i.classList.remove('active'));
+        item.classList.add('active');
+        
+        renderSubjectsSidebar();
+        renderTasks();
+      });
+    });
+    
+    // Set initial active state
+    const activeView = currentSmartView || 'all';
+    smartViewsList.querySelectorAll('.smart-view-item').forEach(item => {
+      item.classList.toggle('active', item.dataset.view === activeView);
+    });
+  }
+  
+  // Add subject sidebar button handler
+  if (addSubjectSidebarBtn) {
+    addSubjectSidebarBtn.addEventListener('click', () => openSubjectModal());
+  }
+  
+  // ============ CONTEXT MENU ============
+  function showContextMenu(x, y, subjectId) {
+    contextMenuTarget = subjectId;
+    const subject = subjects.find(s => s.id === subjectId);
+    
+    // Update menu items based on subject type
+    const addSubItem = contextMenu.querySelector('[data-action="add-sub"]');
+    if (subject && subject.parentId) {
+      // It's a sub-subject, hide "add sub" option
+      addSubItem.style.display = 'none';
+    } else {
+      addSubItem.style.display = 'flex';
+    }
+    
+    // Position and show menu
+    contextMenu.style.left = x + 'px';
+    contextMenu.style.top = y + 'px';
+    contextMenu.classList.add('open');
+  }
+  
+  function hideContextMenu() {
+    contextMenu.classList.remove('open');
+    contextMenuTarget = null;
+    hideEventContextMenu();
+  }
+  
+  // ============ EVENT CONTEXT MENU ============
+  function showEventContextMenu(x, y, eventId) {
+    eventContextMenuTarget = eventId;
+    const evt = events.find(e => e.id === eventId);
+    
+    // Update star text based on current state
+    const starItem = eventContextMenu.querySelector('[data-action="star"]');
+    if (starItem && evt) {
+      starItem.innerHTML = evt.highlighted ? '⭐ הסר מועדף' : '⭐ סמן כמועדף';
+    }
+    
+    // Position and show menu
+    eventContextMenu.style.left = x + 'px';
+    eventContextMenu.style.top = y + 'px';
+    eventContextMenu.classList.add('open');
+  }
+  
+  function hideEventContextMenu() {
+    if (eventContextMenu) {
+      eventContextMenu.classList.remove('open');
+    }
+    eventContextMenuTarget = null;
+    hideAddEventContextMenu();
+  }
+  
+  // ============ ADD EVENT CONTEXT MENU ============
+  const addEventContextMenu = $("addEventContextMenu");
+  
+  function showAddEventContextMenu(x, y) {
+    if (!addEventContextMenu) return;
+    
+    // Position and show menu
+    addEventContextMenu.style.left = x + 'px';
+    addEventContextMenu.style.top = y + 'px';
+    addEventContextMenu.classList.add('open');
+  }
+  
+  function hideAddEventContextMenu() {
+    if (addEventContextMenu) {
+      addEventContextMenu.classList.remove('open');
+    }
+  }
+  
+  // Add event context menu item clicks
+  if (addEventContextMenu) {
+    addEventContextMenu.addEventListener('click', (e) => {
+      const action = e.target.closest('.context-menu-item')?.dataset.action;
+      if (!action) return;
+      
+      const now = new Date();
+      let targetDate = new Date();
+      
+      if (action === 'add') {
+        // Focus on the input panel
+        eventName.focus();
+        hideAddEventContextMenu();
+        return;
+      } else if (action === 'add-tomorrow') {
+        targetDate.setDate(targetDate.getDate() + 1);
+        targetDate.setHours(12, 0, 0, 0);
+      } else if (action === 'add-week') {
+        targetDate.setDate(targetDate.getDate() + 7);
+        targetDate.setHours(12, 0, 0, 0);
+      }
+      
+      // Pre-fill the date and focus on name
+      const dateStr = targetDate.toISOString().slice(0, 16);
+      eventDate.value = dateStr;
+      eventName.focus();
+      
+      hideAddEventContextMenu();
+    });
+  }
+  
+  // Add right-click on event list area to show add event menu
+  eventList.addEventListener('contextmenu', (e) => {
+    // Only show add menu if not clicking on an event row
+    if (!e.target.closest('.event-row')) {
+      e.preventDefault();
+      hideContextMenu();
+      showAddEventContextMenu(e.clientX, e.clientY);
+    }
+  });
+  
+  // Also add to empty state
+  emptyState.addEventListener('contextmenu', (e) => {
+    e.preventDefault();
+    hideContextMenu();
+    showAddEventContextMenu(e.clientX, e.clientY);
+  });
+  
+  // Event context menu item clicks
+  if (eventContextMenu) {
+    eventContextMenu.addEventListener('click', (e) => {
+      const action = e.target.closest('.context-menu-item')?.dataset.action;
+      if (!action || !eventContextMenuTarget) return;
+      
+      const evt = events.find(ev => ev.id === eventContextMenuTarget);
+      
+      if (action === 'edit') {
+        startEdit(eventContextMenuTarget);
+      } else if (action === 'star') {
+        if (evt) {
+          updateInCloud(eventContextMenuTarget, { ...evt, highlighted: !evt.highlighted });
+        }
+      } else if (action === 'duplicate') {
+        if (evt) {
+          saveToCloud({
+            name: evt.name + ' (העתק)',
+            date: evt.date,
+            notes: evt.notes || null,
+            highlighted: false
+          });
+        }
+      } else if (action === 'delete') {
+        const existing = pendingDeletes.get(eventContextMenuTarget);
+        if (existing) clearTimeout(existing.timer);
+        const timer = setTimeout(() => {
+          deleteFromCloud(eventContextMenuTarget);
+          pendingDeletes.delete(eventContextMenuTarget);
+          if (lastDeletedId === eventContextMenuTarget) hideUndoToast();
+        }, DELETE_TIMEOUT_MS);
+        pendingDeletes.set(eventContextMenuTarget, { timer });
+        render();
+        showUndoToast(evt ? evt.name : 'Event', eventContextMenuTarget);
+      }
+      
+      hideEventContextMenu();
+    });
+  }
+  
+  // Context menu item clicks (subjects)
+  contextMenu.addEventListener('click', (e) => {
+    const action = e.target.closest('.context-menu-item')?.dataset.action;
+    if (!action || !contextMenuTarget) return;
+    
+    if (action === 'edit') {
+      openSubjectModal(contextMenuTarget);
+    } else if (action === 'add-sub') {
+      openSubjectModal(null, contextMenuTarget);
+    } else if (action === 'delete') {
+      deleteSubjectById(contextMenuTarget);
+    }
+    
+    hideContextMenu();
+  });
+  
+  // Hide context menu on click outside
+  document.addEventListener('click', (e) => {
+    if (!contextMenu.contains(e.target) && 
+        (!eventContextMenu || !eventContextMenu.contains(e.target)) &&
+        (!addEventContextMenu || !addEventContextMenu.contains(e.target))) {
+      hideContextMenu();
+      hideAddEventContextMenu();
+    }
+  });
+  
+  document.addEventListener('contextmenu', (e) => {
+    // Hide menus when right-clicking elsewhere
+    if (!e.target.closest('.subject-list-header') && !e.target.closest('.subject-child-item')) {
+      hideContextMenu();
+    }
+    if (!e.target.closest('.event-row') && !e.target.closest('.event-list') && !e.target.closest('.empty-state')) {
+      hideEventContextMenu();
+      hideAddEventContextMenu();
+    }
+  });
+  
+  function updateSubjectSelectors() {
+    // Build hierarchical options for task subject selectors
+    let options = `<option value="">ללא נושא</option>`;
+    
+    const topLevel = getTopLevelSubjects();
+    topLevel.forEach(s => {
+      options += `<option value="${s.id}">${escapeHtml(s.name)}</option>`;
+      const children = getChildSubjects(s.id);
+      children.forEach(c => {
+        options += `<option value="${c.id}">&nbsp;&nbsp;↳ ${escapeHtml(c.name)}</option>`;
+      });
+    });
+    
+    newTaskSubject.innerHTML = options;
+    editTaskSubject.innerHTML = options;
+  }
+  
+  function updateParentSubjectSelector() {
+    // Only top-level subjects can be parents
+    let options = `<option value="">ללא (נושא ראשי)</option>`;
+    const topLevel = getTopLevelSubjects();
+    topLevel.forEach(s => {
+      // Don't allow setting itself as parent when editing
+      if (s.id !== editingSubjectId) {
+        options += `<option value="${s.id}">${escapeHtml(s.name)}</option>`;
+      }
+    });
+    parentSubjectSelect.innerHTML = options;
+  }
+  
+  // Update getFilteredTasks to include subject filter AND smart views
+  const originalGetFilteredTasks = getFilteredTasks;
+  getFilteredTasks = function() {
+    let filtered = originalGetFilteredTasks();
+    
+    // Apply smart view filter
+    if (currentSmartView) {
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const tomorrow = new Date(today);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      const weekLater = new Date(today);
+      weekLater.setDate(weekLater.getDate() + 7);
+      
+      if (currentSmartView === 'today') {
+        filtered = filtered.filter(t => {
+          if (!t.dueDate) return false;
+          const due = new Date(t.dueDate);
+          return due >= today && due < tomorrow;
+        });
+      } else if (currentSmartView === 'week') {
+        filtered = filtered.filter(t => {
+          if (!t.dueDate) return false;
+          const due = new Date(t.dueDate);
+          return due >= today && due < weekLater;
+        });
+      } else if (currentSmartView === 'overdue') {
+        filtered = filtered.filter(t => {
+          if (!t.dueDate || t.completed) return false;
+          return new Date(t.dueDate) < now;
+        });
+      } else if (currentSmartView === 'nodate') {
+        filtered = filtered.filter(t => !t.dueDate && !t.completed);
+      }
+    }
+    
+    // Apply subject filter
+    if (currentSubject !== 'all' && !currentSmartView) {
+      const selectedSubject = subjects.find(s => s.id === currentSubject);
+      const isSubSubject = selectedSubject && selectedSubject.parentId;
+      
+      // Get all valid subject IDs (current + children if parent)
+      const validIds = [currentSubject];
+      const children = getChildSubjects(currentSubject);
+      children.forEach(c => validIds.push(c.id));
+      
+      const subjectFiltered = filtered.filter(t => validIds.includes(t.subject));
+      
+      // If this is a sub-subject with no tasks, show high priority tasks from all subjects due today/tomorrow
+      if (isSubSubject && subjectFiltered.filter(t => !t.completed).length === 0) {
+        const now = new Date();
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const dayAfterTomorrow = new Date(today);
+        dayAfterTomorrow.setDate(dayAfterTomorrow.getDate() + 2);
+        
+        // Get high priority tasks (urgent, high) due today or tomorrow from all subjects
+        filtered = filtered.filter(t => {
+          if (t.completed) return false;
+          const isHighPriority = t.priority === 'urgent' || t.priority === 'high';
+          const hasDueDate = t.dueDate;
+          if (!hasDueDate) return isHighPriority; // Include high priority without date
+          const due = new Date(t.dueDate);
+          const isDueSoon = due >= today && due < dayAfterTomorrow;
+          return isHighPriority || isDueSoon;
+        });
+        
+        // Sort by priority then by due date
+        filtered.sort((a, b) => {
+          const priorityOrder = { urgent: 0, high: 1, medium: 2, low: 3, none: 4 };
+          const pDiff = (priorityOrder[a.priority] || 4) - (priorityOrder[b.priority] || 4);
+          if (pDiff !== 0) return pDiff;
+          if (!a.dueDate && !b.dueDate) return 0;
+          if (!a.dueDate) return 1;
+          if (!b.dueDate) return -1;
+          return new Date(a.dueDate) - new Date(b.dueDate);
+        });
+        
+        // Mark that we're showing suggested tasks
+        window.showingSuggestedTasks = true;
+      } else {
+        filtered = subjectFiltered;
+        window.showingSuggestedTasks = false;
+      }
+    } else {
+      window.showingSuggestedTasks = false;
+    }
+    
+    return filtered;
+  };
+  
+  // Add subject button (legacy - might not exist now)
+  if (addSubjectBtn) {
+    addSubjectBtn.onclick = () => {
+      openSubjectModal(null, null);
+    };
+  }
+  
+  function openSubjectModal(subjectId, parentId = null) {
+    editingSubjectId = subjectId;
+    updateParentSubjectSelector();
+    
+    if (subjectId) {
+      const subject = subjects.find(s => s.id === subjectId);
+      if (!subject) return;
+      subjectModalTitle.textContent = 'ערוך נושא';
+      subjectNameInput.value = subject.name;
+      selectedSubjectColor = subject.color;
+      parentSubjectSelect.value = subject.parentId || '';
+      deleteSubjectBtn.style.display = 'block';
+      
+      // If editing a parent with children, disable parent selector
+      const children = getChildSubjects(subjectId);
+      parentSubjectSelect.disabled = children.length > 0;
+    } else {
+      subjectModalTitle.textContent = parentId ? 'הוסף תת-נושא' : 'הוסף נושא חדש';
+      subjectNameInput.value = '';
+      selectedSubjectColor = '#667eea';
+      parentSubjectSelect.value = parentId || '';
+      parentSubjectSelect.disabled = false;
+      deleteSubjectBtn.style.display = 'none';
+    }
+    
+    // Update color picker selection
+    subjectColorPicker.querySelectorAll('.subject-color-option').forEach(opt => {
+      opt.classList.toggle('selected', opt.dataset.color === selectedSubjectColor);
+    });
+    
+    subjectModal.classList.add('open');
+    subjectNameInput.focus();
+  }
+  
+  function closeSubjectModal() {
+    subjectModal.classList.remove('open');
+    editingSubjectId = null;
+  }
+  
+  subjectModal.addEventListener('click', (e) => {
+    if (e.target === subjectModal) closeSubjectModal();
+  });
+  
+  // Color picker
+  subjectColorPicker.addEventListener('click', (e) => {
+    const option = e.target.closest('.subject-color-option');
+    if (!option) return;
+    subjectColorPicker.querySelectorAll('.subject-color-option').forEach(o => o.classList.remove('selected'));
+    option.classList.add('selected');
+    selectedSubjectColor = option.dataset.color;
+  });
+  
+  // Cancel button
+  cancelSubjectBtn.onclick = closeSubjectModal;
+  
+  // Save subject
+  saveSubjectBtn.onclick = () => {
+    const name = subjectNameInput.value.trim();
+    if (!name) return;
+    
+    const parentId = parentSubjectSelect.value || null;
+    
+    const subjectData = {
+      name,
+      color: selectedSubjectColor,
+      parentId,
+      createdAt: new Date().toISOString()
+    };
+    
+    if (editingSubjectId) {
+      // Update existing
+      set(ref(db, 'subjects/' + editingSubjectId), subjectData);
+    } else {
+      // Create new
+      const newSubjectRef = push(subjectsRef);
+      set(newSubjectRef, subjectData);
+    }
+    
+    closeSubjectModal();
+  };
+  
+  subjectNameInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') saveSubjectBtn.click();
+  });
+  
+  // Delete subject by ID (used from dropdown buttons)
+  function deleteSubjectById(subjectId) {
+    const subject = subjects.find(s => s.id === subjectId);
+    if (!subject) return;
+    
+    const children = getChildSubjects(subjectId);
+    let message = `Delete "${subject.name}"?`;
+    if (children.length > 0) {
+      message += ` This will also delete ${children.length} sub-subject(s).`;
+    }
+    message += ' Tasks will remain but become uncategorized.';
+    
+    if (confirm(message)) {
+      // Delete children first
+      children.forEach(child => {
+        tasks.forEach(task => {
+          if (task.subject === child.id) {
+            set(ref(db, 'tasks/' + task.id + '/subject'), '');
+          }
+        });
+        remove(ref(db, 'subjects/' + child.id));
+      });
+      
+      // Remove subject from all tasks that have it
+      tasks.forEach(task => {
+        if (task.subject === subjectId) {
+          set(ref(db, 'tasks/' + task.id + '/subject'), '');
+        }
+      });
+      
+      // Delete the subject
+      remove(ref(db, 'subjects/' + subjectId));
+      
+      // Reset to all if we were viewing that subject
+      if (currentSubject === subjectId || children.some(c => c.id === currentSubject)) {
+        currentSubject = 'all';
+      }
+    }
+  }
+  
+  // Delete subject from modal
+  deleteSubjectBtn.onclick = () => {
+    if (!editingSubjectId) return;
+    deleteSubjectById(editingSubjectId);
+    closeSubjectModal();
+  };
+  
+  // Update task rendering to show subject badge
+  const originalRenderTaskItem = renderTaskItem;
+  renderTaskItem = function(task) {
+    const priority = task.priority || 'none';
+    const countdown = calcTaskCountdown(task.dueDate);
+    
+    let dueDateHtml = '';
+    if (task.dueDate) {
+      const dueDate = new Date(task.dueDate);
+      const dateStr = dueDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+      const urgencyClass = countdown?.overdue ? 'overdue' : (countdown?.urgency === 'soon' ? 'soon' : '');
+      dueDateHtml = `<span class="task-due ${urgencyClass}">📅 ${dateStr}</span>`;
+    }
+    
+    let countdownHtml = '';
+    if (countdown) {
+      const countdownClass = countdown.overdue ? 'overdue' : (countdown.urgency === 'soon' ? 'soon' : '');
+      countdownHtml = `<span class="task-countdown ${countdownClass}" data-due="${task.dueDate}">${countdown.text}</span>`;
+    }
+    
+    // Subject badge
+    let subjectHtml = '';
+    if (task.subject && currentSubject === 'all') {
+      const subject = subjects.find(s => s.id === task.subject);
+      if (subject) {
+        subjectHtml = `<span class="task-subject-badge" style="--subject-color: ${subject.color};">${escapeHtml(subject.name)}</span>`;
+      }
+    }
+    
+    let subtasksHtml = '';
+    if (task.checklist && task.checklist.length > 0) {
+      const checked = task.checklist.filter(c => c.checked).length;
+      const total = task.checklist.length;
+      const maxShow = 3;
+      const items = task.checklist.slice(0, maxShow);
+      
+      subtasksHtml = `
+        <div class="task-subtasks">
+          <div class="task-subtask-progress">${checked}/${total} completed</div>
+          ${items.map((item, i) => `
+            <div class="task-subtask ${item.checked ? 'checked' : ''}">
+              <input type="checkbox" ${item.checked ? 'checked' : ''} data-index="${i}" />
+              <span>${escapeHtml(item.text)}</span>
+            </div>
+          `).join('')}
+          ${task.checklist.length > maxShow ? `<div style="font-size: 12px; color: var(--muted);">+${task.checklist.length - maxShow} more</div>` : ''}
+        </div>
+      `;
+    }
+    
+    const priorityBadge = priority !== 'none' 
+      ? `<span class="task-priority-badge">${PRIORITY_LABELS[priority]}</span>` 
+      : '';
+    
+    return `
+      <div class="task-item priority-${priority} ${task.completed ? 'completed' : ''}" data-id="${task.id}">
+        <div class="task-checkbox" data-action="toggle">${task.completed ? '✓' : ''}</div>
+        <div class="task-main">
+          <div class="task-title-row">
+            <span class="task-title">${escapeHtml(task.title)}</span>
+            ${subjectHtml}
+            ${priorityBadge}
+          </div>
+          <div class="task-meta">
+            ${dueDateHtml}
+            ${countdownHtml}
+          </div>
+          ${subtasksHtml}
+        </div>
+        <div class="task-actions">
+          <button class="task-action-btn" data-action="edit" title="Edit">✏️</button>
+          <button class="task-action-btn delete" data-action="delete" title="Delete">🗑️</button>
+        </div>
+      </div>
+    `;
+  };
+  
+  // Update openTaskEditModal to set subject
+  const originalOpenTaskEditModal = openTaskEditModal;
+  openTaskEditModal = function(taskId) {
+    originalOpenTaskEditModal(taskId);
+    if (editingTask) {
+      editTaskSubject.value = editingTask.subject || '';
+    }
+  };
+  
+  // Update add task to include subject AND natural language parsing
+  addTaskBtn.onclick = () => {
+    const title = newTaskTitle.value.trim();
+    if (!title) return;
+    
+    const dueValue = newTaskDue.value;
+    const dueDate = dueValue ? parseLocal(dueValue) : null;
+    
+    const taskData = {
+      title,
+      content: '',
+      priority: selectedTaskPriority,
+      dueDate: dueDate ? dueDate.toISOString() : null,
+      subject: newTaskSubject.value || '',
+      checklist: [],
+      completed: false,
+      createdAt: new Date().toISOString()
+    };
+    
+    const newTaskRef = push(tasksRef);
+    set(newTaskRef, taskData);
+    
+    // Reset form
+    newTaskTitle.value = '';
+    newTaskDue.value = '';
+    newTaskSubject.value = '';
+    quickAddRow.style.display = 'none';
+    selectedTaskPriority = 'medium';
+    taskPriorityPicker.querySelectorAll('.priority-option').forEach(o => o.classList.remove('selected'));
+    taskPriorityPicker.querySelector('[data-priority="medium"]').classList.add('selected');
+  };
+
+  // ============ NATURAL LANGUAGE PARSING (Hebrew + English) ============
+  function parseNaturalLanguage(input) {
+    let title = input;
+    let dueDate = null;
+    let priority = 'medium';
+    let subjectId = '';
+    
+    // Priority patterns (Hebrew and English)
+    const priorityPatterns = {
+      urgent: /\b(דחוף|urgent|asap|מיידי)\b/gi,
+      high: /\b(גבוה|high|חשוב|important)\b/gi,
+      medium: /\b(בינוני|medium|רגיל)\b/gi,
+      low: /\b(נמוך|low|לא דחוף)\b/gi
+    };
+    
+    for (const [level, pattern] of Object.entries(priorityPatterns)) {
+      if (pattern.test(input)) {
+        priority = level;
+        title = title.replace(pattern, '').trim();
+        break;
+      }
+    }
+    
+    // Subject pattern: #subject or #נושא (supports multi-word subjects with underscores or spaces)
+    // Match #subject_name or #"נושא משנה" or #נושא
+    const subjectMatchQuoted = input.match(/#"([^"]+)"/);
+    const subjectMatchSimple = input.match(/#([\u0590-\u05FFa-zA-Z0-9_-]+)/);
+    
+    let subjectSearchTerm = null;
+    if (subjectMatchQuoted) {
+      subjectSearchTerm = subjectMatchQuoted[1];
+      title = title.replace(/#"[^"]+"/, '').trim();
+    } else if (subjectMatchSimple) {
+      subjectSearchTerm = subjectMatchSimple[1].replace(/_/g, ' ');
+      title = title.replace(/#[\u0590-\u05FFa-zA-Z0-9_-]+/, '').trim();
+    }
+    
+    if (subjectSearchTerm) {
+      const searchLower = subjectSearchTerm.toLowerCase();
+      
+      // First try exact match
+      let foundSubject = subjects.find(s => s.name.toLowerCase() === searchLower);
+      
+      // Then try starts with
+      if (!foundSubject) {
+        foundSubject = subjects.find(s => s.name.toLowerCase().startsWith(searchLower));
+      }
+      
+      // Then try contains
+      if (!foundSubject) {
+        foundSubject = subjects.find(s => s.name.toLowerCase().includes(searchLower));
+      }
+      
+      // Try reverse contains (search term contains subject name)
+      if (!foundSubject) {
+        foundSubject = subjects.find(s => searchLower.includes(s.name.toLowerCase()));
+      }
+      
+      // Try matching by parent/child hierarchy: "parent/child" or "parent-child"
+      if (!foundSubject && (searchLower.includes('/') || searchLower.includes('-'))) {
+        const parts = searchLower.split(/[\/\-]/);
+        if (parts.length === 2) {
+          const parentName = parts[0].trim();
+          const childName = parts[1].trim();
+          
+          // Find parent first
+          const parent = subjects.find(s => !s.parentId && s.name.toLowerCase().includes(parentName));
+          if (parent) {
+            // Find child of this parent
+            foundSubject = subjects.find(s => 
+              s.parentId === parent.id && s.name.toLowerCase().includes(childName)
+            );
+          }
+        }
+      }
+      
+      if (foundSubject) {
+        subjectId = foundSubject.id;
+      }
+    }
+    
+    // Date patterns (Hebrew)
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    
+    // Time pattern: HH:MM
+    const timeMatch = input.match(/(\d{1,2}):(\d{2})/);
+    let hours = 23, minutes = 59;
+    if (timeMatch) {
+      hours = parseInt(timeMatch[1]);
+      minutes = parseInt(timeMatch[2]);
+      title = title.replace(/\d{1,2}:\d{2}/, '').trim();
+    }
+    
+    // Date patterns
+    const datePatterns = [
+      { pattern: /\b(היום|today)\b/gi, days: 0 },
+      { pattern: /\b(מחר|tomorrow)\b/gi, days: 1 },
+      { pattern: /\b(מחרתיים)\b/gi, days: 2 },
+      { pattern: /\b(בעוד יומיים|in 2 days)\b/gi, days: 2 },
+      { pattern: /\b(בעוד שלושה ימים|in 3 days)\b/gi, days: 3 },
+      { pattern: /\b(השבוע|this week)\b/gi, days: 7 },
+      { pattern: /\b(בשבוע הבא|next week)\b/gi, days: 7 },
+    ];
+    
+    for (const { pattern, days } of datePatterns) {
+      if (pattern.test(input)) {
+        dueDate = new Date(today);
+        dueDate.setDate(dueDate.getDate() + days);
+        dueDate.setHours(hours, minutes, 0, 0);
+        title = title.replace(pattern, '').trim();
+        break;
+      }
+    }
+    
+    // Day names (Hebrew)
+    const hebrewDays = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
+    const englishDays = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+    
+    for (let i = 0; i < 7; i++) {
+      const hebrewPattern = new RegExp(`\\b(ביום\\s+)?${hebrewDays[i]}\\b`, 'gi');
+      const englishPattern = new RegExp(`\\b(on\\s+)?${englishDays[i]}\\b`, 'gi');
+      
+      if (hebrewPattern.test(input) || englishPattern.test(input)) {
+        const targetDay = i;
+        const currentDay = today.getDay();
+        let daysToAdd = targetDay - currentDay;
+        if (daysToAdd <= 0) daysToAdd += 7;
+        
+        dueDate = new Date(today);
+        dueDate.setDate(dueDate.getDate() + daysToAdd);
+        dueDate.setHours(hours, minutes, 0, 0);
+        title = title.replace(hebrewPattern, '').replace(englishPattern, '').trim();
+        break;
+      }
+    }
+    
+    // Clean up extra spaces
+    title = title.replace(/\s+/g, ' ').trim();
+    
+    return { title, dueDate, priority, subjectId };
+  }
+  
+  // Smart quick add with natural language
+  newTaskTitle.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+      const input = newTaskTitle.value.trim();
+      if (!input) return;
+      
+      const parsed = parseNaturalLanguage(input);
+      
+      // If we have parsed data, use it
+      if (parsed.dueDate || parsed.subjectId || parsed.priority !== 'medium') {
+        const taskData = {
+          title: parsed.title || input,
+          content: '',
+          priority: parsed.priority,
+          dueDate: parsed.dueDate ? parsed.dueDate.toISOString() : null,
+          subject: parsed.subjectId,
+          checklist: [],
+          completed: false,
+          createdAt: new Date().toISOString()
+        };
+        
+        const newTaskRef = push(tasksRef);
+        set(newTaskRef, taskData);
+        
+        newTaskTitle.value = '';
+        quickAddRow.style.display = 'none';
+      } else {
+        // Show the expanded form if no natural language detected
+        quickAddRow.style.display = 'flex';
+      }
+    }
+  });
+
+  // ============ DAILY REMINDER ============
+  const closeReminderBtn = $("closeReminderBtn");
+  const reminderDate = $("reminderDate");
+  const todayTasksList = $("todayTasksList");
+  const tomorrowTasksList = $("tomorrowTasksList");
+  const todayTasksSection = $("todayTasksSection");
+  const tomorrowTasksSection = $("tomorrowTasksSection");
+  
+  function showDailyReminder() {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const dayAfterTomorrow = new Date(tomorrow);
+    dayAfterTomorrow.setDate(dayAfterTomorrow.getDate() + 1);
+    
+    // Format date in Hebrew
+    const dateOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+    reminderDate.textContent = now.toLocaleDateString('he-IL', dateOptions);
+    
+    // Get today's tasks
+    const todayTasks = tasks.filter(t => {
+      if (!t.dueDate || t.completed) return false;
+      const due = new Date(t.dueDate);
+      return due >= today && due < tomorrow;
+    }).sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
+    
+    // Get tomorrow's tasks
+    const tomorrowTasks = tasks.filter(t => {
+      if (!t.dueDate || t.completed) return false;
+      const due = new Date(t.dueDate);
+      return due >= tomorrow && due < dayAfterTomorrow;
+    }).sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
+    
+    // Render today's tasks
+    if (todayTasks.length > 0) {
+      todayTasksSection.style.display = 'block';
+      todayTasksList.innerHTML = todayTasks.map(t => renderReminderTask(t)).join('');
+    } else {
+      todayTasksSection.style.display = 'block';
+      todayTasksList.innerHTML = '<div class="reminder-empty">🎉 אין משימות להיום!</div>';
+    }
+    
+    // Render tomorrow's tasks
+    if (tomorrowTasks.length > 0) {
+      tomorrowTasksSection.style.display = 'block';
+      tomorrowTasksList.innerHTML = tomorrowTasks.map(t => renderReminderTask(t)).join('');
+    } else {
+      tomorrowTasksSection.style.display = 'none';
+    }
+    
+    reminderModal.classList.add('open');
+  }
+  
+  function renderReminderTask(task) {
+    const priorityColors = {
+      urgent: '#ef4444',
+      high: '#f97316',
+      medium: '#eab308',
+      low: '#22c55e',
+      none: '#6b7280'
+    };
+    const color = priorityColors[task.priority || 'none'];
+    const time = task.dueDate ? new Date(task.dueDate).toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' }) : '';
+    
+    return `
+      <div class="reminder-task-item">
+        <div class="task-priority-dot" style="background: ${color};"></div>
+        <div class="task-info">
+          <div class="task-title">${escapeHtml(task.title)}</div>
+          ${time ? `<div class="task-time">⏰ ${time}</div>` : ''}
+        </div>
+      </div>
+    `;
+  }
+  
+  closeReminderBtn.onclick = () => {
+    reminderModal.classList.remove('open');
+    localStorage.setItem('lastReminderDate', new Date().toDateString());
+  };
+  
+  // Check if we should show reminder (at 9:00 AM)
+  function checkDailyReminder() {
+    const now = new Date();
+    const lastReminder = localStorage.getItem('lastReminderDate');
+    const todayString = now.toDateString();
+    
+    // If already shown today, skip
+    if (lastReminder === todayString) return;
+    
+    // If it's between 9:00 and 9:30 AM, show reminder
+    if (now.getHours() === 9 && now.getMinutes() < 30) {
+      // Wait for tasks to load
+      if (tasks.length > 0 || subjects.length > 0) {
+        showDailyReminder();
+      }
+    }
+  }
+  
+  // Check every minute
+  setInterval(checkDailyReminder, 60000);
+  
+  // Also check on page load (with delay to let data load)
+  setTimeout(checkDailyReminder, 3000);
+
+  // ============ INITIALIZE SMART VIEWS ============
+  setupSmartViews();
 </script>
 </body>
 </html>
