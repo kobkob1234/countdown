@@ -2777,6 +2777,7 @@
     
     
     
+    /* -------------------- Subjects / Sidebar -------------------- */
     .add-subject-btn {
       width: 36px;
       height: 36px;
@@ -3346,33 +3347,7 @@
     
     
     
-    .add-subject-btn {
-      width: 36px;
-      height: 36px;
-      border: 2px dashed var(--border);
-      border-radius: 50%;
-      background: transparent;
-      color: var(--muted);
-      font-size: 20px;
-      cursor: pointer;
-      transition: all 0.2s;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
-    }
-    .add-subject-btn:hover {
-      border-color: var(--accent);
-      color: var(--accent);
-      background: rgba(102,126,234,0.1);
-    }
-    
-    /* Task Calendar in Sidebar - matches countdown calendar style */
-    .task-calendar-section {
-      margin-top: 20px;
-      padding-top: 16px;
-      border-top: 1px solid var(--border);
-    }
+    /* (duplicate .add-subject-btn removed) */
     
     
     
@@ -4358,6 +4333,36 @@ const themeToggle = $("themeToggle");
   const eventNotes = $("eventNotes");
   const undoToast = $("undoToast");
   const undoToastMsg = $("undoToastMsg");
+
+  // Event delegation for main calendar: single handler instead of per-chip listeners
+  if (calendarGrid) {
+    calendarGrid.addEventListener('click', (e) => {
+      const chip = e.target.closest('.calendar-event-chip');
+      if (chip) {
+        e.stopPropagation();
+        const eventId = chip.dataset.eventId;
+        if (eventId) {
+          const eventRow = document.querySelector(`.event-row[data-id="${eventId}"]`);
+          if (eventRow) {
+            eventRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            eventRow.style.transition = 'background 0.3s';
+            eventRow.style.background = 'var(--accent)';
+            setTimeout(() => { eventRow.style.background = ''; }, 800);
+          }
+        }
+        return;
+      }
+
+      const day = e.target.closest('.calendar-day:not(.other-month)');
+      if (day) {
+        const dateKey = day.dataset.date;
+        if (!dateKey) return;
+        if (eventDate) eventDate.value = dateKey + 'T12:00';
+        if (eventName) eventName.focus();
+        if (inputPanel) inputPanel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    });
+  }
   const undoToastUndo = $("undoToastUndo");
   const pomodoroCard = $("pomodoroCard");
   const pomodoroTaskSelect = $("pomodoroTaskSelect");
@@ -4388,6 +4393,8 @@ const themeToggle = $("themeToggle");
 
   let editingId = null;
   let events = [];
+  const eventsById = new Map();
+  function getEventById(id) { return eventsById.get(id); }
   let currentMonth = new Date();
   const pendingDeletes = new Map();
   let lastDeletedId = null;
@@ -4610,42 +4617,6 @@ const themeToggle = $("themeToggle");
 
     calendarGrid.innerHTML = html;
     renderMonthEventsList();
-
-    // Click calendar chip to scroll to event in main list
-    calendarGrid.querySelectorAll('.calendar-event-chip').forEach(chip => {
-      chip.addEventListener('click', (e) => {
-        e.stopPropagation(); // Don't trigger day click
-        const eventId = chip.dataset.eventId;
-        if (eventId) {
-          const eventRow = document.querySelector(`.event-row[data-id="${eventId}"]`);
-          if (eventRow) {
-            eventRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            // Flash highlight
-            eventRow.style.transition = 'background 0.3s';
-            eventRow.style.background = 'var(--accent)';
-            setTimeout(() => {
-              eventRow.style.background = '';
-            }, 800);
-          }
-        }
-      });
-    });
-
-    // Click calendar day to add event
-    calendarGrid.querySelectorAll('.calendar-day:not(.other-month)').forEach(dayEl => {
-      dayEl.addEventListener('click', (e) => {
-        // Don't trigger if clicking on a chip
-        if (e.target.classList.contains('calendar-event-chip')) return;
-        
-        const dateKey = dayEl.dataset.date;
-        if (!dateKey) return;
-        // Set date picker to clicked date at noon
-        eventDate.value = dateKey + 'T12:00';
-        eventName.focus();
-        // Scroll to input if needed
-        inputPanel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-      });
-    });
   }
   
   // Day Drawer functionality
@@ -4856,13 +4827,16 @@ const themeToggle = $("themeToggle");
 
   onValue(eventsRef, (snapshot) => {
     const data = snapshot.val();
+    eventsById.clear();
     if (data) {
       events = Object.keys(data).map(key => ({ id: key, ...data[key] }));
+      events.forEach(e => eventsById.set(e.id, e));
     } else {
       events = [];
     }
     render();
     renderCalendar();
+    startTicker();
   });
 
   const saveToCloud = (eventData) => {
@@ -4930,7 +4904,7 @@ const themeToggle = $("themeToggle");
 
   function render() {
     refs.clear();
-    eventList.innerHTML = "";
+    const frag = document.createDocumentFragment();
     // Use getActiveEvents() to account for pending deletes
     emptyState.style.display = getActiveEvents().length ? "none" : "block";
 
@@ -5083,8 +5057,10 @@ const themeToggle = $("themeToggle");
         target: new Date(evt.date).getTime()
       });
 
-      eventList.appendChild(row);
+      frag.appendChild(row);
     });
+
+    eventList.replaceChildren(frag);
 
     tick();
   }
@@ -5204,7 +5180,7 @@ const themeToggle = $("themeToggle");
 
   let tickerHandle = null;
   function startTicker() {
-    if (tickerHandle) clearTimeout(tickerHandle);
+    if (tickerHandle) return; // already running
     const loop = () => {
       tick();
       const msToNext = 1000 - (Date.now() % 1000);
@@ -6729,6 +6705,39 @@ const themeToggle = $("themeToggle");
   const taskCalendarTitle = $("taskCalendarTitle");
   const taskMonthEvents = $("taskMonthEvents");
   const taskMonthEventsTitle = $("taskMonthEventsTitle");
+
+  // Event delegation for Task calendar in Task Manager
+  if (taskCalendarGrid) {
+    taskCalendarGrid.addEventListener('click', (e) => {
+      const chip = e.target.closest('.calendar-event-chip');
+      if (chip) {
+        e.stopPropagation();
+        const taskId = chip.dataset.taskId;
+        if (taskId) {
+          const taskRow = document.querySelector(`.task-item[data-id="${taskId}"]`);
+          if (taskRow) {
+            taskRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            taskRow.style.transition = 'background 0.3s';
+            taskRow.style.background = 'var(--accent)';
+            setTimeout(() => { taskRow.style.background = ''; }, 800);
+          }
+        }
+        return;
+      }
+
+      const day = e.target.closest('.calendar-day:not(.other-month)');
+      if (day) {
+        const dateKey = day.dataset.date;
+        if (!dateKey) return;
+        const taskDueInput = $("newTaskDue");
+        const taskTitleInput = $("newTaskTitle");
+        const quickRow = $("quickAddRow");
+        if (taskDueInput) taskDueInput.value = dateKey + 'T23:59';
+        if (taskTitleInput) taskTitleInput.focus();
+        if (quickRow) quickRow.style.display = 'flex';
+      }
+    });
+  }
   
   function renderTaskCalendar() {
     if (!taskCalendarGrid || !taskCalendarTitle) return;
@@ -6813,43 +6822,7 @@ const themeToggle = $("themeToggle");
 
     taskCalendarGrid.innerHTML = html;
 
-    // Click calendar chip to scroll to task in main list
-    taskCalendarGrid.querySelectorAll('.calendar-event-chip').forEach(chip => {
-      chip.addEventListener('click', (e) => {
-        e.stopPropagation(); // Don't trigger day click
-        const taskId = chip.dataset.taskId;
-        if (taskId) {
-          const taskRow = document.querySelector(`.task-item[data-id="${taskId}"]`);
-          if (taskRow) {
-            taskRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            // Flash highlight
-            taskRow.style.transition = 'background 0.3s';
-            taskRow.style.background = 'var(--accent)';
-            setTimeout(() => {
-              taskRow.style.background = '';
-            }, 800);
-          }
-        }
-      });
-    });
-
-    // Click calendar day to add task
-    taskCalendarGrid.querySelectorAll('.calendar-day:not(.other-month)').forEach(dayEl => {
-      dayEl.addEventListener('click', (e) => {
-        // Don't trigger if clicking on a chip
-        if (e.target.classList.contains('calendar-event-chip')) return;
-        
-        const dateKey = dayEl.dataset.date;
-        if (!dateKey) return;
-        
-        const taskDueInput = $("newTaskDue");
-        const taskTitleInput = $("newTaskTitle");
-        const quickRow = $("quickAddRow");
-        if (taskDueInput) taskDueInput.value = dateKey + 'T23:59';
-        if (taskTitleInput) taskTitleInput.focus();
-        if (quickRow) quickRow.style.display = 'flex';
-      });
-    });
+    renderTaskMonthList();
     
     renderTaskMonthList();
   }
