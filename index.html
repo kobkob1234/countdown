@@ -102,21 +102,22 @@
     body.dark .priority-low { --priority-bg: rgba(34, 197, 94, 0.15); }
     body.dark .priority-none { --priority-bg: var(--day-other); }
 
-    /* Fixed Header Bar */
+    /* Fixed Header Bar - Always on top */
     .fixed-header-bar {
       position: fixed;
       top: 0;
       left: 0;
       right: 0;
-      height: 60px;
-      background: var(--card);
+      height: 56px;
+      background: linear-gradient(135deg, var(--card), var(--bg));
       border-bottom: 1px solid var(--border);
       display: flex;
       align-items: center;
       padding: 0 20px;
       gap: 12px;
-      z-index: 100;
-      box-shadow: var(--shadow);
+      z-index: 10000;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+      backdrop-filter: blur(12px);
     }
     .header-btn {
       padding: 10px 16px;
@@ -135,6 +136,11 @@
     }
     .header-btn:hover {
       background: var(--day-hover);
+      border-color: var(--accent);
+    }
+    .header-btn.active {
+      background: var(--accent);
+      color: white;
       border-color: var(--accent);
     }
     .header-btn.icon-only {
@@ -163,18 +169,17 @@
     }
 
     .sidebar {
-      width: 520px;
-      min-width: 360px;
+      width: 380px;
+      min-width: 320px;
       max-width: 90vw;
       background: var(--card);
       border-left: 1px solid var(--border);
-      padding: var(--space-5);
+      padding: var(--space-4);
       display: flex;
       flex-direction: column;
       order: 1;
       transition: transform 0.3s;
       overflow: auto;
-      resize: horizontal;
       flex: 0 0 auto;
       box-sizing: border-box;
     }
@@ -190,6 +195,7 @@
     .main-content {
       flex: 1;
       padding: var(--space-6);
+      padding-top: 80px;
       overflow-y: auto;
     }
 
@@ -584,6 +590,41 @@
       box-shadow: 0 0 0 4px rgba(239,68,68,0.18);
     }
 
+    
+
+    /* Pomodoro - Fullscreen like Task Manager */
+    .pomodoro-overlay {
+      position: fixed;
+      top: 56px;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: var(--bg);
+      display: none;
+      flex-direction: column;
+      z-index: 300;
+      overflow: hidden;
+    }
+    .pomodoro-overlay.open { display: flex; }
+    
+    .pomodoro-header-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 32px;
+      background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
+      border-bottom: 1px solid var(--border);
+    }
+    
+    .pomodoro-header-title {
+      font-size: 22px;
+      font-weight: 700;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    
     @media (max-width: 768px) {
       .event-row {
         flex-direction: column;
@@ -599,6 +640,990 @@
         justify-content: space-between;
       }
       .event-info { width: 100%; }
+      
+      /* Responsive Pomodoro */
+      .pomodoro-card { padding: 24px; gap: 24px; border-radius: 24px; }
+      .pomodoro-timer-wrap { width: 240px; height: 240px; }
+      .pomodoro-time { font-size: 52px; }
+      .pomodoro-btn { width: 52px; height: 52px; font-size: 20px; }
+      .pomodoro-btn.primary { width: 64px; height: 64px; font-size: 28px; }
+      .pomodoro-settings-panel { grid-template-columns: repeat(2, 1fr); }
+      .pomodoro-stats { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+      .pomodoro-stat { padding: 16px 8px; }
+      .pomodoro-stat .value { font-size: 24px; }
+      .pomodoro-presets { gap: 8px; }
+      .pomodoro-preset { padding: 10px 16px; font-size: 12px; }
+      .pomodoro-header-bar { padding: 12px 16px; }
+      .pomodoro-content { padding: 20px 16px; }
+    }
+    
+    .pomodoro-container {
+      width: 100%;
+      max-width: 600px;
+    }
+    
+    .pomodoro-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 32px;
+      padding: 40px 32px;
+      box-shadow: 0 20px 60px rgba(102, 126, 234, 0.15), 0 0 0 1px rgba(255,255,255,0.1) inset;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 32px;
+      overflow: visible;
+    }
+    
+    /* Timer Circle */
+    .pomodoro-timer-wrap {
+      position: relative;
+      width: 280px;
+      height: 280px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    
+    .pomodoro-timer-ring {
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      background: conic-gradient(
+        from 0deg,
+        var(--accent) 0%,
+        var(--accent2) var(--progress, 0%),
+        var(--border) var(--progress, 0%),
+        var(--border) 100%
+      );
+      padding: 8px;
+    }
+    
+    .pomodoro-timer-ring::before {
+      content: '';
+      position: absolute;
+      inset: 8px;
+      background: var(--card);
+      border-radius: 50%;
+    }
+    
+    .pomodoro-timer {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+    }
+    
+    .pomodoro-time {
+      font-size: 64px;
+      font-weight: 300;
+      letter-spacing: -2px;
+      color: var(--text);
+      font-variant-numeric: tabular-nums;
+      line-height: 1;
+      text-shadow: 0 2px 20px rgba(102, 126, 234, 0.2);
+    }
+    
+    .pomodoro-mode {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--accent);
+      margin-top: 16px;
+      text-transform: uppercase;
+      letter-spacing: 3px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .pomodoro-mode-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--accent);
+      animation: pulse 2s ease-in-out infinite;
+    }
+    
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(0.8); }
+    }
+    
+    .pomodoro-next {
+      font-size: 13px;
+      color: var(--muted);
+      margin-top: 8px;
+    }
+    
+    /* Controls */
+    .pomodoro-controls {
+      display: flex;
+      gap: 20px;
+      justify-content: center;
+      align-items: center;
+    }
+    
+    .pomodoro-btn {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      border: none;
+      background: linear-gradient(145deg, rgba(255,255,255,0.1), rgba(255,255,255,0.05));
+      backdrop-filter: blur(10px);
+      color: var(--text);
+      font-size: 22px;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.2);
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .pomodoro-btn::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      padding: 2px;
+      background: linear-gradient(135deg, rgba(102,126,234,0.3), rgba(118,75,162,0.3));
+      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor;
+      mask-composite: exclude;
+    }
+    
+    .pomodoro-btn:hover {
+      transform: translateY(-3px) scale(1.05);
+      box-shadow: 0 8px 25px rgba(102,126,234,0.3), inset 0 1px 0 rgba(255,255,255,0.3);
+    }
+    
+    .pomodoro-btn:active {
+      transform: translateY(0) scale(0.98);
+    }
+    
+    .pomodoro-btn.primary {
+      width: 72px;
+      height: 72px;
+      font-size: 28px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: white;
+      box-shadow: 0 8px 30px rgba(102, 126, 234, 0.4), 0 0 0 4px rgba(102,126,234,0.15);
+    }
+    
+    .pomodoro-btn.primary::before {
+      display: none;
+    }
+    
+    .pomodoro-btn.primary:hover {
+      transform: translateY(-4px) scale(1.08);
+      box-shadow: 0 12px 40px rgba(102, 126, 234, 0.5), 0 0 0 6px rgba(102,126,234,0.2);
+    }
+    
+    /* Presets */
+    .pomodoro-presets {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    
+    .pomodoro-preset {
+      padding: 12px 24px;
+      border-radius: 24px;
+      border: 2px solid var(--border);
+      background: transparent;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--muted);
+      transition: all 0.2s;
+    }
+    
+    .pomodoro-preset:hover {
+      color: var(--text);
+      border-color: var(--accent);
+      transform: translateY(-2px);
+    }
+    
+    .pomodoro-preset.active {
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border-color: transparent;
+      color: white;
+      box-shadow: 0 4px 16px rgba(102, 126, 234, 0.3);
+    }
+    
+    /* Settings Panel */
+    .pomodoro-settings-panel {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      padding: 24px;
+      background: var(--btn-secondary-bg);
+      border-radius: 20px;
+      width: 100%;
+      max-width: 500px;
+    }
+    
+    .pomodoro-field {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      align-items: center;
+    }
+    
+    .pomodoro-field label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    .pomodoro-field input {
+      width: 70px;
+      padding: 12px;
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      background: var(--card);
+      color: var(--text);
+      font-size: 18px;
+      font-weight: 600;
+      text-align: center;
+      transition: all 0.2s;
+    }
+    
+    .pomodoro-field input:focus {
+      border-color: var(--accent);
+      outline: none;
+      box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+    }
+    
+    /* Options Row */
+    .pomodoro-options {
+      display: flex;
+      gap: 24px;
+      align-items: center;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    
+    .pomodoro-option {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 20px;
+      background: var(--btn-secondary-bg);
+      border-radius: 16px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .pomodoro-option:hover {
+      background: var(--btn-secondary-hover);
+    }
+    
+    .pomodoro-option input[type="checkbox"] {
+      width: 20px;
+      height: 20px;
+      accent-color: var(--accent);
+      cursor: pointer;
+    }
+    
+    .pomodoro-option label {
+      font-size: 14px;
+      color: var(--text);
+      cursor: pointer;
+    }
+    
+    .pomodoro-sound-select {
+      padding: 12px 16px;
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      background: var(--card);
+      color: var(--text);
+      font-size: 14px;
+      cursor: pointer;
+    }
+    
+    .pomodoro-preview-btn {
+      padding: 12px 16px;
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      background: var(--card);
+      color: var(--text);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .pomodoro-preview-btn:hover {
+      border-color: var(--accent);
+      background: var(--btn-secondary-bg);
+    }
+    
+    /* Stats Cards */
+    .pomodoro-stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      width: 100%;
+      max-width: 500px;
+    }
+    
+    .pomodoro-stat {
+      padding: 24px 16px;
+      background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
+      border-radius: 20px;
+      text-align: center;
+      border: 1px solid rgba(102, 126, 234, 0.2);
+    }
+    
+    .pomodoro-stat .label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 8px;
+    }
+    
+    .pomodoro-stat .value {
+      font-size: 32px;
+      font-weight: 700;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    
+    /* Day Progress */
+    .pomodoro-daily {
+      width: 100%;
+      max-width: 500px;
+      text-align: center;
+    }
+    
+    .pomodoro-daily-bar {
+      height: 8px;
+      background: var(--border);
+      border-radius: 999px;
+      overflow: hidden;
+      margin-bottom: 12px;
+    }
+    
+    .pomodoro-daily-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #10b981, #22d3ee);
+      border-radius: 999px;
+      transition: width 0.5s ease;
+    }
+    
+    .pomodoro-daily-label {
+      font-size: 13px;
+      color: var(--muted);
+    }
+    
+    /* Task Select */
+    .pomodoro-task-select {
+      width: 100%;
+      max-width: 400px;
+      padding: 14px 20px;
+      border: 2px solid var(--border);
+      border-radius: 16px;
+      background: var(--card);
+      color: var(--text);
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .pomodoro-task-select:focus {
+      border-color: var(--accent);
+      outline: none;
+    }
+
+    /* Pomodoro Mini Player */
+    .pomodoro-mini {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 16px 24px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+      display: none;
+      align-items: center;
+      gap: 16px;
+      z-index: 9999;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    .pomodoro-mini.visible { display: flex; }
+    .pomodoro-mini:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 40px rgba(0,0,0,0.25);
+    }
+    .pomodoro-mini-time {
+      font-size: 28px;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .pomodoro-mini-mode {
+      font-size: 12px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    .pomodoro-mini-close {
+      border: none;
+      background: var(--btn-secondary-bg);
+      color: var(--muted);
+      font-size: 18px;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+    }
+    .pomodoro-mini-close:hover {
+      background: var(--danger);
+      color: white;
+    }
+
+    @media (max-width: 768px) {
+      .event-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+      }
+      .event-actions {
+        width: 100%;
+        justify-content: flex-end;
+      }
+      .timer {
+        width: 100%;
+        justify-content: space-between;
+      }
+      .event-info { width: 100%; }
+      
+      /* Responsive Pomodoro */
+      .pomodoro-card { padding: 24px; gap: 24px; border-radius: 24px; }
+      .pomodoro-timer-wrap { width: 240px; height: 240px; }
+      .pomodoro-time { font-size: 52px; }
+      .pomodoro-btn { width: 52px; height: 52px; font-size: 20px; }
+      .pomodoro-btn.primary { width: 64px; height: 64px; font-size: 28px; }
+      .pomodoro-settings-panel { grid-template-columns: repeat(2, 1fr); }
+      .pomodoro-stats { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+      .pomodoro-stat { padding: 16px 8px; }
+      .pomodoro-stat .value { font-size: 24px; }
+      .pomodoro-presets { gap: 8px; }
+      .pomodoro-preset { padding: 10px 16px; font-size: 12px; }
+      .pomodoro-header-bar { padding: 12px 16px; }
+      .pomodoro-content { padding: 20px 16px; }
+    }
+
+    /* Pomodoro - Fullscreen like Task Manager */
+    .pomodoro-overlay {
+      position: fixed;
+      top: 56px;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: var(--bg);
+      display: none;
+      flex-direction: column;
+      z-index: 300;
+      overflow: hidden;
+    }
+    .pomodoro-overlay.open { display: flex; }
+    
+    .pomodoro-header-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 32px;
+      background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
+      border-bottom: 1px solid var(--border);
+    }
+    
+    .pomodoro-header-title {
+      font-size: 22px;
+      font-weight: 700;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    
+    .pomodoro-content {
+      flex: 1;
+      overflow-y: auto;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 40px 24px;
+      background: linear-gradient(180deg, transparent 0%, rgba(102, 126, 234, 0.03) 100%);
+    }
+    
+    .pomodoro-container {
+      width: 100%;
+      max-width: 600px;
+    }
+    
+    .pomodoro-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 32px;
+      padding: 40px 32px;
+      box-shadow: 0 20px 60px rgba(102, 126, 234, 0.15), 0 0 0 1px rgba(255,255,255,0.1) inset;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 32px;
+      overflow: visible;
+    }
+    
+    /* Timer Circle */
+    .pomodoro-timer-wrap {
+      position: relative;
+      width: 280px;
+      height: 280px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    
+    .pomodoro-timer-ring {
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      background: conic-gradient(
+        from 0deg,
+        var(--accent) 0%,
+        var(--accent2) var(--progress, 0%),
+        var(--border) var(--progress, 0%),
+        var(--border) 100%
+      );
+      padding: 8px;
+    }
+    
+    .pomodoro-timer-ring::before {
+      content: '';
+      position: absolute;
+      inset: 8px;
+      background: var(--card);
+      border-radius: 50%;
+    }
+    
+    .pomodoro-timer {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+    }
+    
+    .pomodoro-time {
+      font-size: 64px;
+      font-weight: 300;
+      letter-spacing: -2px;
+      color: var(--text);
+      font-variant-numeric: tabular-nums;
+      line-height: 1;
+      text-shadow: 0 2px 20px rgba(102, 126, 234, 0.2);
+    }
+    
+    .pomodoro-mode {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--accent);
+      margin-top: 16px;
+      text-transform: uppercase;
+      letter-spacing: 3px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .pomodoro-mode-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--accent);
+      animation: pulse 2s ease-in-out infinite;
+    }
+    
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(0.8); }
+    }
+    
+    .pomodoro-next {
+      font-size: 13px;
+      color: var(--muted);
+      margin-top: 8px;
+    }
+    
+    /* Controls */
+    .pomodoro-controls {
+      display: flex;
+      gap: 20px;
+      justify-content: center;
+      align-items: center;
+    }
+    
+    .pomodoro-btn {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      border: none;
+      background: linear-gradient(145deg, rgba(255,255,255,0.1), rgba(255,255,255,0.05));
+      backdrop-filter: blur(10px);
+      color: var(--text);
+      font-size: 22px;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.2);
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .pomodoro-btn::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      padding: 2px;
+      background: linear-gradient(135deg, rgba(102,126,234,0.3), rgba(118,75,162,0.3));
+      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor;
+      mask-composite: exclude;
+    }
+    
+    .pomodoro-btn:hover {
+      transform: translateY(-3px) scale(1.05);
+      box-shadow: 0 8px 25px rgba(102,126,234,0.3), inset 0 1px 0 rgba(255,255,255,0.3);
+    }
+    
+    .pomodoro-btn:active {
+      transform: translateY(0) scale(0.98);
+    }
+    
+    .pomodoro-btn.primary {
+      width: 72px;
+      height: 72px;
+      font-size: 28px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: white;
+      box-shadow: 0 8px 30px rgba(102, 126, 234, 0.4), 0 0 0 4px rgba(102,126,234,0.15);
+    }
+    
+    .pomodoro-btn.primary::before {
+      display: none;
+    }
+    
+    .pomodoro-btn.primary:hover {
+      transform: translateY(-4px) scale(1.08);
+      box-shadow: 0 12px 40px rgba(102, 126, 234, 0.5), 0 0 0 6px rgba(102,126,234,0.2);
+    }
+    
+    /* Presets */
+    .pomodoro-presets {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    
+    .pomodoro-preset {
+      padding: 12px 24px;
+      border-radius: 24px;
+      border: 2px solid var(--border);
+      background: transparent;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--muted);
+      transition: all 0.2s;
+    }
+    
+    .pomodoro-preset:hover {
+      color: var(--text);
+      border-color: var(--accent);
+      transform: translateY(-2px);
+    }
+    
+    .pomodoro-preset.active {
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border-color: transparent;
+      color: white;
+      box-shadow: 0 4px 16px rgba(102, 126, 234, 0.3);
+    }
+    
+    /* Settings Panel */
+    .pomodoro-settings-panel {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      padding: 24px;
+      background: var(--btn-secondary-bg);
+      border-radius: 20px;
+      width: 100%;
+      max-width: 500px;
+    }
+    
+    .pomodoro-field {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      align-items: center;
+    }
+    
+    .pomodoro-field label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    .pomodoro-field input {
+      width: 70px;
+      padding: 12px;
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      background: var(--card);
+      color: var(--text);
+      font-size: 18px;
+      font-weight: 600;
+      text-align: center;
+      transition: all 0.2s;
+    }
+    
+    .pomodoro-field input:focus {
+      border-color: var(--accent);
+      outline: none;
+      box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+    }
+    
+    /* Options Row */
+    .pomodoro-options {
+      display: flex;
+      gap: 24px;
+      align-items: center;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    
+    .pomodoro-option {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 20px;
+      background: var(--btn-secondary-bg);
+      border-radius: 16px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .pomodoro-option:hover {
+      background: var(--btn-secondary-hover);
+    }
+    
+    .pomodoro-option input[type="checkbox"] {
+      width: 20px;
+      height: 20px;
+      accent-color: var(--accent);
+      cursor: pointer;
+    }
+    
+    .pomodoro-option label {
+      font-size: 14px;
+      color: var(--text);
+      cursor: pointer;
+    }
+    
+    .pomodoro-sound-select {
+      padding: 12px 16px;
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      background: var(--card);
+      color: var(--text);
+      font-size: 14px;
+      cursor: pointer;
+    }
+    
+    .pomodoro-preview-btn {
+      padding: 12px 16px;
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      background: var(--card);
+      color: var(--text);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .pomodoro-preview-btn:hover {
+      border-color: var(--accent);
+      background: var(--btn-secondary-bg);
+    }
+    
+    /* Stats Cards */
+    .pomodoro-stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      width: 100%;
+      max-width: 500px;
+    }
+    
+    .pomodoro-stat {
+      padding: 24px 16px;
+      background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
+      border-radius: 20px;
+      text-align: center;
+      border: 1px solid rgba(102, 126, 234, 0.2);
+    }
+    
+    .pomodoro-stat .label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 8px;
+    }
+    
+    .pomodoro-stat .value {
+      font-size: 32px;
+      font-weight: 700;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    
+    /* Day Progress */
+    .pomodoro-daily {
+      width: 100%;
+      max-width: 500px;
+      text-align: center;
+    }
+    
+    .pomodoro-daily-bar {
+      height: 8px;
+      background: var(--border);
+      border-radius: 999px;
+      overflow: hidden;
+      margin-bottom: 12px;
+    }
+    
+    .pomodoro-daily-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #10b981, #22d3ee);
+      border-radius: 999px;
+      transition: width 0.5s ease;
+    }
+    
+    .pomodoro-daily-label {
+      font-size: 13px;
+      color: var(--muted);
+    }
+    
+    /* Task Select */
+    .pomodoro-task-select {
+      width: 100%;
+      max-width: 400px;
+      padding: 14px 20px;
+      border: 2px solid var(--border);
+      border-radius: 16px;
+      background: var(--card);
+      color: var(--text);
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .pomodoro-task-select:focus {
+      border-color: var(--accent);
+      outline: none;
+    }
+
+    /* Pomodoro Mini Player */
+    .pomodoro-mini {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 16px 24px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+      display: none;
+      align-items: center;
+      gap: 16px;
+      z-index: 9999;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    .pomodoro-mini.visible { display: flex; }
+    .pomodoro-mini:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 40px rgba(0,0,0,0.25);
+    }
+    .pomodoro-mini-time {
+      font-size: 28px;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .pomodoro-mini-mode {
+      font-size: 12px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    .pomodoro-mini-close {
+      border: none;
+      background: var(--btn-secondary-bg);
+      color: var(--muted);
+      font-size: 18px;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+    }
+    .pomodoro-mini-close:hover {
+      background: var(--danger);
+      color: white;
     }
 
     .star-btn {
@@ -1050,7 +2075,10 @@
     /* Task Manager Fullscreen Modal */
     .task-manager-overlay {
       position: fixed;
-      inset: 0;
+      top: 56px;
+      left: 0;
+      right: 0;
+      bottom: 0;
       background: var(--bg);
       z-index: 300;
       display: none;
@@ -1634,32 +2662,7 @@
       color: var(--muted);
     }
     
-    /* Subject Tabs */
-    .subject-tabs-container {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 12px 24px;
-      border-bottom: 1px solid var(--border);
-      overflow-x: auto;
-      background: var(--card);
-      flex-wrap: wrap;
-    }
-    .subject-tabs {
-      display: flex;
-      gap: 8px;
-      flex: 1;
-      overflow-x: auto;
-      padding: 4px 0;
-      flex-wrap: wrap;
-    }
-    .subject-tabs::-webkit-scrollbar {
-      height: 4px;
-    }
-    .subject-tabs::-webkit-scrollbar-thumb {
-      background: var(--border);
-      border-radius: 4px;
-    }
+    
     .subject-tab {
       padding: 8px 16px;
       border: 2px solid var(--border);
@@ -1772,12 +2775,58 @@
       border-radius: 50%;
     }
     
-    /* Task Manager Layout with Sidebar */
-    .task-manager-layout {
+    
+    
+    .add-subject-btn {
+      width: 36px;
+      height: 36px;
+      border: 2px dashed var(--border);
+      border-radius: 50%;
+      background: transparent;
+      color: var(--muted);
+      font-size: 20px;
+      cursor: pointer;
+      transition: all 0.2s;
       display: flex;
-      flex: 1;
-      overflow: hidden;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
     }
+    .add-subject-btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: rgba(102,126,234,0.1);
+    }
+    
+    /* Task Calendar in Sidebar - matches countdown calendar style */
+    .task-calendar-section {
+      margin-top: 20px;
+      padding-top: 16px;
+      border-top: 1px solid var(--border);
+    }
+    
+    
+    
+    .task-calendar-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+      gap: 10px;
+    }
+    
+    .task-calendar-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--text);
+    }
+    
+    .task-calendar-nav {
+      display: flex;
+      gap: 8px;
+    }
+    
+    
     
     .task-manager-sidebar {
       width: 260px;
@@ -2079,6 +3128,47 @@
       background: rgba(102,126,234,0.05);
     }
     
+    /* Task Month List */
+    .task-month-section {
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 1px solid var(--border);
+    }
+    
+    .task-month-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 10px;
+    }
+    
+    .task-month-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+    
+    .task-month-item {
+      padding: 8px 10px;
+      background: var(--day-other);
+      border-radius: 6px;
+      border-right: 3px solid var(--accent);
+      font-size: 12px;
+    }
+    
+    .task-month-item-title {
+      font-weight: 500;
+      color: var(--text);
+      margin-bottom: 2px;
+    }
+    
+    .task-month-item-date {
+      font-size: 10px;
+      color: var(--muted);
+    }
+
     /* Context Menu */
     .context-menu {
       position: fixed;
@@ -2254,6 +3344,8 @@
       font-size: 10px;
     }
     
+    
+    
     .add-subject-btn {
       width: 36px;
       height: 36px;
@@ -2274,6 +3366,36 @@
       color: var(--accent);
       background: rgba(102,126,234,0.1);
     }
+    
+    /* Task Calendar in Sidebar - matches countdown calendar style */
+    .task-calendar-section {
+      margin-top: 20px;
+      padding-top: 16px;
+      border-top: 1px solid var(--border);
+    }
+    
+    
+    
+    .task-calendar-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+      gap: 10px;
+    }
+    
+    .task-calendar-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--text);
+    }
+    
+    .task-calendar-nav {
+      display: flex;
+      gap: 8px;
+    }
+    
+    
     
     /* Subject Modal */
     .subject-modal {
@@ -2433,6 +3555,18 @@
       }
       .sidebar.hidden {
         transform: translateX(100%);
+      }
+
+      /* Fix for Task Manager Calendar Sidebar visibility */
+      #taskRightSidebar {
+        z-index: 350; /* Must be higher than task-manager-overlay (300) */
+      }
+      
+      @media (max-width: 1100px) {
+        #taskRightSidebar {
+          position: absolute; /* Override fixed positioning from generic .sidebar */
+          height: 100%;
+        }
       }
     }
 
@@ -2638,9 +3772,11 @@
 <body>
   <!-- Fixed Header Bar -->
   <div class="fixed-header-bar">
-    <button class="header-btn" id="toggleSidebar">📅 לוח שנה</button>
+    <button class="header-btn active" id="toggleCountdown">⏱️ ספירה לאחור</button>
     <button class="header-btn" id="toggleTasks">📝 משימות</button>
+    <button class="header-btn" id="togglePomodoro">🍅 פומודורו</button>
     <div class="header-spacer"></div>
+    <button class="header-btn" id="toggleSidebar">📅 לוח</button>
     <button class="header-btn icon-only" id="themeToggle" aria-label="Toggle dark mode">🌙</button>
   </div>
 
@@ -2648,6 +3784,8 @@
   <div class="task-manager-overlay" id="taskManagerOverlay">
     <div class="task-manager-header">
       <div class="task-manager-title">📝 Task Manager</div>
+        <button class="header-btn" id="toggleTaskSidebar" style="margin-right: 12px;">📚 נושאים</button>
+        <button class="task-manager-close" id="closeTaskManager" aria-label="Close task manager">×</button>
       <div class="task-search-bar">
         <input type="text" id="taskSearch" placeholder="חיפוש משימות... / Search tasks..." />
       </div>
@@ -2655,16 +3793,17 @@
         <button class="filter-pill active" data-filter="all">הכל</button>
         <button class="filter-pill" data-filter="active">פעיל</button>
         <button class="filter-pill" data-filter="completed">הושלם</button>
+        <button class="header-btn" id="toggleTaskCalendar">📅 לוח</button>
       </div>
-      <button class="task-manager-close" id="closeTaskManager" aria-label="סגור מנהל משימות">×</button>
     </div>
     
     <!-- Task Manager Layout with Sidebar -->
-    <div class="task-manager-layout">
+    <div class="task-manager-layout" style="display: flex; height: 100%; overflow: hidden; position: relative;">
       <!-- Sidebar -->
-      <div class="task-manager-sidebar" id="taskSidebar">
+      <div class="task-manager-sidebar" id="taskSidebar" style="transition: margin-right 0.2s;">
         <div class="task-manager-sidebar-header">
           <h3>📚 נושאים</h3>
+          <button class="add-subject-btn" id="addSubjectBtn" title="הוסף נושא">+</button>
         </div>
         <div class="task-manager-sidebar-content">
           <!-- Smart Views -->
@@ -2703,6 +3842,8 @@
             <span>+</span>
             <span>הוסף נושא</span>
           </button>
+          
+          
         </div>
       </div>
       
@@ -2784,6 +3925,28 @@
         </div>
       </div>
     </div>
+      
+      <!-- Right Sidebar for Task Calendar -->
+      <aside class="sidebar hidden" id="taskRightSidebar">
+        <div class="calendar-container">
+          <div class="calendar-header">
+            <div class="calendar-nav">
+              <button id="prevTaskMonth">‹</button>
+              <button id="todayTaskBtn">●</button>
+              <button id="nextTaskMonth">›</button>
+            </div>
+            <div class="calendar-title" id="taskCalendarTitle"></div>
+          </div>
+          <div class="calendar-grid" id="taskCalendarGrid"></div>
+        </div>
+        
+        <div class="sidebar-section">
+          <div class="sidebar-section-title" id="taskMonthEventsTitle">משימות החודש</div>
+          <div class="month-events" id="taskMonthEvents">
+            <div class="no-events-msg">אין משימות החודש</div>
+          </div>
+        </div>
+      </aside>
     </div><!-- close task-manager-layout -->
   </div>
   
@@ -2833,6 +3996,131 @@
         <button class="btn btn-primary" id="saveTaskBtn">Save</button>
       </div>
     </div>
+  </div>
+
+  <!-- Pomodoro Overlay -->
+  <div class="pomodoro-overlay" id="pomodoroOverlay">
+    <div class="pomodoro-header-bar">
+      <div class="pomodoro-header-title">🍅 Pomodoro Timer</div>
+      <label class="pomodoro-option" style="margin: 0; background: transparent;">
+        <input type="checkbox" id="pomodoroMiniToggle" />
+        <span style="font-size: 13px;">הצג מיני</span>
+      </label>
+    </div>
+    
+    <div class="pomodoro-content">
+      <div class="pomodoro-container">
+        <div class="pomodoro-card" id="pomodoroCard">
+          
+          <!-- Timer Circle -->
+          <div class="pomodoro-timer-wrap">
+            <div class="pomodoro-timer-ring" id="pomodoroRing" style="--progress: 0%;"></div>
+            <div class="pomodoro-timer">
+              <div class="pomodoro-time" id="pomodoroDisplay">25:00</div>
+              <div class="pomodoro-mode">
+                <span class="pomodoro-mode-dot"></span>
+                <span id="pomodoroMode">מצב מיקוד</span>
+              </div>
+              <div class="pomodoro-next" id="pomodoroNext">הבא: הפסקה קצרה</div>
+            </div>
+          </div>
+
+          <!-- Controls -->
+          <div class="pomodoro-controls">
+            <button class="pomodoro-btn" id="pomodoroReset" title="אפס">🔄</button>
+            <button class="pomodoro-btn primary" id="pomodoroStart" title="התחל">▶️</button>
+            <button class="pomodoro-btn" id="pomodoroSkip" title="דלג">⏭️</button>
+          </div>
+
+          <div id="pomodoroProgress" style="display:none;"></div>
+
+          <!-- Presets -->
+          <div class="pomodoro-presets">
+            <button class="pomodoro-preset" data-preset="classic">25/5 קלאסי</button>
+            <button class="pomodoro-preset" data-preset="flow">50/10 Flow</button>
+            <button class="pomodoro-preset" data-preset="ultradian">90/20 Ultra</button>
+            <button class="pomodoro-preset" data-preset="perfect">52/17 מושלם</button>
+            <button class="pomodoro-preset" data-preset="custom">⚙️ מותאם</button>
+          </div>
+
+          <!-- Settings Panel -->
+          <div class="pomodoro-settings-panel">
+            <div class="pomodoro-field">
+              <label>מיקוד</label>
+              <input type="number" min="5" max="240" id="pomodoroFocus" value="25" />
+            </div>
+            <div class="pomodoro-field">
+              <label>הפסקה</label>
+              <input type="number" min="3" max="60" id="pomodoroBreak" value="5" />
+            </div>
+            <div class="pomodoro-field">
+              <label>ארוכה</label>
+              <input type="number" min="5" max="90" id="pomodoroLong" value="15" />
+            </div>
+            <div class="pomodoro-field">
+              <label>כל X</label>
+              <input type="number" min="1" max="8" id="pomodoroLongEvery" value="4" />
+            </div>
+          </div>
+
+          <!-- Options -->
+          <div class="pomodoro-options">
+            <label class="pomodoro-option">
+              <input type="checkbox" id="pomodoroAutoContinue" />
+              <span>המשך אוטומטי</span>
+            </label>
+            <select class="pomodoro-sound-select" id="pomodoroSound">
+              <option value="chime">🎵 צלצול עדין</option>
+              <option value="soft">🧘 מדיטציה</option>
+              <option value="bell">🔔 פעמון</option>
+              <option value="digital">📱 דיגיטלי</option>
+              <option value="glass">✨ קריסטל</option>
+              <option value="success">🎉 פנפרה</option>
+            </select>
+            <button class="pomodoro-preview-btn" id="pomodoroPreviewSound">▶️ נסה</button>
+          </div>
+
+          <!-- Task Select -->
+          <select class="pomodoro-task-select" id="pomodoroTaskSelect">
+            <option value="">📋 בחר משימה להתמקד...</option>
+          </select>
+
+          <!-- Stats -->
+          <div class="pomodoro-stats">
+            <div class="pomodoro-stat">
+              <div class="label">מחזורים</div>
+              <div class="value" id="pomodoroSessionCount">0</div>
+            </div>
+            <div class="pomodoro-stat">
+              <div class="label">דקות מיקוד</div>
+              <div class="value" id="pomodoroFocusMinutes">0</div>
+            </div>
+            <div class="pomodoro-stat">
+              <div class="label">רצף ימים</div>
+              <div class="value" id="pomodoroStreak">0</div>
+            </div>
+          </div>
+
+          <!-- Daily Progress -->
+          <div class="pomodoro-daily">
+            <div class="pomodoro-daily-bar">
+              <div class="pomodoro-daily-fill" id="pomodoroDayProgress"></div>
+            </div>
+            <div class="pomodoro-daily-label" id="pomodoroDayLabel">0/8 מחזורי מיקוד להיום</div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pomodoro Mini Player -->
+  <div class="pomodoro-mini" id="pomodoroMini">
+    <div>
+      <div class="pomodoro-mini-time" id="pomodoroMiniTime">25:00</div>
+      <div class="pomodoro-mini-mode" id="pomodoroMiniMode">מיקוד</div>
+    </div>
+    <button class="pomodoro-mini-close" id="pomodoroMiniClose" aria-label="סגור">×</button>
   </div>
   
   <!-- Subject Modal -->
@@ -3061,11 +4349,37 @@
   const clearModal = $("clearModal");
   const confirmClearBtn = $("confirmClearBtn");
   const cancelClearModalBtn = $("cancelClearModalBtn");
-  const themeToggle = $("themeToggle");
+const themeToggle = $("themeToggle");
+  const togglePomodoro = $("togglePomodoro");
+  const pomodoroOverlay = $("pomodoroOverlay");
+  
+  
+  
   const eventNotes = $("eventNotes");
   const undoToast = $("undoToast");
   const undoToastMsg = $("undoToastMsg");
   const undoToastUndo = $("undoToastUndo");
+  const pomodoroCard = $("pomodoroCard");
+  const pomodoroTaskSelect = $("pomodoroTaskSelect");
+  const pomodoroPresetsEls = Array.from(document.querySelectorAll('.pomodoro-preset'));
+  const pomodoroFocusInput = $("pomodoroFocus");
+  const pomodoroBreakInput = $("pomodoroBreak");
+  const pomodoroLongInput = $("pomodoroLong");
+  const pomodoroLongEveryInput = $("pomodoroLongEvery");
+  const pomodoroAutoContinueEl = $("pomodoroAutoContinue");
+  const pomodoroSoundEl = $("pomodoroSound");
+  const pomodoroDisplay = $("pomodoroDisplay");
+  const pomodoroMode = $("pomodoroMode");
+  const pomodoroNext = $("pomodoroNext");
+    const pomodoroProgress = $("pomodoroProgress");
+    const pomodoroStart = $("pomodoroStart");
+  const pomodoroSkip = $("pomodoroSkip");
+  const pomodoroReset = $("pomodoroReset");
+  const pomodoroSessionCount = $("pomodoroSessionCount");
+  const pomodoroFocusMinutes = $("pomodoroFocusMinutes");
+  const pomodoroStreak = $("pomodoroStreak");
+  const pomodoroDayProgress = $("pomodoroDayProgress");
+  const pomodoroDayLabel = $("pomodoroDayLabel");
 
   const STORAGE_KEYS = {
     THEME: 'countdown-theme',
@@ -3104,29 +4418,52 @@
   };
 
   function getEventColor(id) {
-    const charCode = id.charCodeAt(id.length - 1);
-    return COLORS[charCode % COLORS.length];
-  }
 
-  $("toggleSidebar").onclick = () => {
-    const wasHidden = sidebar.classList.contains("hidden");
-    sidebar.classList.toggle("hidden");
-    // Reset to current month when opening sidebar
-    if (wasHidden) {
-      currentMonth = new Date();
-      renderCalendar();
-    }
-  };
+      const charCode = id.charCodeAt(id.length - 1);
 
-  // Dark mode toggle
-  const initTheme = () => {
-    const saved = localStorage.getItem(STORAGE_KEYS.THEME);
-    if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-      document.body.classList.add('dark');
-      themeToggle.textContent = '☀️';
+      return COLORS[charCode % COLORS.length];
+
     }
-  };
-  initTheme();
+
+  
+
+    $("toggleSidebar").onclick = () => {
+
+      const wasHidden = sidebar.classList.contains("hidden");
+
+      sidebar.classList.toggle("hidden");
+
+      // Reset to current month when opening sidebar
+
+      if (wasHidden) {
+
+        currentMonth = new Date();
+
+        renderCalendar();
+
+      }
+
+    };
+
+  
+
+    // Dark mode toggle
+
+    const initTheme = () => {
+
+      const saved = localStorage.getItem(STORAGE_KEYS.THEME);
+
+      if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+
+        document.body.classList.add('dark');
+
+        themeToggle.textContent = '☀️';
+
+      }
+
+    };
+
+    initTheme();
 
   themeToggle.onclick = () => {
     document.body.classList.toggle('dark');
@@ -3969,11 +5306,16 @@
         if (typeof closeTaskEditModal === 'function') closeTaskEditModal();
         return;
       }
-      // Task manager overlay
+      // Task manager overlay - go back to countdown
       const tmOverlay = $("taskManagerOverlay");
       if (tmOverlay && tmOverlay.classList.contains('open')) {
-        tmOverlay.classList.remove('open');
-        if (typeof stopTaskTicker === 'function') stopTaskTicker();
+        if (typeof showView === 'function') showView('countdown');
+        return;
+      }
+      // Pomodoro overlay - go back to countdown
+      const pOverlay = $("pomodoroOverlay");
+      if (pOverlay && pOverlay.classList.contains('open')) {
+        if (typeof showView === 'function') showView('countdown');
         return;
       }
       // Day drawer
@@ -4029,8 +5371,10 @@
   const tasksRef = ref(db, 'tasks');
   
   const taskManagerOverlay = $("taskManagerOverlay");
-  const closeTaskManager = $("closeTaskManager");
-  const toggleTasks = $("toggleTasks");
+  
+    const closeTaskManager = $("closeTaskManager");
+  
+    const toggleTasks = $("toggleTasks");
   const taskSearch = $("taskSearch");
   const quickAddTask = $("quickAddTask");
   const quickAddRow = $("quickAddRow");
@@ -4064,21 +5408,541 @@
   
   const PRIORITY_ORDER = { urgent: 0, high: 1, medium: 2, low: 3, none: 4 };
   const PRIORITY_LABELS = { urgent: 'Urgent', high: 'High', medium: 'Medium', low: 'Low', none: '' };
+
+  // ============ POMODORO MODULE (self-contained) ============
+  const Pomodoro = (() => {
+    const refs = {
+      card: document.getElementById('pomodoroCard'),
+      taskSelect: document.getElementById('pomodoroTaskSelect'),
+      presets: Array.from(document.querySelectorAll('.pomodoro-preset')),
+      focusInput: document.getElementById('pomodoroFocus'),
+      breakInput: document.getElementById('pomodoroBreak'),
+      longInput: document.getElementById('pomodoroLong'),
+      longEveryInput: document.getElementById('pomodoroLongEvery'),
+      autoContinue: document.getElementById('pomodoroAutoContinue'),
+      soundSelect: document.getElementById('pomodoroSound'),
+      previewBtn: document.getElementById('pomodoroPreviewSound'),
+      display: document.getElementById('pomodoroDisplay'),
+      mode: document.getElementById('pomodoroMode'),
+      next: document.getElementById('pomodoroNext'),
+      progress: document.getElementById('pomodoroRing'),
+      startBtn: document.getElementById('pomodoroStart'),
+      skipBtn: document.getElementById('pomodoroSkip'),
+      resetBtn: document.getElementById('pomodoroReset'),
+      sessionCount: document.getElementById('pomodoroSessionCount'),
+      focusMinutes: document.getElementById('pomodoroFocusMinutes'),
+      streak: document.getElementById('pomodoroStreak'),
+      dayProgress: document.getElementById('pomodoroDayProgress'),
+      dayLabel: document.getElementById('pomodoroDayLabel'),
+      // Mini player refs
+      mini: document.getElementById('pomodoroMini'),
+      miniTime: document.getElementById('pomodoroMiniTime'),
+      miniMode: document.getElementById('pomodoroMiniMode'),
+      miniToggle: document.getElementById('pomodoroMiniToggle'),
+      miniClose: document.getElementById('pomodoroMiniClose')
+    };
+
+    const KEYS = {
+      STATS: 'pomodoro-stats-v1',
+      PRESET: 'pomodoro-preset-v1',
+      CUSTOM: 'pomodoro-custom-v1',
+      SETTINGS: 'pomodoro-settings-v1'
+    };
+
+    const presets = {
+      classic: { focus: 25, shortBreak: 5, longBreak: 15, longEvery: 4, label: '25/5 קלאסי' },
+      flow: { focus: 50, shortBreak: 10, longBreak: 20, longEvery: 3, label: '50/10 Flow' },
+      ultradian: { focus: 90, shortBreak: 20, longBreak: 25, longEvery: 1, label: '90/20 Ultradian' },
+      perfect: { focus: 52, shortBreak: 17, longBreak: 20, longEvery: 3, label: '52/17' }
+    };
+
+    const clampNum = (val, min, max, fallback) => {
+      const n = Number(val);
+      if (Number.isFinite(n)) return Math.min(max, Math.max(min, n));
+      return fallback;
+    };
+
+    const getTodayKey = () => new Date().toISOString().slice(0, 10);
+    const daysBetween = (a, b) => Math.round((new Date(b) - new Date(a)) / 86400000);
+
+    const loadCustom = () => {
+      try {
+        const raw = localStorage.getItem(KEYS.CUSTOM);
+        if (!raw) return null;
+        const parsed = JSON.parse(raw);
+        if (!parsed || typeof parsed !== 'object') return null;
+        return {
+          focus: clampNum(parsed.focus, 5, 240, 25),
+          shortBreak: clampNum(parsed.shortBreak, 3, 60, 5),
+          longBreak: clampNum(parsed.longBreak, 5, 90, 15),
+          longEvery: clampNum(parsed.longEvery, 1, 8, 4)
+        };
+      } catch (e) { return null; }
+    };
+
+    const saveCustom = (config) => {
+      try { localStorage.setItem(KEYS.CUSTOM, JSON.stringify(config)); } catch (e) {}
+    };
+
+    const loadStats = () => {
+      const today = getTodayKey();
+      try {
+        const raw = localStorage.getItem(KEYS.STATS);
+        if (!raw) return { date: today, sessions: 0, focusMinutes: 0, streak: 0, lastActiveDate: null };
+        const parsed = JSON.parse(raw);
+        if (!parsed) return { date: today, sessions: 0, focusMinutes: 0, streak: 0, lastActiveDate: null };
+        if (parsed.date !== today) {
+          const carry = parsed.focusMinutes > 0 && daysBetween(parsed.date, today) === 1;
+          const streak = carry ? (parsed.streak || 0) + 1 : (parsed.focusMinutes > 0 ? 1 : 0);
+          return { date: today, sessions: 0, focusMinutes: 0, streak, lastActiveDate: parsed.lastActiveDate };
+        }
+        return parsed;
+      } catch (e) {
+        return { date: today, sessions: 0, focusMinutes: 0, streak: 0, lastActiveDate: null };
+      }
+    };
+
+    const loadSettings = () => {
+      try {
+        const raw = localStorage.getItem(KEYS.SETTINGS);
+        if (!raw) return { autoContinue: false, sound: 'chime' };
+        const parsed = JSON.parse(raw);
+        return { autoContinue: !!parsed.autoContinue, sound: parsed.sound || 'chime' };
+      } catch (e) {
+        return { autoContinue: false, sound: 'chime' };
+      }
+    };
+
+    const saveSettings = () => {
+      try { localStorage.setItem(KEYS.SETTINGS, JSON.stringify(settings)); } catch (e) {}
+    };
+    const saveStats = () => {
+      try { localStorage.setItem(KEYS.STATS, JSON.stringify(stats)); } catch (e) {}
+    };
+
+    let config = loadCustom() || { ...presets.classic };
+    let state = {
+      mode: 'focus',
+      remainingMs: (config.focus || 25) * 60000,
+      running: false,
+      cycle: 0,
+      preset: localStorage.getItem(KEYS.PRESET) || 'classic',
+      timerId: null
+    };
+    let stats = loadStats();
+    let settings = loadSettings();
+    let tasksCache = [];
+
+    const getDuration = (mode) => {
+      if (mode === 'focus') return config.focus;
+      if (mode === 'long') return config.longBreak;
+      return config.shortBreak;
+    };
+
+    const formatTime = (ms) => {
+      const total = Math.max(0, Math.round(ms / 1000));
+      const m = Math.floor(total / 60);
+      const s = total % 60;
+      return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+    };
+
+    const updatePresetButtons = () => {
+      refs.presets.forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.preset === state.preset);
+      });
+    };
+
+    const renderStats = () => {
+      if (!refs.sessionCount || !refs.focusMinutes || !refs.streak) return;
+      refs.sessionCount.textContent = stats.sessions;
+      refs.focusMinutes.textContent = stats.focusMinutes;
+      refs.streak.textContent = stats.streak;
+      const goal = 8;
+      if (refs.dayProgress) {
+        const pct = Math.min(100, Math.round((stats.sessions / goal) * 100));
+        refs.dayProgress.style.width = pct + '%';
+      }
+      if (refs.dayLabel) {
+        refs.dayLabel.textContent = `${Math.min(stats.sessions, goal)}/${goal} מחזורי מיקוד להיום`;
+      }
+    };
+
+    const render = () => {
+      if (!refs.display) return;
+      refs.display.textContent = formatTime(state.remainingMs);
+      const modeLabel = state.mode === 'focus' ? 'מצב מיקוד' : (state.mode === 'long' ? 'הפסקה ארוכה' : 'הפסקה קצרה');
+      refs.mode.textContent = modeLabel;
+      refs.next.textContent = `הבא: ${getNextLabel()}`;
+      const totalMs = getDuration(state.mode) * 60000;
+      const pct = Math.max(0, Math.min(100, 100 - (state.remainingMs / totalMs) * 100));
+      if (refs.progress) refs.progress.style.setProperty('--progress', pct + '%');
+      if (refs.startBtn) refs.startBtn.textContent = state.running ? '⏸️' : '▶️';
+      // Update mini player
+      if (refs.miniTime) refs.miniTime.textContent = formatTime(state.remainingMs);
+      if (refs.miniMode) refs.miniMode.textContent = state.mode === 'focus' ? 'מיקוד' : (state.mode === 'long' ? 'הפסקה ארוכה' : 'הפסקה');
+    };
+
+    const setMode = (mode) => {
+      state.mode = mode;
+      state.remainingMs = getDuration(mode) * 60000;
+      render();
+    };
+
+    const getNextLabel = () => {
+      if (state.mode === 'focus') {
+        const nextIsLong = ((state.cycle + 1) % config.longEvery === 0);
+        return nextIsLong ? 'הפסקה ארוכה' : 'הפסקה קצרה';
+      }
+      return 'מיקוד';
+    };
+
+    const clearTimer = () => {
+      if (state.timerId) {
+        clearInterval(state.timerId);
+        state.timerId = null;
+      }
+    };
+
+    const tick = () => {
+      state.remainingMs -= 1000;
+      if (state.remainingMs <= 0) advance(true);
+      render();
+    };
+
+    const start = () => {
+      if (state.running) return;
+      state.running = true;
+      clearTimer();
+      state.timerId = setInterval(tick, 1000);
+      render();
+    };
+
+    const pause = () => {
+      state.running = false;
+      clearTimer();
+      render();
+    };
+
+    const reset = () => {
+      state.running = false;
+      clearTimer();
+      state.mode = 'focus';
+      state.remainingMs = config.focus * 60000;
+      state.cycle = 0;
+      render();
+    };
+
+    const recordFocus = () => {
+      const today = getTodayKey();
+      if (stats.date !== today) {
+        const carry = stats.focusMinutes > 0 && daysBetween(stats.date, today) === 1;
+        stats.streak = carry ? stats.streak + 1 : (stats.focusMinutes > 0 ? 1 : stats.streak || 0);
+        stats.date = today;
+        stats.sessions = 0;
+        stats.focusMinutes = 0;
+      }
+      stats.sessions += 1;
+      stats.focusMinutes += config.focus;
+      stats.lastActiveDate = today;
+      saveStats();
+      renderStats();
+    };
+
+    // Enhanced sound patterns with distinct tones
+    const tonePatterns = {
+      // Gentle ascending chime - pleasant completion sound
+      chime: [
+        { f: 523, d: 0.15, type: 'sine', vol: 0.12 },
+        { f: 659, d: 0.15, type: 'sine', vol: 0.14 },
+        { f: 784, d: 0.25, type: 'sine', vol: 0.16 }
+      ],
+      // Soft meditation bowl - calming
+      soft: [
+        { f: 396, d: 0.4, type: 'sine', vol: 0.1 },
+        { f: 528, d: 0.5, type: 'sine', vol: 0.08 }
+      ],
+      // Classic bell - clear and bright
+      bell: [
+        { f: 1047, d: 0.08, type: 'sine', vol: 0.18 },
+        { f: 1319, d: 0.12, type: 'sine', vol: 0.14 },
+        { f: 1568, d: 0.3, type: 'triangle', vol: 0.1 }
+      ],
+      // Digital beep - modern alert
+      digital: [
+        { f: 880, d: 0.1, type: 'square', vol: 0.06 },
+        { f: 0, d: 0.05, type: 'sine', vol: 0 },
+        { f: 880, d: 0.1, type: 'square', vol: 0.06 },
+        { f: 0, d: 0.05, type: 'sine', vol: 0 },
+        { f: 1175, d: 0.2, type: 'square', vol: 0.08 }
+      ],
+      // Crystal glass - high clarity
+      glass: [
+        { f: 2093, d: 0.15, type: 'sine', vol: 0.08 },
+        { f: 2637, d: 0.2, type: 'sine', vol: 0.06 },
+        { f: 3136, d: 0.35, type: 'sine', vol: 0.04 }
+      ],
+      // Success fanfare - celebratory
+      success: [
+        { f: 523, d: 0.12, type: 'triangle', vol: 0.12 },
+        { f: 659, d: 0.12, type: 'triangle', vol: 0.14 },
+        { f: 784, d: 0.12, type: 'triangle', vol: 0.16 },
+        { f: 1047, d: 0.3, type: 'triangle', vol: 0.18 }
+      ]
+    };
+
+    let audioCtx = null;
+    const playTonePattern = (pattern) => {
+      if (!pattern) return;
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      let t = audioCtx.currentTime;
+      pattern.forEach(step => {
+        if (step.f === 0) { t += step.d; return; } // silence gap
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = step.type || 'sine';
+        osc.frequency.value = step.f;
+        const vol = step.vol || 0.15;
+        gain.gain.setValueAtTime(0.001, t);
+        gain.gain.linearRampToValueAtTime(vol, t + 0.015);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + step.d);
+        osc.connect(gain).connect(audioCtx.destination);
+        osc.start(t);
+        osc.stop(t + step.d + 0.02);
+        t += step.d + 0.02;
+      });
+    };
+
+    const alert = () => {
+      const pattern = tonePatterns[settings.sound] || tonePatterns.chime;
+      playTonePattern(pattern);
+      if (navigator.vibrate) navigator.vibrate([40, 80]);
+    };
+
+    const advance = (countFocus = false) => {
+      const wasRunning = state.running;
+      clearTimer();
+      state.running = false;
+      if (state.mode === 'focus') {
+        if (countFocus) recordFocus();
+        state.cycle += 1;
+        const useLong = config.longEvery > 0 && (state.cycle % config.longEvery === 0);
+        setMode(useLong ? 'long' : 'short');
+      } else {
+        setMode('focus');
+      }
+      render();
+      alert();
+      if (settings.autoContinue || wasRunning) start();
+    };
+
+    const applyConfig = (cfg, presetKey) => {
+      config = { ...cfg };
+      state.preset = presetKey;
+      refs.focusInput.value = config.focus;
+      refs.breakInput.value = config.shortBreak;
+      refs.longInput.value = config.longBreak;
+      refs.longEveryInput.value = config.longEvery;
+      state.mode = 'focus';
+      state.remainingMs = config.focus * 60000;
+      state.cycle = 0;
+      updatePresetButtons();
+      render();
+    };
+
+    const selectPreset = (key) => {
+      const base = key === 'custom' ? (loadCustom() || config) : presets[key];
+      if (!base) return;
+      localStorage.setItem(KEYS.PRESET, key);
+      if (key === 'custom') saveCustom(base);
+      applyConfig(base, key);
+    };
+
+    const handleCustomChange = () => {
+      const cfg = {
+        focus: clampNum(refs.focusInput.value, 5, 240, config.focus),
+        shortBreak: clampNum(refs.breakInput.value, 3, 60, config.shortBreak),
+        longBreak: clampNum(refs.longInput.value, 5, 90, config.longBreak),
+        longEvery: clampNum(refs.longEveryInput.value, 1, 8, config.longEvery)
+      };
+      saveCustom(cfg);
+      selectPreset('custom');
+    };
+
+    const updateTaskOptions = () => {
+      if (!refs.taskSelect) return;
+      const prev = refs.taskSelect.value;
+      refs.taskSelect.innerHTML = '<option value="">בחר משימה להתמקד (אופציונלי)</option>';
+      const active = (tasksCache || []).filter(t => !t.completed).slice(0, 50);
+      active.forEach(t => {
+        const opt = document.createElement('option');
+        opt.value = t.id;
+        opt.textContent = t.title || 'ללא שם';
+        refs.taskSelect.appendChild(opt);
+      });
+      if (prev && active.some(t => t.id === prev)) refs.taskSelect.value = prev;
+    };
+
+    const init = () => {
+      if (!refs.card) return;
+      const savedPreset = localStorage.getItem(KEYS.PRESET) || 'classic';
+      const baseConfig = savedPreset === 'custom' ? (loadCustom() || presets.classic) : (presets[savedPreset] || presets.classic);
+      applyConfig(baseConfig, savedPreset);
+      renderStats();
+
+      if (refs.autoContinue) {
+        refs.autoContinue.checked = settings.autoContinue;
+        refs.autoContinue.addEventListener('change', () => {
+          settings.autoContinue = refs.autoContinue.checked;
+          saveSettings();
+        });
+      }
+
+      if (refs.soundSelect) {
+        refs.soundSelect.value = settings.sound;
+        refs.soundSelect.addEventListener('change', () => {
+          settings.sound = refs.soundSelect.value;
+          saveSettings();
+        });
+      }
+
+      if (refs.previewBtn) {
+        refs.previewBtn.addEventListener('click', () => {
+          const key = (refs.soundSelect && refs.soundSelect.value) || settings.sound || 'chime';
+          if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+          playTonePattern(tonePatterns[key] || tonePatterns.chime);
+        });
+      }
+
+      refs.presets.forEach(btn => btn.addEventListener('click', () => selectPreset(btn.dataset.preset)));
+
+      [refs.focusInput, refs.breakInput, refs.longInput, refs.longEveryInput].forEach(input => {
+        if (!input) return;
+        input.addEventListener('change', handleCustomChange);
+        input.addEventListener('input', () => state.preset = 'custom');
+      });
+
+      if (refs.startBtn) refs.startBtn.onclick = () => { state.running ? pause() : start(); };
+      if (refs.skipBtn) refs.skipBtn.onclick = () => advance(false);
+      if (refs.resetBtn) refs.resetBtn.onclick = reset;
+
+      // Mini player setup
+      const MINI_KEY = 'pomodoro-mini-enabled';
+      const miniEnabled = localStorage.getItem(MINI_KEY) === 'true';
+      if (refs.miniToggle) {
+        refs.miniToggle.checked = miniEnabled;
+        if (refs.mini) refs.mini.classList.toggle('visible', miniEnabled);
+      }
+      if (refs.miniToggle) {
+        refs.miniToggle.addEventListener('change', () => {
+          const enabled = refs.miniToggle.checked;
+          localStorage.setItem(MINI_KEY, enabled ? 'true' : 'false');
+          if (refs.mini) refs.mini.classList.toggle('visible', enabled);
+        });
+      }
+      if (refs.miniClose) {
+        refs.miniClose.addEventListener('click', () => {
+          if (refs.miniToggle) refs.miniToggle.checked = false;
+          localStorage.setItem(MINI_KEY, 'false');
+          if (refs.mini) refs.mini.classList.remove('visible');
+        });
+      }
+      // Click on mini player opens Pomodoro overlay
+      if (refs.mini) {
+        refs.mini.addEventListener('click', (e) => {
+          if (e.target === refs.miniClose) return;
+          const overlay = document.getElementById('pomodoroOverlay');
+          if (overlay) overlay.classList.add('open');
+        });
+      }
+
+      updatePresetButtons();
+      render();
+      updateTaskOptions();
+    };
+
+    const updateTasks = (tasks = []) => {
+      tasksCache = tasks;
+      updateTaskOptions();
+    };
+
+    return { init, updateTasks };
+  })();
+
+  // Toggle overlays - menu buttons switch between views
+  // Three main views: Countdown (app-layout), Tasks (taskManagerOverlay), Pomodoro (pomodoroOverlay)
+  const toggleCountdown = document.getElementById('toggleCountdown');
+  const appLayout = document.querySelector('.app-layout');
+  // Ensure current view state and commonly used DOM refs exist before showView
+  let currentView = 'countdown';
+  const subjectsList = $("subjectsList");
+
+  function updateHeaderButtons() {
+    try {
+      ['toggleCountdown','toggleTasks','togglePomodoro'].forEach(id => {
+        const el = $(id);
+        if (el) el.classList.remove('active');
+      });
+      if (currentView === 'countdown') {
+        const el = $('toggleCountdown'); if (el) el.classList.add('active');
+      } else if (currentView === 'tasks') {
+        const el = $('toggleTasks'); if (el) el.classList.add('active');
+      } else if (currentView === 'pomodoro') {
+        const el = $('togglePomodoro'); if (el) el.classList.add('active');
+      }
+    } catch (e) {
+      console.warn('updateHeaderButtons error', e);
+    }
+  }
   
-  // Open/Close Task Manager
-  toggleTasks.onclick = () => {
-    taskManagerOverlay.classList.add('open');
-    renderSubjectsSidebar();
-    renderTasks();
-    startTaskTicker();
-  };
   
-  closeTaskManager.onclick = () => {
+  
+  
+  
+  
+  const showView = (view) => {
+    // Hide all views
+    appLayout.style.display = 'none';
     taskManagerOverlay.classList.remove('open');
+    pomodoroOverlay.classList.remove('open');
     stopTaskTicker();
+    
+    // Show calendar button only for countdown view
+    toggleSidebar.style.display = view === 'countdown' ? '' : 'none';
+    
+    // Show selected view
+    if (view === 'countdown') {
+      appLayout.style.display = '';
+    } else if (view === 'tasks') {
+      taskManagerOverlay.classList.add('open');
+      renderSubjectsSidebar();
+      renderTasks();
+      startTaskTicker();
+      if (typeof setupTaskCalendar === 'function') setupTaskCalendar();
+      if (typeof renderTaskCalendar === 'function') renderTaskCalendar();
+    } else if (view === 'pomodoro') {
+      pomodoroOverlay.classList.add('open');
+    }
+    
+    currentView = view;
+    updateHeaderButtons();
   };
   
-  // Quick add task - show full form on focus
+  toggleCountdown.onclick = () => showView('countdown');
+  toggleTasks.onclick = () => showView('tasks');
+  togglePomodoro.onclick = () => showView('pomodoro');
+
+  // Close task manager button
+  if (closeTaskManager) {
+    closeTaskManager.onclick = () => {
+      taskManagerOverlay.classList.remove('open');
+      stopTaskTicker();
+      showView('countdown');
+    };
+  }
+  
+  // Initialize header button states
+  updateHeaderButtons();
   newTaskTitle.addEventListener('focus', () => {
     quickAddRow.style.display = 'flex';
   });
@@ -4157,12 +6021,14 @@
     } else {
       tasks = [];
     }
+    Pomodoro.updateTasks(tasks);
     if (taskManagerOverlay.classList.contains('open')) {
       renderTasks();
     }
-    // Update calendar to show task indicators
-    if (!sidebar.classList.contains('hidden')) {
-      renderCalendar();
+    // Update task calendar if visible
+    const trSidebar = $("taskRightSidebar");
+    if (trSidebar && !trSidebar.classList.contains('hidden')) {
+      renderTaskCalendar();
     }
   });
   
@@ -4183,6 +6049,15 @@
       filtered = filtered.filter(t => !t.completed);
     } else if (currentFilter === 'completed') {
       filtered = filtered.filter(t => t.completed);
+    }
+    
+    // Apply date filter for calendar selection
+    if (currentSmartView === 'date-filter' && window.taskFilterDate) {
+      const dateStr = window.taskFilterDate.toDateString();
+      filtered = filtered.filter(t => {
+        if (!t.dueDate) return false;
+        return new Date(t.dueDate).toDateString() === dateStr;
+      });
     }
     
     return filtered;
@@ -4253,6 +6128,17 @@
     updateSmartViewCounts();
     renderSubjectsSidebar();
     
+    // Update title for date filter
+    const viewNameDisplay = document.querySelector('.task-manager-title');
+    if (currentSmartView === 'date-filter' && window.taskFilterDate && viewNameDisplay) {
+      const options = { weekday: 'long', day: 'numeric', month: 'long' };
+      viewNameDisplay.textContent = `📅 ${window.taskFilterDate.toLocaleDateString('he-IL', options)}`;
+    } else if (viewNameDisplay && !currentSmartView) {
+      // Reset to default title if not in a smart view
+      const subjectName = currentSubject ? subjects.find(s => s.id === currentSubject)?.name : null;
+      viewNameDisplay.textContent = subjectName || 'כל המשימות';
+    }
+    
     // Sort tasks
     sortTasks(active);
     sortTasks(completed);
@@ -4292,6 +6178,8 @@
     } else {
       tasksEmpty.style.display = 'none';
     }
+
+    Pomodoro.updateTasks(tasks);
     
     // Event delegation is set up once below, no need to call attachTaskEventHandlers
   }
@@ -4730,10 +6618,9 @@
   // ============ SUBJECTS / CATEGORIES ============
   const subjectsRef = ref(db, 'subjects');
   
-  const subjectTabs = $("subjectTabs");
+  
   const addSubjectBtn = $("addSubjectBtn");
   const addSubjectSidebarBtn = $("addSubjectSidebarBtn");
-  const subjectsList = $("subjectsList");
   const smartViewsList = $("smartViewsList");
   const subjectModal = $("subjectModal");
   const subjectModalTitle = $("subjectModalTitle");
@@ -4835,6 +6722,244 @@
     if (countOverdue) countOverdue.textContent = overdueCount;
     if (countNoDate) countNoDate.textContent = noDateCount;
   }
+  
+  // ============ TASK CALENDAR ============
+  let currentTaskMonth = new Date();
+  const taskCalendarGrid = $("taskCalendarGrid");
+  const taskCalendarTitle = $("taskCalendarTitle");
+  const taskMonthEvents = $("taskMonthEvents");
+  const taskMonthEventsTitle = $("taskMonthEventsTitle");
+  
+  function renderTaskCalendar() {
+    if (!taskCalendarGrid || !taskCalendarTitle) return;
+    
+    const year = currentTaskMonth.getFullYear();
+    const month = currentTaskMonth.getMonth();
+
+    taskCalendarTitle.textContent = `${HEBREW_MONTHS[month]} ${year}`;
+
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const startDay = firstDay.getDay();
+    const daysInMonth = lastDay.getDate();
+
+    const today = new Date();
+    const todayKey = toDateKey(today);
+
+    // Build task map by date (exclude countdowns/events)
+    const tasksByDate = {};
+    tasks.forEach(task => {
+      // Only include if it's a real task (not a countdown/event)
+      if (!task.dueDate) return;
+      // If task has a property like isCountdown or isEvent, skip it
+      if (task.isCountdown || task.isEvent) return;
+      const key = toDateKey(task.dueDate);
+      if (!tasksByDate[key]) tasksByDate[key] = [];
+      tasksByDate[key].push(task);
+    });
+
+    let html = '';
+
+    // Day names
+    for (let i = 0; i < 7; i++) {
+      html += `<div class="calendar-day-name">${HEBREW_DAYS[i]}</div>`;
+    }
+
+    // Previous month days
+    const prevMonth = new Date(year, month, 0);
+    const prevDays = prevMonth.getDate();
+    for (let i = startDay - 1; i >= 0; i--) {
+      const day = prevDays - i;
+      html += `<div class="calendar-day other-month"><div class="calendar-day-number">${day}</div></div>`;
+    }
+
+    // Current month days
+    for (let day = 1; day <= daysInMonth; day++) {
+      const dateKey = `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+      const isToday = dateKey === todayKey;
+      const dayTasks = tasksByDate[dateKey] || [];
+
+      let classes = 'calendar-day';
+      if (isToday) classes += ' today';
+
+      let eventsHtml = '<div class="calendar-day-events">';
+      const maxShow = 2;
+      const showTime = dayTasks.length > 1; // Show time when multiple events on same day
+      dayTasks.slice(0, maxShow).forEach(task => {
+        const color = subjects.find(s => s.id === task.subject)?.color || '#667eea';
+        const safeName = escapeHtml(task.title);
+        const evtDate = new Date(task.dueDate);
+        const timeStr = showTime ? `${String(evtDate.getHours()).padStart(2,'0')}:${String(evtDate.getMinutes()).padStart(2,'0')} ` : '';
+        const displayText = timeStr + safeName;
+        eventsHtml += `<div class="calendar-event-chip" style="background: ${color}" title="${safeName}" aria-label="${safeName}" data-task-id="${task.id}">${displayText}</div>`;
+      });
+      if (dayTasks.length > maxShow) {
+        eventsHtml += `<div class="calendar-more">+${dayTasks.length - maxShow} עוד</div>`;
+      }
+      eventsHtml += '</div>';
+
+      html += `<div class="${classes}" data-date="${dateKey}">
+        <div class="calendar-day-number">${day}</div>
+        ${eventsHtml}
+      </div>`;
+    }
+
+    // Next month days
+    const totalCells = startDay + daysInMonth;
+    const remainingCells = totalCells % 7 === 0 ? 0 : 7 - (totalCells % 7);
+    for (let i = 1; i <= remainingCells; i++) {
+      html += `<div class="calendar-day other-month"><div class="calendar-day-number">${i}</div></div>`;
+    }
+
+    taskCalendarGrid.innerHTML = html;
+
+    // Click calendar chip to scroll to task in main list
+    taskCalendarGrid.querySelectorAll('.calendar-event-chip').forEach(chip => {
+      chip.addEventListener('click', (e) => {
+        e.stopPropagation(); // Don't trigger day click
+        const taskId = chip.dataset.taskId;
+        if (taskId) {
+          const taskRow = document.querySelector(`.task-item[data-id="${taskId}"]`);
+          if (taskRow) {
+            taskRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            // Flash highlight
+            taskRow.style.transition = 'background 0.3s';
+            taskRow.style.background = 'var(--accent)';
+            setTimeout(() => {
+              taskRow.style.background = '';
+            }, 800);
+          }
+        }
+      });
+    });
+
+    // Click calendar day to add task
+    taskCalendarGrid.querySelectorAll('.calendar-day:not(.other-month)').forEach(dayEl => {
+      dayEl.addEventListener('click', (e) => {
+        // Don't trigger if clicking on a chip
+        if (e.target.classList.contains('calendar-event-chip')) return;
+        
+        const dateKey = dayEl.dataset.date;
+        if (!dateKey) return;
+        
+        const taskDueInput = $("newTaskDue");
+        const taskTitleInput = $("newTaskTitle");
+        const quickRow = $("quickAddRow");
+        if (taskDueInput) taskDueInput.value = dateKey + 'T23:59';
+        if (taskTitleInput) taskTitleInput.focus();
+        if (quickRow) quickRow.style.display = 'flex';
+      });
+    });
+    
+    renderTaskMonthList();
+  }
+  
+  function renderTaskMonthList() {
+    if (!taskMonthEvents || !taskMonthEventsTitle) return;
+    
+    const year = currentTaskMonth.getFullYear();
+    const month = currentTaskMonth.getMonth();
+    
+    taskMonthEventsTitle.textContent = `משימות (ללא ספירות לאחור) ${HEBREW_MONTHS[month]}`;
+    
+    // Only show real tasks (not countdowns/events)
+    const monthTasks = tasks.filter(t => {
+      if (!t.dueDate) return false;
+      // If task has a property like isCountdown or isEvent, skip it
+      if (t.isCountdown || t.isEvent) return false;
+      const d = new Date(t.dueDate);
+      return d.getFullYear() === year && d.getMonth() === month;
+    }).sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
+
+    if (monthTasks.length === 0) {
+      taskMonthEvents.innerHTML = '<div class="no-events-msg">אין משימות החודש</div>';
+      return;
+    }
+
+    taskMonthEvents.innerHTML = monthTasks.map(task => {
+      const color = subjects.find(s => s.id === task.subject)?.color || '#667eea';
+      const d = new Date(task.dueDate);
+      const dateStr = `${d.getDate()}/${d.getMonth()+1} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+      return `
+        <div class="month-event-item" style="border-right-color: ${color}">
+          <div class="month-event-color" style="background: ${color}"></div>
+          <div class="month-event-info">
+            <div class="month-event-name" style="${task.completed ? 'text-decoration: line-through; opacity: 0.7;' : ''}">${escapeHtml(task.title)}</div>
+            <div class="month-event-date">${dateStr}</div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+  
+  // Task Calendar Navigation
+  $("prevTaskMonth").onclick = () => {
+    currentTaskMonth.setMonth(currentTaskMonth.getMonth() - 1);
+    renderTaskCalendar();
+  };
+  
+  // Toggle Task Calendar
+  const toggleTaskCalendar = $("toggleTaskCalendar");
+  const taskRightSidebar = $("taskRightSidebar");
+  if (toggleTaskCalendar && taskRightSidebar) {
+    toggleTaskCalendar.onclick = () => {
+      console.log('toggleTaskCalendar clicked');
+      const wasHidden = taskRightSidebar.classList.contains("hidden") || getComputedStyle(taskRightSidebar).display === 'none';
+      console.log('taskRightSidebar wasHidden=', wasHidden);
+      if (wasHidden) {
+        taskRightSidebar.classList.remove('hidden');
+        taskRightSidebar.style.display = '';
+        currentTaskMonth = new Date();
+        renderTaskCalendar();
+      } else {
+        taskRightSidebar.classList.add('hidden');
+        taskRightSidebar.style.display = 'none';
+      }
+    };
+  }
+  // Toggle Task Manager Sidebar (subjects)
+  const toggleTaskSidebarBtn = $("toggleTaskSidebar");
+  const taskSidebar = $("taskSidebar");
+  if (toggleTaskSidebarBtn && taskSidebar) {
+    toggleTaskSidebarBtn.onclick = () => {
+      console.log('toggleTaskSidebar clicked');
+      const wasHidden = taskSidebar.classList.contains('hidden') || getComputedStyle(taskSidebar).display === 'none';
+      console.log('taskSidebar wasHidden=', wasHidden);
+      if (wasHidden) {
+        taskSidebar.classList.remove('hidden');
+        taskSidebar.style.display = '';
+      } else {
+        taskSidebar.classList.add('hidden');
+        taskSidebar.style.display = 'none';
+      }
+    };
+  }
+  $("nextTaskMonth").onclick = () => {
+    currentTaskMonth.setMonth(currentTaskMonth.getMonth() + 1);
+    renderTaskCalendar();
+  };
+  $("todayTaskBtn").onclick = () => {
+    currentTaskMonth = new Date();
+    renderTaskCalendar();
+  };
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
   
   // ============ SIDEBAR SUBJECTS RENDERING ============
   function renderSubjectsSidebar() {
@@ -5028,6 +7153,13 @@
   // Add subject sidebar button handler
   if (addSubjectSidebarBtn) {
     addSubjectSidebarBtn.addEventListener('click', () => openSubjectModal());
+  }
+  // Add subject button in header
+  if (addSubjectBtn) {
+    addSubjectBtn.addEventListener('click', () => {
+      console.log('addSubjectBtn clicked');
+      openSubjectModal();
+    });
   }
   
   // ============ CONTEXT MENU ============
@@ -5345,14 +7477,10 @@
     return filtered;
   };
   
-  // Add subject button (legacy - might not exist now)
-  if (addSubjectBtn) {
-    addSubjectBtn.onclick = () => {
-      openSubjectModal(null, null);
-    };
-  }
+  
   
   function openSubjectModal(subjectId, parentId = null) {
+    console.log('openSubjectModal called', { subjectId, parentId });
     editingSubjectId = subjectId;
     updateParentSubjectSelector();
     
@@ -5409,6 +7537,7 @@
   
   // Save subject
   saveSubjectBtn.onclick = () => {
+    console.log('saveSubjectBtn clicked, name=', subjectNameInput.value);
     const name = subjectNameInput.value.trim();
     if (!name) return;
     
@@ -5809,6 +7938,9 @@
     }
   });
 
+  // Kick off Pomodoro UI
+  Pomodoro.init();
+
   // ============ DAILY REMINDER ============
   const closeReminderBtn = $("closeReminderBtn");
   const reminderDate = $("reminderDate");
@@ -5919,4 +8051,3 @@
 </script>
 </body>
 </html>
-
