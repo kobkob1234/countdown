@@ -4395,6 +4395,15 @@ const themeToggle = $("themeToggle");
   let events = [];
   const eventsById = new Map();
   function getEventById(id) { return eventsById.get(id); }
+  function upsertLocalEvent(id, data) {
+    const existing = eventsById.get(id);
+    if (existing) Object.assign(existing, data);
+    else {
+      const evt = { id, ...data };
+      events.push(evt);
+      eventsById.set(id, evt);
+    }
+  }
   let currentMonth = new Date();
   const pendingDeletes = new Map();
   let lastDeletedId = null;
@@ -4835,17 +4844,53 @@ const themeToggle = $("themeToggle");
       events = [];
     }
     render();
-    renderCalendar();
     startTicker();
+    // Defer heavy calendar render so list paints first
+    setTimeout(renderCalendar, 0);
   });
 
-  const saveToCloud = (eventData) => {
+  const saveToCloud = async (eventData) => {
     const newEventRef = push(eventsRef);
-    set(newEventRef, eventData);
+    const id = newEventRef.key;
+
+    // Optimistic UI
+    upsertLocalEvent(id, eventData);
+    render();
+    setTimeout(renderCalendar, 0);
+    startTicker();
+
+    try {
+      await set(newEventRef, eventData);
+    } catch (err) {
+      // Rollback on failure
+      events = events.filter(e => e.id !== id);
+      eventsById.delete(id);
+      render();
+      setTimeout(renderCalendar, 0);
+      console.error(err);
+      alert("Save failed (check connection).");
+    }
   };
 
-  const updateInCloud = (id, data) => {
-    set(ref(db, 'events/' + id), data);
+  const updateInCloud = async (id, data) => {
+    const { id: _ignore, ...payload } = data;
+    const prev = eventsById.get(id) ? { ...eventsById.get(id) } : null;
+
+    // Optimistic UI
+    upsertLocalEvent(id, payload);
+    render();
+    setTimeout(renderCalendar, 0);
+
+    try {
+      await set(ref(db, 'events/' + id), payload);
+    } catch (err) {
+      // Rollback
+      if (prev) upsertLocalEvent(id, prev);
+      render();
+      setTimeout(renderCalendar, 0);
+      console.error(err);
+      alert("Update failed (check connection).");
+    }
   };
 
   const deleteFromCloud = (id) => {
@@ -5068,12 +5113,11 @@ const themeToggle = $("themeToggle");
   function findConflictingEvents(list, thresholdMinutes = 30) {
     if (!Array.isArray(list) || list.length < 2) return new Set();
     const thresholdMs = thresholdMinutes * 60000;
-    const sorted = [...list].sort((a, b) => new Date(a.date) - new Date(b.date));
+    // Assume `list` is already sorted by date (render() prepares a sorted list)
     const conflicts = new Set();
-
-    for (let i = 0; i < sorted.length - 1; i++) {
-      const current = sorted[i];
-      const next = sorted[i + 1];
+    for (let i = 0; i < list.length - 1; i++) {
+      const current = list[i];
+      const next = list[i + 1];
       const diff = Math.abs(new Date(next.date) - new Date(current.date));
       if (diff < thresholdMs) {
         conflicts.add(current.id);
