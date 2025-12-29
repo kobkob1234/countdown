@@ -3784,6 +3784,7 @@
     <div class="header-spacer"></div>
     <button class="header-btn" id="toggleSidebar">📅 לוח</button>
     <button class="header-btn icon-only" id="themeToggle" aria-label="Toggle dark mode">🌙</button>
+    <button class="header-btn" id="userBtn" style="margin-left:8px; border:1px solid var(--accent); color:var(--accent);">👤 Guest</button>
   </div>
 
   <!-- Task Manager Fullscreen -->
@@ -4326,6 +4327,45 @@
   const app = initializeApp(firebaseConfig);
   const db = getDatabase(app);
   const eventsRef = ref(db, 'events');
+
+  // 2. USER AUTHENTICATION LOGIC
+  const userBtn = document.getElementById('userBtn');
+  let currentUser = localStorage.getItem('countdown_username');
+
+  // Function to sanitize username (remove special chars)
+  const cleanUsername = (name) => {
+    return (name || '').trim().toLowerCase().replace(/[^a-z0-9_-]/g, '');
+  };
+
+  // Login Process
+  if (!currentUser) {
+    const input = prompt("👋 Welcome! \nEnter a username to access your private tasks:\n(e.g., 'john123', 'sarah_work')");
+    currentUser = cleanUsername(input);
+    
+    if (!currentUser) {
+      currentUser = 'guest_' + Math.floor(Math.random() * 1000);
+      alert("No name entered. You are logged in as: " + currentUser);
+    }
+    localStorage.setItem('countdown_username', currentUser);
+  }
+
+  // Update UI
+  if(userBtn) userBtn.textContent = `👤 ${currentUser}`;
+
+  // 3. PRIVATE REFERENCES (Scoped to the user)
+  const tasksRef = ref(db, `users/${currentUser}/tasks`);
+  const subjectsRef = ref(db, `users/${currentUser}/subjects`);
+
+  // 4. LOGOUT / SWITCH USER FUNCTION
+  if(userBtn) {
+    userBtn.onclick = () => {
+      const switchUser = confirm(`You are logged in as "${currentUser}".\n\nDo you want to switch users?`);
+      if (switchUser) {
+        localStorage.removeItem('countdown_username');
+        location.reload(); // Reload page to reset references
+      }
+    };
+  }
 
   const COLORS = ['#667eea','#f59e0b','#10b981','#ec4899','#8b5cf6','#06b6d4','#ef4444','#84cc16'];
   const HEBREW_DAYS = ['א׳', 'ב׳', 'ג׳', 'ד׳', 'ה׳', 'ו׳', 'ש׳'];
@@ -5446,7 +5486,6 @@ const themeToggle = $("themeToggle");
   startTicker();
 
   // ============ TASK MANAGER ============
-  const tasksRef = ref(db, 'tasks');
   
   const taskManagerOverlay = $("taskManagerOverlay");
   
@@ -6694,7 +6733,7 @@ const themeToggle = $("themeToggle");
   };
 
   // ============ SUBJECTS / CATEGORIES ============
-  const subjectsRef = ref(db, 'subjects');
+  // subjectsRef is user-scoped (see auth block above)
   
   
   const addSubjectBtn = $("addSubjectBtn");
