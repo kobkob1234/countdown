@@ -121,17 +121,18 @@
     }
     .header-btn {
       padding: 10px 16px;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      background: var(--card);
-      color: var(--text);
-      font-size: 14px;
-      font-weight: 500;
-      cursor: pointer;
-      transition: all 0.2s;
-      display: flex;
-      align-items: center;
-      gap: 6px;
+        opacity: 0.3;
+      }
+      .pin-btn:hover {
+        background: #dbeafe;
+        color: #3b82f6;
+        transform: scale(1.1);
+        opacity: 0.6;
+      }
+      .pin-btn.pinned {
+        color: #3b82f6;
+        opacity: 1;
+      }
       white-space: nowrap;
     }
     .header-btn:hover {
@@ -1648,6 +1649,36 @@
     }
     .star-btn.active {
       color: #f59e0b;
+    }
+
+    .pin-btn {
+      width: 32px;
+      height: 32px;
+      border: none;
+      background: transparent;
+      color: #9ca3af;
+      font-size: 20px;
+      cursor: pointer;
+      border-radius: 8px;
+      transition: all 0.15s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      line-height: 1;
+      opacity: 0.25;
+    }
+    .pin-btn:hover {
+      background: #dbeafe;
+      color: #3b82f6;
+      transform: scale(1.1);
+      opacity: 0.6;
+    }
+    .pin-btn.pinned {
+      color: #3b82f6;
+      opacity: 1;
+    }
+    .pin-btn.pinned:hover {
+      opacity: 1;
     }
 
     .edit-btn {
@@ -4138,6 +4169,7 @@
   
   <!-- Context Menu for Countdown Events -->
   <div class="context-menu" id="eventContextMenu">
+    <div class="context-menu-item" data-action="pin">📌 נעץ למעלה</div>
     <div class="context-menu-item" data-action="star">⭐ סמן כמועדף</div>
     <div class="context-menu-item" data-action="edit">✏️ עריכה</div>
     <div class="context-menu-item" data-action="duplicate">📋 שכפל</div>
@@ -4956,6 +4988,11 @@ const themeToggle = $("themeToggle");
     const now = Date.now();
 
     const sorted = [...events].filter(e => !pendingDeletes.has(e.id)).sort((a, b) => {
+      // First sort by pinned status
+      if (a.pinned && !b.pinned) return -1;
+      if (!a.pinned && b.pinned) return 1;
+      
+      // Then by time
       const aTime = new Date(a.date).getTime();
       const bTime = new Date(b.date).getTime();
       const aEnded = aTime <= now;
@@ -5060,7 +5097,12 @@ const themeToggle = $("themeToggle");
 
       const starBtn = document.createElement("button");
       starBtn.className = `star-btn ${evt.highlighted ? 'active' : ''}`;
-      starBtn.textContent = "★";
+      starBtn.textContent = "☆";
+
+      const pinBtn = document.createElement("button");
+      pinBtn.className = `pin-btn ${evt.pinned ? 'pinned' : ''}`;
+      pinBtn.textContent = "📌";
+      pinBtn.title = evt.pinned ? "Unpin" : "Pin to top";
 
       const editBtn = document.createElement("button");
       editBtn.className = "edit-btn";
@@ -5073,6 +5115,7 @@ const themeToggle = $("themeToggle");
 
       const actions = document.createElement("div");
       actions.className = "event-actions";
+      actions.appendChild(pinBtn);
       actions.appendChild(starBtn);
       actions.appendChild(editBtn);
       actions.appendChild(deleteBtn);
@@ -5255,7 +5298,8 @@ const themeToggle = $("themeToggle");
         name,
         date: parsedDate.toISOString(),
         notes: notes || null,
-        highlighted: evt ? evt.highlighted : false
+        highlighted: evt ? evt.highlighted : false,
+        pinned: evt ? evt.pinned : false
       });
       cancelEdit();
     } else {
@@ -5263,7 +5307,8 @@ const themeToggle = $("themeToggle");
         name,
         date: parsedDate.toISOString(),
         notes: notes || null,
-        highlighted: false
+        highlighted: false,
+        pinned: false
       });
       eventName.value = "";
       eventDate.value = "";
@@ -5380,6 +5425,11 @@ const themeToggle = $("themeToggle");
       const evt = events.find(evt => evt.id === id);
       if (evt) {
         updateInCloud(id, { ...evt, highlighted: !evt.highlighted });
+      }
+    } else if (e.target.classList.contains("pin-btn")) {
+      const evt = events.find(evt => evt.id === id);
+      if (evt) {
+        updateInCloud(id, { ...evt, pinned: !evt.pinned });
       }
     }
   };
@@ -7210,10 +7260,16 @@ const themeToggle = $("themeToggle");
     eventContextMenuTarget = eventId;
     const evt = events.find(e => e.id === eventId);
     
-    // Update star text based on current state
+    // Update menu items based on current state
     const starItem = eventContextMenu.querySelector('[data-action="star"]');
+    const pinItem = eventContextMenu.querySelector('[data-action="pin"]');
+    
     if (starItem && evt) {
       starItem.innerHTML = evt.highlighted ? '⭐ הסר מועדף' : '⭐ סמן כמועדף';
+    }
+    
+    if (pinItem && evt) {
+      pinItem.innerHTML = evt.pinned ? '📌 בטל נעיצה' : '📌 נעץ למעלה';
     }
     
     // Position and show menu
@@ -7307,6 +7363,10 @@ const themeToggle = $("themeToggle");
       
       if (action === 'edit') {
         startEdit(eventContextMenuTarget);
+      } else if (action === 'pin') {
+        if (evt) {
+          updateInCloud(eventContextMenuTarget, { ...evt, pinned: !evt.pinned });
+        }
       } else if (action === 'star') {
         if (evt) {
           updateInCloud(eventContextMenuTarget, { ...evt, highlighted: !evt.highlighted });
@@ -7317,7 +7377,8 @@ const themeToggle = $("themeToggle");
             name: evt.name + ' (העתק)',
             date: evt.date,
             notes: evt.notes || null,
-            highlighted: false
+            highlighted: false,
+            pinned: false
           });
         }
       } else if (action === 'delete') {
