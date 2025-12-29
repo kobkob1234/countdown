@@ -4524,6 +4524,7 @@ const themeToggle = $("themeToggle");
   let hasEventsCache = false;
   const eventsById = new Map();
   const refs = new Map();
+  let tickerHandle = null;
   function getEventById(id) { return eventsById.get(id); }
   function upsertLocalEvent(id, data) {
     const existing = eventsById.get(id);
@@ -5429,7 +5430,6 @@ const themeToggle = $("themeToggle");
     });
   }
 
-  let tickerHandle = null;
   function startTicker() {
     if (tickerHandle) return; // already running
     const loop = () => {
