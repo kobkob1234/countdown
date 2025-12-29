@@ -148,6 +148,35 @@
       justify-content: center;
       font-size: 18px;
     }
+    .sync-badge {
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: var(--day-other);
+      color: var(--muted);
+      font-size: var(--font-size-xs);
+      font-weight: var(--font-weight-medium);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-left: auto;
+    }
+    .sync-badge.hidden {
+      display: none;
+    }
+    .sync-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.15);
+      animation: syncPulse 1.6s ease-in-out infinite;
+    }
+    @keyframes syncPulse {
+      0% { transform: scale(0.9); opacity: 0.6; }
+      50% { transform: scale(1.1); opacity: 1; }
+      100% { transform: scale(0.9); opacity: 0.6; }
+    }
     .header-spacer {
       flex: 1;
     }
@@ -483,6 +512,25 @@
       display: flex;
       flex-direction: column;
       gap: 12px;
+    }
+    .event-list.loading .event-row {
+      display: none;
+    }
+    .event-skeleton {
+      display: grid;
+      gap: 12px;
+    }
+    .event-skeleton-row {
+      height: 78px;
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border);
+      background: linear-gradient(90deg, var(--day-other), var(--day-hover), var(--day-other));
+      background-size: 200% 100%;
+      animation: shimmer 1.2s ease-in-out infinite;
+    }
+    @keyframes shimmer {
+      0% { background-position: 0% 50%; }
+      100% { background-position: 200% 50%; }
     }
 
     .event-row {
@@ -3780,6 +3828,7 @@
     <button class="header-btn" id="togglePomodoro">🍅 פומודורו</button>
     <div class="header-spacer"></div>
     <button class="header-btn" id="toggleSidebar">📅 לוח</button>
+    <span class="sync-badge hidden" id="syncBadge"><span class="sync-dot"></span>Syncing…</span>
     <button class="header-btn icon-only" id="themeToggle" aria-label="Toggle dark mode">🌙</button>
     <button class="header-btn" id="userBtn" style="margin-left:8px; border:1px solid var(--accent); color:var(--accent);">👤 Guest</button>
   </div>
@@ -4225,8 +4274,12 @@
           </div>
         </div>
 
-        <div class="event-list" id="eventList" role="list">
-          <p style="text-align:center; padding: 20px;">Loading shared events...</p>
+        <div class="event-list loading" id="eventList" role="list">
+          <div class="event-skeleton">
+            <div class="event-skeleton-row"></div>
+            <div class="event-skeleton-row"></div>
+            <div class="event-skeleton-row"></div>
+          </div>
         </div>
 
         <div class="empty-state" id="emptyState">
@@ -4309,7 +4362,7 @@
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-  import { getDatabase, ref, set, onValue, push, remove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+  import { getDatabase, ref, set, onValue, push, remove, onChildAdded, onChildChanged, onChildRemoved } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyB_IflOD8CwVLQQjqtz_ZKWzbfgCiOm2Js",
@@ -4459,9 +4512,16 @@ const themeToggle = $("themeToggle");
     THEME: 'countdown-theme',
     SIDEBAR_WIDTH: 'countdown-sidebar-width'
   };
+  const CACHE_KEYS = {
+    EVENTS: 'countdown-events-cache-v1',
+    TASKS_PREFIX: 'countdown-tasks-cache-v1:',
+    SUBJECTS_PREFIX: 'countdown-subjects-cache-v1:'
+  };
 
   let editingId = null;
   let events = [];
+  let eventsLoaded = false;
+  let hasEventsCache = false;
   const eventsById = new Map();
   function getEventById(id) { return eventsById.get(id); }
   function upsertLocalEvent(id, data) {
@@ -4476,10 +4536,15 @@ const themeToggle = $("themeToggle");
   let calendarRenderTimer = null;
   function scheduleCalendarRender() {
     if (calendarRenderTimer) return;
-    calendarRenderTimer = setTimeout(() => {
+    const run = () => {
       calendarRenderTimer = null;
       renderCalendar();
-    }, 0);
+    };
+    if ('requestIdleCallback' in window) {
+      calendarRenderTimer = requestIdleCallback(run, { timeout: 200 });
+    } else {
+      calendarRenderTimer = setTimeout(run, 0);
+    }
   }
   let currentMonth = new Date();
   const pendingDeletes = new Map();
@@ -4487,6 +4552,44 @@ const themeToggle = $("themeToggle");
   const DELETE_TIMEOUT_MS = 10000;
 
   const getActiveEvents = () => events.filter(evt => !pendingDeletes.has(evt.id));
+
+  const readCache = (key) => {
+    try {
+      const raw = localStorage.getItem(key);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      if (!parsed || !Array.isArray(parsed.items)) return null;
+      return parsed.items;
+    } catch (e) {
+      return null;
+    }
+  };
+
+  const writeCache = (key, items, limit) => {
+    try {
+      const payload = { ts: Date.now(), items: items.slice(0, limit) };
+      localStorage.setItem(key, JSON.stringify(payload));
+    } catch (e) {}
+  };
+
+  const setEventsLoading = (isLoading) => {
+    if (!eventList) return;
+    eventList.classList.toggle('loading', isLoading);
+  };
+
+  const syncBadge = $("syncBadge");
+  const syncState = { events: false, tasks: false, subjects: false };
+  const syncCacheUsed = { events: false, tasks: false, subjects: false };
+  const updateSyncBadge = () => {
+    if (!syncBadge) return;
+    const hasCache = Object.values(syncCacheUsed).some(Boolean);
+    const ready = syncState.events && syncState.tasks && syncState.subjects;
+    syncBadge.classList.toggle('hidden', !hasCache || ready);
+  };
+  const markSyncReady = (key) => {
+    syncState[key] = true;
+    updateSyncBadge();
+  };
 
   const showUndoToast = (name, id) => {
     undoToastMsg.textContent = `${name} deleted`;
@@ -4591,6 +4694,20 @@ const themeToggle = $("themeToggle");
     const d = new Date(date);
     return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
   }
+
+  const cachedEvents = readCache(CACHE_KEYS.EVENTS);
+  if (cachedEvents && cachedEvents.length) {
+    events = cachedEvents;
+    eventsById.clear();
+    events.forEach(e => eventsById.set(e.id, e));
+    hasEventsCache = true;
+    syncCacheUsed.events = true;
+    updateSyncBadge();
+    render();
+    scheduleCalendarRender();
+    startTicker();
+  }
+  if (!hasEventsCache) setEventsLoading(true);
 
   function getMonthEvents() {
     const year = currentMonth.getFullYear();
@@ -4920,6 +5037,7 @@ const themeToggle = $("themeToggle");
     } else {
       events = [];
     }
+    writeCache(CACHE_KEYS.EVENTS, events, 300);
     render();
     startTicker();
     // Defer heavy calendar render so list paints first
@@ -4935,6 +5053,7 @@ const themeToggle = $("themeToggle");
     render();
     scheduleCalendarRender();
     startTicker();
+    writeCache(CACHE_KEYS.EVENTS, events, 300);
 
     try {
       await set(newEventRef, eventData);
@@ -4957,6 +5076,7 @@ const themeToggle = $("themeToggle");
     upsertLocalEvent(id, payload);
     render();
     scheduleCalendarRender();
+    writeCache(CACHE_KEYS.EVENTS, events, 300);
 
     try {
       await set(ref(db, 'events/' + id), payload);
@@ -5514,6 +5634,8 @@ const themeToggle = $("themeToggle");
   const saveTaskBtn = $("saveTaskBtn");
   
   let tasks = [];
+  let tasksLoaded = false;
+  let hasTasksCache = false;
   let editingTaskId = null;
   let editingTask = null;
   let selectedTaskPriority = 'medium';
@@ -6126,7 +6248,49 @@ const themeToggle = $("themeToggle");
   taskSearch.addEventListener('input', () => {
     renderTasks();
   });
-  
+
+  const tasksEmptyDefaults = tasksEmpty ? {
+    icon: tasksEmpty.querySelector('.tasks-empty-icon')?.textContent || '📝',
+    title: tasksEmpty.querySelector('h3')?.textContent || 'אין משימות עדיין',
+    desc: tasksEmpty.querySelector('p')?.textContent || 'הוסף משימה ראשונה למעלה כדי להתחיל!'
+  } : null;
+
+  const setTasksEmptyMessage = (icon, title, desc) => {
+    if (!tasksEmpty) return;
+    const iconEl = tasksEmpty.querySelector('.tasks-empty-icon');
+    const titleEl = tasksEmpty.querySelector('h3');
+    const descEl = tasksEmpty.querySelector('p');
+    if (iconEl) iconEl.textContent = icon;
+    if (titleEl) titleEl.textContent = title;
+    if (descEl) descEl.textContent = desc;
+  };
+
+  const showTasksLoading = () => {
+    activeSection.style.display = 'none';
+    completedSection.style.display = 'none';
+    tasksEmpty.style.display = 'block';
+    setTasksEmptyMessage('⏳', 'טוען משימות...', 'מסנכרן משימות מהענן');
+  };
+
+  const resetTasksEmptyMessage = () => {
+    if (!tasksEmptyDefaults) return;
+    setTasksEmptyMessage(tasksEmptyDefaults.icon, tasksEmptyDefaults.title, tasksEmptyDefaults.desc);
+  };
+
+  const cachedTasksKey = `${CACHE_KEYS.TASKS_PREFIX}${currentUser}`;
+  const cachedTasks = readCache(cachedTasksKey);
+  if (cachedTasks && cachedTasks.length) {
+    tasks = cachedTasks;
+    hasTasksCache = true;
+    syncCacheUsed.tasks = true;
+    updateSyncBadge();
+    Pomodoro.updateTasks(tasks);
+    if (taskManagerOverlay.classList.contains('open')) {
+      renderTasks();
+      renderSubjectsSidebar();
+    }
+  }
+
   // Listen to tasks from Firebase
   onValue(tasksRef, (snapshot) => {
     const data = snapshot.val();
@@ -6135,6 +6299,9 @@ const themeToggle = $("themeToggle");
     } else {
       tasks = [];
     }
+    tasksLoaded = true;
+    writeCache(cachedTasksKey, tasks, 500);
+    resetTasksEmptyMessage();
     Pomodoro.updateTasks(tasks);
     if (taskManagerOverlay.classList.contains('open')) {
       renderTasks();
@@ -6234,6 +6401,10 @@ const themeToggle = $("themeToggle");
   }
   
   function renderTasks() {
+    if (!tasksLoaded && !hasTasksCache) {
+      showTasksLoading();
+      return;
+    }
     const filtered = getFilteredTasks();
     const active = filtered.filter(t => !t.completed);
     const completed = filtered.filter(t => t.completed);
@@ -6758,6 +6929,17 @@ const themeToggle = $("themeToggle");
   let contextMenuTarget = null;
   let eventContextMenuTarget = null;
   let expandedSubjects = new Set(); // Track which subjects are expanded
+
+  const cachedSubjectsKey = `${CACHE_KEYS.SUBJECTS_PREFIX}${currentUser}`;
+  const cachedSubjects = readCache(cachedSubjectsKey);
+  if (cachedSubjects && cachedSubjects.length) {
+    subjects = cachedSubjects;
+    syncCacheUsed.subjects = true;
+    updateSyncBadge();
+    renderSubjectsSidebar();
+    updateSubjectSelectors();
+    updateParentSubjectSelector();
+  }
   
   // Listen to subjects from Firebase
   onValue(subjectsRef, (snapshot) => {
@@ -6767,6 +6949,8 @@ const themeToggle = $("themeToggle");
     } else {
       subjects = [];
     }
+    writeCache(cachedSubjectsKey, subjects, 200);
+    markSyncReady('subjects');
     renderSubjectsSidebar();
     updateSubjectSelectors();
     updateParentSubjectSelector();
