@@ -5039,7 +5039,10 @@ const themeToggle = $("themeToggle");
     } else {
       events = [];
     }
+    eventsLoaded = true;
+    markSyncReady('events');
     writeCache(CACHE_KEYS.EVENTS, events, 300);
+    setEventsLoading(false);
     render();
     startTicker();
     // Defer heavy calendar render so list paints first
