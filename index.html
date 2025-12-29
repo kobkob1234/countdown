@@ -121,18 +121,15 @@
     }
     .header-btn {
       padding: 10px 16px;
-        opacity: 0.3;
-      }
-      .pin-btn:hover {
-        background: #dbeafe;
-        color: #3b82f6;
-        transform: scale(1.1);
-        opacity: 0.6;
-      }
-      .pin-btn.pinned {
-        color: #3b82f6;
-        opacity: 1;
-      }
+      opacity: 1; /* Changed from 0.3 to 1 */
+      border: 1px solid transparent;
+      border-radius: var(--radius-md);
+      background: transparent;
+      color: var(--muted);
+      font-size: var(--font-size-sm);
+      font-weight: var(--font-weight-medium);
+      cursor: pointer;
+      transition: all 0.2s;
       white-space: nowrap;
     }
     .header-btn:hover {
