@@ -4523,6 +4523,7 @@ const themeToggle = $("themeToggle");
   let eventsLoaded = false;
   let hasEventsCache = false;
   const eventsById = new Map();
+  const refs = new Map();
   function getEventById(id) { return eventsById.get(id); }
   function upsertLocalEvent(id, data) {
     const existing = eventsById.get(id);
@@ -5141,8 +5142,6 @@ const themeToggle = $("themeToggle");
     clearBtn.style.display = "block";
     inputPanel.classList.remove("editing");
   }
-
-  const refs = new Map();
 
   function render() {
     refs.clear();
