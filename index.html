@@ -4436,6 +4436,14 @@ const themeToggle = $("themeToggle");
       eventsById.set(id, evt);
     }
   }
+  let calendarRenderTimer = null;
+  function scheduleCalendarRender() {
+    if (calendarRenderTimer) return;
+    calendarRenderTimer = setTimeout(() => {
+      calendarRenderTimer = null;
+      renderCalendar();
+    }, 0);
+  }
   let currentMonth = new Date();
   const pendingDeletes = new Map();
   let lastDeletedId = null;
@@ -4878,7 +4886,7 @@ const themeToggle = $("themeToggle");
     render();
     startTicker();
     // Defer heavy calendar render so list paints first
-    setTimeout(renderCalendar, 0);
+    scheduleCalendarRender();
   });
 
   const saveToCloud = async (eventData) => {
@@ -4888,7 +4896,7 @@ const themeToggle = $("themeToggle");
     // Optimistic UI
     upsertLocalEvent(id, eventData);
     render();
-    setTimeout(renderCalendar, 0);
+    scheduleCalendarRender();
     startTicker();
 
     try {
@@ -4898,7 +4906,7 @@ const themeToggle = $("themeToggle");
       events = events.filter(e => e.id !== id);
       eventsById.delete(id);
       render();
-      setTimeout(renderCalendar, 0);
+      scheduleCalendarRender();
       console.error(err);
       alert("Save failed (check connection).");
     }
@@ -4911,7 +4919,7 @@ const themeToggle = $("themeToggle");
     // Optimistic UI
     upsertLocalEvent(id, payload);
     render();
-    setTimeout(renderCalendar, 0);
+    scheduleCalendarRender();
 
     try {
       await set(ref(db, 'events/' + id), payload);
@@ -4919,7 +4927,7 @@ const themeToggle = $("themeToggle");
       // Rollback
       if (prev) upsertLocalEvent(id, prev);
       render();
-      setTimeout(renderCalendar, 0);
+      scheduleCalendarRender();
       console.error(err);
       alert("Update failed (check connection).");
     }
