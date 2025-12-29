@@ -193,6 +193,7 @@
     .app-layout {
       display: flex;
       min-height: 100vh;
+      align-items: flex-start;
     }
 
     .sidebar {
@@ -206,7 +207,7 @@
       flex-direction: column;
       order: 1;
       transition: transform 0.3s;
-      overflow: auto;
+      overflow: visible;
       flex: 0 0 auto;
       box-sizing: border-box;
     }
@@ -223,7 +224,7 @@
       flex: 1;
       padding: var(--space-6);
       padding-top: 80px;
-      overflow-y: auto;
+      overflow-y: visible;
     }
 
     .container {
@@ -1923,6 +1924,134 @@
     .btn-danger:hover {
       background: #dc2626;
     }
+
+    /* Shortcut cheat sheet */
+    .shortcuts-backdrop {
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(circle at top, rgba(102,126,234,0.25), rgba(15,23,42,0.65));
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 12000;
+      padding: 20px;
+      backdrop-filter: blur(8px);
+    }
+    .shortcuts-backdrop.open { display: flex; }
+    .shortcuts-card {
+      width: min(760px, 100%);
+      background: var(--card);
+      border-radius: 22px;
+      border: 1px solid rgba(102,126,234,0.35);
+      box-shadow: 0 24px 70px rgba(15,23,42,0.35), 0 0 0 1px rgba(255,255,255,0.25) inset;
+      overflow: hidden;
+      direction: rtl;
+    }
+    .shortcuts-hero {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 22px 26px 18px;
+      background: linear-gradient(135deg, rgba(102,126,234,0.18), rgba(118,75,162,0.12));
+      border-bottom: 1px solid var(--border);
+    }
+    .shortcuts-eyebrow {
+      font-size: 12px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    .shortcuts-title {
+      font-size: 22px;
+      font-weight: 700;
+      margin-top: 6px;
+    }
+    .shortcuts-subtitle {
+      font-size: 13px;
+      color: var(--muted);
+      margin-top: 6px;
+    }
+    .shortcuts-close {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      border: 1px solid var(--border);
+      background: var(--day-other);
+      color: var(--text);
+      font-size: 20px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .shortcuts-close:hover {
+      background: var(--day-hover);
+      transform: translateY(-1px);
+    }
+    .shortcuts-body {
+      padding: 20px 26px 26px;
+    }
+    .shortcuts-section {
+      margin-bottom: 18px;
+    }
+    .shortcuts-section:last-child { margin-bottom: 0; }
+    .shortcuts-section-title {
+      font-size: 13px;
+      color: var(--muted);
+      font-weight: 600;
+      margin-bottom: 10px;
+    }
+    .shortcuts-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px 16px;
+    }
+    .shortcut-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      background: var(--day-other);
+      border: 1px solid var(--border);
+    }
+    .shortcut-label {
+      font-size: 14px;
+      color: var(--text);
+    }
+    .shortcut-keys {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      direction: ltr;
+    }
+    .keycap {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 28px;
+      padding: 4px 8px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--card);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text);
+      text-transform: uppercase;
+    }
+    .keycap.wide { min-width: 44px; }
+    .shortcut-note {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 12px;
+    }
+
+    @media (max-width: 640px) {
+      .shortcuts-grid { grid-template-columns: 1fr; }
+      .shortcuts-hero { flex-direction: column; align-items: flex-start; }
+      .shortcuts-close { align-self: flex-end; }
+    }
     
     /* Day Drawer/Popover */
     .day-drawer-backdrop {
@@ -3597,12 +3726,8 @@
     /* Notification permission button */
     @media (max-width: 1100px) {
       .sidebar {
-        position: fixed;
-        right: 0;
-        top: 0;
-        bottom: 0;
-        z-index: 50;
-        box-shadow: -4px 0 20px rgba(0,0,0,0.1);
+        position: relative;
+        box-shadow: none;
       }
       .sidebar.hidden {
         transform: translateX(100%);
@@ -3829,6 +3954,7 @@
     <div class="header-spacer"></div>
     <button class="header-btn" id="toggleSidebar">📅 לוח</button>
     <span class="sync-badge hidden" id="syncBadge"><span class="sync-dot"></span><span class="sync-text">Syncing…</span></span>
+    <button class="header-btn icon-only" id="helpShortcuts" aria-label="Keyboard shortcuts" title="קיצורים (H)">?</button>
     <button class="header-btn icon-only" id="themeToggle" aria-label="Toggle dark mode">🌙</button>
     <button class="header-btn" id="userBtn" style="margin-left:8px; border:1px solid var(--accent); color:var(--accent);">👤 Guest</button>
   </div>
@@ -4324,6 +4450,81 @@
     </div>
   </div>
 
+  <div class="shortcuts-backdrop" id="shortcutsModal" role="dialog" aria-modal="true" aria-labelledby="shortcutsTitle">
+    <div class="shortcuts-card">
+      <div class="shortcuts-hero">
+        <div>
+          <div class="shortcuts-eyebrow">⌨️ קיצורי מקלדת</div>
+          <div class="shortcuts-title" id="shortcutsTitle">Shortcut Command Center</div>
+          <div class="shortcuts-subtitle">H לפתיחה/סגירה</div>
+        </div>
+        <button class="shortcuts-close" id="shortcutsClose" aria-label="Close shortcuts">×</button>
+      </div>
+      <div class="shortcuts-body">
+        <div class="shortcuts-section">
+          <div class="shortcuts-section-title">יצירה מהירה</div>
+          <div class="shortcuts-grid">
+            <div class="shortcut-item">
+              <div class="shortcut-label">פוקוס על הוספה מהירה</div>
+              <div class="shortcut-keys"><span class="keycap">N</span></div>
+            </div>
+            <div class="shortcut-item">
+              <div class="shortcut-label">פתח/סגור חלון קיצורים</div>
+              <div class="shortcut-keys"><span class="keycap">H</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="shortcuts-section">
+          <div class="shortcuts-section-title">ניווט ותצוגות</div>
+          <div class="shortcuts-grid">
+            <div class="shortcut-item">
+              <div class="shortcut-label">קפיצה ל״היום״</div>
+              <div class="shortcut-keys"><span class="keycap">T</span></div>
+            </div>
+            <div class="shortcut-item">
+              <div class="shortcut-label">פתח פומודורו</div>
+              <div class="shortcut-keys"><span class="keycap">P</span></div>
+            </div>
+            <div class="shortcut-item">
+              <div class="shortcut-label">הצג/הסתר לוח שנה</div>
+              <div class="shortcut-keys"><span class="keycap">C</span></div>
+            </div>
+            <div class="shortcut-item">
+              <div class="shortcut-label">מעבר למשימות</div>
+              <div class="shortcut-keys"><span class="keycap">M</span></div>
+            </div>
+            <div class="shortcut-item">
+              <div class="shortcut-label">חזרה לספירה לאחור</div>
+              <div class="shortcut-keys"><span class="keycap">G</span></div>
+            </div>
+            <div class="shortcut-item">
+              <div class="shortcut-label">חיפוש משימות</div>
+              <div class="shortcut-keys"><span class="keycap">/</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="shortcuts-section">
+          <div class="shortcuts-section-title">מערכת</div>
+          <div class="shortcuts-grid">
+            <div class="shortcut-item">
+              <div class="shortcut-label">סגור מודאלים/חלונות</div>
+              <div class="shortcut-keys"><span class="keycap wide">Esc</span></div>
+            </div>
+            <div class="shortcut-item">
+              <div class="shortcut-label">מצב כהה/בהיר</div>
+              <div class="shortcut-keys"><span class="keycap">D</span></div>
+            </div>
+            <div class="shortcut-item">
+              <div class="shortcut-label">קליק ימני ברשימת אירועים</div>
+              <div class="shortcut-keys"><span class="keycap wide">➕</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="shortcut-note">טיפ: הקיצורים פועלים רק כשלא מקלידים בתוך שדה טקסט.</div>
+      </div>
+    </div>
+  </div>
+
   <!-- Day Drawer -->
   <div class="day-drawer-backdrop" id="dayDrawer" role="dialog" aria-modal="true" aria-labelledby="dayDrawerTitle">
     <div class="day-drawer">
@@ -4455,6 +4656,10 @@ const themeToggle = $("themeToggle");
   const eventNotes = $("eventNotes");
   const undoToast = $("undoToast");
   const undoToastMsg = $("undoToastMsg");
+  const shortcutsModal = $("shortcutsModal");
+  const shortcutsClose = $("shortcutsClose");
+  const helpShortcuts = $("helpShortcuts");
+  let shortcutsLastFocus = null;
 
   // Event delegation for main calendar: single handler instead of per-chip listeners
   if (calendarGrid) {
@@ -5537,9 +5742,141 @@ const themeToggle = $("themeToggle");
     if (e.target === clearModal) closeClearModal();
   });
 
+  const isEditableTarget = (el) => {
+    if (!el) return false;
+    const tag = el.tagName;
+    return el.isContentEditable || tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT';
+  };
+
+  const openShortcuts = () => {
+    if (!shortcutsModal) return;
+    shortcutsLastFocus = document.activeElement;
+    shortcutsModal.classList.add('open');
+  };
+
+  const closeShortcuts = () => {
+    if (!shortcutsModal) return;
+    shortcutsModal.classList.remove('open');
+    if (shortcutsLastFocus && typeof shortcutsLastFocus.focus === 'function') {
+      shortcutsLastFocus.focus();
+    }
+    shortcutsLastFocus = null;
+  };
+
+  const toggleShortcuts = () => {
+    if (!shortcutsModal) return;
+    shortcutsModal.classList.contains('open') ? closeShortcuts() : openShortcuts();
+  };
+
+  if (shortcutsClose) shortcutsClose.onclick = closeShortcuts;
+  if (shortcutsModal) {
+    shortcutsModal.addEventListener('click', (e) => {
+      if (e.target === shortcutsModal) closeShortcuts();
+    });
+  }
+  if (helpShortcuts) helpShortcuts.onclick = openShortcuts;
+
+  const focusQuickAdd = () => {
+    if (currentView === 'tasks') {
+      if (quickAddRow) quickAddRow.style.display = 'flex';
+      if (newTaskTitle) {
+        newTaskTitle.focus();
+        if (typeof newTaskTitle.select === 'function') newTaskTitle.select();
+      }
+      return;
+    }
+    if (typeof showView === 'function' && currentView !== 'countdown') showView('countdown');
+    if (eventName) {
+      eventName.focus();
+      if (typeof eventName.select === 'function') eventName.select();
+    }
+    if (inputPanel) inputPanel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  };
+
+  const goToToday = () => {
+    if (currentView === 'tasks') {
+      currentTaskMonth = new Date();
+      if (typeof renderTaskCalendar === 'function') renderTaskCalendar();
+      return;
+    }
+    if (typeof showView === 'function' && currentView !== 'countdown') showView('countdown');
+    currentMonth = new Date();
+    renderCalendar();
+  };
+
+  const openPomodoro = () => {
+    if (typeof showView === 'function') showView('pomodoro');
+  };
+
+  const toggleCalendarSidebar = () => {
+    if (typeof showView === 'function' && currentView !== 'countdown') showView('countdown');
+    const toggleBtn = $("toggleSidebar");
+    if (toggleBtn) toggleBtn.click();
+  };
+
+  const openTasksView = () => {
+    if (typeof showView === 'function') showView('tasks');
+  };
+
+  const openCountdownView = () => {
+    if (typeof showView === 'function') showView('countdown');
+  };
+
+  const focusTaskSearch = () => {
+    if (typeof showView === 'function' && currentView !== 'tasks') showView('tasks');
+    if (taskSearch) {
+      taskSearch.focus();
+      if (typeof taskSearch.select === 'function') taskSearch.select();
+    }
+  };
+
+  const toggleTheme = () => {
+    if (themeToggle) themeToggle.click();
+  };
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key.toLowerCase() === 'h' && !isEditableTarget(e.target)) {
+      e.preventDefault();
+      toggleShortcuts();
+      return;
+    }
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    if (isEditableTarget(e.target)) return;
+    const key = e.key.toLowerCase();
+    if (key === 'n') {
+      e.preventDefault();
+      focusQuickAdd();
+    } else if (key === 't') {
+      e.preventDefault();
+      goToToday();
+    } else if (key === 'p') {
+      e.preventDefault();
+      openPomodoro();
+    } else if (key === 'c') {
+      e.preventDefault();
+      toggleCalendarSidebar();
+    } else if (key === 'm') {
+      e.preventDefault();
+      openTasksView();
+    } else if (key === 'g') {
+      e.preventDefault();
+      openCountdownView();
+    } else if (key === '/') {
+      e.preventDefault();
+      focusTaskSearch();
+    } else if (key === 'd') {
+      e.preventDefault();
+      toggleTheme();
+    }
+  });
+
   // Escape key handler (consolidated)
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
+      if (shortcutsModal && shortcutsModal.classList.contains('open')) {
+        closeShortcuts();
+        return;
+      }
       // Close context menus first (highest priority)
       if (typeof hideContextMenu === 'function') hideContextMenu();
       if (typeof hideAddEventContextMenu === 'function') hideAddEventContextMenu();
