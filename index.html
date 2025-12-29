@@ -3828,7 +3828,7 @@
     <button class="header-btn" id="togglePomodoro">🍅 פומודורו</button>
     <div class="header-spacer"></div>
     <button class="header-btn" id="toggleSidebar">📅 לוח</button>
-    <span class="sync-badge hidden" id="syncBadge"><span class="sync-dot"></span>Syncing…</span>
+    <span class="sync-badge hidden" id="syncBadge"><span class="sync-dot"></span><span class="sync-text">Syncing…</span></span>
     <button class="header-btn icon-only" id="themeToggle" aria-label="Toggle dark mode">🌙</button>
     <button class="header-btn" id="userBtn" style="margin-left:8px; border:1px solid var(--accent); color:var(--accent);">👤 Guest</button>
   </div>
@@ -4586,6 +4586,11 @@ const themeToggle = $("themeToggle");
     if (!syncBadge) return;
     const hasCache = Object.values(syncCacheUsed).some(Boolean);
     const ready = syncState.events && syncState.tasks && syncState.subjects;
+    const total = Object.keys(syncState).length;
+    const readyCount = Object.values(syncState).filter(Boolean).length;
+    const percent = Math.round((readyCount / total) * 100);
+    const syncText = syncBadge.querySelector('.sync-text');
+    if (syncText) syncText.textContent = ready ? 'Synced' : `Syncing ${percent}%`;
     syncBadge.classList.toggle('hidden', !hasCache || ready);
   };
   const markSyncReady = (key) => {
@@ -4704,6 +4709,8 @@ const themeToggle = $("themeToggle");
     events.forEach(e => eventsById.set(e.id, e));
     hasEventsCache = true;
     syncCacheUsed.events = true;
+    eventsLoaded = true;
+    setEventsLoading(false);
     updateSyncBadge();
     render();
     scheduleCalendarRender();
@@ -5047,6 +5054,12 @@ const themeToggle = $("themeToggle");
     startTicker();
     // Defer heavy calendar render so list paints first
     scheduleCalendarRender();
+  }, (error) => {
+    console.error('Events sync error:', error);
+    eventsLoaded = true;
+    markSyncReady('events');
+    setEventsLoading(false);
+    updateSyncBadge();
   });
 
   const saveToCloud = async (eventData) => {
@@ -6302,6 +6315,7 @@ const themeToggle = $("themeToggle");
       tasks = [];
     }
     tasksLoaded = true;
+    markSyncReady('tasks');
     writeCache(cachedTasksKey, tasks, 500);
     resetTasksEmptyMessage();
     Pomodoro.updateTasks(tasks);
@@ -6313,6 +6327,12 @@ const themeToggle = $("themeToggle");
     if (trSidebar && !trSidebar.classList.contains('hidden')) {
       renderTaskCalendar();
     }
+  }, (error) => {
+    console.error('Tasks sync error:', error);
+    tasksLoaded = true;
+    markSyncReady('tasks');
+    resetTasksEmptyMessage();
+    updateSyncBadge();
   });
   
   function getFilteredTasks() {
@@ -6956,6 +6976,10 @@ const themeToggle = $("themeToggle");
     renderSubjectsSidebar();
     updateSubjectSelectors();
     updateParentSubjectSelector();
+  }, (error) => {
+    console.error('Subjects sync error:', error);
+    markSyncReady('subjects');
+    updateSyncBadge();
   });
   
   // Get top-level subjects (no parent)
