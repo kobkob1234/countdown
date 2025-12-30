@@ -2487,6 +2487,10 @@
       gap: var(--space-4);
       border-left: 4px solid var(--priority-color, var(--border));
     }
+    .task-item.dragging {
+      opacity: 0.55;
+      cursor: grabbing;
+    }
     .task-item:hover {
       box-shadow: var(--shadow-hover);
       background: var(--priority-bg, var(--card));
@@ -6099,6 +6103,32 @@ const themeToggle = $("themeToggle");
   
   const PRIORITY_ORDER = { urgent: 0, high: 1, medium: 2, low: 3, none: 4 };
   const PRIORITY_LABELS = { urgent: 'Urgent', high: 'High', medium: 'Medium', low: 'Low', none: '' };
+  
+  function getDefaultSubjectId() {
+    if (currentSmartView) return '';
+    if (currentSubject && currentSubject !== 'all') return currentSubject;
+    return '';
+  }
+  
+  function syncQuickAddSubject() {
+    if (!newTaskSubject) return;
+    const defaultSubject = getDefaultSubjectId();
+    if (defaultSubject) {
+      newTaskSubject.value = defaultSubject;
+    } else if (!newTaskSubject.value) {
+      newTaskSubject.value = '';
+    }
+  }
+  
+  function hasManualOrder(taskList = tasks) {
+    return taskList.every(t => Number.isFinite(t.order));
+  }
+  
+  function getNextTaskOrder(isCompleted = false) {
+    const list = tasks.filter(t => !!t.completed === !!isCompleted);
+    const maxOrder = list.reduce((max, t) => Number.isFinite(t.order) ? Math.max(max, t.order) : max, -1);
+    return maxOrder + 1;
+  }
 
   // ============ POMODORO MODULE (self-contained) ============
   const Pomodoro = (() => {
@@ -6636,6 +6666,7 @@ const themeToggle = $("themeToggle");
   updateHeaderButtons();
   newTaskTitle.addEventListener('focus', () => {
     quickAddRow.style.display = 'flex';
+    syncQuickAddSubject();
   });
   
   // Collapse quick add when clicking outside
@@ -6662,15 +6693,20 @@ const themeToggle = $("themeToggle");
     const dueValue = newTaskDue.value;
     const dueDate = dueValue ? parseLocal(dueValue) : null;
     
+    const defaultSubjectId = getDefaultSubjectId();
+    const selectedSubjectId = newTaskSubject ? (newTaskSubject.value || defaultSubjectId) : defaultSubjectId;
+    const orderValue = hasManualOrder() ? getNextTaskOrder(false) : null;
+    
     const taskData = {
       title,
       content: '',
       priority: selectedTaskPriority,
       dueDate: dueDate ? dueDate.toISOString() : null,
-      subject: newTaskSubject ? newTaskSubject.value || '' : '',
+      subject: selectedSubjectId || '',
       checklist: [],
       completed: false,
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
+      ...(Number.isFinite(orderValue) ? { order: orderValue } : {})
     };
     
     const newTaskRef = push(tasksRef);
@@ -6684,6 +6720,7 @@ const themeToggle = $("themeToggle");
     selectedTaskPriority = 'medium';
     taskPriorityPicker.querySelectorAll('.priority-option').forEach(o => o.classList.remove('selected'));
     taskPriorityPicker.querySelector('[data-priority="medium"]').classList.add('selected');
+    syncQuickAddSubject();
     const taskSections = $("taskSections");
     if (taskSections) {
       taskSections.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -6810,7 +6847,7 @@ const themeToggle = $("themeToggle");
     return filtered;
   }
   
-  function sortTasks(taskList) {
+  function sortTasksDefault(taskList) {
     // Sort by: priority first (urgent first), then by due date (soonest first), then by created date (newest first)
     return taskList.sort((a, b) => {
       // Priority comparison
@@ -6829,6 +6866,19 @@ const themeToggle = $("themeToggle");
       // Created date (newest first)
       return new Date(b.createdAt) - new Date(a.createdAt);
     });
+  }
+  
+  function sortTasks(taskList) {
+    const hasManualOrder = taskList.length > 0 && taskList.every(t => Number.isFinite(t.order));
+    if (hasManualOrder) {
+      return taskList.sort((a, b) => {
+        const aOrder = Number.isFinite(a.order) ? a.order : Number.MAX_SAFE_INTEGER;
+        const bOrder = Number.isFinite(b.order) ? b.order : Number.MAX_SAFE_INTEGER;
+        if (aOrder !== bOrder) return aOrder - bOrder;
+        return new Date(b.createdAt) - new Date(a.createdAt);
+      });
+    }
+    return sortTasksDefault(taskList);
   }
   
   function calcTaskCountdown(dueDate) {
@@ -6997,7 +7047,7 @@ const themeToggle = $("themeToggle");
     const priorityBadge = `<span class="task-priority-badge ${priority === 'none' ? 'muted' : ''}" data-priority="${priority}">${priority === 'none' ? 'קבע עדיפות' : PRIORITY_LABELS[priority]}</span>`;
     
     return `
-      <div class="task-item priority-${priority} ${task.completed ? 'completed' : ''}" data-id="${task.id}">
+      <div class="task-item priority-${priority} ${task.completed ? 'completed' : ''}" data-id="${task.id}" draggable="true">
         <div class="task-checkbox" data-action="toggle">${task.completed ? '✓' : ''}</div>
         <div class="task-main">
           <div class="task-title-row">
@@ -7219,6 +7269,123 @@ const themeToggle = $("themeToggle");
   
   // Initialize event delegation once
   setupTaskEventDelegation();
+  
+  let draggingTaskId = null;
+  let dragSourceContainer = null;
+  
+  function ensureTaskOrderInitialized() {
+    if (hasManualOrder()) return;
+    const activeList = tasks.filter(t => !t.completed);
+    const completedList = tasks.filter(t => t.completed);
+    sortTasksDefault(activeList);
+    sortTasksDefault(completedList);
+    
+    const updates = [];
+    activeList.forEach((task, index) => {
+      if (task.order !== index) updates.push({ task, order: index });
+    });
+    completedList.forEach((task, index) => {
+      if (task.order !== index) updates.push({ task, order: index });
+    });
+    
+    updates.forEach(({ task, order }) => {
+      task.order = order;
+      const { id, ...cleanTask } = task;
+      set(ref(db, `users/${currentUser}/tasks/${task.id}`), cleanTask);
+    });
+  }
+  
+  function updateTaskOrderFromContainer(container) {
+    const items = Array.from(container.querySelectorAll('.task-item'));
+    const updates = [];
+    
+    items.forEach((item, index) => {
+      const taskId = item.dataset.id;
+      const task = tasks.find(t => t.id === taskId);
+      if (!task) return;
+      if (task.order !== index) {
+        task.order = index;
+        updates.push(task);
+      }
+    });
+    
+    updates.forEach((task) => {
+      const { id, ...cleanTask } = task;
+      set(ref(db, `users/${currentUser}/tasks/${task.id}`), cleanTask);
+    });
+  }
+  
+  function getDragAfterElement(container, y) {
+    const draggableElements = [...container.querySelectorAll('.task-item:not(.dragging)')];
+    let closest = { offset: Number.NEGATIVE_INFINITY, element: null };
+    
+    draggableElements.forEach(child => {
+      const box = child.getBoundingClientRect();
+      const offset = y - box.top - box.height / 2;
+      if (offset < 0 && offset > closest.offset) {
+        closest = { offset, element: child };
+      }
+    });
+    
+    return closest.element;
+  }
+  
+  function setupTaskDragAndDrop() {
+    const containers = [activeTasks, completedTasks];
+    
+    containers.forEach(container => {
+      if (!container) return;
+      
+      container.addEventListener('dragstart', (e) => {
+        const item = e.target.closest('.task-item');
+        if (!item) return;
+        if (e.target.closest('input, textarea, select, button, a')) {
+          e.preventDefault();
+          return;
+        }
+        draggingTaskId = item.dataset.id;
+        dragSourceContainer = container;
+        item.classList.add('dragging');
+        ensureTaskOrderInitialized();
+        if (e.dataTransfer) {
+          e.dataTransfer.effectAllowed = 'move';
+          e.dataTransfer.setData('text/plain', draggingTaskId);
+        }
+      });
+      
+      container.addEventListener('dragover', (e) => {
+        if (!draggingTaskId || dragSourceContainer !== container) return;
+        e.preventDefault();
+        const draggingEl = container.querySelector('.task-item.dragging');
+        if (!draggingEl) return;
+        const afterElement = getDragAfterElement(container, e.clientY);
+        if (afterElement == null) {
+          container.appendChild(draggingEl);
+        } else if (afterElement !== draggingEl) {
+          container.insertBefore(draggingEl, afterElement);
+        }
+      });
+      
+      container.addEventListener('drop', (e) => {
+        if (!draggingTaskId || dragSourceContainer !== container) return;
+        e.preventDefault();
+        updateTaskOrderFromContainer(container);
+        const draggingEl = container.querySelector('.task-item.dragging');
+        if (draggingEl) draggingEl.classList.remove('dragging');
+        draggingTaskId = null;
+        dragSourceContainer = null;
+      });
+      
+      container.addEventListener('dragend', () => {
+        const draggingEl = container.querySelector('.task-item.dragging');
+        if (draggingEl) draggingEl.classList.remove('dragging');
+        draggingTaskId = null;
+        dragSourceContainer = null;
+      });
+    });
+  }
+  
+  setupTaskDragAndDrop();
   
   // Task countdown ticker
   function startTaskTicker() {
@@ -7798,17 +7965,11 @@ const themeToggle = $("themeToggle");
         }
         
         const subjectId = header.dataset.subject;
-        const subjectItem = header.closest('.subject-list-item');
-        const hasChildren = subjectItem.querySelector('.subject-list-children');
-        
-        // If has children, toggle collapse on single click
-        if (hasChildren) {
-          toggleSubjectExpanded(subjectItem.dataset.subjectId);
-        }
-        
+                
         // Always select the subject
         currentSmartView = null;
         currentSubject = subjectId;
+        syncQuickAddSubject();
         renderSubjectsSidebar();
         renderTasks();
       });
@@ -7858,6 +8019,7 @@ const themeToggle = $("themeToggle");
         
         currentSmartView = null;
         currentSubject = child.dataset.subject;
+        syncQuickAddSubject();
         renderSubjectsSidebar();
         renderTasks();
       });
@@ -7901,6 +8063,7 @@ const themeToggle = $("themeToggle");
           currentSmartView = view;
           currentSubject = 'all';
         }
+        syncQuickAddSubject();
         
         // Update active states
         smartViewsList.querySelectorAll('.smart-view-item').forEach(i => i.classList.remove('active'));
@@ -8151,6 +8314,7 @@ const themeToggle = $("themeToggle");
     
     newTaskSubject.innerHTML = options;
     editTaskSubject.innerHTML = options;
+    syncQuickAddSubject();
   }
   
   function updateParentSubjectSelector() {
@@ -8476,17 +8640,17 @@ const themeToggle = $("themeToggle");
 
     // ============ STEP 3: EXTRACT & REMOVE DATE ============
     const dateKeywords = [
-      { patterns: [/\bהיום\b/gi, /\btoday\b/gi], days: 0 },
-      { patterns: [/\bמחר\b/gi, /\btomorrow\b/gi], days: 1 },
-      { patterns: [/\bמחרתיים\b/gi], days: 2 },
-      { patterns: [/\bבעוד יומיים\b/gi, /\bin 2 days\b/gi], days: 2 },
-      { patterns: [/\bבעוד 3 ימים\b/gi, /\bin 3 days\b/gi], days: 3 },
-      { patterns: [/\bבעוד 4 ימים\b/gi, /\bin 4 days\b/gi], days: 4 },
-      { patterns: [/\bבעוד 5 ימים\b/gi, /\bin 5 days\b/gi], days: 5 },
-      { patterns: [/\bהשבוע\b/gi, /\bבשבוע הבא\b/gi, /\bthis week\b/gi, /\bnext week\b/gi], days: 7 },
-      { patterns: [/\bבעוד שבוע\b/gi], days: 7 },
-      { patterns: [/\bבעוד שבועיים\b/gi, /\bin 2 weeks\b/gi], days: 14 },
-      { patterns: [/\bבעוד חודש\b/gi, /\bin a month\b/gi], days: 30 },
+      { patterns: [/מחרתיים/gi], days: 2 },
+      { patterns: [/בעוד יומיים/gi, /in 2 days/gi], days: 2 },
+      { patterns: [/בעוד 3 ימים/gi, /in 3 days/gi], days: 3 },
+      { patterns: [/בעוד 4 ימים/gi, /in 4 days/gi], days: 4 },
+      { patterns: [/בעוד 5 ימים/gi, /in 5 days/gi], days: 5 },
+      { patterns: [/להיום/gi, /היום/gi, /today/gi], days: 0 },
+      { patterns: [/למחר/gi, /מחר/gi, /tomorrow/gi], days: 1 },
+      { patterns: [/בעוד שבועיים/gi, /in 2 weeks/gi], days: 14 },
+      { patterns: [/בעוד שבוע/gi, /in a week/gi], days: 7 },
+      { patterns: [/השבוע/gi, /בשבוע הבא/gi, /this week/gi, /next week/gi], days: 7 },
+      { patterns: [/בעוד חודש/gi, /in a month/gi], days: 30 },
     ];
 
     for (const { patterns, days } of dateKeywords) {
@@ -8683,12 +8847,13 @@ const themeToggle = $("themeToggle");
         const pattern = words.map(w => 
           w.split('').map(c => c.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('\\s*')
         ).join('\\s+');
-        const regex = new RegExp(`\\b${pattern}\\b`, 'gi');
+        const boundary = "(?:^|\\s|[\\.,!\\?;:\\-\\(\\)\\[\\]{}\"'])";
+        const regex = new RegExp(`${boundary}(${pattern})(?=$|\\s|[\\.,!\\?;:\\-\\(\\)\\[\\]{}\"'])`, 'i');
         
         const match = title.match(regex);
         if (match) {
           matchedSubject = subject;
-          textToRemove = match[0];
+          textToRemove = match[1] || match[0];
           break;
         }
       }
@@ -8762,15 +8927,20 @@ const themeToggle = $("themeToggle");
       
       // If we have parsed data, use it
       if (parsed.dueDate || parsed.subjectId || parsed.priority !== 'medium') {
+        const defaultSubjectId = getDefaultSubjectId();
+        const selectedSubjectId = parsed.subjectId || defaultSubjectId;
+        const orderValue = hasManualOrder() ? getNextTaskOrder(false) : null;
+        
         const taskData = {
           title: parsed.title || input,
           content: '',
           priority: parsed.priority,
           dueDate: parsed.dueDate ? parsed.dueDate.toISOString() : null,
-          subject: parsed.subjectId,
+          subject: selectedSubjectId || '',
           checklist: [],
           completed: false,
-          createdAt: new Date().toISOString()
+          createdAt: new Date().toISOString(),
+          ...(Number.isFinite(orderValue) ? { order: orderValue } : {})
         };
         
         const newTaskRef = push(tasksRef);
@@ -8782,6 +8952,7 @@ const themeToggle = $("themeToggle");
         }
         newTaskTitle.value = '';
         quickAddRow.style.display = 'none';
+        syncQuickAddSubject();
       } else {
         // Show the expanded form if no natural language detected
         quickAddRow.style.display = 'flex';
