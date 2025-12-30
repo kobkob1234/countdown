@@ -546,6 +546,20 @@
     }
     .input-row input[type="text"] { min-width: 180px; }
     .input-row input[type="datetime-local"] { min-width: 200px; }
+    .reminder-select {
+      padding: var(--space-3) var(--space-4);
+      border: 2px solid var(--border);
+      border-radius: var(--radius-md);
+      font-size: var(--font-size-base);
+      background: var(--input-bg);
+      color: var(--text);
+      outline: none;
+      cursor: pointer;
+      min-width: 160px;
+    }
+    .reminder-select:focus {
+      border-color: var(--accent);
+    }
 
     .btn {
       padding: var(--space-3) var(--space-6);
@@ -2982,6 +2996,15 @@
       color: var(--muted);
       background: var(--day-other);
     }
+    .task-color-option.subject {
+      font-weight: 700;
+      color: #fff;
+      border-style: dashed;
+    }
+    .task-color-option.disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
     .task-color-picker.compact .task-color-option {
       width: 22px;
       height: 22px;
@@ -3577,6 +3600,15 @@
       box-shadow: 0 20px 60px rgba(0,0,0,0.3);
       text-align: center;
     }
+    #eventAlertModal .reminder-card {
+      background: linear-gradient(180deg, rgba(102, 126, 234, 0.12), var(--card));
+      border: 1px solid rgba(102, 126, 234, 0.2);
+      animation: alertPop 0.25s ease-out;
+    }
+    @keyframes alertPop {
+      from { opacity: 0; transform: translateY(8px) scale(0.98); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
     .reminder-card h2 {
       font-size: 24px;
       margin-bottom: 8px;
@@ -3964,6 +3996,11 @@
         padding: 12px 14px;
         font-size: 16px;
       }
+      .input-row .reminder-select {
+        width: 100%;
+        padding: 12px 14px;
+        font-size: 16px;
+      }
       .input-row .btn {
         width: 100%;
         padding: 12px;
@@ -4304,6 +4341,7 @@
               <span>🎨</span>
               <div class="task-color-picker compact" id="quickTaskColorPicker">
                 <div class="task-color-option none selected" data-color="">x</div>
+                <div class="task-color-option subject disabled" data-color="subject" title="Use subject color">S</div>
                 <div class="task-color-option" data-color="#667eea" style="background: #667eea;"></div>
                 <div class="task-color-option" data-color="#ef4444" style="background: #ef4444;"></div>
                 <div class="task-color-option" data-color="#f97316" style="background: #f97316;"></div>
@@ -4404,6 +4442,7 @@
         <div class="task-edit-section-title">Color</div>
         <div class="task-color-picker" id="taskColorPicker">
           <div class="task-color-option none selected" data-color="">x</div>
+          <div class="task-color-option subject disabled" data-color="subject" title="Use subject color">S</div>
           <div class="task-color-option" data-color="#667eea" style="background: #667eea;"></div>
           <div class="task-color-option" data-color="#ef4444" style="background: #ef4444;"></div>
           <div class="task-color-option" data-color="#f97316" style="background: #f97316;"></div>
@@ -4658,6 +4697,17 @@
       </div>
     </div>
   </div>
+  
+  <div class="reminder-modal" id="eventAlertModal" role="dialog" aria-modal="true" aria-labelledby="alertTitle">
+    <div class="reminder-card" style="border-top: 5px solid var(--accent);">
+      <div style="font-size: 40px; margin-bottom: 10px;">⏰</div>
+      <h2 id="alertTitle">Reminder!</h2>
+      <p id="alertMessage" style="font-size: 18px; margin: 10px 0; color: var(--text);">Event is starting soon</p>
+      <div class="reminder-actions">
+        <button class="btn btn-primary" id="closeAlertBtn" style="width: 100%;">Dismiss</button>
+      </div>
+    </div>
+  </div>
 
   <div class="app-layout">
     <div class="main-content">
@@ -4671,6 +4721,14 @@
           <div class="input-row">
             <input type="text" id="eventName" placeholder="Event name..." autocomplete="off" aria-label="Event name" />
             <input type="datetime-local" id="eventDate" aria-label="Event date and time" max="9999-12-31T23:59" />
+            <select id="eventReminder" class="reminder-select" aria-label="Reminder time">
+              <option value="0">🔕 No Reminder</option>
+              <option value="5">5 minutes before</option>
+              <option value="15">15 minutes before</option>
+              <option value="30">30 minutes before</option>
+              <option value="60">1 hour before</option>
+              <option value="1440">1 day before</option>
+            </select>
             <button class="btn btn-primary" id="addBtn">Add Event</button>
             <button class="btn btn-cancel" id="cancelBtn">Cancel</button>
             <button class="btn btn-ghost" id="clearBtn">Clear All</button>
@@ -4915,6 +4973,11 @@
   const emptyState = $("emptyState");
   const eventName = $("eventName");
   const eventDate = $("eventDate");
+  const eventReminder = $("eventReminder");
+  const eventAlertModal = $("eventAlertModal");
+  const closeAlertBtn = $("closeAlertBtn");
+  const alertTitle = $("alertTitle");
+  const alertMessage = $("alertMessage");
   const inputPanel = $("inputPanel");
   const addBtn = $("addBtn");
   const cancelBtn = $("cancelBtn");
@@ -5035,6 +5098,11 @@ const themeToggle = $("themeToggle");
   const pendingDeletes = new Map();
   let lastDeletedId = null;
   const DELETE_TIMEOUT_MS = 10000;
+  const notifiedEvents = new Map();
+  let pendingEventAlert = null;
+  const reminderAudio = new Audio('https://assets.mixkit.co/sfx/preview/mixkit-software-interface-start-2574.mp3');
+  reminderAudio.preload = 'auto';
+  reminderAudio.volume = 0.6;
 
   const getActiveEvents = () => events.filter(evt => !pendingDeletes.has(evt.id));
 
@@ -5056,6 +5124,15 @@ const themeToggle = $("themeToggle");
       localStorage.setItem(key, JSON.stringify(payload));
     } catch (e) {}
   };
+  
+  function requestNotificationPermission() {
+    if (!("Notification" in window)) {
+      console.warn("This browser does not support desktop notifications");
+    } else if (Notification.permission === "default") {
+      Notification.requestPermission();
+    }
+  }
+  requestNotificationPermission();
 
   const setEventsLoading = (isLoading) => {
     if (!eventList) return;
@@ -5065,19 +5142,48 @@ const themeToggle = $("themeToggle");
   const syncBadge = $("syncBadge");
   const syncState = { events: false, tasks: false, subjects: false };
   const syncCacheUsed = { events: false, tasks: false, subjects: false };
+  const SYNC_TIMEOUT_MS = 8000;
+  const SUBJECTS_NO_CACHE_TIMEOUT_MS = 5000;
+  const syncTimeouts = { events: null, tasks: null, subjects: null, subjectsNoCache: null };
+  const clearSyncTimeouts = (key) => {
+    const keys = key === 'subjects' ? ['subjects', 'subjectsNoCache'] : [key];
+    keys.forEach((timeoutKey) => {
+      if (syncTimeouts[timeoutKey]) {
+        clearTimeout(syncTimeouts[timeoutKey]);
+        syncTimeouts[timeoutKey] = null;
+      }
+    });
+  };
+  const startSyncTimeout = (key, ms, reason, onTimeout) => {
+    const timeoutKey = (key === 'subjects' && reason === 'no-cache') ? 'subjectsNoCache' : key;
+    syncTimeouts[timeoutKey] = setTimeout(() => {
+      syncTimeouts[timeoutKey] = null;
+      if (syncState[key]) return;
+      console.warn(`[sync] ${key} timeout after ${ms}ms (${reason})`);
+      if (typeof onTimeout === 'function') onTimeout();
+      markSyncReady(key, `timeout:${reason}`);
+    }, ms);
+  };
   const updateSyncBadge = () => {
     if (!syncBadge) return;
     const hasCache = Object.values(syncCacheUsed).some(Boolean);
     const ready = syncState.events && syncState.tasks && syncState.subjects;
     const total = Object.keys(syncState).length;
     const readyCount = Object.values(syncState).filter(Boolean).length;
-    const percent = Math.round((readyCount / total) * 100);
+    const percent = Math.floor((readyCount / total) * 100);
     const syncText = syncBadge.querySelector('.sync-text');
     if (syncText) syncText.textContent = ready ? 'Synced' : `Syncing ${percent}%`;
     syncBadge.classList.toggle('hidden', !hasCache || ready);
   };
-  const markSyncReady = (key) => {
+  const markSyncReady = (key, source = 'unknown') => {
+    if (syncState[key]) {
+      console.debug(`[sync] ${key} already ready (${source})`);
+      return;
+    }
     syncState[key] = true;
+    const total = Object.keys(syncState).length;
+    const readyCount = Object.values(syncState).filter(Boolean).length;
+    console.debug(`[sync] ${key} ready (${source}) ${readyCount}/${total}`);
     updateSyncBadge();
   };
 
@@ -5091,6 +5197,26 @@ const themeToggle = $("themeToggle");
     lastDeletedId = null;
     undoToast.classList.remove('show');
   };
+  
+  const closeEventAlert = () => {
+    if (eventAlertModal) eventAlertModal.classList.remove('open');
+  };
+  
+  if (closeAlertBtn) {
+    closeAlertBtn.onclick = closeEventAlert;
+  }
+  if (eventAlertModal) {
+    eventAlertModal.addEventListener('click', (e) => {
+      if (e.target === eventAlertModal) closeEventAlert();
+    });
+  }
+  
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden && pendingEventAlert) {
+      showEventAlert(pendingEventAlert.title, pendingEventAlert.message, true);
+      pendingEventAlert = null;
+    }
+  });
 
   undoToastUndo.onclick = () => {
     if (!lastDeletedId) return;
@@ -5198,8 +5324,9 @@ const themeToggle = $("themeToggle");
     render();
     scheduleCalendarRender();
     startTicker();
+  } else {
+    setEventsLoading(true);
   }
-  if (!hasEventsCache) setEventsLoading(true);
 
   function getMonthEvents() {
     const year = currentMonth.getFullYear();
@@ -5531,7 +5658,15 @@ const themeToggle = $("themeToggle");
     };
   }
 
+  startSyncTimeout('events', SYNC_TIMEOUT_MS, 'firebase', () => {
+    eventsLoaded = true;
+    setEventsLoading(false);
+    render();
+    scheduleCalendarRender();
+    startTicker();
+  });
   onValue(eventsRef, (snapshot) => {
+    clearSyncTimeouts('events');
     const data = snapshot.val();
     eventsById.clear();
     if (data) {
@@ -5541,17 +5676,18 @@ const themeToggle = $("themeToggle");
       events = [];
     }
     eventsLoaded = true;
-    markSyncReady('events');
+    markSyncReady('events', 'firebase');
     writeCache(CACHE_KEYS.EVENTS, events, 300);
     setEventsLoading(false);
     render();
-    startTicker();
     // Defer heavy calendar render so list paints first
     scheduleCalendarRender();
+    startTicker();
   }, (error) => {
     console.error('Events sync error:', error);
+    clearSyncTimeouts('events');
     eventsLoaded = true;
-    markSyncReady('events');
+    markSyncReady('events', 'error');
     setEventsLoading(false);
     updateSyncBadge();
   });
@@ -5616,6 +5752,53 @@ const themeToggle = $("themeToggle");
       hour: '2-digit', minute: '2-digit'
     });
   }
+  
+  function formatReminderOffset(minutes) {
+    if (minutes >= 1440) {
+      const days = Math.round(minutes / 1440);
+      return days === 1 ? '1 day' : `${days} days`;
+    }
+    if (minutes >= 60) {
+      const hours = Math.round(minutes / 60);
+      return hours === 1 ? '1 hour' : `${hours} hours`;
+    }
+    return minutes === 1 ? '1 minute' : `${minutes} minutes`;
+  }
+  
+  function playReminderSound() {
+    if (!reminderAudio) return;
+    reminderAudio.currentTime = 0;
+    reminderAudio.play().catch(() => {
+      console.log("Audio play failed (interaction needed)");
+    });
+  }
+  
+  function showEventAlert(title, message, playSound = false) {
+    if (!eventAlertModal) return;
+    if (alertTitle) alertTitle.textContent = title;
+    if (alertMessage) alertMessage.textContent = message;
+    eventAlertModal.classList.add('open');
+    if (playSound) playReminderSound();
+  }
+  
+  function triggerAlert(evt) {
+    const reminderMinutes = parseInt(evt.reminder, 10) || 0;
+    const timeString = formatReminderOffset(reminderMinutes);
+    const msg = `${evt.name} starts in ${timeString}!`;
+    
+    if (document.hidden) {
+      if ("Notification" in window && Notification.permission === "granted") {
+        new Notification("Event Reminder ⏰", {
+          body: msg,
+          icon: "https://cdn-icons-png.flaticon.com/512/2693/2693507.png"
+        });
+      }
+      pendingEventAlert = { title: evt.name, message: `Starting in ${timeString}` };
+      return;
+    }
+    
+    showEventAlert(evt.name, `Starting in ${timeString}`, true);
+  }
 
   function calcTime(target) {
     const diff = Math.max(0, new Date(target).getTime() - Date.now());
@@ -5636,6 +5819,7 @@ const themeToggle = $("themeToggle");
     eventName.value = evt.name;
     eventDate.value = toLocalDatetime(evt.date);
     eventNotes.value = evt.notes || '';
+    if (eventReminder) eventReminder.value = evt.reminder || 0;
     addBtn.textContent = "Save";
     cancelBtn.style.display = "block";
     clearBtn.style.display = "none";
@@ -5648,6 +5832,7 @@ const themeToggle = $("themeToggle");
     eventName.value = "";
     eventDate.value = "";
     eventNotes.value = "";
+    if (eventReminder) eventReminder.value = 0;
     addBtn.textContent = "Add Event";
     cancelBtn.style.display = "none";
     clearBtn.style.display = "block";
@@ -5938,6 +6123,21 @@ const themeToggle = $("themeToggle");
       ref.badge.className = `badge ${ended ? 'badge-ended' : 'badge-upcoming'}`;
       ref.badge.textContent = ended ? 'Ended' : 'Upcoming';
     });
+
+    const nowMs = now;
+    getActiveEvents().forEach(evt => {
+      const reminderMinutes = parseInt(evt.reminder, 10) || 0;
+      if (!reminderMinutes) return;
+      const reminderKey = `${evt.date || ''}|${reminderMinutes}`;
+      if (notifiedEvents.get(evt.id) === reminderKey) return;
+      const eventTime = new Date(evt.date).getTime();
+      if (!Number.isFinite(eventTime)) return;
+      const triggerTime = eventTime - (reminderMinutes * 60000);
+      if (nowMs >= triggerTime && nowMs < triggerTime + 60000) {
+        triggerAlert(evt);
+        notifiedEvents.set(evt.id, reminderKey);
+      }
+    });
   }
 
   function startTicker() {
@@ -5954,6 +6154,7 @@ const themeToggle = $("themeToggle");
     const name = eventName.value.trim();
     const dateValue = eventDate.value;
     const notes = eventNotes.value.trim();
+    const reminderVal = parseInt(eventReminder?.value, 10) || 0;
 
     if (!name || !dateValue) {
       alert("Please enter both event name and date");
@@ -5972,6 +6173,7 @@ const themeToggle = $("themeToggle");
         name,
         date: parsedDate.toISOString(),
         notes: notes || null,
+        reminder: reminderVal,
         highlighted: evt ? evt.highlighted : false,
         pinned: evt ? evt.pinned : false
       });
@@ -5981,12 +6183,14 @@ const themeToggle = $("themeToggle");
         name,
         date: parsedDate.toISOString(),
         notes: notes || null,
+        reminder: reminderVal,
         highlighted: false,
         pinned: false
       });
       eventName.value = "";
       eventDate.value = "";
       eventNotes.value = "";
+      if (eventReminder) eventReminder.value = 0;
       eventName.focus();
     }
   };
@@ -6189,6 +6393,10 @@ const themeToggle = $("themeToggle");
         if (typeof showView === 'function') showView('countdown');
         return;
       }
+      if (eventAlertModal && eventAlertModal.classList.contains('open')) {
+        closeEventAlert();
+        return;
+      }
       // Day drawer
       if (dayDrawer.classList.contains('open')) {
         closeDayDrawer();
@@ -6278,6 +6486,23 @@ const themeToggle = $("themeToggle");
   const saveTaskBtn = $("saveTaskBtn");
   const quickTaskColorPicker = $("quickTaskColorPicker");
   const taskColorPicker = $("taskColorPicker");
+  const addSubjectBtn = $("addSubjectBtn");
+  const addSubjectSidebarBtn = $("addSubjectSidebarBtn");
+  const smartViewsList = $("smartViewsList");
+  const subjectModal = $("subjectModal");
+  const subjectModalTitle = $("subjectModalTitle");
+  const subjectNameInput = $("subjectNameInput");
+  const subjectColorPicker = $("subjectColorPicker");
+  const cancelSubjectBtn = $("cancelSubjectBtn");
+  const deleteSubjectBtn = $("deleteSubjectBtn");
+  const saveSubjectBtn = $("saveSubjectBtn");
+  const newTaskSubject = $("newTaskSubject");
+  const editTaskSubject = $("editTaskSubject");
+  const parentSubjectSelect = $("parentSubjectSelect");
+  const contextMenu = $("contextMenu");
+  const eventContextMenu = $("eventContextMenu");
+  const reminderModal = $("reminderModal");
+  const subjectsList = $("subjectsList");
   
   // Limit year input to 4 digits for all datetime-local inputs
   const dateInputs = [eventDate, newTaskDue, editTaskDue];
@@ -6310,6 +6535,16 @@ const themeToggle = $("themeToggle");
   let selectedTaskColor = '';
   let currentFilter = 'all';
   let taskTickerHandle = null;
+  // Shared subject state (used by Task Manager + Subjects sidebar)
+  let subjects = [];
+  let currentSubject = 'all';
+  let currentSmartView = null; // 'today', 'week', 'overdue', 'nodate'
+  let editingSubjectId = null;
+  let selectedSubjectColor = '#667eea';
+  let contextMenuTarget = null;
+  let eventContextMenuTarget = null;
+  let expandedSubjects = new Set(); // Track which subjects are expanded
+
   
   const PRIORITY_ORDER = { urgent: 0, high: 1, medium: 2, low: 3, none: 4 };
   const PRIORITY_LABELS = { urgent: 'Urgent', high: 'High', medium: 'Medium', low: 'Low', none: '' };
@@ -6328,6 +6563,22 @@ const themeToggle = $("themeToggle");
       newTaskSubject.value = defaultSubject;
     } else if (!newTaskSubject.value) {
       newTaskSubject.value = '';
+    }
+    updateQuickAddSubjectColorOption();
+  }
+
+  function getSubjectColorById(subjectId) {
+    if (!subjectId) return '';
+    return subjects.find(s => s.id === subjectId)?.color || '';
+  }
+
+  function updateQuickAddSubjectColorOption() {
+    if (!newTaskSubject || !quickTaskColorPicker) return;
+    const subjectColor = getSubjectColorById(newTaskSubject.value);
+    updateSubjectColorOption(quickTaskColorPicker, subjectColor);
+    if (!subjectColor && selectedTaskColor === 'subject') {
+      selectedTaskColor = '';
+      setTaskColorSelection(quickTaskColorPicker, selectedTaskColor);
     }
   }
 
@@ -6351,10 +6602,32 @@ const themeToggle = $("themeToggle");
     picker.addEventListener('click', (e) => {
       const option = e.target.closest('.task-color-option');
       if (!option) return;
+      if (option.classList.contains('disabled')) return;
       const color = option.dataset.color || '';
       setTaskColorSelection(picker, color);
       if (typeof onChange === 'function') onChange(color);
     });
+  }
+  
+  function updateSubjectColorOption(picker, subjectColor) {
+    if (!picker) return;
+    const option = picker.querySelector('.task-color-option.subject');
+    if (!option) return;
+    if (subjectColor) {
+      option.style.background = subjectColor;
+      option.classList.remove('disabled');
+      option.title = 'Use subject color';
+    } else {
+      option.style.background = '';
+      option.classList.add('disabled');
+      option.title = 'Select a subject to use its color';
+    }
+  }
+  
+  function resolveTaskColor(task, subjectColor) {
+    if (!task?.color) return '';
+    if (task.color === 'subject') return subjectColor || '';
+    return task.color;
   }
   
   function hasManualOrder(taskList = tasks) {
@@ -6877,7 +7150,6 @@ const themeToggle = $("themeToggle");
   const appLayout = document.querySelector('.app-layout');
   // Ensure current view state and commonly used DOM refs exist before showView
   let currentView = 'countdown';
-  const subjectsList = $("subjectsList");
 
   function updateHeaderButtons() {
     try {
@@ -6970,6 +7242,22 @@ const themeToggle = $("themeToggle");
     selectedTaskColor = color;
   });
   setTaskColorSelection(quickTaskColorPicker, selectedTaskColor);
+  updateQuickAddSubjectColorOption();
+  if (newTaskSubject) {
+    newTaskSubject.addEventListener('change', () => {
+      updateQuickAddSubjectColorOption();
+    });
+  }
+  if (editTaskSubject) {
+    editTaskSubject.addEventListener('change', () => {
+      const subjectColor = getSubjectColorById(editTaskSubject.value);
+      updateSubjectColorOption(taskColorPicker, subjectColor);
+      if (!subjectColor && getTaskColorFromPicker(taskColorPicker) === 'subject') {
+        setTaskColorSelection(taskColorPicker, '');
+        if (editingTask) editingTask.color = '';
+      }
+    });
+  }
   
   // ============ UNIFIED ADD TASK FUNCTION ============
   function addTask() {
@@ -7077,10 +7365,21 @@ const themeToggle = $("themeToggle");
       renderTasks();
       renderSubjectsSidebar();
     }
+  } else {
+    showTasksLoading();
   }
 
   // Listen to tasks from Firebase
+  startSyncTimeout('tasks', SYNC_TIMEOUT_MS, 'firebase', () => {
+    tasksLoaded = true;
+    resetTasksEmptyMessage();
+    if (taskManagerOverlay.classList.contains('open')) {
+      renderTasks();
+      renderSubjectsSidebar();
+    }
+  });
   onValue(tasksRef, (snapshot) => {
+    clearSyncTimeouts('tasks');
     const data = snapshot.val();
     if (data) {
       tasks = Object.keys(data).map(key => ({ id: key, ...data[key] }));
@@ -7088,7 +7387,7 @@ const themeToggle = $("themeToggle");
       tasks = [];
     }
     tasksLoaded = true;
-    markSyncReady('tasks');
+    markSyncReady('tasks', 'firebase');
     writeCache(cachedTasksKey, tasks, 500);
     resetTasksEmptyMessage();
     Pomodoro.updateTasks(tasks);
@@ -7102,8 +7401,9 @@ const themeToggle = $("themeToggle");
     }
   }, (error) => {
     console.error('Tasks sync error:', error);
+    clearSyncTimeouts('tasks');
     tasksLoaded = true;
-    markSyncReady('tasks');
+    markSyncReady('tasks', 'error');
     resetTasksEmptyMessage();
     updateSyncBadge();
   });
@@ -7304,17 +7604,18 @@ const themeToggle = $("themeToggle");
     
     const subjectData = task.subject ? subjects.find(s => s.id === task.subject) : null;
     const subjectColor = subjectData ? subjectData.color : '';
+    const resolvedTaskColor = resolveTaskColor(task, subjectColor);
     const styleParts = [];
     if (subjectColor) {
       styleParts.push(`--subject-color: ${subjectColor};`);
       styleParts.push(`--subject-tint: ${subjectColor}26;`);
     }
-    if (task.color) {
-      styleParts.push(`--task-color: ${task.color};`);
-      styleParts.push(`--task-tint: ${task.color}22;`);
+    if (resolvedTaskColor) {
+      styleParts.push(`--task-color: ${resolvedTaskColor};`);
+      styleParts.push(`--task-tint: ${resolvedTaskColor}22;`);
     }
     const taskStyle = styleParts.length ? ` style="${styleParts.join(' ')}"` : '';
-    const taskColorDot = task.color ? `<span class="task-color-dot" style="background: ${task.color};"></span>` : '';
+    const taskColorDot = resolvedTaskColor ? `<span class="task-color-dot" style="background: ${resolvedTaskColor};"></span>` : '';
 
     // Subject badge - show when viewing "all" OR when explicitly requested (suggested tasks)
     let subjectHtml = '';
@@ -7761,6 +8062,7 @@ const themeToggle = $("themeToggle");
     });
 
     setTaskColorSelection(taskColorPicker, editingTask.color || '');
+    updateSubjectColorOption(taskColorPicker, getSubjectColorById(editingTask.subject || ''));
     
     // Set due date
     if (editingTask.dueDate) {
@@ -7896,34 +8198,6 @@ const themeToggle = $("themeToggle");
   };
 
   // ============ SUBJECTS / CATEGORIES ============
-  // subjectsRef is user-scoped (see auth block above)
-  
-  
-  const addSubjectBtn = $("addSubjectBtn");
-  const addSubjectSidebarBtn = $("addSubjectSidebarBtn");
-  const smartViewsList = $("smartViewsList");
-  const subjectModal = $("subjectModal");
-  const subjectModalTitle = $("subjectModalTitle");
-  const subjectNameInput = $("subjectNameInput");
-  const subjectColorPicker = $("subjectColorPicker");
-  const cancelSubjectBtn = $("cancelSubjectBtn");
-  const deleteSubjectBtn = $("deleteSubjectBtn");
-  const saveSubjectBtn = $("saveSubjectBtn");
-  const newTaskSubject = $("newTaskSubject");
-  const editTaskSubject = $("editTaskSubject");
-  const parentSubjectSelect = $("parentSubjectSelect");
-  const contextMenu = $("contextMenu");
-  const eventContextMenu = $("eventContextMenu");
-  const reminderModal = $("reminderModal");
-  
-  let subjects = [];
-  let currentSubject = 'all';
-  let currentSmartView = null; // 'today', 'week', 'overdue', 'nodate'
-  let editingSubjectId = null;
-  let selectedSubjectColor = '#667eea';
-  let contextMenuTarget = null;
-  let eventContextMenuTarget = null;
-  let expandedSubjects = new Set(); // Track which subjects are expanded
 
   const cachedSubjectsKey = `${CACHE_KEYS.SUBJECTS_PREFIX}${currentUser}`;
   const cachedSubjects = readCache(cachedSubjectsKey);
@@ -7934,10 +8208,22 @@ const themeToggle = $("themeToggle");
     renderSubjectsSidebar();
     updateSubjectSelectors();
     updateParentSubjectSelector();
+  } else {
+    startSyncTimeout('subjects', SUBJECTS_NO_CACHE_TIMEOUT_MS, 'no-cache', () => {
+      renderSubjectsSidebar();
+      updateSubjectSelectors();
+      updateParentSubjectSelector();
+    });
   }
   
   // Listen to subjects from Firebase
+  startSyncTimeout('subjects', SYNC_TIMEOUT_MS, 'firebase', () => {
+    renderSubjectsSidebar();
+    updateSubjectSelectors();
+    updateParentSubjectSelector();
+  });
   onValue(subjectsRef, (snapshot) => {
+    clearSyncTimeouts('subjects');
     const data = snapshot.val();
     if (data) {
       subjects = Object.keys(data).map(key => ({ id: key, ...data[key] }));
@@ -7945,13 +8231,14 @@ const themeToggle = $("themeToggle");
       subjects = [];
     }
     writeCache(cachedSubjectsKey, subjects, 200);
-    markSyncReady('subjects');
+    markSyncReady('subjects', 'firebase');
     renderSubjectsSidebar();
     updateSubjectSelectors();
     updateParentSubjectSelector();
   }, (error) => {
     console.error('Subjects sync error:', error);
-    markSyncReady('subjects');
+    clearSyncTimeouts('subjects');
+    markSyncReady('subjects', 'error');
     updateSyncBadge();
   });
   
@@ -8179,7 +8466,8 @@ const themeToggle = $("themeToggle");
         const showTime = dayTasks.length > 1;
         dayTasks.slice(0, maxShow).forEach(task => {
           const subjectColor = subjects.find(s => s.id === task.subject)?.color;
-          const color = task.color || subjectColor || '#667eea';
+          const resolvedColor = resolveTaskColor(task, subjectColor);
+          const color = resolvedColor || subjectColor || '#667eea';
           const safeName = escapeHtml(task.title);
           const evtDate = new Date(task.dueDate);
           const timeStr = showTime ? `${String(evtDate.getHours()).padStart(2,'0')}:${String(evtDate.getMinutes()).padStart(2,'0')} ` : '';
@@ -8230,7 +8518,8 @@ const themeToggle = $("themeToggle");
         const showTime = true;
         dayTasks.slice(0, maxShow).forEach(task => {
           const subjectColor = subjects.find(s => s.id === task.subject)?.color;
-          const color = task.color || subjectColor || '#667eea';
+          const resolvedColor = resolveTaskColor(task, subjectColor);
+          const color = resolvedColor || subjectColor || '#667eea';
           const safeName = escapeHtml(task.title);
           const evtDate = new Date(task.dueDate);
           const timeStr = showTime ? `${String(evtDate.getHours()).padStart(2,'0')}:${String(evtDate.getMinutes()).padStart(2,'0')} ` : '';
@@ -8262,7 +8551,8 @@ const themeToggle = $("themeToggle");
       const showTime = true;
       dayTasks.slice(0, maxShow).forEach(task => {
         const subjectColor = subjects.find(s => s.id === task.subject)?.color;
-        const color = task.color || subjectColor || '#667eea';
+        const resolvedColor = resolveTaskColor(task, subjectColor);
+        const color = resolvedColor || subjectColor || '#667eea';
         const safeName = escapeHtml(task.title);
         const evtDate = new Date(task.dueDate);
         const timeStr = showTime ? `${String(evtDate.getHours()).padStart(2,'0')}:${String(evtDate.getMinutes()).padStart(2,'0')} ` : '';
@@ -8332,7 +8622,8 @@ const themeToggle = $("themeToggle");
 
     taskMonthEvents.innerHTML = rangeTasks.map(task => {
       const subjectColor = subjects.find(s => s.id === task.subject)?.color;
-      const color = task.color || subjectColor || '#667eea';
+      const resolvedColor = resolveTaskColor(task, subjectColor);
+      const color = resolvedColor || subjectColor || '#667eea';
       const d = new Date(task.dueDate);
       const dateStr = d.toLocaleDateString('he-IL', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
       return `
@@ -8819,6 +9110,7 @@ const themeToggle = $("themeToggle");
             name: evt.name + ' (העתק)',
             date: evt.date,
             notes: evt.notes || null,
+            reminder: evt.reminder || 0,
             highlighted: false,
             pinned: false
           });
