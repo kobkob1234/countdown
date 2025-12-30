@@ -278,6 +278,7 @@
       justify-content: space-between;
       margin-bottom: 8px;
       gap: 10px;
+      flex-wrap: wrap;
     }
     .calendar-title {
       font-size: 20px;
@@ -302,6 +303,32 @@
     .calendar-nav button:hover {
       background: var(--day-hover);
       border-color: var(--accent);
+    }
+    .calendar-view-toggle {
+      display: flex;
+      gap: 6px;
+      padding: 4px;
+      border-radius: 999px;
+      background: var(--day-other);
+      border: 1px solid var(--border);
+    }
+    .calendar-view-toggle button {
+      border: none;
+      background: transparent;
+      color: var(--muted);
+      font-size: 12px;
+      padding: 6px 12px;
+      border-radius: 999px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .calendar-view-toggle button:hover {
+      color: var(--text);
+    }
+    .calendar-view-toggle button.active {
+      background: var(--accent);
+      color: #fff;
+      box-shadow: 0 2px 6px rgba(102, 126, 234, 0.25);
     }
 
     .calendar-grid {
@@ -333,14 +360,45 @@
       background: var(--card);
       overflow: hidden;
     }
+    #taskRightSidebar.calendar-expanded {
+      width: 460px;
+      min-width: 420px;
+    }
     #taskRightSidebar.calendar-expanded .calendar-grid {
-      grid-auto-rows: minmax(96px, auto);
+      grid-auto-rows: minmax(140px, auto);
     }
     #taskRightSidebar.calendar-expanded .calendar-day {
-      min-height: 96px;
+      min-height: 140px;
+      overflow: visible;
+    }
+    #taskRightSidebar.calendar-expanded .calendar-day-events {
+      overflow: visible;
     }
     #taskRightSidebar.calendar-expanded .calendar-event-chip {
       font-size: 11px;
+    }
+    #taskRightSidebar.calendar-view-week .calendar-grid {
+      grid-auto-rows: minmax(56px, auto);
+    }
+    #taskRightSidebar.calendar-view-week .calendar-day {
+      min-height: 120px;
+    }
+    #taskRightSidebar.calendar-view-week.calendar-expanded .calendar-day {
+      min-height: 160px;
+    }
+    #taskRightSidebar.calendar-view-day .calendar-grid {
+      grid-template-columns: 1fr;
+      grid-auto-rows: minmax(56px, auto);
+    }
+    #taskRightSidebar.calendar-view-day .calendar-day {
+      min-height: 220px;
+    }
+    #taskRightSidebar.calendar-view-day.calendar-expanded .calendar-day {
+      min-height: 300px;
+    }
+    #taskRightSidebar.calendar-view-day .calendar-day-name {
+      text-align: right;
+      padding-right: 10px;
     }
     .calendar-day:hover {
       background: var(--day-hover);
@@ -2612,6 +2670,17 @@
       background: #fff7ed;
       color: #f97316;
     }
+    .task-recurrence {
+      font-size: var(--font-size-xs);
+      font-weight: var(--font-weight-semibold);
+      padding: var(--space-1) var(--space-2);
+      border-radius: var(--radius-lg);
+      background: color-mix(in srgb, var(--accent) 14%, var(--day-other));
+      color: var(--text);
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
     
     .task-subtasks {
       margin-top: var(--space-2);
@@ -3736,9 +3805,10 @@
       display: flex;
       align-items: center;
       gap: 6px;
-      background: color-mix(in srgb, var(--subject-color, #667eea) 15%, transparent);
+      background: color-mix(in srgb, var(--subject-color, #667eea) 28%, transparent);
       color: var(--subject-color, #667eea);
-      border: 1px solid color-mix(in srgb, var(--subject-color, #667eea) 30%, transparent);
+      border: 1px solid color-mix(in srgb, var(--subject-color, #667eea) 45%, transparent);
+      box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--subject-color, #667eea) 12%, transparent);
     }
     .task-subject-badge::before {
       content: '';
@@ -3814,6 +3884,10 @@
       /* Fix for Task Manager Calendar Sidebar visibility */
       #taskRightSidebar {
         z-index: 350; /* Must be higher than task-manager-overlay (300) */
+      }
+      #taskRightSidebar.calendar-expanded {
+        width: 100%;
+        min-width: 0;
       }
       
       @media (max-width: 1100px) {
@@ -4218,6 +4292,15 @@
               <input type="datetime-local" id="newTaskDue" style="width: 180px; border: none; background: transparent; color: var(--text);" />
             </div>
             <div class="label-input-wrapper">
+              <span>🔁</span>
+              <select id="newTaskRecurrence" style="border: none; background: transparent; color: var(--text); font-size: 13px; outline: none; cursor: pointer;">
+                <option value="none">ללא חזרה</option>
+                <option value="daily">יומי</option>
+                <option value="weekly">שבועי</option>
+                <option value="monthly">חודשי</option>
+              </select>
+            </div>
+            <div class="label-input-wrapper">
               <span>🎨</span>
               <div class="task-color-picker compact" id="quickTaskColorPicker">
                 <div class="task-color-option none selected" data-color="">x</div>
@@ -4228,6 +4311,10 @@
                 <div class="task-color-option" data-color="#22c55e" style="background: #22c55e;"></div>
                 <div class="task-color-option" data-color="#06b6d4" style="background: #06b6d4;"></div>
                 <div class="task-color-option" data-color="#8b5cf6" style="background: #8b5cf6;"></div>
+                <div class="task-color-option" data-color="#0ea5e9" style="background: #0ea5e9;"></div>
+                <div class="task-color-option" data-color="#14b8a6" style="background: #14b8a6;"></div>
+                <div class="task-color-option" data-color="#84cc16" style="background: #84cc16;"></div>
+                <div class="task-color-option" data-color="#f43f5e" style="background: #f43f5e;"></div>
               </div>
             </div>
             <button class="btn btn-primary" id="addTaskBtn">הוסף</button>
@@ -4267,7 +4354,14 @@
               <button id="nextTaskMonth">›</button>
               <button id="toggleTaskCalendarSize" title="הגדל/הקטן" aria-label="הגדל/הקטן">⤢</button>
             </div>
-            <div class="calendar-title" id="taskCalendarTitle"></div>
+            <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: flex-end;">
+              <div class="calendar-title" id="taskCalendarTitle"></div>
+              <div class="calendar-view-toggle" id="taskCalendarViewToggle" aria-label="Calendar view">
+                <button data-view="month" class="active">חודש</button>
+                <button data-view="week">שבוע</button>
+                <button data-view="day">יום</button>
+              </div>
+            </div>
           </div>
           <div class="calendar-grid" id="taskCalendarGrid"></div>
         </div>
@@ -4317,6 +4411,10 @@
           <div class="task-color-option" data-color="#22c55e" style="background: #22c55e;"></div>
           <div class="task-color-option" data-color="#06b6d4" style="background: #06b6d4;"></div>
           <div class="task-color-option" data-color="#8b5cf6" style="background: #8b5cf6;"></div>
+          <div class="task-color-option" data-color="#0ea5e9" style="background: #0ea5e9;"></div>
+          <div class="task-color-option" data-color="#14b8a6" style="background: #14b8a6;"></div>
+          <div class="task-color-option" data-color="#84cc16" style="background: #84cc16;"></div>
+          <div class="task-color-option" data-color="#f43f5e" style="background: #f43f5e;"></div>
         </div>
       </div>
       
@@ -4324,6 +4422,16 @@
         <div class="task-edit-section-title">Due Date</div>
         <input type="datetime-local" id="editTaskDue" style="padding: 12px 14px; border: 2px solid var(--border); border-radius: 10px; font-size: 14px; background: var(--input-bg); color: var(--text); outline: none; width: 100%; max-width: 250px;" />
         <button class="btn" id="clearDueBtn" style="margin-left: 8px; padding: 10px 14px; background: var(--day-other); color: var(--muted);">Clear</button>
+      </div>
+
+      <div class="task-edit-section">
+        <div class="task-edit-section-title">Recurrence</div>
+        <select id="editTaskRecurrence" style="padding: 12px 14px; border: 2px solid var(--border); border-radius: 10px; font-size: 14px; background: var(--input-bg); color: var(--text); outline: none; width: 100%; max-width: 250px; cursor: pointer;">
+          <option value="none">ללא חזרה</option>
+          <option value="daily">יומי</option>
+          <option value="weekly">שבועי</option>
+          <option value="monthly">חודשי</option>
+        </select>
       </div>
       
       <div class="task-edit-section">
@@ -4337,6 +4445,7 @@
       
       <div class="task-edit-footer">
         <div style="display: flex; gap: 8px;">
+          <button class="task-action-btn" id="duplicateTaskBtn" title="Duplicate" aria-label="שכפל משימה">⧉</button>
           <button class="task-action-btn delete" id="deleteTaskBtn" title="Delete" aria-label="מחק משימה">🗑️</button>
         </div>
         <button class="btn btn-primary" id="saveTaskBtn">Save</button>
@@ -4490,6 +4599,10 @@
         <div class="subject-color-option" style="background: #06b6d4;" data-color="#06b6d4"></div>
         <div class="subject-color-option" style="background: #8b5cf6;" data-color="#8b5cf6"></div>
         <div class="subject-color-option" style="background: #ec4899;" data-color="#ec4899"></div>
+        <div class="subject-color-option" style="background: #0ea5e9;" data-color="#0ea5e9"></div>
+        <div class="subject-color-option" style="background: #14b8a6;" data-color="#14b8a6"></div>
+        <div class="subject-color-option" style="background: #84cc16;" data-color="#84cc16"></div>
+        <div class="subject-color-option" style="background: #f43f5e;" data-color="#f43f5e"></div>
       </div>
       <div class="subject-modal-actions">
         <button class="btn" id="cancelSubjectBtn" style="background: var(--day-other); color: var(--muted);">ביטול</button>
@@ -6142,6 +6255,7 @@ const themeToggle = $("themeToggle");
   const quickAddRow = $("quickAddRow");
   const newTaskTitle = $("newTaskTitle");
   const newTaskDue = $("newTaskDue");
+  const newTaskRecurrence = $("newTaskRecurrence");
   const addTaskBtn = $("addTaskBtn");
   const taskPriorityPicker = $("taskPriorityPicker");
   const activeTasks = $("activeTasks");
@@ -6157,7 +6271,9 @@ const themeToggle = $("themeToggle");
   const addChecklistItem = $("addChecklistItem");
   const editTaskPriority = $("editTaskPriority");
   const editTaskDue = $("editTaskDue");
+  const editTaskRecurrence = $("editTaskRecurrence");
   const clearDueBtn = $("clearDueBtn");
+  const duplicateTaskBtn = $("duplicateTaskBtn");
   const deleteTaskBtn = $("deleteTaskBtn");
   const saveTaskBtn = $("saveTaskBtn");
   const quickTaskColorPicker = $("quickTaskColorPicker");
@@ -6197,6 +6313,7 @@ const themeToggle = $("themeToggle");
   
   const PRIORITY_ORDER = { urgent: 0, high: 1, medium: 2, low: 3, none: 4 };
   const PRIORITY_LABELS = { urgent: 'Urgent', high: 'High', medium: 'Medium', low: 'Low', none: '' };
+  const RECURRENCE_LABELS = { daily: 'יומי', weekly: 'שבועי', monthly: 'חודשי' };
   
   function getDefaultSubjectId() {
     if (currentSmartView) return '';
@@ -6248,6 +6365,50 @@ const themeToggle = $("themeToggle");
     const list = tasks.filter(t => !!t.completed === !!isCompleted);
     const maxOrder = list.reduce((max, t) => Number.isFinite(t.order) ? Math.max(max, t.order) : max, -1);
     return maxOrder + 1;
+  }
+  
+  function normalizeRecurrence(value) {
+    return value && value !== 'none' ? value : 'none';
+  }
+  
+  function getNextRecurrenceDate(baseIso, recurrence) {
+    const type = normalizeRecurrence(recurrence);
+    if (type === 'none') return null;
+    const now = new Date();
+    let base = baseIso ? new Date(baseIso) : new Date();
+    if (Number.isNaN(base.getTime())) return null;
+    if (base < now) base = now;
+    const next = new Date(base);
+    if (type === 'daily') next.setDate(next.getDate() + 1);
+    if (type === 'weekly') next.setDate(next.getDate() + 7);
+    if (type === 'monthly') next.setMonth(next.getMonth() + 1);
+    return next;
+  }
+  
+  function buildTaskClone(task, overrides = {}) {
+    const { id, ...clean } = task;
+    const orderValue = hasManualOrder() ? getNextTaskOrder(false) : null;
+    const clone = {
+      ...clean,
+      completed: false,
+      createdAt: new Date().toISOString(),
+      ...(Number.isFinite(orderValue) ? { order: orderValue } : {})
+    };
+    return { ...clone, ...overrides };
+  }
+  
+  function pushTaskClone(task, overrides = {}) {
+    if (!task) return;
+    const newTaskRef = push(tasksRef);
+    set(newTaskRef, buildTaskClone(task, overrides));
+  }
+  
+  function maybeCreateRecurringTask(task) {
+    const recurrence = normalizeRecurrence(task?.recurrence);
+    if (recurrence === 'none') return;
+    const nextDate = getNextRecurrenceDate(task?.dueDate, recurrence);
+    if (!nextDate) return;
+    pushTaskClone(task, { dueDate: nextDate.toISOString(), completed: false });
   }
 
   // ============ POMODORO MODULE (self-contained) ============
@@ -6817,6 +6978,7 @@ const themeToggle = $("themeToggle");
     
     const dueValue = newTaskDue.value;
     const dueDate = dueValue ? parseLocal(dueValue) : null;
+    const recurrence = newTaskRecurrence ? newTaskRecurrence.value : 'none';
     
     const defaultSubjectId = getDefaultSubjectId();
     const selectedSubjectId = newTaskSubject ? (newTaskSubject.value || defaultSubjectId) : defaultSubjectId;
@@ -6832,7 +6994,8 @@ const themeToggle = $("themeToggle");
       completed: false,
       createdAt: new Date().toISOString(),
       ...(Number.isFinite(orderValue) ? { order: orderValue } : {}),
-      ...(selectedTaskColor ? { color: selectedTaskColor } : {})
+      ...(selectedTaskColor ? { color: selectedTaskColor } : {}),
+      ...(recurrence && recurrence !== 'none' ? { recurrence } : {})
     };
     
     const newTaskRef = push(tasksRef);
@@ -6841,6 +7004,7 @@ const themeToggle = $("themeToggle");
     // Reset form
     newTaskTitle.value = '';
     newTaskDue.value = '';
+    if (newTaskRecurrence) newTaskRecurrence.value = 'none';
     if (newTaskSubject) newTaskSubject.value = '';
     if (quickAddRow) quickAddRow.style.display = 'none';
     selectedTaskPriority = 'medium';
@@ -7120,7 +7284,7 @@ const themeToggle = $("themeToggle");
     let dueDateHtml = `<span class="task-due add" data-due-iso="">+ תאריך</span>`;
     if (task.dueDate) {
       const dueDate = new Date(task.dueDate);
-      const dateStr = dueDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+      const dateStr = dueDate.toLocaleDateString('he-IL', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
       const urgencyClass = countdown?.overdue ? 'overdue' : (countdown?.urgency === 'soon' ? 'soon' : '');
       dueDateHtml = `<span class="task-due ${urgencyClass}" data-due-iso="${task.dueDate}">📅 ${dateStr}</span>`;
     }
@@ -7131,12 +7295,19 @@ const themeToggle = $("themeToggle");
       countdownHtml = `<span class="task-countdown ${countdownClass}" data-due="${task.dueDate}">${countdown.text}</span>`;
     }
     
+    let recurrenceHtml = '';
+    const recurrence = normalizeRecurrence(task.recurrence);
+    if (recurrence !== 'none') {
+      const label = RECURRENCE_LABELS[recurrence] || recurrence;
+      recurrenceHtml = `<span class="task-recurrence">🔁 ${label}</span>`;
+    }
+    
     const subjectData = task.subject ? subjects.find(s => s.id === task.subject) : null;
     const subjectColor = subjectData ? subjectData.color : '';
     const styleParts = [];
     if (subjectColor) {
       styleParts.push(`--subject-color: ${subjectColor};`);
-      styleParts.push(`--subject-tint: ${subjectColor}1a;`);
+      styleParts.push(`--subject-tint: ${subjectColor}26;`);
     }
     if (task.color) {
       styleParts.push(`--task-color: ${task.color};`);
@@ -7198,11 +7369,13 @@ const themeToggle = $("themeToggle");
           <div class="task-meta">
             ${dueDateHtml}
             ${countdownHtml}
+            ${recurrenceHtml}
           </div>
           ${subtasksHtml}
         </div>
         <div class="task-actions">
           <button class="task-action-btn" data-action="edit" title="Edit" aria-label="עריכה">✏️</button>
+          <button class="task-action-btn" data-action="duplicate" title="Duplicate" aria-label="שכפל">⧉</button>
           <button class="task-action-btn delete" data-action="delete" title="Delete" aria-label="מחק">🗑️</button>
         </div>
       </div>
@@ -7212,7 +7385,7 @@ const themeToggle = $("themeToggle");
   function formatTaskDueDisplay(dueIso) {
     if (!dueIso) return '+ תאריך';
     const dueDate = new Date(dueIso);
-    return dueDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+    return dueDate.toLocaleDateString('he-IL', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
   }
 
   function startInlineTaskTitleEdit(titleEl, task) {
@@ -7380,12 +7553,20 @@ const themeToggle = $("themeToggle");
         if (action === 'toggle' || e.target.closest('.task-checkbox')) {
           // Toggle complete
           e.stopPropagation();
+          const nextCompleted = !task.completed;
+          if (nextCompleted) {
+            maybeCreateRecurringTask(task);
+          }
           const { id, ...cleanTask } = task;
-          set(ref(db, `users/${currentUser}/tasks/${taskId}`), { ...cleanTask, completed: !task.completed });
+          set(ref(db, `users/${currentUser}/tasks/${taskId}`), { ...cleanTask, completed: nextCompleted });
         } else if (action === 'edit') {
           // Edit button
           e.stopPropagation();
           openTaskEditModal(taskId);
+        } else if (action === 'duplicate') {
+          // Duplicate button
+          e.stopPropagation();
+          pushTaskClone(task);
         } else if (action === 'delete') {
           // Delete button
           e.stopPropagation();
@@ -7588,6 +7769,10 @@ const themeToggle = $("themeToggle");
       editTaskDue.value = '';
     }
     
+    if (editTaskRecurrence) {
+      editTaskRecurrence.value = normalizeRecurrence(editingTask.recurrence);
+    }
+    
     // Render checklist
     renderEditChecklist();
     
@@ -7672,6 +7857,14 @@ const themeToggle = $("themeToggle");
     closeTaskEditModal();
   };
   
+  if (duplicateTaskBtn) {
+    duplicateTaskBtn.onclick = () => {
+      if (!editingTask) return;
+      pushTaskClone(editingTask);
+      closeTaskEditModal();
+    };
+  }
+  
   // Save task
   saveTaskBtn.onclick = () => {
     if (!editingTaskId || !editingTask) return;
@@ -7680,6 +7873,12 @@ const themeToggle = $("themeToggle");
     editingTask.content = editTaskContent.value.trim();
     editingTask.subject = editTaskSubject.value || '';
     editingTask.color = getTaskColorFromPicker(taskColorPicker) || '';
+    const recurrenceValue = editTaskRecurrence ? editTaskRecurrence.value : 'none';
+    if (recurrenceValue && recurrenceValue !== 'none') {
+      editingTask.recurrence = recurrenceValue;
+    } else {
+      delete editingTask.recurrence;
+    }
     
     // Update due date
     const dueValue = editTaskDue.value;
@@ -7824,11 +8023,15 @@ const themeToggle = $("themeToggle");
   // ============ TASK CALENDAR ============
   let currentTaskMonth = new Date();
   let taskCalendarExpanded = false;
+  let taskCalendarView = 'month';
+  let taskCalendarFocusDate = new Date();
   const taskCalendarGrid = $("taskCalendarGrid");
   const taskCalendarTitle = $("taskCalendarTitle");
   const taskMonthEvents = $("taskMonthEvents");
   const taskMonthEventsTitle = $("taskMonthEventsTitle");
   const toggleTaskCalendarSize = $("toggleTaskCalendarSize");
+  const taskCalendarViewToggle = $("taskCalendarViewToggle");
+  const taskRightSidebar = $("taskRightSidebar");
 
   // Event delegation for Task calendar in Task Manager
   if (taskCalendarGrid) {
@@ -7853,6 +8056,10 @@ const themeToggle = $("themeToggle");
       if (day) {
         const dateKey = day.dataset.date;
         if (!dateKey) return;
+        const focusDate = new Date(`${dateKey}T00:00`);
+        if (!Number.isNaN(focusDate.getTime())) {
+          setTaskCalendarFocus(focusDate);
+        }
         const taskDueInput = $("newTaskDue");
         const taskTitleInput = $("newTaskTitle");
         const quickRow = $("quickAddRow");
@@ -7865,19 +8072,64 @@ const themeToggle = $("themeToggle");
       }
     });
   }
+
+  function getTaskCalendarMaxShow() {
+    if (taskCalendarView === 'day') return taskCalendarExpanded ? 12 : 8;
+    if (taskCalendarView === 'week') return taskCalendarExpanded ? 7 : 4;
+    return taskCalendarExpanded ? 7 : 3;
+  }
+
+  function updateTaskCalendarViewToggle() {
+    if (!taskCalendarViewToggle) return;
+    taskCalendarViewToggle.querySelectorAll('button').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.view === taskCalendarView);
+    });
+  }
+
+  function updateTaskCalendarViewClasses() {
+    if (!taskRightSidebar) return;
+    taskRightSidebar.classList.toggle('calendar-view-week', taskCalendarView === 'week');
+    taskRightSidebar.classList.toggle('calendar-view-day', taskCalendarView === 'day');
+  }
+
+  function setTaskCalendarView(view) {
+    const prevView = taskCalendarView;
+    taskCalendarView = view;
+    if (taskCalendarView === 'month') {
+      currentTaskMonth = new Date(taskCalendarFocusDate.getFullYear(), taskCalendarFocusDate.getMonth(), 1);
+    } else if (prevView === 'month') {
+      const base = new Date(currentTaskMonth.getFullYear(), currentTaskMonth.getMonth(), taskCalendarFocusDate.getDate() || 1);
+      setTaskCalendarFocus(base);
+    }
+    updateTaskCalendarViewToggle();
+    updateTaskCalendarViewClasses();
+    renderTaskCalendar();
+  }
+
+  function setTaskCalendarFocus(date) {
+    const d = new Date(date);
+    if (Number.isNaN(d.getTime())) return;
+    d.setHours(0, 0, 0, 0);
+    taskCalendarFocusDate = d;
+  }
+
+  function getStartOfWeek(date) {
+    const d = new Date(date);
+    const dayIndex = d.getDay();
+    d.setDate(d.getDate() - dayIndex);
+    d.setHours(0, 0, 0, 0);
+    return d;
+  }
+
+  function formatHebrewShortDate(date) {
+    return date.toLocaleDateString('he-IL', { day: 'numeric', month: 'short' });
+  }
   
   function renderTaskCalendar() {
     if (!taskCalendarGrid || !taskCalendarTitle) return;
-    
-    const year = currentTaskMonth.getFullYear();
-    const month = currentTaskMonth.getMonth();
 
-    taskCalendarTitle.textContent = `${HEBREW_MONTHS[month]} ${year}`;
-
-    const firstDay = new Date(year, month, 1);
-    const lastDay = new Date(year, month + 1, 0);
-    const startDay = firstDay.getDay();
-    const daysInMonth = lastDay.getDate();
+    updateTaskCalendarViewToggle();
+    updateTaskCalendarViewClasses();
 
     const today = new Date();
     const todayKey = toDateKey(today);
@@ -7885,9 +8137,7 @@ const themeToggle = $("themeToggle");
     // Build task map by date (exclude countdowns/events)
     const tasksByDate = {};
     tasks.forEach(task => {
-      // Only include if it's a real task (not a countdown/event)
       if (!task.dueDate) return;
-      // If task has a property like isCountdown or isEvent, skip it
       if (task.isCountdown || task.isEvent) return;
       const key = toDateKey(task.dueDate);
       if (!tasksByDate[key]) tasksByDate[key] = [];
@@ -7895,32 +8145,121 @@ const themeToggle = $("themeToggle");
     });
 
     let html = '';
+    const maxShow = getTaskCalendarMaxShow();
 
-    // Day names
-    for (let i = 0; i < 7; i++) {
-      html += `<div class="calendar-day-name">${HEBREW_DAYS[i]}</div>`;
-    }
+    if (taskCalendarView === 'month') {
+      const year = currentTaskMonth.getFullYear();
+      const month = currentTaskMonth.getMonth();
+      taskCalendarTitle.textContent = `${HEBREW_MONTHS[month]} ${year}`;
 
-    // Previous month days
-    const prevMonth = new Date(year, month, 0);
-    const prevDays = prevMonth.getDate();
-    for (let i = startDay - 1; i >= 0; i--) {
-      const day = prevDays - i;
-      html += `<div class="calendar-day other-month"><div class="calendar-day-number">${day}</div></div>`;
-    }
+      const firstDay = new Date(year, month, 1);
+      const lastDay = new Date(year, month + 1, 0);
+      const startDay = firstDay.getDay();
+      const daysInMonth = lastDay.getDate();
 
-    // Current month days
-    for (let day = 1; day <= daysInMonth; day++) {
-      const dateKey = `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
-      const isToday = dateKey === todayKey;
+      for (let i = 0; i < 7; i++) {
+        html += `<div class="calendar-day-name">${HEBREW_DAYS[i]}</div>`;
+      }
+
+      const prevMonth = new Date(year, month, 0);
+      const prevDays = prevMonth.getDate();
+      for (let i = startDay - 1; i >= 0; i--) {
+        const day = prevDays - i;
+        html += `<div class="calendar-day other-month"><div class="calendar-day-number">${day}</div></div>`;
+      }
+
+      for (let day = 1; day <= daysInMonth; day++) {
+        const dateKey = `${year}-${String(month + 1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+        const isToday = dateKey === todayKey;
+        const dayTasks = tasksByDate[dateKey] || [];
+        let classes = 'calendar-day';
+        if (isToday) classes += ' today';
+
+        let eventsHtml = '<div class="calendar-day-events">';
+        const showTime = dayTasks.length > 1;
+        dayTasks.slice(0, maxShow).forEach(task => {
+          const subjectColor = subjects.find(s => s.id === task.subject)?.color;
+          const color = task.color || subjectColor || '#667eea';
+          const safeName = escapeHtml(task.title);
+          const evtDate = new Date(task.dueDate);
+          const timeStr = showTime ? `${String(evtDate.getHours()).padStart(2,'0')}:${String(evtDate.getMinutes()).padStart(2,'0')} ` : '';
+          const displayText = timeStr + safeName;
+          eventsHtml += `<div class="calendar-event-chip" style="background: ${color}" title="${safeName}" aria-label="${safeName}" data-task-id="${task.id}">${displayText}</div>`;
+        });
+        if (dayTasks.length > maxShow) {
+          eventsHtml += `<div class="calendar-more">+${dayTasks.length - maxShow} עוד</div>`;
+        }
+        eventsHtml += '</div>';
+
+        html += `<div class="${classes}" data-date="${dateKey}">
+          <div class="calendar-day-number">${day}</div>
+          ${eventsHtml}
+        </div>`;
+      }
+
+      const totalCells = startDay + daysInMonth;
+      const remainingCells = totalCells % 7 === 0 ? 0 : 7 - (totalCells % 7);
+      for (let i = 1; i <= remainingCells; i++) {
+        html += `<div class="calendar-day other-month"><div class="calendar-day-number">${i}</div></div>`;
+      }
+    } else if (taskCalendarView === 'week') {
+      const focus = taskCalendarFocusDate || new Date();
+      const start = getStartOfWeek(focus);
+      const end = new Date(start);
+      end.setDate(start.getDate() + 6);
+      taskCalendarTitle.textContent = `שבוע ${formatHebrewShortDate(start)} - ${formatHebrewShortDate(end)}`;
+
+      for (let i = 0; i < 7; i++) {
+        const dayDate = new Date(start);
+        dayDate.setDate(start.getDate() + i);
+        html += `<div class="calendar-day-name">${HEBREW_DAYS[dayDate.getDay()]}</div>`;
+      }
+
+      for (let i = 0; i < 7; i++) {
+        const dayDate = new Date(start);
+        dayDate.setDate(start.getDate() + i);
+        const dateKey = toDateKey(dayDate);
+        const dayTasks = tasksByDate[dateKey] || [];
+        const isToday = dateKey === todayKey;
+        const isOtherMonth = dayDate.getMonth() !== focus.getMonth();
+        let classes = 'calendar-day';
+        if (isToday) classes += ' today';
+        if (isOtherMonth) classes += ' other-month';
+
+        let eventsHtml = '<div class="calendar-day-events">';
+        const showTime = true;
+        dayTasks.slice(0, maxShow).forEach(task => {
+          const subjectColor = subjects.find(s => s.id === task.subject)?.color;
+          const color = task.color || subjectColor || '#667eea';
+          const safeName = escapeHtml(task.title);
+          const evtDate = new Date(task.dueDate);
+          const timeStr = showTime ? `${String(evtDate.getHours()).padStart(2,'0')}:${String(evtDate.getMinutes()).padStart(2,'0')} ` : '';
+          const displayText = timeStr + safeName;
+          eventsHtml += `<div class="calendar-event-chip" style="background: ${color}" title="${safeName}" aria-label="${safeName}" data-task-id="${task.id}">${displayText}</div>`;
+        });
+        if (dayTasks.length > maxShow) {
+          eventsHtml += `<div class="calendar-more">+${dayTasks.length - maxShow} עוד</div>`;
+        }
+        eventsHtml += '</div>';
+
+        html += `<div class="${classes}" data-date="${dateKey}">
+          <div class="calendar-day-number">${dayDate.getDate()}</div>
+          ${eventsHtml}
+        </div>`;
+      }
+    } else {
+      const focus = taskCalendarFocusDate || new Date();
+      const dateKey = toDateKey(focus);
+      taskCalendarTitle.textContent = focus.toLocaleDateString('he-IL', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+      html += `<div class="calendar-day-name">${HEBREW_DAYS[focus.getDay()]}</div>`;
+
       const dayTasks = tasksByDate[dateKey] || [];
-
+      const isToday = dateKey === todayKey;
       let classes = 'calendar-day';
       if (isToday) classes += ' today';
 
       let eventsHtml = '<div class="calendar-day-events">';
-      const maxShow = taskCalendarExpanded ? 5 : 2;
-      const showTime = dayTasks.length > 1; // Show time when multiple events on same day
+      const showTime = true;
       dayTasks.slice(0, maxShow).forEach(task => {
         const subjectColor = subjects.find(s => s.id === task.subject)?.color;
         const color = task.color || subjectColor || '#667eea';
@@ -7936,52 +8275,66 @@ const themeToggle = $("themeToggle");
       eventsHtml += '</div>';
 
       html += `<div class="${classes}" data-date="${dateKey}">
-        <div class="calendar-day-number">${day}</div>
+        <div class="calendar-day-number">${focus.getDate()}</div>
         ${eventsHtml}
       </div>`;
     }
 
-    // Next month days
-    const totalCells = startDay + daysInMonth;
-    const remainingCells = totalCells % 7 === 0 ? 0 : 7 - (totalCells % 7);
-    for (let i = 1; i <= remainingCells; i++) {
-      html += `<div class="calendar-day other-month"><div class="calendar-day-number">${i}</div></div>`;
-    }
-
     taskCalendarGrid.innerHTML = html;
-
-    renderTaskMonthList();
-    
     renderTaskMonthList();
   }
-  
+
   function renderTaskMonthList() {
     if (!taskMonthEvents || !taskMonthEventsTitle) return;
-    
-    const year = currentTaskMonth.getFullYear();
-    const month = currentTaskMonth.getMonth();
-    
-    taskMonthEventsTitle.textContent = `משימות (ללא ספירות לאחור) ${HEBREW_MONTHS[month]}`;
-    
-    // Only show real tasks (not countdowns/events)
-    const monthTasks = tasks.filter(t => {
+
+    let rangeStart;
+    let rangeEnd;
+    let titleText = '';
+    let emptyText = 'אין משימות בטווח';
+
+    if (taskCalendarView === 'month') {
+      const year = currentTaskMonth.getFullYear();
+      const month = currentTaskMonth.getMonth();
+      rangeStart = new Date(year, month, 1);
+      rangeEnd = new Date(year, month + 1, 0, 23, 59, 59, 999);
+      titleText = `משימות (ללא ספירות לאחור) ${HEBREW_MONTHS[month]}`;
+      emptyText = 'אין משימות החודש';
+    } else if (taskCalendarView === 'week') {
+      const focus = taskCalendarFocusDate || new Date();
+      const start = getStartOfWeek(focus);
+      const end = new Date(start);
+      end.setDate(start.getDate() + 6);
+      rangeStart = start;
+      rangeEnd = new Date(end.getFullYear(), end.getMonth(), end.getDate(), 23, 59, 59, 999);
+      titleText = `משימות לשבוע ${formatHebrewShortDate(start)} - ${formatHebrewShortDate(end)}`;
+      emptyText = 'אין משימות השבוע';
+    } else {
+      const focus = taskCalendarFocusDate || new Date();
+      rangeStart = new Date(focus.getFullYear(), focus.getMonth(), focus.getDate());
+      rangeEnd = new Date(focus.getFullYear(), focus.getMonth(), focus.getDate(), 23, 59, 59, 999);
+      titleText = `משימות ליום ${focus.toLocaleDateString('he-IL', { day: 'numeric', month: 'long' })}`;
+      emptyText = 'אין משימות היום';
+    }
+
+    taskMonthEventsTitle.textContent = titleText;
+
+    const rangeTasks = tasks.filter(t => {
       if (!t.dueDate) return false;
-      // If task has a property like isCountdown or isEvent, skip it
       if (t.isCountdown || t.isEvent) return false;
       const d = new Date(t.dueDate);
-      return d.getFullYear() === year && d.getMonth() === month;
+      return d >= rangeStart && d <= rangeEnd;
     }).sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
 
-    if (monthTasks.length === 0) {
-      taskMonthEvents.innerHTML = '<div class="no-events-msg">אין משימות החודש</div>';
+    if (rangeTasks.length === 0) {
+      taskMonthEvents.innerHTML = `<div class="no-events-msg">${emptyText}</div>`;
       return;
     }
 
-    taskMonthEvents.innerHTML = monthTasks.map(task => {
+    taskMonthEvents.innerHTML = rangeTasks.map(task => {
       const subjectColor = subjects.find(s => s.id === task.subject)?.color;
       const color = task.color || subjectColor || '#667eea';
       const d = new Date(task.dueDate);
-      const dateStr = `${d.getDate()}/${d.getMonth()+1} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+      const dateStr = d.toLocaleDateString('he-IL', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
       return `
         <div class="month-event-item" style="border-right-color: ${color}">
           <div class="month-event-color" style="background: ${color}"></div>
@@ -7993,16 +8346,44 @@ const themeToggle = $("themeToggle");
       `;
     }).join('');
   }
+
+  function shiftTaskCalendar(step) {
+    if (taskCalendarView === 'month') {
+      currentTaskMonth.setMonth(currentTaskMonth.getMonth() + step);
+      setTaskCalendarFocus(new Date(currentTaskMonth.getFullYear(), currentTaskMonth.getMonth(), 1));
+    } else if (taskCalendarView === 'week') {
+      const next = new Date(taskCalendarFocusDate);
+      next.setDate(next.getDate() + step * 7);
+      setTaskCalendarFocus(next);
+    } else {
+      const next = new Date(taskCalendarFocusDate);
+      next.setDate(next.getDate() + step);
+      setTaskCalendarFocus(next);
+    }
+    renderTaskCalendar();
+  }
+
+  function jumpTaskCalendarToToday() {
+    const today = new Date();
+    currentTaskMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+    setTaskCalendarFocus(today);
+    renderTaskCalendar();
+  }
   
   // Task Calendar Navigation
   $("prevTaskMonth").onclick = () => {
-    currentTaskMonth.setMonth(currentTaskMonth.getMonth() - 1);
-    renderTaskCalendar();
+    shiftTaskCalendar(-1);
   };
+  if (taskCalendarViewToggle) {
+    taskCalendarViewToggle.addEventListener('click', (e) => {
+      const btn = e.target.closest('button[data-view]');
+      if (!btn) return;
+      setTaskCalendarView(btn.dataset.view);
+    });
+  }
   
   // Toggle Task Calendar
   const toggleTaskCalendar = $("toggleTaskCalendar");
-  const taskRightSidebar = $("taskRightSidebar");
   if (toggleTaskCalendarSize && taskRightSidebar) {
     toggleTaskCalendarSize.onclick = () => {
       taskCalendarExpanded = !taskCalendarExpanded;
@@ -8022,8 +8403,7 @@ const themeToggle = $("themeToggle");
       if (wasHidden) {
         taskRightSidebar.classList.remove('hidden');
         taskRightSidebar.style.display = '';
-        currentTaskMonth = new Date();
-        renderTaskCalendar();
+        jumpTaskCalendarToToday();
       } else {
         taskRightSidebar.classList.add('hidden');
         taskRightSidebar.style.display = 'none';
@@ -8048,12 +8428,10 @@ const themeToggle = $("themeToggle");
     };
   }
   $("nextTaskMonth").onclick = () => {
-    currentTaskMonth.setMonth(currentTaskMonth.getMonth() + 1);
-    renderTaskCalendar();
+    shiftTaskCalendar(1);
   };
   $("todayTaskBtn").onclick = () => {
-    currentTaskMonth = new Date();
-    renderTaskCalendar();
+    jumpTaskCalendarToToday();
   };
   
   
@@ -9131,6 +9509,7 @@ const themeToggle = $("themeToggle");
       const defaultSubjectId = getDefaultSubjectId();
       const selectedSubjectId = parsed.subjectId || defaultSubjectId;
       const orderValue = hasManualOrder() ? getNextTaskOrder(false) : null;
+      const recurrence = newTaskRecurrence ? newTaskRecurrence.value : 'none';
       
         const taskData = {
           title: parsed.title || input,
@@ -9142,7 +9521,8 @@ const themeToggle = $("themeToggle");
           completed: false,
           createdAt: new Date().toISOString(),
           ...(Number.isFinite(orderValue) ? { order: orderValue } : {}),
-          ...(selectedTaskColor ? { color: selectedTaskColor } : {})
+          ...(selectedTaskColor ? { color: selectedTaskColor } : {}),
+          ...(recurrence && recurrence !== 'none' ? { recurrence } : {})
         };
       
       const newTaskRef = push(tasksRef);
@@ -9155,6 +9535,7 @@ const themeToggle = $("themeToggle");
         newTaskTitle.value = '';
         quickAddRow.style.display = 'none';
         selectedTaskColor = '';
+        if (newTaskRecurrence) newTaskRecurrence.value = 'none';
         setTaskColorSelection(quickTaskColorPicker, selectedTaskColor);
         syncQuickAddSubject();
     } else {
