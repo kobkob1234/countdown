@@ -2485,7 +2485,8 @@
     
     /* Task Item (List style) */
     .task-item {
-      background: var(--card);
+      background-color: var(--card);
+      background-image: linear-gradient(90deg, var(--task-tint, var(--subject-tint, transparent)), transparent 55%);
       border: 1px solid var(--border);
       border-radius: var(--radius-lg);
       padding: var(--space-4) var(--space-5);
@@ -2502,11 +2503,11 @@
     }
     .task-item:hover {
       box-shadow: var(--shadow-hover);
-      background: var(--priority-bg, var(--card));
+      background-color: var(--priority-bg, var(--card));
     }
     .task-item.completed {
       opacity: 0.6;
-      background: var(--day-other);
+      background-color: var(--day-other);
     }
     
     .task-checkbox {
@@ -2549,6 +2550,13 @@
       font-weight: var(--font-weight-semibold);
       color: var(--text);
       word-break: break-word;
+    }
+    .task-color-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      box-shadow: 0 0 0 2px var(--card);
+      flex-shrink: 0;
     }
     .task-item.completed .task-title {
       text-decoration: line-through;
@@ -2881,6 +2889,47 @@
       text-decoration: line-through;
       color: var(--muted);
     }
+
+    .task-color-picker {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .task-color-picker.compact {
+      gap: 6px;
+    }
+    .task-color-option {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      border: 2px solid transparent;
+      cursor: pointer;
+      transition: all 0.15s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      color: var(--muted);
+      background: var(--day-other);
+    }
+    .task-color-picker.compact .task-color-option {
+      width: 22px;
+      height: 22px;
+      font-size: 10px;
+    }
+    .task-color-option.none {
+      color: var(--muted);
+      background: var(--day-other);
+      border-color: var(--border);
+    }
+    .task-color-option:hover {
+      transform: scale(1.12);
+    }
+    .task-color-option.selected {
+      border-color: var(--text);
+      box-shadow: 0 0 0 2px var(--card);
+    }
     
     
     .subject-tab {
@@ -3171,6 +3220,11 @@
     .subject-list-header.active {
       background: var(--accent);
       color: white;
+    }
+    .subject-list-header.drag-over,
+    .subject-child-item.drag-over {
+      outline: 2px dashed var(--accent);
+      background: var(--day-hover);
     }
     
     .subject-list-header .subject-color-dot {
@@ -4163,6 +4217,19 @@
               <span>📅</span>
               <input type="datetime-local" id="newTaskDue" style="width: 180px; border: none; background: transparent; color: var(--text);" />
             </div>
+            <div class="label-input-wrapper">
+              <span>🎨</span>
+              <div class="task-color-picker compact" id="quickTaskColorPicker">
+                <div class="task-color-option none selected" data-color="">x</div>
+                <div class="task-color-option" data-color="#667eea" style="background: #667eea;"></div>
+                <div class="task-color-option" data-color="#ef4444" style="background: #ef4444;"></div>
+                <div class="task-color-option" data-color="#f97316" style="background: #f97316;"></div>
+                <div class="task-color-option" data-color="#eab308" style="background: #eab308;"></div>
+                <div class="task-color-option" data-color="#22c55e" style="background: #22c55e;"></div>
+                <div class="task-color-option" data-color="#06b6d4" style="background: #06b6d4;"></div>
+                <div class="task-color-option" data-color="#8b5cf6" style="background: #8b5cf6;"></div>
+              </div>
+            </div>
             <button class="btn btn-primary" id="addTaskBtn">הוסף</button>
           </div>
         </div>
@@ -4236,6 +4303,20 @@
           <div class="priority-option" data-priority="medium">🟡 Medium</div>
           <div class="priority-option" data-priority="low">🟢 Low</div>
           <div class="priority-option" data-priority="none">⚪ None</div>
+        </div>
+      </div>
+
+      <div class="task-edit-section">
+        <div class="task-edit-section-title">Color</div>
+        <div class="task-color-picker" id="taskColorPicker">
+          <div class="task-color-option none selected" data-color="">x</div>
+          <div class="task-color-option" data-color="#667eea" style="background: #667eea;"></div>
+          <div class="task-color-option" data-color="#ef4444" style="background: #ef4444;"></div>
+          <div class="task-color-option" data-color="#f97316" style="background: #f97316;"></div>
+          <div class="task-color-option" data-color="#eab308" style="background: #eab308;"></div>
+          <div class="task-color-option" data-color="#22c55e" style="background: #22c55e;"></div>
+          <div class="task-color-option" data-color="#06b6d4" style="background: #06b6d4;"></div>
+          <div class="task-color-option" data-color="#8b5cf6" style="background: #8b5cf6;"></div>
         </div>
       </div>
       
@@ -6079,6 +6160,8 @@ const themeToggle = $("themeToggle");
   const clearDueBtn = $("clearDueBtn");
   const deleteTaskBtn = $("deleteTaskBtn");
   const saveTaskBtn = $("saveTaskBtn");
+  const quickTaskColorPicker = $("quickTaskColorPicker");
+  const taskColorPicker = $("taskColorPicker");
   
   // Limit year input to 4 digits for all datetime-local inputs
   const dateInputs = [eventDate, newTaskDue, editTaskDue];
@@ -6108,6 +6191,7 @@ const themeToggle = $("themeToggle");
   let editingTaskId = null;
   let editingTask = null;
   let selectedTaskPriority = 'medium';
+  let selectedTaskColor = '';
   let currentFilter = 'all';
   let taskTickerHandle = null;
   
@@ -6128,6 +6212,32 @@ const themeToggle = $("themeToggle");
     } else if (!newTaskSubject.value) {
       newTaskSubject.value = '';
     }
+  }
+
+  function setTaskColorSelection(picker, color) {
+    if (!picker) return;
+    const target = color || '';
+    picker.querySelectorAll('.task-color-option').forEach(opt => {
+      const optColor = opt.dataset.color || '';
+      opt.classList.toggle('selected', optColor === target);
+    });
+  }
+
+  function getTaskColorFromPicker(picker) {
+    if (!picker) return '';
+    const selected = picker.querySelector('.task-color-option.selected');
+    return selected ? (selected.dataset.color || '') : '';
+  }
+
+  function bindTaskColorPicker(picker, onChange) {
+    if (!picker) return;
+    picker.addEventListener('click', (e) => {
+      const option = e.target.closest('.task-color-option');
+      if (!option) return;
+      const color = option.dataset.color || '';
+      setTaskColorSelection(picker, color);
+      if (typeof onChange === 'function') onChange(color);
+    });
   }
   
   function hasManualOrder(taskList = tasks) {
@@ -6694,6 +6804,11 @@ const themeToggle = $("themeToggle");
     option.classList.add('selected');
     selectedTaskPriority = option.dataset.priority;
   });
+
+  bindTaskColorPicker(quickTaskColorPicker, (color) => {
+    selectedTaskColor = color;
+  });
+  setTaskColorSelection(quickTaskColorPicker, selectedTaskColor);
   
   // ============ UNIFIED ADD TASK FUNCTION ============
   function addTask() {
@@ -6716,7 +6831,8 @@ const themeToggle = $("themeToggle");
       checklist: [],
       completed: false,
       createdAt: new Date().toISOString(),
-      ...(Number.isFinite(orderValue) ? { order: orderValue } : {})
+      ...(Number.isFinite(orderValue) ? { order: orderValue } : {}),
+      ...(selectedTaskColor ? { color: selectedTaskColor } : {})
     };
     
     const newTaskRef = push(tasksRef);
@@ -6730,6 +6846,8 @@ const themeToggle = $("themeToggle");
     selectedTaskPriority = 'medium';
     taskPriorityPicker.querySelectorAll('.priority-option').forEach(o => o.classList.remove('selected'));
     taskPriorityPicker.querySelector('[data-priority="medium"]').classList.add('selected');
+    selectedTaskColor = '';
+    setTaskColorSelection(quickTaskColorPicker, selectedTaskColor);
     syncQuickAddSubject();
     const taskSections = $("taskSections");
     if (taskSections) {
@@ -7013,23 +7131,34 @@ const themeToggle = $("themeToggle");
       countdownHtml = `<span class="task-countdown ${countdownClass}" data-due="${task.dueDate}">${countdown.text}</span>`;
     }
     
+    const subjectData = task.subject ? subjects.find(s => s.id === task.subject) : null;
+    const subjectColor = subjectData ? subjectData.color : '';
+    const styleParts = [];
+    if (subjectColor) {
+      styleParts.push(`--subject-color: ${subjectColor};`);
+      styleParts.push(`--subject-tint: ${subjectColor}1a;`);
+    }
+    if (task.color) {
+      styleParts.push(`--task-color: ${task.color};`);
+      styleParts.push(`--task-tint: ${task.color}22;`);
+    }
+    const taskStyle = styleParts.length ? ` style="${styleParts.join(' ')}"` : '';
+    const taskColorDot = task.color ? `<span class="task-color-dot" style="background: ${task.color};"></span>` : '';
+
     // Subject badge - show when viewing "all" OR when explicitly requested (suggested tasks)
     let subjectHtml = '';
-    if (task.subject) {
-      const subj = subjects.find(s => s.id === task.subject);
-      if (subj) {
-        const shouldShow = (currentSubject === 'all') || showSubjectTag;
-        if (shouldShow) {
-          // If it's a sub-subject and showing tag, show parent > child
-          let displayName = subj.name;
-          if (showSubjectTag && subj.parentId) {
-            const parent = subjects.find(s => s.id === subj.parentId);
-            if (parent) {
-              displayName = `${parent.name} › ${subj.name}`;
-            }
+    if (subjectData) {
+      const shouldShow = (currentSubject === 'all') || showSubjectTag;
+      if (shouldShow) {
+        // If it's a sub-subject and showing tag, show parent > child
+        let displayName = subjectData.name;
+        if (showSubjectTag && subjectData.parentId) {
+          const parent = subjects.find(s => s.id === subjectData.parentId);
+          if (parent) {
+            displayName = `${parent.name} › ${subjectData.name}`;
           }
-          subjectHtml = `<span class="task-subject-badge" style="--subject-color: ${subj.color};">${escapeHtml(displayName)}</span>`;
         }
+        subjectHtml = `<span class="task-subject-badge" style="--subject-color: ${subjectData.color};">${escapeHtml(displayName)}</span>`;
       }
     }
     
@@ -7057,11 +7186,12 @@ const themeToggle = $("themeToggle");
     const priorityBadge = `<span class="task-priority-badge ${priority === 'none' ? 'muted' : ''}" data-priority="${priority}">${priority === 'none' ? 'קבע עדיפות' : PRIORITY_LABELS[priority]}</span>`;
     
     return `
-      <div class="task-item priority-${priority} ${task.completed ? 'completed' : ''}" data-id="${task.id}" draggable="true">
+      <div class="task-item priority-${priority} ${task.completed ? 'completed' : ''}" data-id="${task.id}" draggable="true"${taskStyle}>
         <div class="task-checkbox" data-action="toggle">${task.completed ? '✓' : ''}</div>
         <div class="task-main">
           <div class="task-title-row">
             <span class="task-title">${escapeHtml(task.title)}</span>
+            ${taskColorDot}
             ${subjectHtml}
             ${priorityBadge}
           </div>
@@ -7339,6 +7469,26 @@ const themeToggle = $("themeToggle");
     
     return closest.element;
   }
+
+  function clearTaskDragState() {
+    document.querySelectorAll('.task-item.dragging').forEach(el => el.classList.remove('dragging'));
+    document.querySelectorAll('.subject-list-header.drag-over, .subject-child-item.drag-over').forEach(el => {
+      el.classList.remove('drag-over');
+    });
+    draggingTaskId = null;
+    dragSourceContainer = null;
+  }
+
+  function assignTaskToSubject(taskId, subjectId) {
+    const task = tasks.find(t => t.id === taskId);
+    if (!task || task.subject === subjectId) {
+      clearTaskDragState();
+      return;
+    }
+    const { id, ...cleanTask } = task;
+    set(ref(db, `users/${currentUser}/tasks/${taskId}`), { ...cleanTask, subject: subjectId || '' });
+    clearTaskDragState();
+  }
   
   function setupTaskDragAndDrop() {
     const containers = [activeTasks, completedTasks];
@@ -7380,17 +7530,11 @@ const themeToggle = $("themeToggle");
         if (!draggingTaskId || dragSourceContainer !== container) return;
         e.preventDefault();
         updateTaskOrderFromContainer(container);
-        const draggingEl = container.querySelector('.task-item.dragging');
-        if (draggingEl) draggingEl.classList.remove('dragging');
-        draggingTaskId = null;
-        dragSourceContainer = null;
+        clearTaskDragState();
       });
       
       container.addEventListener('dragend', () => {
-        const draggingEl = container.querySelector('.task-item.dragging');
-        if (draggingEl) draggingEl.classList.remove('dragging');
-        draggingTaskId = null;
-        dragSourceContainer = null;
+        clearTaskDragState();
       });
     });
   }
@@ -7434,6 +7578,8 @@ const themeToggle = $("themeToggle");
     editTaskPriority.querySelectorAll('.priority-option').forEach(o => {
       o.classList.toggle('selected', o.dataset.priority === (editingTask.priority || 'none'));
     });
+
+    setTaskColorSelection(taskColorPicker, editingTask.color || '');
     
     // Set due date
     if (editingTask.dueDate) {
@@ -7465,6 +7611,12 @@ const themeToggle = $("themeToggle");
     editTaskPriority.querySelectorAll('.priority-option').forEach(o => o.classList.remove('selected'));
     option.classList.add('selected');
     editingTask.priority = option.dataset.priority;
+  });
+
+  bindTaskColorPicker(taskColorPicker, (color) => {
+    if (editingTask) {
+      editingTask.color = color || '';
+    }
   });
   
   // Clear due date
@@ -7527,6 +7679,7 @@ const themeToggle = $("themeToggle");
     editingTask.title = editTaskTitle.value.trim() || 'Untitled';
     editingTask.content = editTaskContent.value.trim();
     editingTask.subject = editTaskSubject.value || '';
+    editingTask.color = getTaskColorFromPicker(taskColorPicker) || '';
     
     // Update due date
     const dueValue = editTaskDue.value;
@@ -7769,7 +7922,8 @@ const themeToggle = $("themeToggle");
       const maxShow = taskCalendarExpanded ? 5 : 2;
       const showTime = dayTasks.length > 1; // Show time when multiple events on same day
       dayTasks.slice(0, maxShow).forEach(task => {
-        const color = subjects.find(s => s.id === task.subject)?.color || '#667eea';
+        const subjectColor = subjects.find(s => s.id === task.subject)?.color;
+        const color = task.color || subjectColor || '#667eea';
         const safeName = escapeHtml(task.title);
         const evtDate = new Date(task.dueDate);
         const timeStr = showTime ? `${String(evtDate.getHours()).padStart(2,'0')}:${String(evtDate.getMinutes()).padStart(2,'0')} ` : '';
@@ -7824,7 +7978,8 @@ const themeToggle = $("themeToggle");
     }
 
     taskMonthEvents.innerHTML = monthTasks.map(task => {
-      const color = subjects.find(s => s.id === task.subject)?.color || '#667eea';
+      const subjectColor = subjects.find(s => s.id === task.subject)?.color;
+      const color = task.color || subjectColor || '#667eea';
       const d = new Date(task.dueDate);
       const dateStr = `${d.getDate()}/${d.getMonth()+1} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
       return `
@@ -8002,6 +8157,8 @@ const themeToggle = $("themeToggle");
         e.preventDefault();
         showContextMenu(e.clientX, e.clientY, header.dataset.subject);
       });
+
+      attachSubjectDropHandlers(header, header.dataset.subject);
     });
     
     // Collapse arrows - clicking arrow only toggles (doesn't select)
@@ -8052,6 +8209,26 @@ const themeToggle = $("themeToggle");
         e.preventDefault();
         showContextMenu(e.clientX, e.clientY, child.dataset.subject);
       });
+
+      attachSubjectDropHandlers(child, child.dataset.subject);
+    });
+  }
+
+  function attachSubjectDropHandlers(element, subjectId) {
+    if (!element) return;
+    element.addEventListener('dragover', (e) => {
+      if (!draggingTaskId) return;
+      e.preventDefault();
+      element.classList.add('drag-over');
+    });
+    element.addEventListener('dragleave', () => {
+      element.classList.remove('drag-over');
+    });
+    element.addEventListener('drop', (e) => {
+      if (!draggingTaskId) return;
+      e.preventDefault();
+      element.classList.remove('drag-over');
+      assignTaskToSubject(draggingTaskId, subjectId);
     });
   }
   
@@ -8955,17 +9132,18 @@ const themeToggle = $("themeToggle");
       const selectedSubjectId = parsed.subjectId || defaultSubjectId;
       const orderValue = hasManualOrder() ? getNextTaskOrder(false) : null;
       
-      const taskData = {
-        title: parsed.title || input,
-        content: '',
-        priority: parsed.priority,
-        dueDate: parsed.dueDate ? parsed.dueDate.toISOString() : null,
-        subject: selectedSubjectId || '',
-        checklist: [],
-        completed: false,
-        createdAt: new Date().toISOString(),
-        ...(Number.isFinite(orderValue) ? { order: orderValue } : {})
-      };
+        const taskData = {
+          title: parsed.title || input,
+          content: '',
+          priority: parsed.priority,
+          dueDate: parsed.dueDate ? parsed.dueDate.toISOString() : null,
+          subject: selectedSubjectId || '',
+          checklist: [],
+          completed: false,
+          createdAt: new Date().toISOString(),
+          ...(Number.isFinite(orderValue) ? { order: orderValue } : {}),
+          ...(selectedTaskColor ? { color: selectedTaskColor } : {})
+        };
       
       const newTaskRef = push(tasksRef);
       set(newTaskRef, taskData);
@@ -8974,9 +9152,11 @@ const themeToggle = $("themeToggle");
       if (taskSections) {
         taskSections.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }
-      newTaskTitle.value = '';
-      quickAddRow.style.display = 'none';
-      syncQuickAddSubject();
+        newTaskTitle.value = '';
+        quickAddRow.style.display = 'none';
+        selectedTaskColor = '';
+        setTaskColorSelection(quickTaskColorPicker, selectedTaskColor);
+        syncQuickAddSubject();
     } else {
       addTask();
     }
