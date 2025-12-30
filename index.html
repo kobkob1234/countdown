@@ -5142,19 +5142,48 @@ const themeToggle = $("themeToggle");
   const syncBadge = $("syncBadge");
   const syncState = { events: false, tasks: false, subjects: false };
   const syncCacheUsed = { events: false, tasks: false, subjects: false };
+  const SYNC_TIMEOUT_MS = 8000;
+  const SUBJECTS_NO_CACHE_TIMEOUT_MS = 5000;
+  const syncTimeouts = { events: null, tasks: null, subjects: null, subjectsNoCache: null };
+  const clearSyncTimeouts = (key) => {
+    const keys = key === 'subjects' ? ['subjects', 'subjectsNoCache'] : [key];
+    keys.forEach((timeoutKey) => {
+      if (syncTimeouts[timeoutKey]) {
+        clearTimeout(syncTimeouts[timeoutKey]);
+        syncTimeouts[timeoutKey] = null;
+      }
+    });
+  };
+  const startSyncTimeout = (key, ms, reason, onTimeout) => {
+    const timeoutKey = (key === 'subjects' && reason === 'no-cache') ? 'subjectsNoCache' : key;
+    syncTimeouts[timeoutKey] = setTimeout(() => {
+      syncTimeouts[timeoutKey] = null;
+      if (syncState[key]) return;
+      console.warn(`[sync] ${key} timeout after ${ms}ms (${reason})`);
+      if (typeof onTimeout === 'function') onTimeout();
+      markSyncReady(key, `timeout:${reason}`);
+    }, ms);
+  };
   const updateSyncBadge = () => {
     if (!syncBadge) return;
     const hasCache = Object.values(syncCacheUsed).some(Boolean);
     const ready = syncState.events && syncState.tasks && syncState.subjects;
     const total = Object.keys(syncState).length;
     const readyCount = Object.values(syncState).filter(Boolean).length;
-    const percent = Math.round((readyCount / total) * 100);
+    const percent = Math.floor((readyCount / total) * 100);
     const syncText = syncBadge.querySelector('.sync-text');
     if (syncText) syncText.textContent = ready ? 'Synced' : `Syncing ${percent}%`;
     syncBadge.classList.toggle('hidden', !hasCache || ready);
   };
-  const markSyncReady = (key) => {
+  const markSyncReady = (key, source = 'unknown') => {
+    if (syncState[key]) {
+      console.debug(`[sync] ${key} already ready (${source})`);
+      return;
+    }
     syncState[key] = true;
+    const total = Object.keys(syncState).length;
+    const readyCount = Object.values(syncState).filter(Boolean).length;
+    console.debug(`[sync] ${key} ready (${source}) ${readyCount}/${total}`);
     updateSyncBadge();
   };
 
@@ -5295,8 +5324,9 @@ const themeToggle = $("themeToggle");
     render();
     scheduleCalendarRender();
     startTicker();
+  } else {
+    setEventsLoading(true);
   }
-  if (!hasEventsCache) setEventsLoading(true);
 
   function getMonthEvents() {
     const year = currentMonth.getFullYear();
@@ -5628,7 +5658,15 @@ const themeToggle = $("themeToggle");
     };
   }
 
+  startSyncTimeout('events', SYNC_TIMEOUT_MS, 'firebase', () => {
+    eventsLoaded = true;
+    setEventsLoading(false);
+    render();
+    scheduleCalendarRender();
+    startTicker();
+  });
   onValue(eventsRef, (snapshot) => {
+    clearSyncTimeouts('events');
     const data = snapshot.val();
     eventsById.clear();
     if (data) {
@@ -5638,17 +5676,18 @@ const themeToggle = $("themeToggle");
       events = [];
     }
     eventsLoaded = true;
-    markSyncReady('events');
+    markSyncReady('events', 'firebase');
     writeCache(CACHE_KEYS.EVENTS, events, 300);
     setEventsLoading(false);
     render();
-    startTicker();
     // Defer heavy calendar render so list paints first
     scheduleCalendarRender();
+    startTicker();
   }, (error) => {
     console.error('Events sync error:', error);
+    clearSyncTimeouts('events');
     eventsLoaded = true;
-    markSyncReady('events');
+    markSyncReady('events', 'error');
     setEventsLoading(false);
     updateSyncBadge();
   });
@@ -7300,10 +7339,21 @@ const themeToggle = $("themeToggle");
       renderTasks();
       renderSubjectsSidebar();
     }
+  } else {
+    showTasksLoading();
   }
 
   // Listen to tasks from Firebase
+  startSyncTimeout('tasks', SYNC_TIMEOUT_MS, 'firebase', () => {
+    tasksLoaded = true;
+    resetTasksEmptyMessage();
+    if (taskManagerOverlay.classList.contains('open')) {
+      renderTasks();
+      renderSubjectsSidebar();
+    }
+  });
   onValue(tasksRef, (snapshot) => {
+    clearSyncTimeouts('tasks');
     const data = snapshot.val();
     if (data) {
       tasks = Object.keys(data).map(key => ({ id: key, ...data[key] }));
@@ -7311,7 +7361,7 @@ const themeToggle = $("themeToggle");
       tasks = [];
     }
     tasksLoaded = true;
-    markSyncReady('tasks');
+    markSyncReady('tasks', 'firebase');
     writeCache(cachedTasksKey, tasks, 500);
     resetTasksEmptyMessage();
     Pomodoro.updateTasks(tasks);
@@ -7325,8 +7375,9 @@ const themeToggle = $("themeToggle");
     }
   }, (error) => {
     console.error('Tasks sync error:', error);
+    clearSyncTimeouts('tasks');
     tasksLoaded = true;
-    markSyncReady('tasks');
+    markSyncReady('tasks', 'error');
     resetTasksEmptyMessage();
     updateSyncBadge();
   });
@@ -8159,10 +8210,22 @@ const themeToggle = $("themeToggle");
     renderSubjectsSidebar();
     updateSubjectSelectors();
     updateParentSubjectSelector();
+  } else {
+    startSyncTimeout('subjects', SUBJECTS_NO_CACHE_TIMEOUT_MS, 'no-cache', () => {
+      renderSubjectsSidebar();
+      updateSubjectSelectors();
+      updateParentSubjectSelector();
+    });
   }
   
   // Listen to subjects from Firebase
+  startSyncTimeout('subjects', SYNC_TIMEOUT_MS, 'firebase', () => {
+    renderSubjectsSidebar();
+    updateSubjectSelectors();
+    updateParentSubjectSelector();
+  });
   onValue(subjectsRef, (snapshot) => {
+    clearSyncTimeouts('subjects');
     const data = snapshot.val();
     if (data) {
       subjects = Object.keys(data).map(key => ({ id: key, ...data[key] }));
@@ -8170,13 +8233,14 @@ const themeToggle = $("themeToggle");
       subjects = [];
     }
     writeCache(cachedSubjectsKey, subjects, 200);
-    markSyncReady('subjects');
+    markSyncReady('subjects', 'firebase');
     renderSubjectsSidebar();
     updateSubjectSelectors();
     updateParentSubjectSelector();
   }, (error) => {
     console.error('Subjects sync error:', error);
-    markSyncReady('subjects');
+    clearSyncTimeouts('subjects');
+    markSyncReady('subjects', 'error');
     updateSyncBadge();
   });
   
