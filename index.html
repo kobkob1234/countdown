@@ -526,6 +526,7 @@
       display: flex;
       gap: var(--space-3);
       align-items: center;
+      flex-wrap: wrap;
     }
     .input-row input {
       flex: 1;
@@ -545,7 +546,11 @@
       box-shadow: 0 0 0 3px rgba(102,126,234,0.15);
     }
     .input-row input[type="text"] { min-width: 180px; }
-    .input-row input[type="datetime-local"] { min-width: 200px; }
+    .input-row input[type="datetime-local"] {
+      min-width: 260px;
+      direction: ltr;
+      text-align: left;
+    }
     .reminder-select {
       padding: var(--space-3) var(--space-4);
       border: 2px solid var(--border);
@@ -679,7 +684,11 @@
       outline: 2px solid var(--accent);
       border-color: var(--accent);
     }
-    .inline-edit-input.small { min-width: 120px; }
+    .inline-edit-input[type="datetime-local"] {
+      direction: ltr;
+      text-align: left;
+    }
+    .inline-edit-input.small { min-width: 260px; }
 
     .priority-popover {
       position: fixed;
@@ -760,6 +769,10 @@
         flex-direction: column;
         align-items: flex-start;
         gap: 12px;
+      }
+      .inline-edit-input.small {
+        min-width: 0;
+        width: 100%;
       }
       .event-actions {
         width: 100%;
