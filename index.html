@@ -192,8 +192,10 @@
 
     .app-layout {
       display: flex;
-      min-height: 100vh;
+      height: calc(100vh - 60px);
       align-items: flex-start;
+      overflow-y: auto;
+      position: relative;
     }
 
     .sidebar {
@@ -399,8 +401,8 @@
       display: flex;
       flex-direction: column;
       gap: var(--space-2);
-      max-height: 350px;
-      overflow-y: auto;
+      max-height: none;
+      overflow: visible;
       flex: 1;
       min-height: 180px;
     }
@@ -3352,8 +3354,8 @@
       display: flex;
       flex-direction: column;
       gap: 6px;
-      max-height: 200px;
-      overflow-y: auto;
+      max-height: none;
+      overflow: visible;
     }
     
     .task-month-item {
@@ -3767,6 +3769,9 @@
       }
       body {
         padding-top: 50px;
+      }
+      .app-layout {
+        height: calc(100vh - 50px);
       }
 
       .task-manager-header {
@@ -6937,7 +6942,7 @@ const themeToggle = $("themeToggle");
         const newTitle = input.value.trim() || task.title;
         titleEl.textContent = newTitle;
         const { id, ...clean } = task;
-        set(ref(db, 'tasks/' + task.id), { ...clean, title: newTitle });
+        set(ref(db, `users/${currentUser}/tasks/${task.id}`), { ...clean, title: newTitle });
       }
     };
 
@@ -6975,7 +6980,7 @@ const themeToggle = $("themeToggle");
           }
         }
         const { id, ...clean } = task;
-        set(ref(db, 'tasks/' + task.id), { ...clean, dueDate: newDue });
+        set(ref(db, `users/${currentUser}/tasks/${task.id}`), { ...clean, dueDate: newDue });
         dueEl.dataset.dueIso = newDue || '';
         dueEl.textContent = newDue ? `📅 ${formatTaskDueDisplay(newDue)}` : '+ תאריך';
         dueEl.classList.toggle('add', !newDue);
@@ -7011,7 +7016,7 @@ const themeToggle = $("themeToggle");
       btn.onclick = (ev) => {
         ev.stopPropagation();
         const { id, ...clean } = task;
-        set(ref(db, 'tasks/' + task.id), { ...clean, priority: key });
+        set(ref(db, `users/${currentUser}/tasks/${task.id}`), { ...clean, priority: key });
         badgeEl.textContent = key === 'none' ? 'קבע עדיפות' : (PRIORITY_LABELS[key] || key);
         badgeEl.dataset.priority = key;
         badgeEl.classList.toggle('muted', key === 'none');
@@ -7084,7 +7089,7 @@ const themeToggle = $("themeToggle");
           // Toggle complete
           e.stopPropagation();
           const { id, ...cleanTask } = task;
-          set(ref(db, 'tasks/' + taskId), { ...cleanTask, completed: !task.completed });
+          set(ref(db, `users/${currentUser}/tasks/${taskId}`), { ...cleanTask, completed: !task.completed });
         } else if (action === 'edit') {
           // Edit button
           e.stopPropagation();
@@ -7092,7 +7097,7 @@ const themeToggle = $("themeToggle");
         } else if (action === 'delete') {
           // Delete button
           e.stopPropagation();
-          remove(ref(db, 'tasks/' + taskId));
+          remove(ref(db, `users/${currentUser}/tasks/${taskId}`));
         } else if (isSubtaskCheckbox) {
           // Subtask checkbox
           e.stopPropagation();
@@ -7100,7 +7105,7 @@ const themeToggle = $("themeToggle");
           if (task.checklist && task.checklist[idx] !== undefined) {
             task.checklist[idx].checked = isSubtaskCheckbox.checked;
             const { id, ...cleanTask } = task;
-            set(ref(db, 'tasks/' + taskId), cleanTask);
+            set(ref(db, `users/${currentUser}/tasks/${taskId}`), cleanTask);
           }
         } else if (isMainArea) {
           // Click on main area to edit
@@ -7232,7 +7237,7 @@ const themeToggle = $("themeToggle");
   // Delete task
   deleteTaskBtn.onclick = () => {
     if (!editingTaskId) return;
-    remove(ref(db, 'tasks/' + editingTaskId));
+    remove(ref(db, `users/${currentUser}/tasks/${editingTaskId}`));
     closeTaskEditModal();
   };
   
@@ -7255,7 +7260,7 @@ const themeToggle = $("themeToggle");
     
     // Remove id before saving to Firebase (id is the key, not data)
     const { id, ...cleanTask } = editingTask;
-    set(ref(db, 'tasks/' + editingTaskId), cleanTask);
+    set(ref(db, `users/${currentUser}/tasks/${editingTaskId}`), cleanTask);
     closeTaskEditModal();
   };
 
@@ -8221,7 +8226,7 @@ const themeToggle = $("themeToggle");
     
     if (editingSubjectId) {
       // Update existing
-      set(ref(db, 'subjects/' + editingSubjectId), subjectData);
+      set(ref(db, `users/${currentUser}/subjects/${editingSubjectId}`), subjectData);
     } else {
       // Create new
       const newSubjectRef = push(subjectsRef);
@@ -8252,21 +8257,21 @@ const themeToggle = $("themeToggle");
       children.forEach(child => {
         tasks.forEach(task => {
           if (task.subject === child.id) {
-            set(ref(db, 'tasks/' + task.id + '/subject'), '');
+            set(ref(db, `users/${currentUser}/tasks/${task.id}/subject`), '');
           }
         });
-        remove(ref(db, 'subjects/' + child.id));
+        remove(ref(db, `users/${currentUser}/subjects/${child.id}`));
       });
       
       // Remove subject from all tasks that have it
       tasks.forEach(task => {
         if (task.subject === subjectId) {
-          set(ref(db, 'tasks/' + task.id + '/subject'), '');
+          set(ref(db, `users/${currentUser}/tasks/${task.id}/subject`), '');
         }
       });
       
       // Delete the subject
-      remove(ref(db, 'subjects/' + subjectId));
+      remove(ref(db, `users/${currentUser}/subjects/${subjectId}`));
       
       // Reset to all if we were viewing that subject
       if (currentSubject === subjectId || children.some(c => c.id === currentSubject)) {
