@@ -333,6 +333,15 @@
       background: var(--card);
       overflow: hidden;
     }
+    #taskRightSidebar.calendar-expanded .calendar-grid {
+      grid-auto-rows: minmax(96px, auto);
+    }
+    #taskRightSidebar.calendar-expanded .calendar-day {
+      min-height: 96px;
+    }
+    #taskRightSidebar.calendar-expanded .calendar-event-chip {
+      font-size: 11px;
+    }
     .calendar-day:hover {
       background: var(--day-hover);
       border-color: var(--border);
@@ -4189,6 +4198,7 @@
               <button id="prevTaskMonth">‹</button>
               <button id="todayTaskBtn">●</button>
               <button id="nextTaskMonth">›</button>
+              <button id="toggleTaskCalendarSize" title="הגדל/הקטן" aria-label="הגדל/הקטן">⤢</button>
             </div>
             <div class="calendar-title" id="taskCalendarTitle"></div>
           </div>
@@ -7660,10 +7670,12 @@ const themeToggle = $("themeToggle");
   
   // ============ TASK CALENDAR ============
   let currentTaskMonth = new Date();
+  let taskCalendarExpanded = false;
   const taskCalendarGrid = $("taskCalendarGrid");
   const taskCalendarTitle = $("taskCalendarTitle");
   const taskMonthEvents = $("taskMonthEvents");
   const taskMonthEventsTitle = $("taskMonthEventsTitle");
+  const toggleTaskCalendarSize = $("toggleTaskCalendarSize");
 
   // Event delegation for Task calendar in Task Manager
   if (taskCalendarGrid) {
@@ -7754,7 +7766,7 @@ const themeToggle = $("themeToggle");
       if (isToday) classes += ' today';
 
       let eventsHtml = '<div class="calendar-day-events">';
-      const maxShow = 2;
+      const maxShow = taskCalendarExpanded ? 5 : 2;
       const showTime = dayTasks.length > 1; // Show time when multiple events on same day
       dayTasks.slice(0, maxShow).forEach(task => {
         const color = subjects.find(s => s.id === task.subject)?.color || '#667eea';
@@ -7836,6 +7848,17 @@ const themeToggle = $("themeToggle");
   // Toggle Task Calendar
   const toggleTaskCalendar = $("toggleTaskCalendar");
   const taskRightSidebar = $("taskRightSidebar");
+  if (toggleTaskCalendarSize && taskRightSidebar) {
+    toggleTaskCalendarSize.onclick = () => {
+      taskCalendarExpanded = !taskCalendarExpanded;
+      taskRightSidebar.classList.toggle('calendar-expanded', taskCalendarExpanded);
+      toggleTaskCalendarSize.textContent = taskCalendarExpanded ? '⤡' : '⤢';
+      const label = taskCalendarExpanded ? 'הקטן' : 'הגדל';
+      toggleTaskCalendarSize.title = label;
+      toggleTaskCalendarSize.setAttribute('aria-label', label);
+      renderTaskCalendar();
+    };
+  }
   if (toggleTaskCalendar && taskRightSidebar) {
     toggleTaskCalendar.onclick = () => {
       console.log('toggleTaskCalendar clicked');
@@ -8917,48 +8940,55 @@ const themeToggle = $("themeToggle");
     return null;
   }
   
-  // Smart quick add with natural language
-  newTaskTitle.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') {
-      const input = newTaskTitle.value.trim();
-      if (!input) return;
+  // Smart quick add with natural language + Enter to add
+  newTaskTitle.addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter') return;
+    e.preventDefault();
+    const input = newTaskTitle.value.trim();
+    if (!input) return;
+    
+    const parsed = parseNaturalLanguage(input);
+    const hasParsed = parsed.dueDate || parsed.subjectId || parsed.priority !== 'medium';
+    
+    if (hasParsed) {
+      const defaultSubjectId = getDefaultSubjectId();
+      const selectedSubjectId = parsed.subjectId || defaultSubjectId;
+      const orderValue = hasManualOrder() ? getNextTaskOrder(false) : null;
       
-      const parsed = parseNaturalLanguage(input);
+      const taskData = {
+        title: parsed.title || input,
+        content: '',
+        priority: parsed.priority,
+        dueDate: parsed.dueDate ? parsed.dueDate.toISOString() : null,
+        subject: selectedSubjectId || '',
+        checklist: [],
+        completed: false,
+        createdAt: new Date().toISOString(),
+        ...(Number.isFinite(orderValue) ? { order: orderValue } : {})
+      };
       
-      // If we have parsed data, use it
-      if (parsed.dueDate || parsed.subjectId || parsed.priority !== 'medium') {
-        const defaultSubjectId = getDefaultSubjectId();
-        const selectedSubjectId = parsed.subjectId || defaultSubjectId;
-        const orderValue = hasManualOrder() ? getNextTaskOrder(false) : null;
-        
-        const taskData = {
-          title: parsed.title || input,
-          content: '',
-          priority: parsed.priority,
-          dueDate: parsed.dueDate ? parsed.dueDate.toISOString() : null,
-          subject: selectedSubjectId || '',
-          checklist: [],
-          completed: false,
-          createdAt: new Date().toISOString(),
-          ...(Number.isFinite(orderValue) ? { order: orderValue } : {})
-        };
-        
-        const newTaskRef = push(tasksRef);
-        set(newTaskRef, taskData);
-        
-        const taskSections = $("taskSections");
-        if (taskSections) {
-          taskSections.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
-        newTaskTitle.value = '';
-        quickAddRow.style.display = 'none';
-        syncQuickAddSubject();
-      } else {
-        // Show the expanded form if no natural language detected
-        quickAddRow.style.display = 'flex';
+      const newTaskRef = push(tasksRef);
+      set(newTaskRef, taskData);
+      
+      const taskSections = $("taskSections");
+      if (taskSections) {
+        taskSections.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }
+      newTaskTitle.value = '';
+      quickAddRow.style.display = 'none';
+      syncQuickAddSubject();
+    } else {
+      addTask();
     }
   });
+
+  if (newTaskDue) {
+    newTaskDue.addEventListener('keydown', (e) => {
+      if (e.key !== 'Enter') return;
+      e.preventDefault();
+      addTask();
+    });
+  }
 
   // Kick off Pomodoro UI
   Pomodoro.init();
