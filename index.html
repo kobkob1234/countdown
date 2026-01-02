@@ -1594,6 +1594,199 @@
       font-size: 18px;
     }
     
+    /* Planner Sync Sections */
+    .planner-sync-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+    .planner-sync-btn {
+      padding: 6px 12px;
+      border: 1px solid var(--accent);
+      border-radius: var(--radius-sm);
+      background: transparent;
+      color: var(--accent);
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .planner-sync-btn:hover {
+      background: var(--accent);
+      color: white;
+    }
+    .planner-sync-btn.syncing {
+      opacity: 0.6;
+      pointer-events: none;
+    }
+    .planner-sync-all-btn {
+      width: 100%;
+      padding: 10px 14px;
+      border: 1px solid var(--accent);
+      border-radius: var(--radius-md);
+      background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
+      color: var(--accent);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .planner-sync-all-btn:hover {
+      background: var(--accent);
+      color: white;
+    }
+    .planner-countdown-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: all 0.15s;
+      margin-bottom: 4px;
+      background: var(--day-other);
+      border-right: 3px solid var(--accent);
+    }
+    .planner-countdown-item:hover { background: var(--day-hover); }
+    .planner-countdown-item .countdown-color-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .planner-countdown-item .countdown-info {
+      flex: 1;
+      min-width: 0;
+    }
+    .planner-countdown-item .countdown-title {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .planner-countdown-item .countdown-date {
+      font-size: 11px;
+      color: var(--muted);
+    }
+    .planner-countdown-item .countdown-time-left {
+      font-size: 10px;
+      color: var(--accent);
+      background: rgba(102, 126, 234, 0.1);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-weight: 600;
+    }
+    .planner-countdown-item .add-to-planner-btn {
+      width: 24px;
+      height: 24px;
+      border: none;
+      border-radius: 50%;
+      background: var(--btn-secondary-bg);
+      color: var(--muted);
+      font-size: 14px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s;
+      flex-shrink: 0;
+    }
+    .planner-countdown-item .add-to-planner-btn:hover {
+      background: var(--accent);
+      color: white;
+    }
+    .planner-scheduled-task-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: all 0.15s;
+      margin-bottom: 4px;
+      background: var(--day-other);
+      border-right: 3px solid var(--success);
+    }
+    .planner-scheduled-task-item:hover { background: var(--day-hover); }
+    .planner-scheduled-task-item .task-color-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .planner-scheduled-task-item .task-info {
+      flex: 1;
+      min-width: 0;
+    }
+    .planner-scheduled-task-item .task-title {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .planner-scheduled-task-item .task-due {
+      font-size: 11px;
+      color: var(--muted);
+    }
+    .planner-scheduled-task-item .add-to-planner-btn {
+      width: 24px;
+      height: 24px;
+      border: none;
+      border-radius: 50%;
+      background: var(--btn-secondary-bg);
+      color: var(--muted);
+      font-size: 14px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s;
+      flex-shrink: 0;
+    }
+    .planner-scheduled-task-item .add-to-planner-btn:hover {
+      background: var(--success);
+      color: white;
+    }
+    .planner-synced-indicator {
+      font-size: 10px;
+      color: var(--success);
+      display: flex;
+      align-items: center;
+      gap: 3px;
+    }
+    .planner-section-collapse {
+      cursor: pointer;
+      user-select: none;
+    }
+    .planner-section-collapse .collapse-icon {
+      transition: transform 0.2s;
+    }
+    .planner-section-collapse.collapsed .collapse-icon {
+      transform: rotate(-90deg);
+    }
+    .planner-section-content {
+      max-height: 300px;
+      overflow-y: auto;
+      transition: max-height 0.3s;
+    }
+    .planner-section-content.collapsed {
+      max-height: 0;
+      overflow: hidden;
+    }
+    
     /* Responsive */
     @media (max-width: 1024px) {
       .planner-sidebar { width: 280px; }
@@ -5918,6 +6111,14 @@
       
       <!-- Sidebar -->
       <div class="planner-sidebar" id="plannerSidebar">
+        <!-- Sync All Button -->
+        <div style="padding: 16px 16px 0 16px;">
+          <button class="planner-sync-all-btn" id="plannerSyncAllBtn">
+            <span>🔄</span>
+            <span>סנכרן הכל ליום הנוכחי</span>
+          </button>
+        </div>
+        
         <!-- Mini Calendar -->
         <div class="planner-sidebar-section">
           <div class="planner-sidebar-title">📅 לוח שנה</div>
@@ -5930,6 +6131,36 @@
             <div class="planner-mini-grid" id="plannerMiniGrid">
               <!-- Mini calendar grid will be generated by JS -->
             </div>
+          </div>
+        </div>
+        
+        <!-- Countdowns Section -->
+        <div class="planner-sidebar-section">
+          <div class="planner-sync-header">
+            <div class="planner-sidebar-title planner-section-collapse" id="plannerCountdownsToggle">
+              <span class="collapse-icon">▼</span> ⏰ ספירות לאחור
+            </div>
+            <button class="planner-sync-btn" id="plannerSyncCountdownsBtn">
+              <span>↓</span> סנכרן
+            </button>
+          </div>
+          <div class="planner-section-content" id="plannerCountdownsList">
+            <div class="no-events-msg">אין ספירות לאחור להיום</div>
+          </div>
+        </div>
+        
+        <!-- Scheduled Tasks Section -->
+        <div class="planner-sidebar-section">
+          <div class="planner-sync-header">
+            <div class="planner-sidebar-title planner-section-collapse" id="plannerScheduledTasksToggle">
+              <span class="collapse-icon">▼</span> ✅ משימות מתוזמנות
+            </div>
+            <button class="planner-sync-btn" id="plannerSyncTasksBtn">
+              <span>↓</span> סנכרן
+            </button>
+          </div>
+          <div class="planner-section-content" id="plannerScheduledTasksList">
+            <div class="no-events-msg">אין משימות מתוזמנות להיום</div>
           </div>
         </div>
         
@@ -11796,7 +12027,12 @@ const themeToggle = $("themeToggle");
       completedBlocks: null,
       progress: null,
       dayTitle: null,
-      daySummary: null
+      daySummary: null,
+      countdownsList: null,
+      scheduledTasksList: null,
+      syncAllBtn: null,
+      syncCountdownsBtn: null,
+      syncTasksBtn: null
     };
     
     // Hebrew day names
@@ -12314,6 +12550,263 @@ const themeToggle = $("themeToggle");
       });
     };
     
+    // Render countdowns for the current date
+    const renderCountdowns = () => {
+      if (!refs.countdownsList) return;
+      
+      const currentDateKey = getDateKey(currentDate);
+      const currentBlocks = getBlocksForDate(currentDate);
+      
+      // Get countdowns (events) for the current date
+      const countdownsForDate = (typeof events !== 'undefined' ? events : [])
+        .filter(evt => {
+          if (!evt.date) return false;
+          const evtDate = new Date(evt.date);
+          return getDateKey(evtDate) === currentDateKey;
+        })
+        .slice(0, 10);
+      
+      if (countdownsForDate.length === 0) {
+        refs.countdownsList.innerHTML = '<div class="no-events-msg">אין ספירות לאחור להיום</div>';
+        return;
+      }
+      
+      refs.countdownsList.innerHTML = countdownsForDate.map(evt => {
+        const evtDate = new Date(evt.date);
+        const timeStr = evtDate.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });
+        const color = evt.color || '#667eea';
+        
+        // Check if already synced to planner
+        const isSynced = currentBlocks.some(b => b.linkedEventId === evt.id);
+        
+        // Calculate time left
+        const now = new Date();
+        const diff = evtDate - now;
+        let timeLeft = '';
+        if (diff > 0) {
+          const hours = Math.floor(diff / (1000 * 60 * 60));
+          const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+          if (hours > 0) {
+            timeLeft = `${hours} שעות`;
+          } else {
+            timeLeft = `${mins} דקות`;
+          }
+        } else {
+          timeLeft = 'עבר';
+        }
+        
+        return `
+          <div class="planner-countdown-item" data-event-id="${evt.id}">
+            <div class="countdown-color-dot" style="background: ${color};"></div>
+            <div class="countdown-info">
+              <div class="countdown-title">${escapeHtml(evt.name || 'אירוע')}</div>
+              <div class="countdown-date">${timeStr}</div>
+            </div>
+            <div class="countdown-time-left">${timeLeft}</div>
+            ${isSynced 
+              ? '<span class="planner-synced-indicator">✓ סונכרן</span>'
+              : `<button class="add-to-planner-btn" data-event-id="${evt.id}" title="הוסף ליומן">+</button>`
+            }
+          </div>
+        `;
+      }).join('');
+      
+      // Add click handlers for adding to planner
+      refs.countdownsList.querySelectorAll('.add-to-planner-btn').forEach(el => {
+        el.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const eventId = el.dataset.eventId;
+          addCountdownToPlanner(eventId);
+        });
+      });
+    };
+    
+    // Render scheduled tasks (tasks with due date/time) for the current date
+    const renderScheduledTasks = () => {
+      if (!refs.scheduledTasksList) return;
+      
+      const currentDateKey = getDateKey(currentDate);
+      const currentBlocks = getBlocksForDate(currentDate);
+      
+      // Get tasks with due date matching current date
+      const scheduledTasks = (typeof tasks !== 'undefined' ? tasks : [])
+        .filter(t => {
+          if (t.completed || !t.dueDate) return false;
+          const dueDate = new Date(t.dueDate);
+          return getDateKey(dueDate) === currentDateKey;
+        })
+        .slice(0, 10);
+      
+      if (scheduledTasks.length === 0) {
+        refs.scheduledTasksList.innerHTML = '<div class="no-events-msg">אין משימות מתוזמנות להיום</div>';
+        return;
+      }
+      
+      const priorityLabel = { urgent: '🔴', high: '🟠', medium: '🟡', low: '🟢', none: '⚪' };
+      
+      refs.scheduledTasksList.innerHTML = scheduledTasks.map(task => {
+        const subject = (typeof subjects !== 'undefined' ? subjects : []).find(s => s.id === task.subject);
+        const color = subject ? subject.color : '#10b981';
+        const dueDate = new Date(task.dueDate);
+        const hasTime = task.dueDate.includes('T');
+        const timeStr = hasTime ? dueDate.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' }) : 'כל היום';
+        
+        // Check if already synced to planner
+        const isSynced = currentBlocks.some(b => b.linkedTaskId === task.id);
+        
+        return `
+          <div class="planner-scheduled-task-item" data-task-id="${task.id}">
+            <div class="task-color-dot" style="background: ${color};"></div>
+            <div class="task-info">
+              <div class="task-title">${priorityLabel[task.priority || 'none']} ${escapeHtml(task.title)}</div>
+              <div class="task-due">${timeStr}</div>
+            </div>
+            ${isSynced 
+              ? '<span class="planner-synced-indicator">✓ סונכרן</span>'
+              : `<button class="add-to-planner-btn" data-task-id="${task.id}" title="הוסף ליומן">+</button>`
+            }
+          </div>
+        `;
+      }).join('');
+      
+      // Add click handlers for adding to planner
+      refs.scheduledTasksList.querySelectorAll('.add-to-planner-btn').forEach(el => {
+        el.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const taskId = el.dataset.taskId;
+          addScheduledTaskToPlanner(taskId);
+        });
+      });
+    };
+    
+    // Add a countdown event to the planner (standalone copy)
+    const addCountdownToPlanner = (eventId) => {
+      const evt = (typeof events !== 'undefined' ? events : []).find(e => e.id === eventId);
+      if (!evt) return;
+      
+      const evtDate = new Date(evt.date);
+      const startMinutes = evtDate.getHours() * 60 + evtDate.getMinutes();
+      
+      // Create a standalone block (copy, not linked for editing)
+      const newBlock = {
+        id: generateId(),
+        title: evt.name || 'אירוע',
+        start: formatTime(startMinutes),
+        duration: 60, // Default 1 hour for events
+        category: '',
+        notes: evt.notes || '',
+        repeat: false,
+        priority: 'medium',
+        color: evt.color || '',
+        reminder: 0,
+        completed: false,
+        date: getDateKey(currentDate),
+        createdAt: new Date().toISOString(),
+        linkedEventId: eventId, // Track source for sync indicator only
+        sourceType: 'countdown'
+      };
+      
+      plannerBlocks.push(newBlock);
+      saveBlocks();
+      render();
+    };
+    
+    // Add a scheduled task to the planner (standalone copy)
+    const addScheduledTaskToPlanner = (taskId) => {
+      const task = (typeof tasks !== 'undefined' ? tasks : []).find(t => t.id === taskId);
+      if (!task) return;
+      
+      let startMinutes = 9 * 60; // Default to 9 AM
+      if (task.dueDate && task.dueDate.includes('T')) {
+        const dueDate = new Date(task.dueDate);
+        startMinutes = dueDate.getHours() * 60 + dueDate.getMinutes();
+      }
+      
+      const subject = (typeof subjects !== 'undefined' ? subjects : []).find(s => s.id === task.subject);
+      
+      // Create a standalone block (copy, not linked for editing)
+      const newBlock = {
+        id: generateId(),
+        title: task.title,
+        start: formatTime(startMinutes),
+        duration: task.duration || 30,
+        category: '',
+        notes: task.notes || '',
+        repeat: false,
+        priority: task.priority || 'medium',
+        color: subject ? subject.color : (task.color || ''),
+        reminder: 0,
+        completed: false,
+        date: getDateKey(currentDate),
+        createdAt: new Date().toISOString(),
+        linkedTaskId: taskId, // Track source for sync indicator only
+        sourceType: 'task'
+      };
+      
+      plannerBlocks.push(newBlock);
+      saveBlocks();
+      render();
+    };
+    
+    // Sync all countdowns for current date to planner
+    const syncAllCountdowns = () => {
+      const currentDateKey = getDateKey(currentDate);
+      const currentBlocks = getBlocksForDate(currentDate);
+      
+      const countdownsForDate = (typeof events !== 'undefined' ? events : [])
+        .filter(evt => {
+          if (!evt.date) return false;
+          const evtDate = new Date(evt.date);
+          return getDateKey(evtDate) === currentDateKey;
+        });
+      
+      let added = 0;
+      countdownsForDate.forEach(evt => {
+        // Skip if already synced
+        if (currentBlocks.some(b => b.linkedEventId === evt.id)) return;
+        addCountdownToPlanner(evt.id);
+        added++;
+      });
+      
+      if (added > 0) {
+        render();
+      }
+      return added;
+    };
+    
+    // Sync all scheduled tasks for current date to planner
+    const syncAllScheduledTasks = () => {
+      const currentDateKey = getDateKey(currentDate);
+      const currentBlocks = getBlocksForDate(currentDate);
+      
+      const scheduledTasks = (typeof tasks !== 'undefined' ? tasks : [])
+        .filter(t => {
+          if (t.completed || !t.dueDate) return false;
+          const dueDate = new Date(t.dueDate);
+          return getDateKey(dueDate) === currentDateKey;
+        });
+      
+      let added = 0;
+      scheduledTasks.forEach(task => {
+        // Skip if already synced
+        if (currentBlocks.some(b => b.linkedTaskId === task.id)) return;
+        addScheduledTaskToPlanner(task.id);
+        added++;
+      });
+      
+      if (added > 0) {
+        render();
+      }
+      return added;
+    };
+    
+    // Sync everything for current date
+    const syncAll = () => {
+      const countdownsAdded = syncAllCountdowns();
+      const tasksAdded = syncAllScheduledTasks();
+      return countdownsAdded + tasksAdded;
+    };
+    
     // Open add modal
     const openAddModal = (hour = 9) => {
       editingBlockId = null;
@@ -12574,6 +13067,8 @@ const themeToggle = $("themeToggle");
       
       renderMiniCalendar();
       renderQuickTasks();
+      renderCountdowns();
+      renderScheduledTasks();
     };
     
     // Navigate date
@@ -12615,6 +13110,11 @@ const themeToggle = $("themeToggle");
       refs.progress = $('plannerProgress');
       refs.dayTitle = $('plannerDayTitle');
       refs.daySummary = $('plannerDaySummary');
+      refs.countdownsList = $('plannerCountdownsList');
+      refs.scheduledTasksList = $('plannerScheduledTasksList');
+      refs.syncAllBtn = $('plannerSyncAllBtn');
+      refs.syncCountdownsBtn = $('plannerSyncCountdownsBtn');
+      refs.syncTasksBtn = $('plannerSyncTasksBtn');
       
       // View toggle
       refs.viewToggle = refs.overlay ? refs.overlay.querySelector('.planner-view-toggle') : null;
@@ -12655,6 +13155,55 @@ const themeToggle = $("themeToggle");
       templateBtns.forEach(btn => {
         btn.onclick = () => applyTemplate(btn.dataset.template);
       });
+      
+      // Sync buttons
+      if (refs.syncAllBtn) {
+        refs.syncAllBtn.onclick = () => {
+          refs.syncAllBtn.classList.add('syncing');
+          const count = syncAll();
+          setTimeout(() => {
+            refs.syncAllBtn.classList.remove('syncing');
+          }, 500);
+        };
+      }
+      
+      if (refs.syncCountdownsBtn) {
+        refs.syncCountdownsBtn.onclick = () => {
+          refs.syncCountdownsBtn.classList.add('syncing');
+          syncAllCountdowns();
+          setTimeout(() => {
+            refs.syncCountdownsBtn.classList.remove('syncing');
+          }, 500);
+        };
+      }
+      
+      if (refs.syncTasksBtn) {
+        refs.syncTasksBtn.onclick = () => {
+          refs.syncTasksBtn.classList.add('syncing');
+          syncAllScheduledTasks();
+          setTimeout(() => {
+            refs.syncTasksBtn.classList.remove('syncing');
+          }, 500);
+        };
+      }
+      
+      // Section collapse toggles
+      const countdownsToggle = $('plannerCountdownsToggle');
+      const scheduledTasksToggle = $('plannerScheduledTasksToggle');
+      
+      if (countdownsToggle && refs.countdownsList) {
+        countdownsToggle.onclick = () => {
+          countdownsToggle.classList.toggle('collapsed');
+          refs.countdownsList.classList.toggle('collapsed');
+        };
+      }
+      
+      if (scheduledTasksToggle && refs.scheduledTasksList) {
+        scheduledTasksToggle.onclick = () => {
+          scheduledTasksToggle.classList.toggle('collapsed');
+          refs.scheduledTasksList.classList.toggle('collapsed');
+        };
+      }
       
       // Modal events
       if (refs.addModal) {
