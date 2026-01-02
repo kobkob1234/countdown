@@ -412,6 +412,23 @@
       text-align: right;
       padding-right: 10px;
     }
+    /* Event calendar (sidebar) view modes */
+    #sidebar.calendar-view-week .calendar-grid {
+      grid-auto-rows: minmax(80px, auto);
+    }
+    #sidebar.calendar-view-week .calendar-day {
+      min-height: 100px;
+    }
+    #sidebar.calendar-view-day .calendar-grid {
+      grid-template-columns: 1fr;
+    }
+    #sidebar.calendar-view-day .calendar-day {
+      min-height: 200px;
+    }
+    #sidebar.calendar-view-day .calendar-day-name {
+      text-align: right;
+      padding-right: 10px;
+    }
     .calendar-day:hover {
       background: var(--day-hover);
       border-color: var(--border);
@@ -2763,6 +2780,27 @@
       align-items: center;
       gap: 4px;
     }
+    .recurrence-icon {
+      width: 12px;
+      height: 12px;
+      border: 2px solid currentColor;
+      border-top-color: transparent;
+      border-radius: 50%;
+      position: relative;
+      display: inline-block;
+    }
+    .recurrence-icon::after {
+      content: '';
+      position: absolute;
+      top: -1px;
+      right: -1px;
+      width: 0;
+      height: 0;
+      border-left: 4px solid transparent;
+      border-right: 4px solid transparent;
+      border-bottom: 5px solid currentColor;
+      transform: rotate(45deg);
+    }
     .task-reminder {
       font-size: var(--font-size-xs);
       font-weight: var(--font-weight-semibold);
@@ -4898,6 +4936,11 @@
             <button id="todayBtn" aria-label="היום" title="היום">●</button>
             <button id="nextMonth" aria-label="חודש הבא">›</button>
           </div>
+          <div class="calendar-view-toggle" id="eventCalendarViewToggle">
+            <button data-view="month" class="active">חודש</button>
+            <button data-view="week">שבוע</button>
+            <button data-view="day">יום</button>
+          </div>
           <div class="calendar-title" id="calendarTitle"></div>
         </div>
         <div class="calendar-grid" id="calendarGrid"></div>
@@ -5233,6 +5276,8 @@ const themeToggle = $("themeToggle");
     }
   }
   let currentMonth = new Date();
+  let eventCalendarView = 'month'; // 'month', 'week', 'day'
+  let eventCalendarFocusDate = new Date();
   const pendingDeletes = new Map();
   let lastDeletedId = null;
   const DELETE_TIMEOUT_MS = 10000;
@@ -5565,19 +5610,9 @@ const themeToggle = $("themeToggle");
   }
 
   function renderCalendar() {
-    const year = currentMonth.getFullYear();
-    const month = currentMonth.getMonth();
-
-    calendarTitle.textContent = `${HEBREW_MONTHS[month]} ${year}`;
-
-    const firstDay = new Date(year, month, 1);
-    const lastDay = new Date(year, month + 1, 0);
-    const startDay = firstDay.getDay();
-    const daysInMonth = lastDay.getDate();
-
     const today = new Date();
     const todayKey = toDateKey(today);
-
+    
     // Build event map by date
     const eventsByDate = {};
     getActiveEvents().forEach(evt => {
@@ -5587,56 +5622,146 @@ const themeToggle = $("themeToggle");
     });
 
     let html = '';
-
-    // Day names
-    for (let i = 0; i < 7; i++) {
-      html += `<div class="calendar-day-name">${HEBREW_DAYS[i]}</div>`;
+    const sidebar = $("sidebar");
+    
+    // Update view classes on sidebar
+    if (sidebar) {
+      sidebar.classList.toggle('calendar-view-week', eventCalendarView === 'week');
+      sidebar.classList.toggle('calendar-view-day', eventCalendarView === 'day');
     }
 
-    // Previous month days
-    const prevMonth = new Date(year, month, 0);
-    const prevDays = prevMonth.getDate();
-    for (let i = startDay - 1; i >= 0; i--) {
-      const day = prevDays - i;
-      html += `<div class="calendar-day other-month"><div class="calendar-day-number">${day}</div></div>`;
-    }
+    if (eventCalendarView === 'month') {
+      const year = currentMonth.getFullYear();
+      const month = currentMonth.getMonth();
+      calendarTitle.textContent = `${HEBREW_MONTHS[month]} ${year}`;
 
-    // Current month days
-    for (let day = 1; day <= daysInMonth; day++) {
-      const dateKey = `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
-      const isToday = dateKey === todayKey;
+      const firstDay = new Date(year, month, 1);
+      const lastDay = new Date(year, month + 1, 0);
+      const startDay = firstDay.getDay();
+      const daysInMonth = lastDay.getDate();
+
+      // Day names
+      for (let i = 0; i < 7; i++) {
+        html += `<div class="calendar-day-name">${HEBREW_DAYS[i]}</div>`;
+      }
+
+      // Previous month days
+      const prevMonth = new Date(year, month, 0);
+      const prevDays = prevMonth.getDate();
+      for (let i = startDay - 1; i >= 0; i--) {
+        const day = prevDays - i;
+        html += `<div class="calendar-day other-month"><div class="calendar-day-number">${day}</div></div>`;
+      }
+
+      // Current month days
+      for (let day = 1; day <= daysInMonth; day++) {
+        const dateKey = `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+        const isToday = dateKey === todayKey;
+        const dayEvents = eventsByDate[dateKey] || [];
+
+        let classes = 'calendar-day';
+        if (isToday) classes += ' today';
+
+        let eventsHtml = '<div class="calendar-day-events">';
+        const maxShow = 2;
+        const showTime = dayEvents.length > 1;
+        dayEvents.slice(0, maxShow).forEach(evt => {
+          const color = getEventColor(evt.id);
+          const safeName = escapeHtml(evt.name);
+          const evtDate = new Date(evt.date);
+          const timeStr = showTime ? `${String(evtDate.getHours()).padStart(2,'0')}:${String(evtDate.getMinutes()).padStart(2,'0')} ` : '';
+          const displayText = timeStr + safeName;
+          eventsHtml += `<div class="calendar-event-chip" style="background: ${color}" title="${safeName}" aria-label="${safeName}" data-event-id="${evt.id}">${displayText}</div>`;
+        });
+        if (dayEvents.length > maxShow) {
+          eventsHtml += `<div class="calendar-more">+${dayEvents.length - maxShow} עוד</div>`;
+        }
+        eventsHtml += '</div>';
+
+        html += `<div class="${classes}" data-date="${dateKey}">
+          <div class="calendar-day-number">${day}</div>
+          ${eventsHtml}
+        </div>`;
+      }
+
+      // Next month days
+      const totalCells = startDay + daysInMonth;
+      const remainingCells = totalCells % 7 === 0 ? 0 : 7 - (totalCells % 7);
+      for (let i = 1; i <= remainingCells; i++) {
+        html += `<div class="calendar-day other-month"><div class="calendar-day-number">${i}</div></div>`;
+      }
+    } else if (eventCalendarView === 'week') {
+      const focus = eventCalendarFocusDate || new Date();
+      const start = getStartOfWeek(focus);
+      const end = new Date(start);
+      end.setDate(start.getDate() + 6);
+      calendarTitle.textContent = `שבוע ${formatHebrewShortDate(start)} - ${formatHebrewShortDate(end)}`;
+
+      for (let i = 0; i < 7; i++) {
+        const dayDate = new Date(start);
+        dayDate.setDate(start.getDate() + i);
+        html += `<div class="calendar-day-name">${HEBREW_DAYS[dayDate.getDay()]}</div>`;
+      }
+
+      for (let i = 0; i < 7; i++) {
+        const dayDate = new Date(start);
+        dayDate.setDate(start.getDate() + i);
+        const dateKey = toDateKey(dayDate);
+        const dayEvents = eventsByDate[dateKey] || [];
+        const isToday = dateKey === todayKey;
+        let classes = 'calendar-day';
+        if (isToday) classes += ' today';
+
+        let eventsHtml = '<div class="calendar-day-events">';
+        const maxShow = 4;
+        dayEvents.slice(0, maxShow).forEach(evt => {
+          const color = getEventColor(evt.id);
+          const safeName = escapeHtml(evt.name);
+          const evtDate = new Date(evt.date);
+          const timeStr = `${String(evtDate.getHours()).padStart(2,'0')}:${String(evtDate.getMinutes()).padStart(2,'0')} `;
+          eventsHtml += `<div class="calendar-event-chip" style="background: ${color}" title="${safeName}" data-event-id="${evt.id}">${timeStr}${safeName}</div>`;
+        });
+        if (dayEvents.length > maxShow) {
+          eventsHtml += `<div class="calendar-more">+${dayEvents.length - maxShow} עוד</div>`;
+        }
+        eventsHtml += '</div>';
+
+        html += `<div class="${classes}" data-date="${dateKey}">
+          <div class="calendar-day-number">${dayDate.getDate()}</div>
+          ${eventsHtml}
+        </div>`;
+      }
+    } else if (eventCalendarView === 'day') {
+      const focus = eventCalendarFocusDate || new Date();
+      const dateKey = toDateKey(focus);
       const dayEvents = eventsByDate[dateKey] || [];
+      const dayOfWeek = focus.getDay();
+      const hebrewDayNames = ['יום ראשון', 'יום שני', 'יום שלישי', 'יום רביעי', 'יום חמישי', 'יום שישי', 'שבת'];
+      calendarTitle.textContent = `${hebrewDayNames[dayOfWeek]}, ${formatHebrewShortDate(focus)}`;
 
+      html += `<div class="calendar-day-name">${hebrewDayNames[dayOfWeek]}</div>`;
+
+      const isToday = dateKey === todayKey;
       let classes = 'calendar-day';
       if (isToday) classes += ' today';
 
       let eventsHtml = '<div class="calendar-day-events">';
-      const maxShow = 2;
-      const showTime = dayEvents.length > 1; // Show time when multiple events on same day
-      dayEvents.slice(0, maxShow).forEach(evt => {
+      dayEvents.forEach(evt => {
         const color = getEventColor(evt.id);
         const safeName = escapeHtml(evt.name);
         const evtDate = new Date(evt.date);
-        const timeStr = showTime ? `${String(evtDate.getHours()).padStart(2,'0')}:${String(evtDate.getMinutes()).padStart(2,'0')} ` : '';
-        const displayText = timeStr + safeName;
-        eventsHtml += `<div class="calendar-event-chip" style="background: ${color}" title="${safeName}" aria-label="${safeName}" data-event-id="${evt.id}">${displayText}</div>`;
+        const timeStr = `${String(evtDate.getHours()).padStart(2,'0')}:${String(evtDate.getMinutes()).padStart(2,'0')} `;
+        eventsHtml += `<div class="calendar-event-chip" style="background: ${color}" title="${safeName}" data-event-id="${evt.id}">${timeStr}${safeName}</div>`;
       });
-      if (dayEvents.length > maxShow) {
-        eventsHtml += `<div class="calendar-more">+${dayEvents.length - maxShow} עוד</div>`;
+      if (dayEvents.length === 0) {
+        eventsHtml += `<div class="no-events-msg" style="padding: 20px; text-align: center;">אין אירועים ביום זה</div>`;
       }
       eventsHtml += '</div>';
 
       html += `<div class="${classes}" data-date="${dateKey}">
-        <div class="calendar-day-number">${day}</div>
+        <div class="calendar-day-number">${focus.getDate()}</div>
         ${eventsHtml}
       </div>`;
-    }
-
-    // Next month days
-    const totalCells = startDay + daysInMonth;
-    const remainingCells = totalCells % 7 === 0 ? 0 : 7 - (totalCells % 7);
-    for (let i = 1; i <= remainingCells; i++) {
-      html += `<div class="calendar-day other-month"><div class="calendar-day-number">${i}</div></div>`;
     }
 
     calendarGrid.innerHTML = html;
@@ -5842,22 +5967,49 @@ const themeToggle = $("themeToggle");
   };
 
   $("prevMonth").onclick = () => {
-    currentMonth.setMonth(currentMonth.getMonth() - 1);
+    if (eventCalendarView === 'month') {
+      currentMonth.setMonth(currentMonth.getMonth() - 1);
+    } else if (eventCalendarView === 'week') {
+      eventCalendarFocusDate.setDate(eventCalendarFocusDate.getDate() - 7);
+    } else if (eventCalendarView === 'day') {
+      eventCalendarFocusDate.setDate(eventCalendarFocusDate.getDate() - 1);
+    }
     renderCalendar();
   };
 
   $("nextMonth").onclick = () => {
-    currentMonth.setMonth(currentMonth.getMonth() + 1);
+    if (eventCalendarView === 'month') {
+      currentMonth.setMonth(currentMonth.getMonth() + 1);
+    } else if (eventCalendarView === 'week') {
+      eventCalendarFocusDate.setDate(eventCalendarFocusDate.getDate() + 7);
+    } else if (eventCalendarView === 'day') {
+      eventCalendarFocusDate.setDate(eventCalendarFocusDate.getDate() + 1);
+    }
     renderCalendar();
   };
   
-  // Today button - jump to current month
+  // Today button - jump to current date
   const todayBtn = $("todayBtn");
   if (todayBtn) {
     todayBtn.onclick = () => {
       currentMonth = new Date();
+      eventCalendarFocusDate = new Date();
       renderCalendar();
     };
+  }
+  
+  // Event calendar view toggle
+  const eventCalendarViewToggle = $("eventCalendarViewToggle");
+  if (eventCalendarViewToggle) {
+    eventCalendarViewToggle.addEventListener('click', (e) => {
+      const btn = e.target.closest('button[data-view]');
+      if (!btn) return;
+      eventCalendarView = btn.dataset.view;
+      eventCalendarFocusDate = new Date();
+      eventCalendarViewToggle.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      renderCalendar();
+    });
   }
 
   startSyncTimeout('events', SYNC_TIMEOUT_MS, 'firebase', () => {
@@ -7810,7 +7962,7 @@ const themeToggle = $("themeToggle");
     const recurrence = normalizeRecurrence(task.recurrence);
     if (recurrence !== 'none') {
       const label = RECURRENCE_LABELS[recurrence] || recurrence;
-      recurrenceHtml = `<span class="task-recurrence">♻ ${label}</span>`;
+      recurrenceHtml = `<span class="task-recurrence"><span class="recurrence-icon"></span>${label}</span>`;
     }
     
     let reminderHtml = '';
