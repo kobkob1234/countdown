@@ -12161,10 +12161,42 @@ const themeToggle = $("themeToggle");
       return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
     };
     
+    // Ensure recurring blocks are instantiated for the target date
+    const ensureRecurringForDate = (date) => {
+      const dateKey = getDateKey(date);
+      let created = 0;
+      plannerBlocks
+        .filter(b => b.repeat)
+        .forEach(base => {
+          if (!base.date) return;
+          const baseDate = new Date(base.date);
+          // Only create occurrences after (or same as) the base date
+          if (baseDate > date || isSameDay(baseDate, date)) return;
+          // Avoid duplicate clones
+          const alreadyExists = plannerBlocks.some(b => b.originId === (base.originId || base.id) && b.date === dateKey);
+          if (alreadyExists) return;
+          const clone = {
+            ...base,
+            id: generateId(),
+            date: dateKey,
+            completed: false,
+            repeat: false, // clones themselves do not auto-repeat; the base drives future creation
+            originId: base.originId || base.id,
+            createdAt: new Date().toISOString()
+          };
+          plannerBlocks.push(clone);
+          created++;
+        });
+      if (created > 0) saveBlocks();
+    };
+
     // Get blocks for a specific date
     const getBlocksForDate = (date) => {
+      ensureRecurringForDate(date);
       const dateKey = getDateKey(date);
-      return plannerBlocks.filter(b => b.date === dateKey).sort((a, b) => parseTime(a.start) - parseTime(b.start));
+      return plannerBlocks
+        .filter(b => b.date === dateKey)
+        .sort((a, b) => parseTime(a.start) - parseTime(b.start));
     };
     
     // Calculate stats for a date
@@ -12983,7 +13015,8 @@ const themeToggle = $("themeToggle");
           color,
           completed: false,
           date: getDateKey(currentDate),
-          createdAt: new Date().toISOString()
+          createdAt: new Date().toISOString(),
+          originId: null
         };
         plannerBlocks.push(newBlock);
       }
