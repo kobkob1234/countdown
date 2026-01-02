@@ -791,7 +791,711 @@
       box-shadow: 0 0 0 4px rgba(239,68,68,0.18);
     }
 
+    /* ============== DAILY PLANNER STYLES ============== */
+    .planner-overlay {
+      position: fixed;
+      top: 56px;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: var(--bg);
+      z-index: 1000;
+      display: none;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .planner-overlay.open { display: flex; }
     
+    .planner-header-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 24px;
+      background: var(--card);
+      border-bottom: 1px solid var(--border);
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    .planner-header-title {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .planner-date-nav {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .planner-date-nav button {
+      width: 36px;
+      height: 36px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      background: var(--card);
+      color: var(--text);
+      font-size: 18px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .planner-date-nav button:hover {
+      background: var(--day-hover);
+      border-color: var(--accent);
+    }
+    .planner-current-date {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text);
+      min-width: 200px;
+      text-align: center;
+      cursor: pointer;
+      padding: 8px 16px;
+      border-radius: var(--radius-md);
+      transition: background 0.15s;
+    }
+    .planner-current-date:hover {
+      background: var(--day-hover);
+    }
+    .planner-today-btn {
+      padding: 8px 16px;
+      border: 1px solid var(--accent);
+      border-radius: var(--radius-md);
+      background: transparent;
+      color: var(--accent);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .planner-today-btn:hover {
+      background: var(--accent);
+      color: white;
+    }
+    .planner-view-toggle {
+      display: flex;
+      gap: 4px;
+      padding: 4px;
+      border-radius: var(--radius-md);
+      background: var(--day-other);
+      border: 1px solid var(--border);
+    }
+    .planner-view-toggle button {
+      border: none;
+      background: transparent;
+      color: var(--muted);
+      font-size: 13px;
+      padding: 8px 16px;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: all 0.15s;
+      font-weight: 500;
+    }
+    .planner-view-toggle button:hover { color: var(--text); }
+    .planner-view-toggle button.active {
+      background: var(--accent);
+      color: white;
+    }
+    
+    .planner-main {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+    
+    /* Planner Sidebar */
+    .planner-sidebar {
+      width: 320px;
+      background: var(--card);
+      border-left: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .planner-sidebar.hidden { display: none; }
+    
+    .planner-sidebar-section {
+      padding: 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    .planner-sidebar-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .planner-mini-calendar {
+      direction: rtl;
+    }
+    .planner-mini-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+    .planner-mini-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+    }
+    .planner-mini-nav {
+      display: flex;
+      gap: 4px;
+    }
+    .planner-mini-nav button {
+      width: 24px;
+      height: 24px;
+      border: none;
+      border-radius: 4px;
+      background: transparent;
+      color: var(--muted);
+      font-size: 12px;
+      cursor: pointer;
+    }
+    .planner-mini-nav button:hover { background: var(--day-hover); color: var(--text); }
+    .planner-mini-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 2px;
+    }
+    .planner-mini-day-name {
+      text-align: center;
+      font-size: 10px;
+      color: var(--muted);
+      padding: 4px 0;
+    }
+    .planner-mini-day {
+      text-align: center;
+      font-size: 12px;
+      padding: 6px 4px;
+      border-radius: 4px;
+      cursor: pointer;
+      color: var(--text);
+    }
+    .planner-mini-day:hover { background: var(--day-hover); }
+    .planner-mini-day.other-month { opacity: 0.4; }
+    .planner-mini-day.today { background: rgba(102,126,234,0.15); color: var(--accent); font-weight: 600; }
+    .planner-mini-day.selected { background: var(--accent); color: white; }
+    .planner-mini-day.has-events::after {
+      content: '';
+      display: block;
+      width: 4px;
+      height: 4px;
+      background: var(--accent);
+      border-radius: 50%;
+      margin: 2px auto 0;
+    }
+    
+    /* Quick Tasks List */
+    .planner-quick-tasks {
+      flex: 1;
+      overflow-y: auto;
+    }
+    .planner-task-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: var(--radius-sm);
+      cursor: grab;
+      transition: all 0.15s;
+      margin-bottom: 4px;
+      background: var(--day-other);
+      border-right: 3px solid var(--accent);
+    }
+    .planner-task-item:hover { background: var(--day-hover); }
+    .planner-task-item.dragging { opacity: 0.5; }
+    .planner-task-item .task-color-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .planner-task-item .task-info {
+      flex: 1;
+      min-width: 0;
+    }
+    .planner-task-item .task-title {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .planner-task-item .task-subject {
+      font-size: 11px;
+      color: var(--muted);
+    }
+    .planner-task-item .task-duration {
+      font-size: 11px;
+      color: var(--muted);
+      background: var(--btn-secondary-bg);
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+    
+    /* Planner Content Area */
+    .planner-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px 24px;
+      direction: rtl;
+    }
+    
+    /* Day View */
+    .planner-day-view {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+    }
+    .planner-day-header {
+      padding: 16px 20px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .planner-day-title {
+      font-size: 18px;
+      font-weight: 600;
+    }
+    .planner-day-summary {
+      display: flex;
+      gap: 20px;
+      font-size: 13px;
+    }
+    .planner-day-summary span { opacity: 0.9; }
+    
+    .planner-timeline {
+      position: relative;
+    }
+    .planner-hour-row {
+      display: flex;
+      min-height: 60px;
+      border-bottom: 1px solid var(--border);
+      position: relative;
+    }
+    .planner-hour-row:last-child { border-bottom: none; }
+    .planner-hour-label {
+      width: 70px;
+      padding: 8px 12px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--muted);
+      text-align: center;
+      border-left: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .planner-hour-content {
+      flex: 1;
+      position: relative;
+      min-height: 60px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .planner-hour-content:hover { background: rgba(102,126,234,0.05); }
+    .planner-hour-content.drop-target { background: rgba(102,126,234,0.15); }
+    
+    /* Time Blocks */
+    .planner-block {
+      position: absolute;
+      right: 4px;
+      left: 4px;
+      background: var(--priority-bg, var(--day-other));
+      border-right: 4px solid var(--priority-color, var(--accent));
+      border-radius: var(--radius-sm);
+      padding: 8px 10px;
+      cursor: pointer;
+      transition: all 0.15s;
+      overflow: hidden;
+      z-index: 1;
+    }
+    .planner-block:hover { 
+      box-shadow: var(--shadow-hover);
+      transform: scale(1.01);
+    }
+    .planner-block.dragging { opacity: 0.6; z-index: 10; }
+    .planner-block-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .planner-block-time {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+    .planner-block-completed {
+      opacity: 0.6;
+      text-decoration: line-through;
+    }
+    .planner-block-checkbox {
+      position: absolute;
+      top: 8px;
+      left: 8px;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      border: 2px solid var(--priority-color, var(--accent));
+      background: transparent;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .planner-block-checkbox:hover { background: var(--priority-color); }
+    .planner-block-checkbox.checked {
+      background: var(--priority-color, var(--accent));
+    }
+    .planner-block-checkbox.checked::after {
+      content: '✓';
+      color: white;
+      font-size: 11px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+    }
+    
+    /* Current Time Indicator */
+    .planner-now-line {
+      position: absolute;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: var(--danger);
+      z-index: 5;
+      pointer-events: none;
+    }
+    .planner-now-line::before {
+      content: '';
+      position: absolute;
+      right: -4px;
+      top: -4px;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--danger);
+    }
+    .planner-now-label {
+      position: absolute;
+      left: 4px;
+      top: -8px;
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--danger);
+      background: var(--card);
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+    
+    /* Week View */
+    .planner-week-view {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 8px;
+    }
+    .planner-week-day {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      min-height: 500px;
+    }
+    .planner-week-day.today {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 1px var(--accent);
+    }
+    .planner-week-day-header {
+      padding: 12px;
+      text-align: center;
+      border-bottom: 1px solid var(--border);
+      background: var(--day-other);
+    }
+    .planner-week-day-name {
+      font-size: 12px;
+      color: var(--muted);
+      font-weight: 500;
+    }
+    .planner-week-day-number {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--text);
+    }
+    .planner-week-day.today .planner-week-day-number { color: var(--accent); }
+    .planner-week-day-content {
+      padding: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      min-height: 400px;
+    }
+    .planner-week-block {
+      padding: 8px 10px;
+      background: var(--priority-bg, var(--day-other));
+      border-right: 3px solid var(--priority-color, var(--accent));
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .planner-week-block:hover { 
+      transform: translateY(-1px);
+      box-shadow: var(--shadow);
+    }
+    .planner-week-block-time {
+      font-size: 10px;
+      color: var(--muted);
+      margin-bottom: 2px;
+    }
+    .planner-week-block-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    
+    /* Add Block Modal */
+    .planner-add-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.5);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 2000;
+    }
+    .planner-add-modal.open { display: flex; }
+    .planner-add-card {
+      background: var(--card);
+      border-radius: var(--radius-xl);
+      padding: 24px;
+      width: 100%;
+      max-width: 480px;
+      max-height: 90vh;
+      overflow-y: auto;
+      direction: rtl;
+    }
+    .planner-add-title {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .planner-add-field {
+      margin-bottom: 16px;
+    }
+    .planner-add-label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 6px;
+    }
+    .planner-add-input {
+      width: 100%;
+      padding: 12px 14px;
+      border: 2px solid var(--border);
+      border-radius: var(--radius-md);
+      font-size: 14px;
+      background: var(--input-bg);
+      color: var(--text);
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .planner-add-input:focus { border-color: var(--accent); }
+    .planner-add-row {
+      display: flex;
+      gap: 12px;
+    }
+    .planner-add-row .planner-add-field { flex: 1; }
+    
+    .planner-add-duration-presets {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 8px;
+    }
+    .planner-duration-btn {
+      padding: 6px 12px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--day-other);
+      color: var(--text);
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .planner-duration-btn:hover { border-color: var(--accent); }
+    .planner-duration-btn.active { background: var(--accent); color: white; border-color: var(--accent); }
+    
+    .planner-add-priority {
+      display: flex;
+      gap: 8px;
+    }
+    .planner-priority-option {
+      flex: 1;
+      padding: 10px;
+      border: 2px solid var(--border);
+      border-radius: var(--radius-md);
+      background: transparent;
+      cursor: pointer;
+      text-align: center;
+      font-size: 12px;
+      font-weight: 600;
+      transition: all 0.15s;
+    }
+    .planner-priority-option:hover { border-color: var(--muted); }
+    .planner-priority-option.selected { border-color: var(--priority-color); background: var(--priority-bg); }
+    .planner-priority-option[data-priority="urgent"] { --priority-color: #ef4444; --priority-bg: #fef2f2; }
+    .planner-priority-option[data-priority="high"] { --priority-color: #f97316; --priority-bg: #fff7ed; }
+    .planner-priority-option[data-priority="medium"] { --priority-color: #eab308; --priority-bg: #fefce8; }
+    .planner-priority-option[data-priority="low"] { --priority-color: #22c55e; --priority-bg: #f0fdf4; }
+    .planner-priority-option[data-priority="none"] { --priority-color: #6b7280; --priority-bg: var(--day-other); }
+    body.dark .planner-priority-option[data-priority="urgent"] { --priority-bg: rgba(239, 68, 68, 0.15); }
+    body.dark .planner-priority-option[data-priority="high"] { --priority-bg: rgba(249, 115, 22, 0.15); }
+    body.dark .planner-priority-option[data-priority="medium"] { --priority-bg: rgba(234, 179, 8, 0.15); }
+    body.dark .planner-priority-option[data-priority="low"] { --priority-bg: rgba(34, 197, 94, 0.15); }
+    body.dark .planner-priority-option[data-priority="none"] { --priority-bg: var(--day-other); }
+    
+    .planner-add-actions {
+      display: flex;
+      gap: 12px;
+      margin-top: 24px;
+    }
+    .planner-add-actions button {
+      flex: 1;
+      padding: 14px;
+      border-radius: var(--radius-md);
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .planner-add-cancel {
+      background: var(--btn-secondary-bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+    }
+    .planner-add-cancel:hover { background: var(--btn-secondary-hover); }
+    .planner-add-save {
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border: none;
+      color: white;
+    }
+    .planner-add-save:hover { transform: translateY(-1px); box-shadow: var(--shadow-hover); }
+    .planner-add-delete {
+      background: var(--danger);
+      border: none;
+      color: white;
+      flex: 0.5;
+    }
+    .planner-add-delete:hover { opacity: 0.9; }
+    
+    /* Planner Empty State */
+    .planner-empty-hour {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 11px;
+      color: var(--muted);
+      opacity: 0;
+      transition: opacity 0.15s;
+      pointer-events: none;
+    }
+    .planner-hour-content:hover .planner-empty-hour { opacity: 1; }
+    
+    /* Stats Bar */
+    .planner-stats-bar {
+      display: flex;
+      gap: 24px;
+      padding: 12px 24px;
+      background: var(--card);
+      border-bottom: 1px solid var(--border);
+    }
+    .planner-stat {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .planner-stat-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: var(--radius-sm);
+      background: var(--day-other);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+    }
+    .planner-stat-info {
+      display: flex;
+      flex-direction: column;
+    }
+    .planner-stat-value {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text);
+    }
+    .planner-stat-label {
+      font-size: 11px;
+      color: var(--muted);
+    }
+    
+    /* Templates */
+    .planner-templates {
+      padding: 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    .planner-template-btn {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      width: 100%;
+      padding: 12px 14px;
+      background: var(--day-other);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      transition: all 0.15s;
+      margin-bottom: 8px;
+      font-size: 13px;
+      color: var(--text);
+    }
+    .planner-template-btn:hover { border-color: var(--accent); background: var(--day-hover); }
+    .planner-template-icon {
+      font-size: 18px;
+    }
+    
+    /* Responsive */
+    @media (max-width: 1024px) {
+      .planner-sidebar { width: 280px; }
+      .planner-week-view { grid-template-columns: repeat(4, 1fr); }
+    }
+    @media (max-width: 768px) {
+      .planner-sidebar { display: none; }
+      .planner-header-bar { padding: 12px 16px; flex-wrap: wrap; }
+      .planner-week-view { grid-template-columns: repeat(2, 1fr); }
+      .planner-content { padding: 12px 16px; }
+      .planner-stats-bar { flex-wrap: wrap; gap: 16px; padding: 12px 16px; }
+    }
 
     /* Pomodoro - Fullscreen like Task Manager */
     .pomodoro-overlay {
@@ -4509,6 +5213,7 @@
     <button class="header-btn active" id="toggleCountdown">⏱️ ספירה לאחור</button>
     <button class="header-btn" id="toggleTasks">📝 משימות</button>
     <button class="header-btn" id="togglePomodoro">🍅 פומודורו</button>
+    <button class="header-btn" id="togglePlanner">📅 מתכנן יומי</button>
     <div class="header-spacer"></div>
     <button class="header-btn" id="toggleSidebar">📅 לוח</button>
     <span class="sync-badge hidden" id="syncBadge"><span class="sync-dot"></span><span class="sync-text">Syncing…</span></span>
@@ -5015,7 +5720,206 @@
     </div>
     <button class="pomodoro-mini-close" id="pomodoroMiniClose" aria-label="סגור">×</button>
   </div>
+
+  <!-- ============== DAILY PLANNER ============== -->
+  <div class="planner-overlay" id="plannerOverlay">
+    <div class="planner-header-bar">
+      <div class="planner-header-title">📅 מתכנן יומי</div>
+      
+      <div class="planner-date-nav">
+        <button id="plannerPrevDay">‹</button>
+        <span class="planner-current-date" id="plannerCurrentDate">יום ראשון, 1 בינואר 2026</span>
+        <button id="plannerNextDay">›</button>
+      </div>
+      
+      <button class="planner-today-btn" id="plannerTodayBtn">📍 היום</button>
+      
+      <div class="planner-view-toggle">
+        <button class="active" data-view="day">📋 יום</button>
+        <button data-view="week">📆 שבוע</button>
+      </div>
+    </div>
+    
+    <div class="planner-stats-bar">
+      <div class="planner-stat">
+        <div class="planner-stat-icon">📝</div>
+        <div class="planner-stat-info">
+          <div class="planner-stat-value" id="plannerTotalBlocks">0</div>
+          <div class="planner-stat-label">פעילויות</div>
+        </div>
+      </div>
+      <div class="planner-stat">
+        <div class="planner-stat-icon">⏱️</div>
+        <div class="planner-stat-info">
+          <div class="planner-stat-value" id="plannerTotalHours">0 שעות</div>
+          <div class="planner-stat-label">זמן מתוכנן</div>
+        </div>
+      </div>
+      <div class="planner-stat">
+        <div class="planner-stat-icon">✅</div>
+        <div class="planner-stat-info">
+          <div class="planner-stat-value" id="plannerCompletedBlocks">0</div>
+          <div class="planner-stat-label">הושלמו</div>
+        </div>
+      </div>
+      <div class="planner-stat">
+        <div class="planner-stat-icon">🎯</div>
+        <div class="planner-stat-info">
+          <div class="planner-stat-value" id="plannerProgress">0%</div>
+          <div class="planner-stat-label">התקדמות</div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="planner-main">
+      <!-- Main Content -->
+      <div class="planner-content" id="plannerContent">
+        <!-- Day View -->
+        <div class="planner-day-view" id="plannerDayView">
+          <div class="planner-day-header">
+            <div class="planner-day-title" id="plannerDayTitle">היום - יום ראשון</div>
+            <div class="planner-day-summary">
+              <span id="plannerDaySummary">0 פעילויות • 0 שעות</span>
+            </div>
+          </div>
+          <div class="planner-timeline" id="plannerTimeline">
+            <!-- Hours will be generated by JS -->
+          </div>
+        </div>
+        
+        <!-- Week View (hidden by default) -->
+        <div class="planner-week-view" id="plannerWeekView" style="display: none;">
+          <!-- Week days will be generated by JS -->
+        </div>
+      </div>
+      
+      <!-- Sidebar -->
+      <div class="planner-sidebar" id="plannerSidebar">
+        <!-- Mini Calendar -->
+        <div class="planner-sidebar-section">
+          <div class="planner-sidebar-title">📅 לוח שנה</div>
+          <div class="planner-mini-calendar" id="plannerMiniCalendar">
+            <div class="planner-mini-header">
+              <button class="planner-mini-nav-btn" id="plannerMiniPrev">‹</button>
+              <span class="planner-mini-title" id="plannerMiniTitle">ינואר 2026</span>
+              <button class="planner-mini-nav-btn" id="plannerMiniNext">›</button>
+            </div>
+            <div class="planner-mini-grid" id="plannerMiniGrid">
+              <!-- Mini calendar grid will be generated by JS -->
+            </div>
+          </div>
+        </div>
+        
+        <!-- Quick Templates -->
+        <div class="planner-sidebar-section">
+          <div class="planner-sidebar-title">⚡ תבניות מהירות</div>
+          <button class="planner-template-btn" data-template="morning">
+            <span class="planner-template-icon">🌅</span>
+            <span>שגרת בוקר</span>
+          </button>
+          <button class="planner-template-btn" data-template="work">
+            <span class="planner-template-icon">💼</span>
+            <span>יום עבודה</span>
+          </button>
+          <button class="planner-template-btn" data-template="study">
+            <span class="planner-template-icon">📚</span>
+            <span>יום לימודים</span>
+          </button>
+          <button class="planner-template-btn" data-template="relax">
+            <span class="planner-template-icon">🧘</span>
+            <span>יום מנוחה</span>
+          </button>
+        </div>
+        
+        <!-- Unscheduled Tasks -->
+        <div class="planner-sidebar-section" style="flex: 1; display: flex; flex-direction: column;">
+          <div class="planner-sidebar-title">📋 משימות לתזמון</div>
+          <div class="planner-quick-tasks" id="plannerQuickTasks">
+            <!-- Tasks will be populated by JS -->
+            <div class="no-events-msg" id="plannerNoTasks">אין משימות ללא תזמון</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
   
+  <!-- Planner Add/Edit Block Modal -->
+  <div class="planner-add-modal" id="plannerAddModal">
+    <div class="planner-add-card">
+      <div class="planner-add-title" id="plannerModalTitle">➕ הוסף פעילות</div>
+      
+      <div class="planner-add-field">
+        <label class="planner-add-label">שם הפעילות *</label>
+        <input type="text" class="planner-add-input" id="plannerBlockTitle" placeholder="מה אתה מתכנן לעשות?" dir="auto" />
+      </div>
+      
+      <div class="planner-add-row">
+        <div class="planner-add-field">
+          <label class="planner-add-label">שעת התחלה</label>
+          <input type="time" class="planner-add-input" id="plannerBlockStart" style="direction: ltr;" />
+        </div>
+        <div class="planner-add-field">
+          <label class="planner-add-label">שעת סיום</label>
+          <input type="time" class="planner-add-input" id="plannerBlockEnd" style="direction: ltr;" />
+        </div>
+      </div>
+      
+      <div class="planner-add-field">
+        <label class="planner-add-label">משך זמן מהיר</label>
+        <div class="planner-add-duration-presets">
+          <button class="planner-duration-btn" data-duration="15">15 דק׳</button>
+          <button class="planner-duration-btn" data-duration="30">30 דק׳</button>
+          <button class="planner-duration-btn active" data-duration="60">שעה</button>
+          <button class="planner-duration-btn" data-duration="90">1.5 שעות</button>
+          <button class="planner-duration-btn" data-duration="120">שעתיים</button>
+        </div>
+      </div>
+      
+      <div class="planner-add-field">
+        <label class="planner-add-label">עדיפות</label>
+        <div class="planner-add-priority" id="plannerPriorityPicker">
+          <button class="planner-priority-option" data-priority="urgent">🔴 דחוף</button>
+          <button class="planner-priority-option" data-priority="high">🟠 גבוהה</button>
+          <button class="planner-priority-option selected" data-priority="medium">🟡 בינונית</button>
+          <button class="planner-priority-option" data-priority="low">🟢 נמוכה</button>
+          <button class="planner-priority-option" data-priority="none">⚪ ללא</button>
+        </div>
+      </div>
+      
+      <div class="planner-add-field">
+        <label class="planner-add-label">קטגוריה (אופציונלי)</label>
+        <select class="planner-add-input" id="plannerBlockCategory">
+          <option value="">ללא קטגוריה</option>
+          <option value="work">💼 עבודה</option>
+          <option value="study">📚 לימודים</option>
+          <option value="health">🏃 בריאות</option>
+          <option value="personal">🏠 אישי</option>
+          <option value="social">👥 חברתי</option>
+          <option value="creative">🎨 יצירתי</option>
+          <option value="rest">🧘 מנוחה</option>
+        </select>
+      </div>
+      
+      <div class="planner-add-field">
+        <label class="planner-add-label">הערות (אופציונלי)</label>
+        <textarea class="planner-add-input" id="plannerBlockNotes" rows="2" placeholder="הוסף פרטים נוספים..." dir="auto"></textarea>
+      </div>
+      
+      <div class="planner-add-field">
+        <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+          <input type="checkbox" id="plannerBlockRepeat" />
+          <span style="font-size: 13px; color: var(--text);">🔄 חזור כל יום</span>
+        </label>
+      </div>
+      
+      <div class="planner-add-actions">
+        <button class="planner-add-cancel" id="plannerCancelBtn">ביטול</button>
+        <button class="planner-add-delete" id="plannerDeleteBtn" style="display: none;">🗑️</button>
+        <button class="planner-add-save" id="plannerSaveBtn">💾 שמור</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Subject Modal -->
   <div class="subject-modal" id="subjectModal">
     <div class="subject-modal-card">
@@ -7798,15 +8702,17 @@ const themeToggle = $("themeToggle");
   })();
 
   // Toggle overlays - menu buttons switch between views
-  // Three main views: Countdown (app-layout), Tasks (taskManagerOverlay), Pomodoro (pomodoroOverlay)
+  // Four main views: Countdown (app-layout), Tasks (taskManagerOverlay), Pomodoro (pomodoroOverlay), Planner (plannerOverlay)
   const toggleCountdown = document.getElementById('toggleCountdown');
+  const togglePlanner = document.getElementById('togglePlanner');
+  const plannerOverlay = document.getElementById('plannerOverlay');
   const appLayout = document.querySelector('.app-layout');
   // Ensure current view state and commonly used DOM refs exist before showView
   let currentView = 'countdown';
 
   function updateHeaderButtons() {
     try {
-      ['toggleCountdown','toggleTasks','togglePomodoro'].forEach(id => {
+      ['toggleCountdown','toggleTasks','togglePomodoro','togglePlanner'].forEach(id => {
         const el = $(id);
         if (el) el.classList.remove('active');
       });
@@ -7816,6 +8722,8 @@ const themeToggle = $("themeToggle");
         const el = $('toggleTasks'); if (el) el.classList.add('active');
       } else if (currentView === 'pomodoro') {
         const el = $('togglePomodoro'); if (el) el.classList.add('active');
+      } else if (currentView === 'planner') {
+        const el = $('togglePlanner'); if (el) el.classList.add('active');
       }
     } catch (e) {
       console.warn('updateHeaderButtons error', e);
@@ -7832,6 +8740,7 @@ const themeToggle = $("themeToggle");
     appLayout.style.display = 'none';
     taskManagerOverlay.classList.remove('open');
     pomodoroOverlay.classList.remove('open');
+    if (plannerOverlay) plannerOverlay.classList.remove('open');
     stopTaskTicker();
     
     // Show calendar button only for countdown view
@@ -7849,6 +8758,13 @@ const themeToggle = $("themeToggle");
       if (typeof renderTaskCalendar === 'function') renderTaskCalendar();
     } else if (view === 'pomodoro') {
       pomodoroOverlay.classList.add('open');
+    } else if (view === 'planner') {
+      if (plannerOverlay) {
+        plannerOverlay.classList.add('open');
+        if (typeof DailyPlanner !== 'undefined' && DailyPlanner.init) {
+          DailyPlanner.init();
+        }
+      }
     }
     
     currentView = view;
@@ -7858,6 +8774,7 @@ const themeToggle = $("themeToggle");
   toggleCountdown.onclick = () => showView('countdown');
   toggleTasks.onclick = () => showView('tasks');
   togglePomodoro.onclick = () => showView('pomodoro');
+  if (togglePlanner) togglePlanner.onclick = () => showView('planner');
 
   // Close task manager button
   if (closeTaskManager) {
@@ -10688,6 +11605,833 @@ const themeToggle = $("themeToggle");
 
   // ============ INITIALIZE SMART VIEWS ============
   setupSmartViewsHandlers();
+
+  // ============ DAILY PLANNER MODULE ============
+  const DailyPlanner = (() => {
+    // State
+    let currentDate = new Date();
+    let plannerView = 'day'; // 'day' or 'week'
+    let plannerBlocks = [];
+    let editingBlockId = null;
+    let miniCalendarDate = new Date();
+    
+    // Storage key
+    const STORAGE_KEY = 'dailyPlannerBlocks';
+    
+    // DOM References
+    const refs = {
+      overlay: null,
+      currentDate: null,
+      prevDay: null,
+      nextDay: null,
+      todayBtn: null,
+      viewToggle: null,
+      timeline: null,
+      dayView: null,
+      weekView: null,
+      miniGrid: null,
+      miniTitle: null,
+      quickTasks: null,
+      addModal: null,
+      totalBlocks: null,
+      totalHours: null,
+      completedBlocks: null,
+      progress: null,
+      dayTitle: null,
+      daySummary: null
+    };
+    
+    // Hebrew day names
+    const hebrewDays = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
+    const hebrewMonths = ['ינואר', 'פברואר', 'מרץ', 'אפריל', 'מאי', 'יוני', 'יולי', 'אוגוסט', 'ספטמבר', 'אוקטובר', 'נובמבר', 'דצמבר'];
+    
+    // Priority colors
+    const priorityColors = {
+      urgent: { color: '#ef4444', bg: '#fef2f2' },
+      high: { color: '#f97316', bg: '#fff7ed' },
+      medium: { color: '#eab308', bg: '#fefce8' },
+      low: { color: '#22c55e', bg: '#f0fdf4' },
+      none: { color: '#6b7280', bg: '#f3f4f6' }
+    };
+    
+    // Category icons
+    const categoryIcons = {
+      work: '💼',
+      study: '📚',
+      health: '🏃',
+      personal: '🏠',
+      social: '👥',
+      creative: '🎨',
+      rest: '🧘'
+    };
+    
+    // Templates
+    const templates = {
+      morning: [
+        { title: 'התעוררות והתארגנות', start: '06:00', duration: 30, priority: 'medium', category: 'personal' },
+        { title: 'ארוחת בוקר', start: '06:30', duration: 30, priority: 'low', category: 'health' },
+        { title: 'פעילות גופנית', start: '07:00', duration: 45, priority: 'high', category: 'health' },
+        { title: 'מקלחת והתארגנות', start: '07:45', duration: 30, priority: 'medium', category: 'personal' }
+      ],
+      work: [
+        { title: 'בדיקת מיילים ותכנון יום', start: '09:00', duration: 30, priority: 'medium', category: 'work' },
+        { title: 'עבודה ממוקדת - בלוק 1', start: '09:30', duration: 90, priority: 'high', category: 'work' },
+        { title: 'הפסקה קצרה', start: '11:00', duration: 15, priority: 'low', category: 'rest' },
+        { title: 'עבודה ממוקדת - בלוק 2', start: '11:15', duration: 90, priority: 'high', category: 'work' },
+        { title: 'ארוחת צהריים', start: '12:45', duration: 45, priority: 'medium', category: 'health' },
+        { title: 'פגישות / שיחות', start: '13:30', duration: 60, priority: 'medium', category: 'work' },
+        { title: 'עבודה ממוקדת - בלוק 3', start: '14:30', duration: 90, priority: 'high', category: 'work' },
+        { title: 'סיכום יום ותכנון מחר', start: '16:00', duration: 30, priority: 'medium', category: 'work' }
+      ],
+      study: [
+        { title: 'לימוד - נושא ראשי', start: '08:00', duration: 90, priority: 'high', category: 'study' },
+        { title: 'הפסקה וחטיף', start: '09:30', duration: 15, priority: 'low', category: 'rest' },
+        { title: 'תרגול ופתרון בעיות', start: '09:45', duration: 60, priority: 'high', category: 'study' },
+        { title: 'ארוחת צהריים', start: '10:45', duration: 45, priority: 'medium', category: 'health' },
+        { title: 'לימוד - נושא משני', start: '11:30', duration: 75, priority: 'medium', category: 'study' },
+        { title: 'הפסקה ארוכה', start: '12:45', duration: 30, priority: 'low', category: 'rest' },
+        { title: 'חזרה וסיכום', start: '13:15', duration: 60, priority: 'medium', category: 'study' },
+        { title: 'הכנת שיעורי בית', start: '14:15', duration: 90, priority: 'high', category: 'study' }
+      ],
+      relax: [
+        { title: 'התעוררות טבעית', start: '09:00', duration: 30, priority: 'low', category: 'rest' },
+        { title: 'ארוחת בוקר נינוחה', start: '09:30', duration: 45, priority: 'low', category: 'health' },
+        { title: 'קריאה / מדיטציה', start: '10:15', duration: 60, priority: 'low', category: 'rest' },
+        { title: 'טיול / פעילות חוץ', start: '11:15', duration: 90, priority: 'medium', category: 'health' },
+        { title: 'ארוחת צהריים', start: '12:45', duration: 60, priority: 'low', category: 'health' },
+        { title: 'תחביב / פעילות יצירתית', start: '13:45', duration: 120, priority: 'medium', category: 'creative' },
+        { title: 'זמן חברתי / משפחתי', start: '16:00', duration: 120, priority: 'medium', category: 'social' }
+      ]
+    };
+    
+    // Load blocks from storage
+    const loadBlocks = () => {
+      try {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+          plannerBlocks = JSON.parse(saved);
+        }
+      } catch (e) {
+        console.error('Error loading planner blocks:', e);
+        plannerBlocks = [];
+      }
+    };
+    
+    // Save blocks to storage
+    const saveBlocks = () => {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(plannerBlocks));
+      } catch (e) {
+        console.error('Error saving planner blocks:', e);
+      }
+    };
+    
+    // Generate unique ID
+    const generateId = () => 'block_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+    
+    // Format date for display
+    const formatDate = (date) => {
+      const day = hebrewDays[date.getDay()];
+      const dayNum = date.getDate();
+      const month = hebrewMonths[date.getMonth()];
+      const year = date.getFullYear();
+      return `יום ${day}, ${dayNum} ב${month} ${year}`;
+    };
+    
+    // Check if two dates are the same day
+    const isSameDay = (d1, d2) => {
+      return d1.getFullYear() === d2.getFullYear() &&
+             d1.getMonth() === d2.getMonth() &&
+             d1.getDate() === d2.getDate();
+    };
+    
+    // Check if date is today
+    const isToday = (date) => isSameDay(date, new Date());
+    
+    // Get date string for storage (YYYY-MM-DD)
+    const getDateKey = (date) => {
+      return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+    };
+    
+    // Parse time string to minutes from midnight
+    const parseTime = (timeStr) => {
+      if (!timeStr) return 0;
+      const [h, m] = timeStr.split(':').map(Number);
+      return h * 60 + (m || 0);
+    };
+    
+    // Format minutes to time string
+    const formatTime = (minutes) => {
+      const h = Math.floor(minutes / 60);
+      const m = minutes % 60;
+      return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+    };
+    
+    // Get blocks for a specific date
+    const getBlocksForDate = (date) => {
+      const dateKey = getDateKey(date);
+      return plannerBlocks.filter(b => b.date === dateKey).sort((a, b) => parseTime(a.start) - parseTime(b.start));
+    };
+    
+    // Calculate stats for a date
+    const calculateStats = (date) => {
+      const blocks = getBlocksForDate(date);
+      const total = blocks.length;
+      const completed = blocks.filter(b => b.completed).length;
+      const totalMinutes = blocks.reduce((sum, b) => sum + (b.duration || 60), 0);
+      const hours = Math.floor(totalMinutes / 60);
+      const mins = totalMinutes % 60;
+      const progress = total > 0 ? Math.round((completed / total) * 100) : 0;
+      
+      return { total, completed, hours, mins, progress, totalMinutes };
+    };
+    
+    // Update stats display
+    const updateStats = () => {
+      const stats = calculateStats(currentDate);
+      
+      if (refs.totalBlocks) refs.totalBlocks.textContent = stats.total;
+      if (refs.totalHours) {
+        refs.totalHours.textContent = stats.mins > 0 ? `${stats.hours}:${String(stats.mins).padStart(2, '0')} שעות` : `${stats.hours} שעות`;
+      }
+      if (refs.completedBlocks) refs.completedBlocks.textContent = stats.completed;
+      if (refs.progress) refs.progress.textContent = `${stats.progress}%`;
+      if (refs.daySummary) {
+        refs.daySummary.textContent = `${stats.total} פעילויות • ${stats.hours}:${String(stats.mins).padStart(2, '0')} שעות`;
+      }
+    };
+    
+    // Render timeline for day view
+    const renderTimeline = () => {
+      if (!refs.timeline) return;
+      
+      const blocks = getBlocksForDate(currentDate);
+      const now = new Date();
+      const isCurrentDay = isToday(currentDate);
+      const currentMinutes = now.getHours() * 60 + now.getMinutes();
+      
+      let html = '';
+      
+      // Generate hour rows (6 AM to 11 PM)
+      for (let hour = 6; hour <= 23; hour++) {
+        const hourLabel = `${String(hour).padStart(2, '0')}:00`;
+        const hourMinutes = hour * 60;
+        
+        // Find blocks that start in this hour
+        const hourBlocks = blocks.filter(b => {
+          const startMin = parseTime(b.start);
+          return startMin >= hourMinutes && startMin < hourMinutes + 60;
+        });
+        
+        html += `
+          <div class="planner-hour-row" data-hour="${hour}">
+            <div class="planner-hour-label">${hourLabel}</div>
+            <div class="planner-hour-content" data-hour="${hour}">
+              <span class="planner-empty-hour">+ לחץ להוספה</span>
+              ${hourBlocks.map(block => renderBlock(block, hourMinutes)).join('')}
+              ${isCurrentDay && currentMinutes >= hourMinutes && currentMinutes < hourMinutes + 60 ? renderNowLine(currentMinutes - hourMinutes) : ''}
+            </div>
+          </div>
+        `;
+      }
+      
+      refs.timeline.innerHTML = html;
+      
+      // Add click handlers for hour content
+      refs.timeline.querySelectorAll('.planner-hour-content').forEach(el => {
+        el.addEventListener('click', (e) => {
+          if (e.target.closest('.planner-block')) return;
+          const hour = parseInt(el.dataset.hour);
+          openAddModal(hour);
+        });
+      });
+      
+      // Add click handlers for blocks
+      refs.timeline.querySelectorAll('.planner-block').forEach(el => {
+        el.addEventListener('click', (e) => {
+          if (e.target.classList.contains('planner-block-checkbox')) return;
+          openEditModal(el.dataset.id);
+        });
+      });
+      
+      // Add checkbox handlers
+      refs.timeline.querySelectorAll('.planner-block-checkbox').forEach(el => {
+        el.addEventListener('click', (e) => {
+          e.stopPropagation();
+          toggleBlockComplete(el.dataset.id);
+        });
+      });
+      
+      // Update day title
+      if (refs.dayTitle) {
+        const dayName = hebrewDays[currentDate.getDay()];
+        const dayLabel = isToday(currentDate) ? 'היום' : (isSameDay(currentDate, new Date(Date.now() + 86400000)) ? 'מחר' : `יום ${dayName}`);
+        refs.dayTitle.textContent = `${dayLabel} - יום ${dayName}`;
+      }
+      
+      updateStats();
+    };
+    
+    // Render a single block
+    const renderBlock = (block, hourMinutes) => {
+      const startMin = parseTime(block.start);
+      const offsetMin = startMin - hourMinutes;
+      const heightPx = Math.max(30, (block.duration || 60) * 1); // 1px per minute
+      const topPx = offsetMin * 1;
+      
+      const priority = block.priority || 'none';
+      const colors = priorityColors[priority] || priorityColors.none;
+      const categoryIcon = block.category ? (categoryIcons[block.category] || '') : '';
+      const endTime = formatTime(startMin + (block.duration || 60));
+      
+      return `
+        <div class="planner-block priority-${priority} ${block.completed ? 'planner-block-completed' : ''}" 
+             data-id="${block.id}" 
+             style="top: ${topPx}px; height: ${heightPx}px; --priority-color: ${colors.color}; --priority-bg: ${colors.bg};">
+          <div class="planner-block-checkbox ${block.completed ? 'checked' : ''}" data-id="${block.id}"></div>
+          <div class="planner-block-title">${categoryIcon} ${escapeHtml(block.title)}</div>
+          <div class="planner-block-time">${block.start} - ${endTime}</div>
+        </div>
+      `;
+    };
+    
+    // Render current time indicator
+    const renderNowLine = (offsetMinutes) => {
+      const topPx = offsetMinutes * 1;
+      const now = new Date();
+      const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+      return `
+        <div class="planner-now-line" style="top: ${topPx}px;">
+          <span class="planner-now-label">${timeStr}</span>
+        </div>
+      `;
+    };
+    
+    // Render week view
+    const renderWeekView = () => {
+      if (!refs.weekView) return;
+      
+      const startOfWeek = new Date(currentDate);
+      const dayOfWeek = startOfWeek.getDay();
+      startOfWeek.setDate(startOfWeek.getDate() - dayOfWeek);
+      
+      let html = '';
+      
+      for (let i = 0; i < 7; i++) {
+        const date = new Date(startOfWeek);
+        date.setDate(date.getDate() + i);
+        const blocks = getBlocksForDate(date);
+        const isCurrentDay = isToday(date);
+        const isSelected = isSameDay(date, currentDate);
+        
+        html += `
+          <div class="planner-week-day ${isCurrentDay ? 'today' : ''} ${isSelected ? 'selected' : ''}" data-date="${getDateKey(date)}">
+            <div class="planner-week-day-header">
+              <div class="planner-week-day-name">${hebrewDays[date.getDay()]}</div>
+              <div class="planner-week-day-number">${date.getDate()}</div>
+            </div>
+            <div class="planner-week-day-content">
+              ${blocks.slice(0, 8).map(block => `
+                <div class="planner-week-block priority-${block.priority || 'none'}" data-id="${block.id}"
+                     style="--priority-color: ${(priorityColors[block.priority] || priorityColors.none).color}; --priority-bg: ${(priorityColors[block.priority] || priorityColors.none).bg};">
+                  <div class="planner-week-block-time">${block.start}</div>
+                  <div class="planner-week-block-title">${escapeHtml(block.title)}</div>
+                </div>
+              `).join('')}
+              ${blocks.length > 8 ? `<div style="text-align: center; font-size: 11px; color: var(--muted);">+${blocks.length - 8} עוד</div>` : ''}
+            </div>
+          </div>
+        `;
+      }
+      
+      refs.weekView.innerHTML = html;
+      
+      // Add click handlers for week days
+      refs.weekView.querySelectorAll('.planner-week-day').forEach(el => {
+        el.addEventListener('click', (e) => {
+          if (e.target.closest('.planner-week-block')) {
+            const blockEl = e.target.closest('.planner-week-block');
+            openEditModal(blockEl.dataset.id);
+          } else {
+            const parts = el.dataset.date.split('-');
+            currentDate = new Date(parts[0], parts[1] - 1, parts[2]);
+            plannerView = 'day';
+            updateViewToggle();
+            render();
+          }
+        });
+      });
+      
+      updateStats();
+    };
+    
+    // Render mini calendar
+    const renderMiniCalendar = () => {
+      if (!refs.miniGrid || !refs.miniTitle) return;
+      
+      const year = miniCalendarDate.getFullYear();
+      const month = miniCalendarDate.getMonth();
+      
+      refs.miniTitle.textContent = `${hebrewMonths[month]} ${year}`;
+      
+      const firstDay = new Date(year, month, 1);
+      const lastDay = new Date(year, month + 1, 0);
+      const startOffset = firstDay.getDay();
+      
+      let html = '';
+      
+      // Day names
+      const dayNames = ['א', 'ב', 'ג', 'ד', 'ה', 'ו', 'ש'];
+      dayNames.forEach(name => {
+        html += `<div class="planner-mini-day-name">${name}</div>`;
+      });
+      
+      // Empty cells before first day
+      for (let i = 0; i < startOffset; i++) {
+        const prevDate = new Date(year, month, -(startOffset - i - 1));
+        html += `<div class="planner-mini-day other-month" data-date="${getDateKey(prevDate)}">${prevDate.getDate()}</div>`;
+      }
+      
+      // Days of month
+      for (let d = 1; d <= lastDay.getDate(); d++) {
+        const date = new Date(year, month, d);
+        const hasEvents = getBlocksForDate(date).length > 0;
+        const isCurrentDay = isToday(date);
+        const isSelected = isSameDay(date, currentDate);
+        
+        html += `<div class="planner-mini-day ${isCurrentDay ? 'today' : ''} ${isSelected ? 'selected' : ''} ${hasEvents ? 'has-events' : ''}" data-date="${getDateKey(date)}">${d}</div>`;
+      }
+      
+      // Empty cells after last day
+      const endOffset = 6 - lastDay.getDay();
+      for (let i = 1; i <= endOffset; i++) {
+        const nextDate = new Date(year, month + 1, i);
+        html += `<div class="planner-mini-day other-month" data-date="${getDateKey(nextDate)}">${i}</div>`;
+      }
+      
+      refs.miniGrid.innerHTML = html;
+      
+      // Add click handlers
+      refs.miniGrid.querySelectorAll('.planner-mini-day').forEach(el => {
+        el.addEventListener('click', () => {
+          const parts = el.dataset.date.split('-');
+          currentDate = new Date(parts[0], parts[1] - 1, parts[2]);
+          miniCalendarDate = new Date(currentDate);
+          render();
+        });
+      });
+    };
+    
+    // Render unscheduled tasks from the task manager
+    const renderQuickTasks = () => {
+      if (!refs.quickTasks) return;
+      
+      // Get tasks without due date or without time
+      const unscheduledTasks = (typeof tasks !== 'undefined' ? tasks : [])
+        .filter(t => !t.completed && (!t.dueDate || !t.dueDate.includes('T')))
+        .slice(0, 10);
+      
+      if (unscheduledTasks.length === 0) {
+        refs.quickTasks.innerHTML = '<div class="no-events-msg" id="plannerNoTasks">אין משימות ללא תזמון</div>';
+        return;
+      }
+      
+      refs.quickTasks.innerHTML = unscheduledTasks.map(task => {
+        const subject = (typeof subjects !== 'undefined' ? subjects : []).find(s => s.id === task.subject);
+        const color = subject ? subject.color : '#667eea';
+        const priorityLabel = { urgent: '🔴', high: '🟠', medium: '🟡', low: '🟢', none: '⚪' };
+        
+        return `
+          <div class="planner-task-item" draggable="true" data-task-id="${task.id}">
+            <div class="task-color-dot" style="background: ${color};"></div>
+            <div class="task-info">
+              <div class="task-title">${priorityLabel[task.priority || 'none']} ${escapeHtml(task.title)}</div>
+              ${subject ? `<div class="task-subject">${subject.name}</div>` : ''}
+            </div>
+            <div class="task-duration">30 דק׳</div>
+          </div>
+        `;
+      }).join('');
+      
+      // Add drag handlers
+      refs.quickTasks.querySelectorAll('.planner-task-item').forEach(el => {
+        el.addEventListener('dragstart', (e) => {
+          e.dataTransfer.setData('text/plain', el.dataset.taskId);
+          el.classList.add('dragging');
+        });
+        el.addEventListener('dragend', () => {
+          el.classList.remove('dragging');
+        });
+      });
+    };
+    
+    // Open add modal
+    const openAddModal = (hour = 9) => {
+      editingBlockId = null;
+      
+      const modal = refs.addModal;
+      if (!modal) return;
+      
+      const titleEl = modal.querySelector('#plannerModalTitle');
+      const blockTitle = modal.querySelector('#plannerBlockTitle');
+      const blockStart = modal.querySelector('#plannerBlockStart');
+      const blockEnd = modal.querySelector('#plannerBlockEnd');
+      const blockCategory = modal.querySelector('#plannerBlockCategory');
+      const blockNotes = modal.querySelector('#plannerBlockNotes');
+      const blockRepeat = modal.querySelector('#plannerBlockRepeat');
+      const deleteBtn = modal.querySelector('#plannerDeleteBtn');
+      const priorityPicker = modal.querySelector('#plannerPriorityPicker');
+      
+      if (titleEl) titleEl.textContent = '➕ הוסף פעילות';
+      if (blockTitle) blockTitle.value = '';
+      if (blockStart) blockStart.value = formatTime(hour * 60);
+      if (blockEnd) blockEnd.value = formatTime((hour + 1) * 60);
+      if (blockCategory) blockCategory.value = '';
+      if (blockNotes) blockNotes.value = '';
+      if (blockRepeat) blockRepeat.checked = false;
+      if (deleteBtn) deleteBtn.style.display = 'none';
+      
+      // Reset priority
+      if (priorityPicker) {
+        priorityPicker.querySelectorAll('.planner-priority-option').forEach(el => el.classList.remove('selected'));
+        const mediumBtn = priorityPicker.querySelector('[data-priority="medium"]');
+        if (mediumBtn) mediumBtn.classList.add('selected');
+      }
+      
+      // Reset duration buttons
+      modal.querySelectorAll('.planner-duration-btn').forEach(el => el.classList.remove('active'));
+      const defaultDuration = modal.querySelector('[data-duration="60"]');
+      if (defaultDuration) defaultDuration.classList.add('active');
+      
+      modal.classList.add('open');
+      if (blockTitle) blockTitle.focus();
+    };
+    
+    // Open edit modal
+    const openEditModal = (blockId) => {
+      const block = plannerBlocks.find(b => b.id === blockId);
+      if (!block) return;
+      
+      editingBlockId = blockId;
+      
+      const modal = refs.addModal;
+      if (!modal) return;
+      
+      const titleEl = modal.querySelector('#plannerModalTitle');
+      const blockTitle = modal.querySelector('#plannerBlockTitle');
+      const blockStart = modal.querySelector('#plannerBlockStart');
+      const blockEnd = modal.querySelector('#plannerBlockEnd');
+      const blockCategory = modal.querySelector('#plannerBlockCategory');
+      const blockNotes = modal.querySelector('#plannerBlockNotes');
+      const blockRepeat = modal.querySelector('#plannerBlockRepeat');
+      const deleteBtn = modal.querySelector('#plannerDeleteBtn');
+      const priorityPicker = modal.querySelector('#plannerPriorityPicker');
+      
+      if (titleEl) titleEl.textContent = '✏️ ערוך פעילות';
+      if (blockTitle) blockTitle.value = block.title || '';
+      if (blockStart) blockStart.value = block.start || '09:00';
+      if (blockEnd) blockEnd.value = formatTime(parseTime(block.start) + (block.duration || 60));
+      if (blockCategory) blockCategory.value = block.category || '';
+      if (blockNotes) blockNotes.value = block.notes || '';
+      if (blockRepeat) blockRepeat.checked = block.repeat || false;
+      if (deleteBtn) deleteBtn.style.display = '';
+      
+      // Set priority
+      if (priorityPicker) {
+        priorityPicker.querySelectorAll('.planner-priority-option').forEach(el => el.classList.remove('selected'));
+        const priorityBtn = priorityPicker.querySelector(`[data-priority="${block.priority || 'medium'}"]`);
+        if (priorityBtn) priorityBtn.classList.add('selected');
+      }
+      
+      modal.classList.add('open');
+    };
+    
+    // Close modal
+    const closeModal = () => {
+      if (refs.addModal) refs.addModal.classList.remove('open');
+      editingBlockId = null;
+    };
+    
+    // Save block
+    const saveBlock = () => {
+      const modal = refs.addModal;
+      if (!modal) return;
+      
+      const blockTitle = modal.querySelector('#plannerBlockTitle');
+      const blockStart = modal.querySelector('#plannerBlockStart');
+      const blockEnd = modal.querySelector('#plannerBlockEnd');
+      const blockCategory = modal.querySelector('#plannerBlockCategory');
+      const blockNotes = modal.querySelector('#plannerBlockNotes');
+      const blockRepeat = modal.querySelector('#plannerBlockRepeat');
+      const priorityPicker = modal.querySelector('#plannerPriorityPicker');
+      
+      const title = blockTitle ? blockTitle.value.trim() : '';
+      if (!title) {
+        if (blockTitle) blockTitle.focus();
+        return;
+      }
+      
+      const start = blockStart ? blockStart.value : '09:00';
+      const end = blockEnd ? blockEnd.value : '10:00';
+      const duration = parseTime(end) - parseTime(start);
+      const category = blockCategory ? blockCategory.value : '';
+      const notes = blockNotes ? blockNotes.value.trim() : '';
+      const repeat = blockRepeat ? blockRepeat.checked : false;
+      const selectedPriority = priorityPicker ? priorityPicker.querySelector('.selected') : null;
+      const priority = selectedPriority ? selectedPriority.dataset.priority : 'medium';
+      
+      if (editingBlockId) {
+        // Update existing block
+        const index = plannerBlocks.findIndex(b => b.id === editingBlockId);
+        if (index !== -1) {
+          plannerBlocks[index] = {
+            ...plannerBlocks[index],
+            title,
+            start,
+            duration: Math.max(15, duration),
+            category,
+            notes,
+            repeat,
+            priority
+          };
+        }
+      } else {
+        // Create new block
+        const newBlock = {
+          id: generateId(),
+          title,
+          start,
+          duration: Math.max(15, duration),
+          category,
+          notes,
+          repeat,
+          priority,
+          completed: false,
+          date: getDateKey(currentDate),
+          createdAt: new Date().toISOString()
+        };
+        plannerBlocks.push(newBlock);
+      }
+      
+      saveBlocks();
+      closeModal();
+      render();
+    };
+    
+    // Delete block
+    const deleteBlock = () => {
+      if (!editingBlockId) return;
+      
+      plannerBlocks = plannerBlocks.filter(b => b.id !== editingBlockId);
+      saveBlocks();
+      closeModal();
+      render();
+    };
+    
+    // Toggle block completion
+    const toggleBlockComplete = (blockId) => {
+      const block = plannerBlocks.find(b => b.id === blockId);
+      if (block) {
+        block.completed = !block.completed;
+        saveBlocks();
+        render();
+      }
+    };
+    
+    // Apply template
+    const applyTemplate = (templateKey) => {
+      const template = templates[templateKey];
+      if (!template) return;
+      
+      const dateKey = getDateKey(currentDate);
+      
+      template.forEach(item => {
+        const newBlock = {
+          id: generateId(),
+          title: item.title,
+          start: item.start,
+          duration: item.duration,
+          category: item.category,
+          priority: item.priority,
+          completed: false,
+          date: dateKey,
+          createdAt: new Date().toISOString()
+        };
+        plannerBlocks.push(newBlock);
+      });
+      
+      saveBlocks();
+      render();
+    };
+    
+    // Update view toggle buttons
+    const updateViewToggle = () => {
+      if (!refs.viewToggle) return;
+      refs.viewToggle.querySelectorAll('button').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.view === plannerView);
+      });
+    };
+    
+    // Main render function
+    const render = () => {
+      // Update date display
+      if (refs.currentDate) {
+        refs.currentDate.textContent = formatDate(currentDate);
+      }
+      
+      // Show/hide views
+      if (refs.dayView) refs.dayView.style.display = plannerView === 'day' ? '' : 'none';
+      if (refs.weekView) refs.weekView.style.display = plannerView === 'week' ? '' : 'none';
+      
+      // Render appropriate view
+      if (plannerView === 'day') {
+        renderTimeline();
+      } else {
+        renderWeekView();
+      }
+      
+      renderMiniCalendar();
+      renderQuickTasks();
+    };
+    
+    // Navigate date
+    const navigateDate = (delta) => {
+      if (plannerView === 'week') {
+        currentDate.setDate(currentDate.getDate() + (delta * 7));
+      } else {
+        currentDate.setDate(currentDate.getDate() + delta);
+      }
+      miniCalendarDate = new Date(currentDate);
+      render();
+    };
+    
+    // Go to today
+    const goToToday = () => {
+      currentDate = new Date();
+      miniCalendarDate = new Date();
+      render();
+    };
+    
+    // Initialize
+    const init = () => {
+      // Get DOM references
+      refs.overlay = $('plannerOverlay');
+      refs.currentDate = $('plannerCurrentDate');
+      refs.prevDay = $('plannerPrevDay');
+      refs.nextDay = $('plannerNextDay');
+      refs.todayBtn = $('plannerTodayBtn');
+      refs.timeline = $('plannerTimeline');
+      refs.dayView = $('plannerDayView');
+      refs.weekView = $('plannerWeekView');
+      refs.miniGrid = $('plannerMiniGrid');
+      refs.miniTitle = $('plannerMiniTitle');
+      refs.quickTasks = $('plannerQuickTasks');
+      refs.addModal = $('plannerAddModal');
+      refs.totalBlocks = $('plannerTotalBlocks');
+      refs.totalHours = $('plannerTotalHours');
+      refs.completedBlocks = $('plannerCompletedBlocks');
+      refs.progress = $('plannerProgress');
+      refs.dayTitle = $('plannerDayTitle');
+      refs.daySummary = $('plannerDaySummary');
+      
+      // View toggle
+      refs.viewToggle = refs.overlay ? refs.overlay.querySelector('.planner-view-toggle') : null;
+      
+      // Load saved blocks
+      loadBlocks();
+      
+      // Set up event listeners
+      if (refs.prevDay) refs.prevDay.onclick = () => navigateDate(-1);
+      if (refs.nextDay) refs.nextDay.onclick = () => navigateDate(1);
+      if (refs.todayBtn) refs.todayBtn.onclick = goToToday;
+      
+      // View toggle
+      if (refs.viewToggle) {
+        refs.viewToggle.querySelectorAll('button').forEach(btn => {
+          btn.onclick = () => {
+            plannerView = btn.dataset.view;
+            updateViewToggle();
+            render();
+          };
+        });
+      }
+      
+      // Mini calendar navigation
+      const miniPrev = $('plannerMiniPrev');
+      const miniNext = $('plannerMiniNext');
+      if (miniPrev) miniPrev.onclick = () => {
+        miniCalendarDate.setMonth(miniCalendarDate.getMonth() - 1);
+        renderMiniCalendar();
+      };
+      if (miniNext) miniNext.onclick = () => {
+        miniCalendarDate.setMonth(miniCalendarDate.getMonth() + 1);
+        renderMiniCalendar();
+      };
+      
+      // Template buttons
+      const templateBtns = refs.overlay ? refs.overlay.querySelectorAll('.planner-template-btn') : [];
+      templateBtns.forEach(btn => {
+        btn.onclick = () => applyTemplate(btn.dataset.template);
+      });
+      
+      // Modal events
+      if (refs.addModal) {
+        const cancelBtn = refs.addModal.querySelector('#plannerCancelBtn');
+        const saveBtn = refs.addModal.querySelector('#plannerSaveBtn');
+        const deleteBtn = refs.addModal.querySelector('#plannerDeleteBtn');
+        const priorityPicker = refs.addModal.querySelector('#plannerPriorityPicker');
+        const durationBtns = refs.addModal.querySelectorAll('.planner-duration-btn');
+        
+        if (cancelBtn) cancelBtn.onclick = closeModal;
+        if (saveBtn) saveBtn.onclick = saveBlock;
+        if (deleteBtn) deleteBtn.onclick = deleteBlock;
+        
+        // Priority picker
+        if (priorityPicker) {
+          priorityPicker.addEventListener('click', (e) => {
+            const option = e.target.closest('.planner-priority-option');
+            if (!option) return;
+            priorityPicker.querySelectorAll('.planner-priority-option').forEach(el => el.classList.remove('selected'));
+            option.classList.add('selected');
+          });
+        }
+        
+        // Duration presets
+        durationBtns.forEach(btn => {
+          btn.onclick = () => {
+            durationBtns.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            
+            const duration = parseInt(btn.dataset.duration);
+            const startInput = refs.addModal.querySelector('#plannerBlockStart');
+            const endInput = refs.addModal.querySelector('#plannerBlockEnd');
+            
+            if (startInput && endInput) {
+              const startMins = parseTime(startInput.value);
+              endInput.value = formatTime(startMins + duration);
+            }
+          };
+        });
+        
+        // Close on backdrop click
+        refs.addModal.addEventListener('click', (e) => {
+          if (e.target === refs.addModal) closeModal();
+        });
+      }
+      
+      // Initial render
+      render();
+      
+      // Update now line every minute
+      setInterval(() => {
+        if (plannerView === 'day' && isToday(currentDate)) {
+          renderTimeline();
+        }
+      }, 60000);
+    };
+    
+    return { init, render };
+  })();
 </script>
 </body>
 </html>
