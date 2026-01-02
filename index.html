@@ -2780,6 +2780,7 @@
       align-items: center;
       gap: 4px;
     }
+    /* inline recurrence SVG uses its own inline styles; keep this as a harmless fallback */
     .recurrence-icon-svg {
       width: 13px;
       height: 13px;
@@ -7948,7 +7949,7 @@ const themeToggle = $("themeToggle");
     const recurrence = normalizeRecurrence(task.recurrence);
     if (recurrence !== 'none') {
       const label = RECURRENCE_LABELS[recurrence] || recurrence;
-      const icon = `<svg class="recurrence-icon-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 0 1 8-8h4"/><path d="M16 4l-2-2"/><path d="M20 12a8 8 0 0 1-8 8H8"/><path d="M8 20l2 2"/></svg>`;
+      const icon = `<svg viewBox="0 0 24 24" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;"><path d="M5 12a7 7 0 0 1 7-7h5"/><path d="M17 5l-2-2"/><path d="M19 12a7 7 0 0 1-7 7H7"/><path d="M7 19l2 2"/></svg>`;
       recurrenceHtml = `<span class="task-recurrence">${icon}${label}</span>`;
     }
     
