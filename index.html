@@ -1410,6 +1410,32 @@
     }
     .planner-add-delete:hover { opacity: 0.9; }
     
+    /* Planner Color Picker */
+    .planner-color-picker {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .planner-color-option {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      cursor: pointer;
+      transition: all 0.15s;
+      border: 2px solid transparent;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .planner-color-option:hover {
+      transform: scale(1.15);
+    }
+    .planner-color-option.selected {
+      box-shadow: 0 0 0 3px var(--accent);
+    }
+    
     /* Planner Empty State */
     .planner-empty-hour {
       position: absolute;
@@ -5874,6 +5900,25 @@
           <button class="planner-duration-btn active" data-duration="60">שעה</button>
           <button class="planner-duration-btn" data-duration="90">1.5 שעות</button>
           <button class="planner-duration-btn" data-duration="120">שעתיים</button>
+          <button class="planner-duration-btn" data-duration="180">3 שעות</button>
+        </div>
+      </div>
+      
+      <div class="planner-add-field">
+        <label class="planner-add-label">צבע (אופציונלי)</label>
+        <div class="planner-color-picker" id="plannerColorPicker">
+          <div class="planner-color-option selected" style="background: transparent; border: 2px dashed var(--border);" data-color="">✕</div>
+          <div class="planner-color-option" style="background: #667eea;" data-color="#667eea"></div>
+          <div class="planner-color-option" style="background: #ef4444;" data-color="#ef4444"></div>
+          <div class="planner-color-option" style="background: #f97316;" data-color="#f97316"></div>
+          <div class="planner-color-option" style="background: #eab308;" data-color="#eab308"></div>
+          <div class="planner-color-option" style="background: #22c55e;" data-color="#22c55e"></div>
+          <div class="planner-color-option" style="background: #06b6d4;" data-color="#06b6d4"></div>
+          <div class="planner-color-option" style="background: #8b5cf6;" data-color="#8b5cf6"></div>
+          <div class="planner-color-option" style="background: #ec4899;" data-color="#ec4899"></div>
+          <div class="planner-color-option" style="background: #14b8a6;" data-color="#14b8a6"></div>
+          <div class="planner-color-option" style="background: #84cc16;" data-color="#84cc16"></div>
+          <div class="planner-color-option" style="background: #0ea5e9;" data-color="#0ea5e9"></div>
         </div>
       </div>
       
@@ -11882,14 +11927,17 @@ const themeToggle = $("themeToggle");
       const topPx = offsetMin * 1;
       
       const priority = block.priority || 'none';
-      const colors = priorityColors[priority] || priorityColors.none;
+      const defaultColors = priorityColors[priority] || priorityColors.none;
+      // Use custom color if set, otherwise use priority color
+      const blockColor = block.color || defaultColors.color;
+      const blockBg = block.color ? `${block.color}20` : defaultColors.bg;
       const categoryIcon = block.category ? (categoryIcons[block.category] || '') : '';
       const endTime = formatTime(startMin + (block.duration || 60));
       
       return `
         <div class="planner-block priority-${priority} ${block.completed ? 'planner-block-completed' : ''}" 
              data-id="${block.id}" 
-             style="top: ${topPx}px; height: ${heightPx}px; --priority-color: ${colors.color}; --priority-bg: ${colors.bg};">
+             style="top: ${topPx}px; height: ${heightPx}px; --priority-color: ${blockColor}; --priority-bg: ${blockBg};">
           <div class="planner-block-checkbox ${block.completed ? 'checked' : ''}" data-id="${block.id}"></div>
           <div class="planner-block-title">${categoryIcon} ${escapeHtml(block.title)}</div>
           <div class="planner-block-time">${block.start} - ${endTime}</div>
@@ -12100,6 +12148,14 @@ const themeToggle = $("themeToggle");
         if (mediumBtn) mediumBtn.classList.add('selected');
       }
       
+      // Reset color picker
+      const colorPicker = modal.querySelector('#plannerColorPicker');
+      if (colorPicker) {
+        colorPicker.querySelectorAll('.planner-color-option').forEach(el => el.classList.remove('selected'));
+        const defaultColor = colorPicker.querySelector('[data-color=""]');
+        if (defaultColor) defaultColor.classList.add('selected');
+      }
+      
       // Reset duration buttons
       modal.querySelectorAll('.planner-duration-btn').forEach(el => el.classList.remove('active'));
       const defaultDuration = modal.querySelector('[data-duration="60"]');
@@ -12145,6 +12201,14 @@ const themeToggle = $("themeToggle");
         if (priorityBtn) priorityBtn.classList.add('selected');
       }
       
+      // Set color
+      const colorPicker = modal.querySelector('#plannerColorPicker');
+      if (colorPicker) {
+        colorPicker.querySelectorAll('.planner-color-option').forEach(el => el.classList.remove('selected'));
+        const colorBtn = colorPicker.querySelector(`[data-color="${block.color || ''}"]`);
+        if (colorBtn) colorBtn.classList.add('selected');
+      }
+      
       modal.classList.add('open');
     };
     
@@ -12181,6 +12245,9 @@ const themeToggle = $("themeToggle");
       const repeat = blockRepeat ? blockRepeat.checked : false;
       const selectedPriority = priorityPicker ? priorityPicker.querySelector('.selected') : null;
       const priority = selectedPriority ? selectedPriority.dataset.priority : 'medium';
+      const colorPicker = modal.querySelector('#plannerColorPicker');
+      const selectedColor = colorPicker ? colorPicker.querySelector('.selected') : null;
+      const color = selectedColor ? selectedColor.dataset.color : '';
       
       if (editingBlockId) {
         // Update existing block
@@ -12194,7 +12261,8 @@ const themeToggle = $("themeToggle");
             category,
             notes,
             repeat,
-            priority
+            priority,
+            color
           };
         }
       } else {
@@ -12208,6 +12276,7 @@ const themeToggle = $("themeToggle");
           notes,
           repeat,
           priority,
+          color,
           completed: false,
           date: getDateKey(currentDate),
           createdAt: new Date().toISOString()
@@ -12387,6 +12456,31 @@ const themeToggle = $("themeToggle");
         if (cancelBtn) cancelBtn.onclick = closeModal;
         if (saveBtn) saveBtn.onclick = saveBlock;
         if (deleteBtn) deleteBtn.onclick = deleteBlock;
+        
+        // Enter key to save
+        refs.addModal.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' && !e.shiftKey) {
+            const activeEl = document.activeElement;
+            // Don't trigger if in textarea
+            if (activeEl && activeEl.tagName === 'TEXTAREA') return;
+            e.preventDefault();
+            saveBlock();
+          }
+          if (e.key === 'Escape') {
+            closeModal();
+          }
+        });
+        
+        // Color picker
+        const colorPicker = refs.addModal.querySelector('#plannerColorPicker');
+        if (colorPicker) {
+          colorPicker.addEventListener('click', (e) => {
+            const option = e.target.closest('.planner-color-option');
+            if (!option) return;
+            colorPicker.querySelectorAll('.planner-color-option').forEach(el => el.classList.remove('selected'));
+            option.classList.add('selected');
+          });
+        }
         
         // Priority picker
         if (priorityPicker) {
