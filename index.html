@@ -1114,17 +1114,35 @@
       background: var(--priority-bg, var(--day-other));
       border-right: 4px solid var(--priority-color, var(--accent));
       border-radius: var(--radius-sm);
-      padding: 8px 10px;
+      padding: 6px 10px 6px 32px;
       cursor: pointer;
       transition: all 0.15s;
-      overflow: hidden;
+      overflow: visible;
       z-index: 1;
+      min-height: 28px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
     }
     .planner-block:hover { 
       box-shadow: var(--shadow-hover);
-      transform: scale(1.01);
+      transform: scale(1.02);
+      z-index: 10;
     }
     .planner-block.dragging { opacity: 0.6; z-index: 10; }
+    .planner-block.compact {
+      flex-direction: row;
+      align-items: center;
+      gap: 8px;
+      padding: 4px 8px 4px 28px;
+    }
+    .planner-block.compact .planner-block-title {
+      font-size: 12px;
+    }
+    .planner-block.compact .planner-block-time {
+      margin-top: 0;
+      font-size: 10px;
+    }
     .planner-block-title {
       font-size: 13px;
       font-weight: 600;
@@ -1132,22 +1150,32 @@
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+      line-height: 1.2;
     }
     .planner-block-time {
       font-size: 11px;
       color: var(--muted);
+      margin-top: 1px;
+      line-height: 1.2;
+    }
+    .planner-block-reminder {
+      font-size: 10px;
+      color: var(--accent);
       margin-top: 2px;
     }
     .planner-block-completed {
       opacity: 0.6;
+    }
+    .planner-block-completed .planner-block-title {
       text-decoration: line-through;
     }
     .planner-block-checkbox {
       position: absolute;
-      top: 8px;
-      left: 8px;
-      width: 18px;
-      height: 18px;
+      top: 50%;
+      transform: translateY(-50%);
+      left: 6px;
+      width: 16px;
+      height: 16px;
       border-radius: 50%;
       border: 2px solid var(--priority-color, var(--accent));
       background: transparent;
@@ -1161,7 +1189,7 @@
     .planner-block-checkbox.checked::after {
       content: '✓';
       color: white;
-      font-size: 11px;
+      font-size: 10px;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -1173,31 +1201,33 @@
       position: absolute;
       left: 0;
       right: 0;
-      height: 2px;
-      background: var(--danger);
+      height: 1px;
+      background: linear-gradient(90deg, var(--accent) 0%, rgba(102,126,234,0.3) 100%);
       z-index: 5;
       pointer-events: none;
     }
     .planner-now-line::before {
       content: '';
       position: absolute;
-      right: -4px;
-      top: -4px;
-      width: 10px;
-      height: 10px;
+      right: -3px;
+      top: -3px;
+      width: 7px;
+      height: 7px;
       border-radius: 50%;
-      background: var(--danger);
+      background: var(--accent);
+      box-shadow: 0 0 4px rgba(102,126,234,0.5);
     }
     .planner-now-label {
       position: absolute;
       left: 4px;
-      top: -8px;
-      font-size: 10px;
-      font-weight: 600;
-      color: var(--danger);
+      top: -7px;
+      font-size: 9px;
+      font-weight: 500;
+      color: var(--accent);
       background: var(--card);
-      padding: 2px 6px;
-      border-radius: 4px;
+      padding: 1px 5px;
+      border-radius: 3px;
+      opacity: 0.8;
     }
     
     /* Week View */
@@ -5428,6 +5458,19 @@
               <input type="datetime-local" id="newTaskDue" style="width: 180px; border: none; background: transparent; color: var(--text);" />
             </div>
             <div class="label-input-wrapper">
+              <span>⏱️</span>
+              <select id="newTaskDuration" style="border: none; background: transparent; color: var(--text); font-size: 13px; outline: none; cursor: pointer;">
+                <option value="0">ללא משך</option>
+                <option value="15">15 דק׳</option>
+                <option value="30">30 דק׳</option>
+                <option value="45">45 דק׳</option>
+                <option value="60">שעה</option>
+                <option value="90">1.5 שעות</option>
+                <option value="120">שעתיים</option>
+                <option value="180">3 שעות</option>
+              </select>
+            </div>
+            <div class="label-input-wrapper">
               <span style="font-size: 11px; font-weight: 600;">חוזר</span>
               <select id="newTaskRecurrence" style="border: none; background: transparent; color: var(--text); font-size: 13px; outline: none; cursor: pointer;">
                 <option value="none">ללא חזרה</option>
@@ -5950,6 +5993,18 @@
       <div class="planner-add-field">
         <label class="planner-add-label">הערות (אופציונלי)</label>
         <textarea class="planner-add-input" id="plannerBlockNotes" rows="2" placeholder="הוסף פרטים נוספים..." dir="auto"></textarea>
+      </div>
+      
+      <div class="planner-add-field">
+        <label class="planner-add-label">תזכורת</label>
+        <select class="planner-add-input" id="plannerBlockReminder">
+          <option value="0">ללא תזכורת</option>
+          <option value="5">5 דקות לפני</option>
+          <option value="10">10 דקות לפני</option>
+          <option value="15">15 דקות לפני</option>
+          <option value="30">30 דקות לפני</option>
+          <option value="60">שעה לפני</option>
+        </select>
       </div>
       
       <div class="planner-add-field">
@@ -8885,6 +8940,8 @@ const themeToggle = $("themeToggle");
     const dueDate = dueValue ? parseLocal(dueValue) : null;
     const recurrence = newTaskRecurrence ? newTaskRecurrence.value : 'none';
     const reminder = newTaskReminder ? parseInt(newTaskReminder.value, 10) || 0 : 0;
+    const durationEl = document.getElementById('newTaskDuration');
+    const duration = durationEl ? parseInt(durationEl.value, 10) || 0 : 0;
     
     const defaultSubjectId = getDefaultSubjectId();
     const selectedSubjectId = newTaskSubject ? (newTaskSubject.value || defaultSubjectId) : defaultSubjectId;
@@ -8902,7 +8959,8 @@ const themeToggle = $("themeToggle");
       ...(Number.isFinite(orderValue) ? { order: orderValue } : {}),
       ...(selectedTaskColor ? { color: selectedTaskColor } : {}),
       ...(recurrence && recurrence !== 'none' ? { recurrence } : {}),
-      ...(reminder > 0 ? { reminder } : {})
+      ...(reminder > 0 ? { reminder } : {}),
+      ...(duration > 0 ? { duration } : {})
     };
     
     const newTaskRef = push(tasksRef);
@@ -8913,6 +8971,7 @@ const themeToggle = $("themeToggle");
     newTaskDue.value = '';
     if (newTaskRecurrence) newTaskRecurrence.value = 'none';
     if (newTaskReminder) newTaskReminder.value = '0';
+    if (durationEl) durationEl.value = '0';
     if (newTaskSubject) newTaskSubject.value = '';
     if (quickAddRow) quickAddRow.style.display = 'none';
     selectedTaskPriority = 'medium';
@@ -11891,6 +11950,23 @@ const themeToggle = $("themeToggle");
           const hour = parseInt(el.dataset.hour);
           openAddModal(hour);
         });
+        
+        // Drag and drop handlers for tasks from sidebar
+        el.addEventListener('dragover', (e) => {
+          e.preventDefault();
+          el.classList.add('drop-target');
+        });
+        el.addEventListener('dragleave', () => {
+          el.classList.remove('drop-target');
+        });
+        el.addEventListener('drop', (e) => {
+          e.preventDefault();
+          el.classList.remove('drop-target');
+          const taskId = e.dataTransfer.getData('text/plain');
+          if (taskId) {
+            handleTaskDrop(taskId, parseInt(el.dataset.hour));
+          }
+        });
       });
       
       // Add click handlers for blocks
@@ -11919,12 +11995,46 @@ const themeToggle = $("themeToggle");
       updateStats();
     };
     
+    // Handle dropping a task from sidebar onto the timeline
+    const handleTaskDrop = (taskId, hour) => {
+      // Find the task
+      const task = (typeof tasks !== 'undefined' ? tasks : []).find(t => t.id === taskId);
+      if (!task) return;
+      
+      // Get duration from task or default to 30 minutes
+      const duration = task.duration || 30;
+      
+      // Create a new block from the task
+      const newBlock = {
+        id: generateId(),
+        title: task.title,
+        start: formatTime(hour * 60),
+        duration: duration,
+        category: '',
+        notes: '',
+        repeat: false,
+        priority: task.priority || 'medium',
+        color: task.color || '',
+        reminder: 0,
+        completed: false,
+        date: getDateKey(currentDate),
+        createdAt: new Date().toISOString(),
+        linkedTaskId: taskId // Link to original task
+      };
+      plannerBlocks.push(newBlock);
+      
+      saveBlocks();
+      render();
+    };
+    
     // Render a single block
     const renderBlock = (block, hourMinutes) => {
       const startMin = parseTime(block.start);
       const offsetMin = startMin - hourMinutes;
-      const heightPx = Math.max(30, (block.duration || 60) * 1); // 1px per minute
+      const duration = block.duration || 60;
+      const heightPx = Math.max(28, duration * 1); // 1px per minute, min 28px
       const topPx = offsetMin * 1;
+      const isCompact = duration <= 30;
       
       const priority = block.priority || 'none';
       const defaultColors = priorityColors[priority] || priorityColors.none;
@@ -11932,15 +12042,16 @@ const themeToggle = $("themeToggle");
       const blockColor = block.color || defaultColors.color;
       const blockBg = block.color ? `${block.color}20` : defaultColors.bg;
       const categoryIcon = block.category ? (categoryIcons[block.category] || '') : '';
-      const endTime = formatTime(startMin + (block.duration || 60));
+      const endTime = formatTime(startMin + duration);
+      const reminderText = block.reminder > 0 ? `🔔 ${block.reminder} דק׳ לפני` : '';
       
       return `
-        <div class="planner-block priority-${priority} ${block.completed ? 'planner-block-completed' : ''}" 
+        <div class="planner-block priority-${priority} ${block.completed ? 'planner-block-completed' : ''} ${isCompact ? 'compact' : ''}" 
              data-id="${block.id}" 
              style="top: ${topPx}px; height: ${heightPx}px; --priority-color: ${blockColor}; --priority-bg: ${blockBg};">
           <div class="planner-block-checkbox ${block.completed ? 'checked' : ''}" data-id="${block.id}"></div>
           <div class="planner-block-title">${categoryIcon} ${escapeHtml(block.title)}</div>
-          <div class="planner-block-time">${block.start} - ${endTime}</div>
+          <div class="planner-block-time">${block.start} - ${endTime}${reminderText ? ' · ' + reminderText : ''}</div>
         </div>
       `;
     };
@@ -12090,15 +12201,19 @@ const themeToggle = $("themeToggle");
         const subject = (typeof subjects !== 'undefined' ? subjects : []).find(s => s.id === task.subject);
         const color = subject ? subject.color : '#667eea';
         const priorityLabel = { urgent: '🔴', high: '🟠', medium: '🟡', low: '🟢', none: '⚪' };
+        const taskDuration = task.duration || 30; // Default to 30 minutes if not set
+        const durationText = taskDuration >= 60 
+          ? (taskDuration % 60 === 0 ? `${taskDuration / 60} שעות` : `${Math.floor(taskDuration / 60)}:${String(taskDuration % 60).padStart(2, '0')}`)
+          : `${taskDuration} דק׳`;
         
         return `
-          <div class="planner-task-item" draggable="true" data-task-id="${task.id}">
+          <div class="planner-task-item" draggable="true" data-task-id="${task.id}" data-duration="${taskDuration}">
             <div class="task-color-dot" style="background: ${color};"></div>
             <div class="task-info">
               <div class="task-title">${priorityLabel[task.priority || 'none']} ${escapeHtml(task.title)}</div>
               ${subject ? `<div class="task-subject">${subject.name}</div>` : ''}
             </div>
-            <div class="task-duration">30 דק׳</div>
+            <div class="task-duration">${durationText}</div>
           </div>
         `;
       }).join('');
@@ -12140,6 +12255,10 @@ const themeToggle = $("themeToggle");
       if (blockNotes) blockNotes.value = '';
       if (blockRepeat) blockRepeat.checked = false;
       if (deleteBtn) deleteBtn.style.display = 'none';
+      
+      // Reset reminder
+      const blockReminder = modal.querySelector('#plannerBlockReminder');
+      if (blockReminder) blockReminder.value = '0';
       
       // Reset priority
       if (priorityPicker) {
@@ -12192,6 +12311,10 @@ const themeToggle = $("themeToggle");
       if (blockCategory) blockCategory.value = block.category || '';
       if (blockNotes) blockNotes.value = block.notes || '';
       if (blockRepeat) blockRepeat.checked = block.repeat || false;
+      
+      // Set reminder
+      const blockReminder = modal.querySelector('#plannerBlockReminder');
+      if (blockReminder) blockReminder.value = block.reminder || '0';
       if (deleteBtn) deleteBtn.style.display = '';
       
       // Set priority
@@ -12243,6 +12366,8 @@ const themeToggle = $("themeToggle");
       const category = blockCategory ? blockCategory.value : '';
       const notes = blockNotes ? blockNotes.value.trim() : '';
       const repeat = blockRepeat ? blockRepeat.checked : false;
+      const blockReminder = modal.querySelector('#plannerBlockReminder');
+      const reminder = blockReminder ? parseInt(blockReminder.value) || 0 : 0;
       const selectedPriority = priorityPicker ? priorityPicker.querySelector('.selected') : null;
       const priority = selectedPriority ? selectedPriority.dataset.priority : 'medium';
       const colorPicker = modal.querySelector('#plannerColorPicker');
@@ -12261,6 +12386,7 @@ const themeToggle = $("themeToggle");
             category,
             notes,
             repeat,
+            reminder,
             priority,
             color
           };
@@ -12275,6 +12401,7 @@ const themeToggle = $("themeToggle");
           category,
           notes,
           repeat,
+          reminder,
           priority,
           color,
           completed: false,
