@@ -911,7 +911,9 @@
       border-left: 1px solid var(--border);
       display: flex;
       flex-direction: column;
-      overflow: hidden;
+      overflow-y: auto;
+      overflow-x: hidden;
+      max-height: calc(100vh - 180px);
     }
     .planner-sidebar.hidden { display: none; }
     
