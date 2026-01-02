@@ -362,21 +362,32 @@
       overflow: hidden;
     }
     #taskRightSidebar.calendar-expanded {
-      width: 460px;
-      min-width: 420px;
+      width: 580px;
+      min-width: 520px;
     }
     #taskRightSidebar.calendar-expanded .calendar-grid {
-      grid-auto-rows: minmax(140px, auto);
+      grid-auto-rows: minmax(110px, auto);
     }
     #taskRightSidebar.calendar-expanded .calendar-day {
-      min-height: 140px;
+      min-height: 110px;
       overflow: visible;
+      padding: var(--space-2) var(--space-3);
     }
     #taskRightSidebar.calendar-expanded .calendar-day-events {
       overflow: visible;
+      gap: 3px;
     }
     #taskRightSidebar.calendar-expanded .calendar-event-chip {
       font-size: 11px;
+      padding: 4px 8px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 100%;
+    }
+    #taskRightSidebar.calendar-expanded .calendar-day-number {
+      font-size: var(--font-size-sm);
+      margin-bottom: var(--space-2);
     }
     #taskRightSidebar.calendar-view-week .calendar-grid {
       grid-auto-rows: minmax(56px, auto);
@@ -3033,52 +3044,71 @@
 
     .task-color-picker {
       display: flex;
-      gap: 8px;
+      gap: 6px;
       flex-wrap: wrap;
       align-items: center;
+      padding: 8px;
+      background: var(--day-other);
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border);
     }
     .task-color-picker.compact {
-      gap: 6px;
+      gap: 5px;
+      padding: 6px 8px;
+      background: transparent;
+      border: none;
     }
     .task-color-option {
-      width: 26px;
-      height: 26px;
-      border-radius: 50%;
+      width: 24px;
+      height: 24px;
+      border-radius: 6px;
       border: 2px solid transparent;
       cursor: pointer;
-      transition: all 0.15s;
+      transition: all 0.15s ease;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 11px;
+      font-size: 10px;
+      font-weight: 600;
       color: var(--muted);
       background: var(--day-other);
+      position: relative;
     }
     .task-color-option.subject {
       font-weight: 700;
       color: #fff;
       border-style: dashed;
+      border-color: var(--border);
     }
     .task-color-option.disabled {
-      opacity: 0.45;
+      opacity: 0.4;
       cursor: not-allowed;
     }
     .task-color-picker.compact .task-color-option {
-      width: 22px;
-      height: 22px;
-      font-size: 10px;
+      width: 20px;
+      height: 20px;
+      font-size: 9px;
+      border-radius: 5px;
     }
     .task-color-option.none {
       color: var(--muted);
-      background: var(--day-other);
-      border-color: var(--border);
+      background: var(--card);
+      border: 2px dashed var(--border);
+      font-size: 12px;
     }
-    .task-color-option:hover {
-      transform: scale(1.12);
+    .task-color-option:not(.disabled):hover {
+      transform: scale(1.15);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
     }
     .task-color-option.selected {
       border-color: var(--text);
-      box-shadow: 0 0 0 2px var(--card);
+      box-shadow: 0 0 0 2px var(--card), 0 2px 8px rgba(0,0,0,0.2);
+      transform: scale(1.1);
+    }
+    .task-color-option.selected.none {
+      border-style: solid;
+      border-color: var(--accent);
+      background: var(--card);
     }
     
     
@@ -4419,19 +4449,15 @@
             <div class="label-input-wrapper">
               <span>🎨</span>
               <div class="task-color-picker compact" id="quickTaskColorPicker">
-                <div class="task-color-option none selected" data-color="">x</div>
-                <div class="task-color-option subject disabled" data-color="subject" title="Use subject color">S</div>
-                <div class="task-color-option" data-color="#667eea" style="background: #667eea;"></div>
-                <div class="task-color-option" data-color="#ef4444" style="background: #ef4444;"></div>
-                <div class="task-color-option" data-color="#f97316" style="background: #f97316;"></div>
-                <div class="task-color-option" data-color="#eab308" style="background: #eab308;"></div>
-                <div class="task-color-option" data-color="#22c55e" style="background: #22c55e;"></div>
-                <div class="task-color-option" data-color="#06b6d4" style="background: #06b6d4;"></div>
-                <div class="task-color-option" data-color="#8b5cf6" style="background: #8b5cf6;"></div>
-                <div class="task-color-option" data-color="#0ea5e9" style="background: #0ea5e9;"></div>
-                <div class="task-color-option" data-color="#14b8a6" style="background: #14b8a6;"></div>
-                <div class="task-color-option" data-color="#84cc16" style="background: #84cc16;"></div>
-                <div class="task-color-option" data-color="#f43f5e" style="background: #f43f5e;"></div>
+                <div class="task-color-option none selected" data-color="" title="ללא צבע">–</div>
+                <div class="task-color-option subject disabled" data-color="subject" title="צבע נושא">S</div>
+                <div class="task-color-option" data-color="#667eea" style="background: #667eea;" title="סגול"></div>
+                <div class="task-color-option" data-color="#ef4444" style="background: #ef4444;" title="אדום"></div>
+                <div class="task-color-option" data-color="#f97316" style="background: #f97316;" title="כתום"></div>
+                <div class="task-color-option" data-color="#eab308" style="background: #eab308;" title="צהוב"></div>
+                <div class="task-color-option" data-color="#22c55e" style="background: #22c55e;" title="ירוק"></div>
+                <div class="task-color-option" data-color="#06b6d4" style="background: #06b6d4;" title="ציאן"></div>
+                <div class="task-color-option" data-color="#8b5cf6" style="background: #8b5cf6;" title="סגול כהה"></div>
               </div>
             </div>
             <button class="btn btn-primary" id="addTaskBtn">הוסף</button>
@@ -4518,21 +4544,18 @@
       </div>
 
       <div class="task-edit-section">
-        <div class="task-edit-section-title">Color</div>
+        <div class="task-edit-section-title">Color <span style="font-weight: 400; color: var(--muted); font-size: 12px;">(אופציונלי)</span></div>
         <div class="task-color-picker" id="taskColorPicker">
-          <div class="task-color-option none selected" data-color="">x</div>
-          <div class="task-color-option subject disabled" data-color="subject" title="Use subject color">S</div>
-          <div class="task-color-option" data-color="#667eea" style="background: #667eea;"></div>
-          <div class="task-color-option" data-color="#ef4444" style="background: #ef4444;"></div>
-          <div class="task-color-option" data-color="#f97316" style="background: #f97316;"></div>
-          <div class="task-color-option" data-color="#eab308" style="background: #eab308;"></div>
-          <div class="task-color-option" data-color="#22c55e" style="background: #22c55e;"></div>
-          <div class="task-color-option" data-color="#06b6d4" style="background: #06b6d4;"></div>
-          <div class="task-color-option" data-color="#8b5cf6" style="background: #8b5cf6;"></div>
-          <div class="task-color-option" data-color="#0ea5e9" style="background: #0ea5e9;"></div>
-          <div class="task-color-option" data-color="#14b8a6" style="background: #14b8a6;"></div>
-          <div class="task-color-option" data-color="#84cc16" style="background: #84cc16;"></div>
-          <div class="task-color-option" data-color="#f43f5e" style="background: #f43f5e;"></div>
+          <div class="task-color-option none selected" data-color="" title="ללא צבע - רק עדיפות">–</div>
+          <div class="task-color-option subject disabled" data-color="subject" title="צבע נושא">S</div>
+          <div class="task-color-option" data-color="#667eea" style="background: #667eea;" title="סגול"></div>
+          <div class="task-color-option" data-color="#ef4444" style="background: #ef4444;" title="אדום"></div>
+          <div class="task-color-option" data-color="#f97316" style="background: #f97316;" title="כתום"></div>
+          <div class="task-color-option" data-color="#eab308" style="background: #eab308;" title="צהוב"></div>
+          <div class="task-color-option" data-color="#22c55e" style="background: #22c55e;" title="ירוק"></div>
+          <div class="task-color-option" data-color="#06b6d4" style="background: #06b6d4;" title="ציאן"></div>
+          <div class="task-color-option" data-color="#8b5cf6" style="background: #8b5cf6;" title="סגול כהה"></div>
+          <div class="task-color-option" data-color="#ec4899" style="background: #ec4899;" title="ורוד"></div>
         </div>
       </div>
       
@@ -8599,9 +8622,9 @@ const themeToggle = $("themeToggle");
   }
 
   function getTaskCalendarMaxShow() {
-    if (taskCalendarView === 'day') return taskCalendarExpanded ? 12 : 8;
-    if (taskCalendarView === 'week') return taskCalendarExpanded ? 7 : 4;
-    return taskCalendarExpanded ? 7 : 3;
+    if (taskCalendarView === 'day') return taskCalendarExpanded ? 15 : 8;
+    if (taskCalendarView === 'week') return taskCalendarExpanded ? 8 : 4;
+    return taskCalendarExpanded ? 5 : 3;
   }
 
   function updateTaskCalendarViewToggle() {
