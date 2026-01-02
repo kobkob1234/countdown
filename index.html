@@ -2616,16 +2616,26 @@
     /* Task Item (List style) */
     .task-item {
       background-color: var(--card);
-      background-image: linear-gradient(90deg, var(--task-tint, var(--subject-tint, transparent)), transparent 55%);
+      background-image: linear-gradient(135deg, var(--task-tint, transparent) 0%, transparent 60%);
       border: 1px solid var(--border);
       border-radius: var(--radius-lg);
       padding: var(--space-4) var(--space-5);
       box-shadow: var(--shadow);
-      transition: all 0.2s;
+      transition: all 0.25s ease;
       display: flex;
       align-items: center;
       gap: var(--space-4);
-      border-left: 4px solid var(--priority-color, var(--border));
+      border-left: 4px solid var(--task-color, var(--priority-color, var(--border)));
+      position: relative;
+    }
+    .task-item::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      background: linear-gradient(135deg, var(--task-tint, transparent) 0%, transparent 40%);
+      opacity: 0.5;
+      pointer-events: none;
     }
     .task-item.dragging {
       opacity: 0.55;
@@ -4427,7 +4437,7 @@
               <input type="datetime-local" id="newTaskDue" style="width: 180px; border: none; background: transparent; color: var(--text);" />
             </div>
             <div class="label-input-wrapper">
-              <span>🔄</span>
+              <span style="font-size: 11px; font-weight: 600;">חוזר</span>
               <select id="newTaskRecurrence" style="border: none; background: transparent; color: var(--text); font-size: 13px; outline: none; cursor: pointer;">
                 <option value="none">ללא חזרה</option>
                 <option value="daily">יומי</option>
@@ -7800,7 +7810,7 @@ const themeToggle = $("themeToggle");
     const recurrence = normalizeRecurrence(task.recurrence);
     if (recurrence !== 'none') {
       const label = RECURRENCE_LABELS[recurrence] || recurrence;
-      recurrenceHtml = `<span class="task-recurrence">🔄 ${label}</span>`;
+      recurrenceHtml = `<span class="task-recurrence">♻ ${label}</span>`;
     }
     
     let reminderHtml = '';
@@ -8457,6 +8467,18 @@ const themeToggle = $("themeToggle");
     set(ref(db, `users/${currentUser}/tasks/${editingTaskId}`), cleanTask);
     closeTaskEditModal();
   };
+
+  // Enter key support for task edit modal
+  [editTaskTitle, editTaskContent, editTaskDue].forEach(el => {
+    if (el) {
+      el.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey && e.target.tagName !== 'TEXTAREA') {
+          e.preventDefault();
+          saveTaskBtn.click();
+        }
+      });
+    }
+  });
 
   // ============ SUBJECTS / CATEGORIES ============
 
