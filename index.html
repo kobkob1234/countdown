@@ -4427,7 +4427,7 @@
               <input type="datetime-local" id="newTaskDue" style="width: 180px; border: none; background: transparent; color: var(--text);" />
             </div>
             <div class="label-input-wrapper">
-              <span>↻</span>
+              <span>🔄</span>
               <select id="newTaskRecurrence" style="border: none; background: transparent; color: var(--text); font-size: 13px; outline: none; cursor: pointer;">
                 <option value="none">ללא חזרה</option>
                 <option value="daily">יומי</option>
@@ -7800,7 +7800,7 @@ const themeToggle = $("themeToggle");
     const recurrence = normalizeRecurrence(task.recurrence);
     if (recurrence !== 'none') {
       const label = RECURRENCE_LABELS[recurrence] || recurrence;
-      recurrenceHtml = `<span class="task-recurrence">↻ ${label}</span>`;
+      recurrenceHtml = `<span class="task-recurrence">🔄 ${label}</span>`;
     }
     
     let reminderHtml = '';
