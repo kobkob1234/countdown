@@ -860,35 +860,73 @@
       .pomodoro-preset { padding: 10px 16px; font-size: 12px; }
       .pomodoro-header-bar { padding: 12px 16px; }
       .pomodoro-content { padding: 20px 16px; }
+      .pomodoro-timer-wrap { width: 260px; height: 260px; }
     }
     
     .pomodoro-container {
       width: 100%;
-      max-width: 600px;
+      max-width: 640px;
     }
     
     .pomodoro-card {
-      background: var(--card);
-      border: 1px solid var(--border);
+      background: linear-gradient(145deg, var(--card) 0%, var(--card) 100%);
+      border: 1px solid rgba(102, 126, 234, 0.2);
       border-radius: 32px;
-      padding: 40px 32px;
-      box-shadow: 0 20px 60px rgba(102, 126, 234, 0.15), 0 0 0 1px rgba(255,255,255,0.1) inset;
+      padding: 48px 40px;
+      box-shadow: 
+        0 25px 80px rgba(102, 126, 234, 0.2),
+        0 10px 30px rgba(0, 0, 0, 0.08),
+        0 0 0 1px rgba(255,255,255,0.15) inset,
+        0 0 80px rgba(102, 126, 234, 0.05) inset;
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 32px;
+      gap: 36px;
       overflow: visible;
+      backdrop-filter: blur(20px);
+      position: relative;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    
+    .pomodoro-card::before {
+      content: '';
+      position: absolute;
+      top: -1px;
+      left: 20%;
+      right: 20%;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, rgba(102, 126, 234, 0.5), rgba(118, 75, 162, 0.5), transparent);
+      border-radius: 999px;
+    }
+    
+    .pomodoro-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 
+        0 30px 90px rgba(102, 126, 234, 0.25),
+        0 15px 40px rgba(0, 0, 0, 0.1),
+        0 0 0 1px rgba(255,255,255,0.2) inset,
+        0 0 100px rgba(102, 126, 234, 0.08) inset;
     }
     
     /* Timer Circle */
     .pomodoro-timer-wrap {
       position: relative;
-      width: 280px;
-      height: 280px;
+      width: 300px;
+      height: 300px;
       display: flex;
       align-items: center;
       justify-content: center;
       flex-shrink: 0;
+    }
+    
+    .pomodoro-timer-wrap::before {
+      content: '';
+      position: absolute;
+      inset: -20px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(102, 126, 234, 0.15) 0%, transparent 70%);
+      animation: timerGlow 3s ease-in-out infinite;
+      pointer-events: none;
     }
     
     .pomodoro-timer-ring {
@@ -896,21 +934,36 @@
       inset: 0;
       border-radius: 50%;
       background: conic-gradient(
-        from 0deg,
+        from -90deg,
         var(--accent) 0%,
-        var(--accent2) var(--progress, 0%),
-        var(--border) var(--progress, 0%),
-        var(--border) 100%
+        var(--accent2) calc(var(--progress, 0%) * 0.5),
+        var(--accent) var(--progress, 0%),
+        rgba(102, 126, 234, 0.15) var(--progress, 0%),
+        rgba(102, 126, 234, 0.08) 100%
       );
-      padding: 8px;
+      padding: 10px;
+      box-shadow: 
+        0 0 40px rgba(102, 126, 234, 0.3),
+        inset 0 0 30px rgba(102, 126, 234, 0.1);
+      transition: background 0.3s ease;
     }
     
     .pomodoro-timer-ring::before {
       content: '';
       position: absolute;
-      inset: 8px;
+      inset: 10px;
       background: var(--card);
       border-radius: 50%;
+      box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.05);
+    }
+    
+    .pomodoro-timer-ring::after {
+      content: '';
+      position: absolute;
+      inset: 6px;
+      border-radius: 50%;
+      border: 2px solid rgba(255, 255, 255, 0.1);
+      pointer-events: none;
     }
     
     .pomodoro-timer {
@@ -1381,36 +1434,95 @@
       justify-content: center;
       align-items: flex-start;
       padding: 40px 24px;
-      background: linear-gradient(180deg, transparent 0%, rgba(102, 126, 234, 0.03) 100%);
+      background: 
+        radial-gradient(ellipse at 20% 0%, rgba(102, 126, 234, 0.12) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 100%, rgba(118, 75, 162, 0.1) 0%, transparent 50%),
+        radial-gradient(ellipse at 50% 50%, rgba(102, 126, 234, 0.03) 0%, transparent 70%),
+        linear-gradient(180deg, var(--bg) 0%, var(--bg) 100%);
+      position: relative;
+    }
+    
+    .pomodoro-content::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+      opacity: 0.015;
+      pointer-events: none;
     }
     
     .pomodoro-container {
       width: 100%;
-      max-width: 600px;
+      max-width: 640px;
     }
     
     .pomodoro-card {
-      background: var(--card);
-      border: 1px solid var(--border);
+      background: linear-gradient(145deg, var(--card) 0%, var(--card) 100%);
+      border: 1px solid rgba(102, 126, 234, 0.2);
       border-radius: 32px;
-      padding: 40px 32px;
-      box-shadow: 0 20px 60px rgba(102, 126, 234, 0.15), 0 0 0 1px rgba(255,255,255,0.1) inset;
+      padding: 48px 40px;
+      box-shadow: 
+        0 25px 80px rgba(102, 126, 234, 0.2),
+        0 10px 30px rgba(0, 0, 0, 0.08),
+        0 0 0 1px rgba(255,255,255,0.15) inset,
+        0 0 80px rgba(102, 126, 234, 0.05) inset;
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 32px;
+      gap: 36px;
       overflow: visible;
+      backdrop-filter: blur(20px);
+      position: relative;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    
+    .pomodoro-card::before {
+      content: '';
+      position: absolute;
+      top: -1px;
+      left: 20%;
+      right: 20%;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, rgba(102, 126, 234, 0.5), rgba(118, 75, 162, 0.5), transparent);
+      border-radius: 999px;
+    }
+    
+    .pomodoro-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 
+        0 30px 90px rgba(102, 126, 234, 0.25),
+        0 15px 40px rgba(0, 0, 0, 0.1),
+        0 0 0 1px rgba(255,255,255,0.2) inset,
+        0 0 100px rgba(102, 126, 234, 0.08) inset;
     }
     
     /* Timer Circle */
     .pomodoro-timer-wrap {
       position: relative;
-      width: 280px;
-      height: 280px;
+      width: 300px;
+      height: 300px;
       display: flex;
       align-items: center;
       justify-content: center;
       flex-shrink: 0;
+    }
+    
+    .pomodoro-timer-wrap::before {
+      content: '';
+      position: absolute;
+      inset: -20px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(102, 126, 234, 0.15) 0%, transparent 70%);
+      animation: timerGlow 3s ease-in-out infinite;
+      pointer-events: none;
+    }
+    
+    @keyframes timerGlow {
+      0%, 100% { opacity: 0.5; transform: scale(1); }
+      50% { opacity: 0.8; transform: scale(1.05); }
     }
     
     .pomodoro-timer-ring {
@@ -1418,21 +1530,36 @@
       inset: 0;
       border-radius: 50%;
       background: conic-gradient(
-        from 0deg,
+        from -90deg,
         var(--accent) 0%,
-        var(--accent2) var(--progress, 0%),
-        var(--border) var(--progress, 0%),
-        var(--border) 100%
+        var(--accent2) calc(var(--progress, 0%) * 0.5),
+        var(--accent) var(--progress, 0%),
+        rgba(102, 126, 234, 0.15) var(--progress, 0%),
+        rgba(102, 126, 234, 0.08) 100%
       );
-      padding: 8px;
+      padding: 10px;
+      box-shadow: 
+        0 0 40px rgba(102, 126, 234, 0.3),
+        inset 0 0 30px rgba(102, 126, 234, 0.1);
+      transition: background 0.3s ease;
     }
     
     .pomodoro-timer-ring::before {
       content: '';
       position: absolute;
-      inset: 8px;
+      inset: 10px;
       background: var(--card);
       border-radius: 50%;
+      box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.05);
+    }
+    
+    .pomodoro-timer-ring::after {
+      content: '';
+      position: absolute;
+      inset: 6px;
+      border-radius: 50%;
+      border: 2px solid rgba(255, 255, 255, 0.1);
+      pointer-events: none;
     }
     
     .pomodoro-timer {
@@ -1445,33 +1572,47 @@
     }
     
     .pomodoro-time {
-      font-size: 64px;
-      font-weight: 300;
-      letter-spacing: -2px;
+      font-size: 72px;
+      font-weight: 200;
+      letter-spacing: -3px;
       color: var(--text);
       font-variant-numeric: tabular-nums;
       line-height: 1;
-      text-shadow: 0 2px 20px rgba(102, 126, 234, 0.2);
+      text-shadow: 0 4px 30px rgba(102, 126, 234, 0.25);
+      background: linear-gradient(135deg, var(--text) 0%, var(--accent) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
     }
     
     .pomodoro-mode {
-      font-size: 14px;
-      font-weight: 600;
+      font-size: 13px;
+      font-weight: 700;
       color: var(--accent);
-      margin-top: 16px;
+      margin-top: 20px;
       text-transform: uppercase;
-      letter-spacing: 3px;
+      letter-spacing: 4px;
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 10px;
+      padding: 8px 16px;
+      background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
+      border-radius: 999px;
+      border: 1px solid rgba(102, 126, 234, 0.2);
     }
     
     .pomodoro-mode-dot {
-      width: 8px;
-      height: 8px;
+      width: 10px;
+      height: 10px;
       border-radius: 50%;
-      background: var(--accent);
-      animation: pulse 2s ease-in-out infinite;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      animation: pulseGlow 2s ease-in-out infinite;
+      box-shadow: 0 0 10px rgba(102, 126, 234, 0.5);
+    }
+    
+    @keyframes pulseGlow {
+      0%, 100% { opacity: 1; transform: scale(1); box-shadow: 0 0 10px rgba(102, 126, 234, 0.5); }
+      50% { opacity: 0.7; transform: scale(0.85); box-shadow: 0 0 20px rgba(102, 126, 234, 0.3); }
     }
     
     @keyframes pulse {
@@ -4268,6 +4409,57 @@
       .modal-actions { flex-direction: column; }
       .modal-actions .btn { width: 100%; }
     }
+    
+    /* Bad Day Presets - special styling */
+    .pomodoro-preset.bad-day {
+      border-color: rgba(249, 115, 22, 0.3);
+      background: linear-gradient(135deg, rgba(249, 115, 22, 0.05), rgba(234, 179, 8, 0.05));
+      color: #f97316;
+    }
+    
+    .pomodoro-preset.bad-day:hover {
+      border-color: #f97316;
+      background: linear-gradient(135deg, rgba(249, 115, 22, 0.1), rgba(234, 179, 8, 0.1));
+      color: #ea580c;
+    }
+    
+    .pomodoro-preset.bad-day.active {
+      background: linear-gradient(135deg, #f97316, #eab308);
+      border-color: transparent;
+      color: white;
+      box-shadow: 0 4px 16px rgba(249, 115, 22, 0.4);
+    }
+    
+    /* Bad Day Tip */
+    .pomodoro-bad-day-tip {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 16px 20px;
+      background: linear-gradient(135deg, rgba(249, 115, 22, 0.08), rgba(234, 179, 8, 0.08));
+      border: 1px solid rgba(249, 115, 22, 0.2);
+      border-radius: 16px;
+      width: 100%;
+      max-width: 500px;
+      animation: tipFadeIn 0.4s ease;
+    }
+    
+    @keyframes tipFadeIn {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .pomodoro-bad-day-tip .tip-icon {
+      font-size: 20px;
+      flex-shrink: 0;
+    }
+    
+    .pomodoro-bad-day-tip .tip-text {
+      font-size: 13px;
+      line-height: 1.6;
+      color: var(--text);
+      opacity: 0.85;
+    }
   </style>
 </head>
 <body>
@@ -4688,7 +4880,15 @@
             <button class="pomodoro-preset" data-preset="flow">50/10 Flow</button>
             <button class="pomodoro-preset" data-preset="ultradian">90/20 Ultra</button>
             <button class="pomodoro-preset" data-preset="perfect">52/17 מושלם</button>
+            <button class="pomodoro-preset bad-day" data-preset="badday10">😔 10 דק׳</button>
+            <button class="pomodoro-preset bad-day" data-preset="badday5">💫 5 דק׳</button>
             <button class="pomodoro-preset" data-preset="custom">⚙️ מותאם</button>
+          </div>
+          
+          <!-- Bad Day Tip -->
+          <div class="pomodoro-bad-day-tip" id="pomodoroBadDayTip" style="display: none;">
+            <span class="tip-icon">💡</span>
+            <span class="tip-text">יום קשה? זה בסדר! מחקרים מראים שאפילו 5-10 דקות מיקוד יכולות לעזור לשמור על המומנטום ולהפחית חרדה.</span>
           </div>
 
           <!-- Settings Panel -->
@@ -4716,6 +4916,10 @@
             <label class="pomodoro-option">
               <input type="checkbox" id="pomodoroAutoContinue" />
               <span>המשך אוטומטי</span>
+            </label>
+            <label class="pomodoro-option">
+              <input type="checkbox" id="pomodoroSoundEnabled" checked />
+              <span>🔔 צליל התראה</span>
             </label>
             <select class="pomodoro-sound-select" id="pomodoroSound">
               <option value="chime">🎵 צלצול עדין</option>
@@ -7047,6 +7251,7 @@ const themeToggle = $("themeToggle");
       longInput: document.getElementById('pomodoroLong'),
       longEveryInput: document.getElementById('pomodoroLongEvery'),
       autoContinue: document.getElementById('pomodoroAutoContinue'),
+      soundEnabled: document.getElementById('pomodoroSoundEnabled'),
       soundSelect: document.getElementById('pomodoroSound'),
       previewBtn: document.getElementById('pomodoroPreviewSound'),
       display: document.getElementById('pomodoroDisplay'),
@@ -7061,6 +7266,7 @@ const themeToggle = $("themeToggle");
       streak: document.getElementById('pomodoroStreak'),
       dayProgress: document.getElementById('pomodoroDayProgress'),
       dayLabel: document.getElementById('pomodoroDayLabel'),
+      badDayTip: document.getElementById('pomodoroBadDayTip'),
       // Mini player refs
       mini: document.getElementById('pomodoroMini'),
       miniTime: document.getElementById('pomodoroMiniTime'),
@@ -7080,7 +7286,10 @@ const themeToggle = $("themeToggle");
       classic: { focus: 25, shortBreak: 5, longBreak: 15, longEvery: 4, label: '25/5 קלאסי' },
       flow: { focus: 50, shortBreak: 10, longBreak: 20, longEvery: 3, label: '50/10 Flow' },
       ultradian: { focus: 90, shortBreak: 20, longBreak: 25, longEvery: 1, label: '90/20 Ultradian' },
-      perfect: { focus: 52, shortBreak: 17, longBreak: 20, longEvery: 3, label: '52/17' }
+      perfect: { focus: 52, shortBreak: 17, longBreak: 20, longEvery: 3, label: '52/17' },
+      // Bad day presets - based on research showing even short focus sessions help
+      badday10: { focus: 10, shortBreak: 3, longBreak: 5, longEvery: 4, label: '😔 10 דק׳', isBadDay: true },
+      badday5: { focus: 5, shortBreak: 2, longBreak: 5, longEvery: 6, label: '💫 5 דק׳', isBadDay: true }
     };
 
     const clampNum = (val, min, max, fallback) => {
@@ -7132,11 +7341,15 @@ const themeToggle = $("themeToggle");
     const loadSettings = () => {
       try {
         const raw = localStorage.getItem(KEYS.SETTINGS);
-        if (!raw) return { autoContinue: false, sound: 'chime' };
+        if (!raw) return { autoContinue: false, sound: 'chime', soundEnabled: true };
         const parsed = JSON.parse(raw);
-        return { autoContinue: !!parsed.autoContinue, sound: parsed.sound || 'chime' };
+        return { 
+          autoContinue: !!parsed.autoContinue, 
+          sound: parsed.sound || 'chime',
+          soundEnabled: parsed.soundEnabled !== false // default true
+        };
       } catch (e) {
-        return { autoContinue: false, sound: 'chime' };
+        return { autoContinue: false, sound: 'chime', soundEnabled: true };
       }
     };
 
@@ -7177,6 +7390,13 @@ const themeToggle = $("themeToggle");
       refs.presets.forEach(btn => {
         btn.classList.toggle('active', btn.dataset.preset === state.preset);
       });
+      
+      // Show/hide bad day tip based on selected preset
+      const currentPreset = presets[state.preset];
+      const isBadDay = currentPreset?.isBadDay || false;
+      if (refs.badDayTip) {
+        refs.badDayTip.style.display = isBadDay ? 'flex' : 'none';
+      }
     };
 
     const renderStats = () => {
@@ -7318,11 +7538,11 @@ const themeToggle = $("themeToggle");
     };
 
     let audioCtx = null;
-    const playTonePattern = (pattern) => {
-      if (!pattern) return;
+    const playTonePattern = (pattern, startTime = null) => {
+      if (!pattern) return 0;
       if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
       if (audioCtx.state === 'suspended') audioCtx.resume();
-      let t = audioCtx.currentTime;
+      let t = startTime !== null ? startTime : audioCtx.currentTime;
       pattern.forEach(step => {
         if (step.f === 0) { t += step.d; return; } // silence gap
         const osc = audioCtx.createOscillator();
@@ -7338,12 +7558,33 @@ const themeToggle = $("themeToggle");
         osc.stop(t + step.d + 0.02);
         t += step.d + 0.02;
       });
+      return t; // return end time
+    };
+
+    // Extended alarm - plays pattern 3 times with pauses for better notification
+    const playExtendedAlarm = (pattern) => {
+      if (!pattern || !audioCtx) return;
+      const patternDuration = pattern.reduce((sum, step) => sum + step.d + 0.02, 0);
+      const gap = 0.4; // pause between repetitions
+      let t = audioCtx.currentTime;
+      
+      for (let i = 0; i < 3; i++) {
+        t = playTonePattern(pattern, t);
+        t += gap;
+      }
     };
 
     const alert = () => {
+      if (!settings.soundEnabled) {
+        // Still vibrate even if sound is off
+        if (navigator.vibrate) navigator.vibrate([100, 50, 100, 50, 200]);
+        return;
+      }
       const pattern = tonePatterns[settings.sound] || tonePatterns.chime;
-      playTonePattern(pattern);
-      if (navigator.vibrate) navigator.vibrate([40, 80]);
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      playExtendedAlarm(pattern);
+      if (navigator.vibrate) navigator.vibrate([100, 50, 100, 50, 200]);
     };
 
     const advance = (countFocus = false) => {
@@ -7431,6 +7672,25 @@ const themeToggle = $("themeToggle");
           settings.sound = refs.soundSelect.value;
           saveSettings();
         });
+      }
+
+      // Sound enabled toggle
+      if (refs.soundEnabled) {
+        refs.soundEnabled.checked = settings.soundEnabled;
+        refs.soundEnabled.addEventListener('change', () => {
+          settings.soundEnabled = refs.soundEnabled.checked;
+          saveSettings();
+          // Update sound select visibility
+          if (refs.soundSelect) {
+            refs.soundSelect.style.opacity = settings.soundEnabled ? '1' : '0.5';
+          }
+          if (refs.previewBtn) {
+            refs.previewBtn.style.opacity = settings.soundEnabled ? '1' : '0.5';
+          }
+        });
+        // Initial state
+        if (refs.soundSelect) refs.soundSelect.style.opacity = settings.soundEnabled ? '1' : '0.5';
+        if (refs.previewBtn) refs.previewBtn.style.opacity = settings.soundEnabled ? '1' : '0.5';
       }
 
       if (refs.previewBtn) {
