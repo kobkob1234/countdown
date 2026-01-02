@@ -7949,7 +7949,7 @@ const themeToggle = $("themeToggle");
     const recurrence = normalizeRecurrence(task.recurrence);
     if (recurrence !== 'none') {
       const label = RECURRENCE_LABELS[recurrence] || recurrence;
-      const icon = `<svg viewBox="0 0 24 24" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;"><path d="M5 12a7 7 0 0 1 7-7h5"/><path d="M17 5l-2-2"/><path d="M19 12a7 7 0 0 1-7 7H7"/><path d="M7 19l2 2"/></svg>`;
+      const icon = `<svg viewBox="0 0 24 24" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;"><path d="M5 12a7 7 0 0 1 7-7h5"></path><path d="M17 5l-2-2"></path><path d="M19 12a7 7 0 0 1-7 7H7"></path><path d="M7 19l2 2"></path></svg>`;
       recurrenceHtml = `<span class="task-recurrence">${icon}${label}</span>`;
     }
     
