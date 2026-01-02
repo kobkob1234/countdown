@@ -4460,6 +4460,47 @@
       color: var(--text);
       opacity: 0.85;
     }
+
+    /* Pomodoro RTL tweaks */
+    .pomodoro-overlay {
+      direction: rtl;
+    }
+
+    .pomodoro-card,
+    .pomodoro-options,
+    .pomodoro-settings-panel,
+    .pomodoro-presets,
+    .pomodoro-daily,
+    .pomodoro-stats,
+    .pomodoro-task-select,
+    .pomodoro-mini {
+      text-align: right;
+    }
+
+    .pomodoro-mini {
+      direction: rtl;
+    }
+
+    .pomodoro-time,
+    .pomodoro-mini-time {
+      direction: ltr;
+      text-align: center;
+    }
+
+    .pomodoro-next,
+    .pomodoro-mode,
+    .pomodoro-mini-mode {
+      text-align: center;
+    }
+
+    .pomodoro-controls,
+    .pomodoro-presets,
+    .pomodoro-options,
+    .pomodoro-settings-panel,
+    .pomodoro-stats,
+    .pomodoro-daily {
+      direction: rtl;
+    }
   </style>
 </head>
 <body>
@@ -4841,10 +4882,10 @@
   <!-- Pomodoro Overlay -->
   <div class="pomodoro-overlay" id="pomodoroOverlay">
     <div class="pomodoro-header-bar">
-      <div class="pomodoro-header-title">🍅 Pomodoro Timer</div>
+      <div class="pomodoro-header-title">🍅 טיימר פומודורו</div>
       <label class="pomodoro-option" style="margin: 0; background: transparent;">
         <input type="checkbox" id="pomodoroMiniToggle" />
-        <span style="font-size: 13px;">הצג מיני</span>
+        <span style="font-size: 13px;">הצג מיני-טיימר</span>
       </label>
     </div>
     
@@ -4859,7 +4900,7 @@
               <div class="pomodoro-time" id="pomodoroDisplay">25:00</div>
               <div class="pomodoro-mode">
                 <span class="pomodoro-mode-dot"></span>
-                <span id="pomodoroMode">מצב מיקוד</span>
+                <span id="pomodoroMode">מיקוד</span>
               </div>
               <div class="pomodoro-next" id="pomodoroNext">הבא: הפסקה קצרה</div>
             </div>
@@ -4867,7 +4908,7 @@
 
           <!-- Controls -->
           <div class="pomodoro-controls">
-            <button class="pomodoro-btn" id="pomodoroReset" title="אפס">🔄</button>
+            <button class="pomodoro-btn" id="pomodoroReset" title="איפוס">🔄</button>
             <button class="pomodoro-btn primary" id="pomodoroStart" title="התחל">▶️</button>
             <button class="pomodoro-btn" id="pomodoroSkip" title="דלג">⏭️</button>
           </div>
@@ -4877,36 +4918,36 @@
           <!-- Presets -->
           <div class="pomodoro-presets">
             <button class="pomodoro-preset" data-preset="classic">25/5 קלאסי</button>
-            <button class="pomodoro-preset" data-preset="flow">50/10 Flow</button>
-            <button class="pomodoro-preset" data-preset="ultradian">90/20 Ultra</button>
-            <button class="pomodoro-preset" data-preset="perfect">52/17 מושלם</button>
+            <button class="pomodoro-preset" data-preset="flow">50/10 זרימה</button>
+            <button class="pomodoro-preset" data-preset="ultradian">90/20 אולטרה</button>
+            <button class="pomodoro-preset" data-preset="perfect">52/17 קצב יעיל</button>
             <button class="pomodoro-preset bad-day" data-preset="badday10">😔 10 דק׳</button>
             <button class="pomodoro-preset bad-day" data-preset="badday5">💫 5 דק׳</button>
-            <button class="pomodoro-preset" data-preset="custom">⚙️ מותאם</button>
+            <button class="pomodoro-preset" data-preset="custom">⚙️ מותאם אישית</button>
           </div>
           
           <!-- Bad Day Tip -->
           <div class="pomodoro-bad-day-tip" id="pomodoroBadDayTip" style="display: none;">
             <span class="tip-icon">💡</span>
-            <span class="tip-text">יום קשה? זה בסדר! מחקרים מראים שאפילו 5-10 דקות מיקוד יכולות לעזור לשמור על המומנטום ולהפחית חרדה.</span>
+            <span class="tip-text">יום מאתגר? זה בסדר. גם 5-10 דקות מיקוד עוזרות לשמור על מומנטום ולהפחית סטרס.</span>
           </div>
 
           <!-- Settings Panel -->
           <div class="pomodoro-settings-panel">
             <div class="pomodoro-field">
-              <label>מיקוד</label>
+              <label>זמן מיקוד</label>
               <input type="number" min="5" max="240" id="pomodoroFocus" value="25" />
             </div>
             <div class="pomodoro-field">
-              <label>הפסקה</label>
+              <label>הפסקה קצרה</label>
               <input type="number" min="3" max="60" id="pomodoroBreak" value="5" />
             </div>
             <div class="pomodoro-field">
-              <label>ארוכה</label>
+              <label>הפסקה ארוכה</label>
               <input type="number" min="5" max="90" id="pomodoroLong" value="15" />
             </div>
             <div class="pomodoro-field">
-              <label>כל X</label>
+              <label>הפסקה ארוכה כל כמה מחזורים</label>
               <input type="number" min="1" max="8" id="pomodoroLongEvery" value="4" />
             </div>
           </div>
@@ -4915,7 +4956,7 @@
           <div class="pomodoro-options">
             <label class="pomodoro-option">
               <input type="checkbox" id="pomodoroAutoContinue" />
-              <span>המשך אוטומטי</span>
+              <span>מעבר אוטומטי בין מצבים</span>
             </label>
             <label class="pomodoro-option">
               <input type="checkbox" id="pomodoroSoundEnabled" checked />
@@ -4929,12 +4970,12 @@
               <option value="glass">✨ קריסטל</option>
               <option value="success">🎉 פנפרה</option>
             </select>
-            <button class="pomodoro-preview-btn" id="pomodoroPreviewSound">▶️ נסה</button>
+            <button class="pomodoro-preview-btn" id="pomodoroPreviewSound">▶️ האזן</button>
           </div>
 
           <!-- Task Select -->
           <select class="pomodoro-task-select" id="pomodoroTaskSelect">
-            <option value="">📋 בחר משימה להתמקד...</option>
+            <option value="">📋 בחר משימת מיקוד (לא חובה)</option>
           </select>
 
           <!-- Stats -->
@@ -4948,7 +4989,7 @@
               <div class="value" id="pomodoroFocusMinutes">0</div>
             </div>
             <div class="pomodoro-stat">
-              <div class="label">רצף ימים</div>
+              <div class="label">רצף ימי מיקוד</div>
               <div class="value" id="pomodoroStreak">0</div>
             </div>
           </div>
@@ -4958,7 +4999,7 @@
             <div class="pomodoro-daily-bar">
               <div class="pomodoro-daily-fill" id="pomodoroDayProgress"></div>
             </div>
-            <div class="pomodoro-daily-label" id="pomodoroDayLabel">0/8 מחזורי מיקוד להיום</div>
+            <div class="pomodoro-daily-label" id="pomodoroDayLabel">0/8 מחזורי מיקוד היום</div>
           </div>
 
         </div>
@@ -7284,9 +7325,9 @@ const themeToggle = $("themeToggle");
 
     const presets = {
       classic: { focus: 25, shortBreak: 5, longBreak: 15, longEvery: 4, label: '25/5 קלאסי' },
-      flow: { focus: 50, shortBreak: 10, longBreak: 20, longEvery: 3, label: '50/10 Flow' },
-      ultradian: { focus: 90, shortBreak: 20, longBreak: 25, longEvery: 1, label: '90/20 Ultradian' },
-      perfect: { focus: 52, shortBreak: 17, longBreak: 20, longEvery: 3, label: '52/17' },
+      flow: { focus: 50, shortBreak: 10, longBreak: 20, longEvery: 3, label: '50/10 זרימה' },
+      ultradian: { focus: 90, shortBreak: 20, longBreak: 25, longEvery: 1, label: '90/20 אולטרה' },
+      perfect: { focus: 52, shortBreak: 17, longBreak: 20, longEvery: 3, label: '52/17 קצב יעיל' },
       // Bad day presets - based on research showing even short focus sessions help
       badday10: { focus: 10, shortBreak: 3, longBreak: 5, longEvery: 4, label: '😔 10 דק׳', isBadDay: true },
       badday5: { focus: 5, shortBreak: 2, longBreak: 5, longEvery: 6, label: '💫 5 דק׳', isBadDay: true }
@@ -7410,14 +7451,14 @@ const themeToggle = $("themeToggle");
         refs.dayProgress.style.width = pct + '%';
       }
       if (refs.dayLabel) {
-        refs.dayLabel.textContent = `${Math.min(stats.sessions, goal)}/${goal} מחזורי מיקוד להיום`;
+        refs.dayLabel.textContent = `${Math.min(stats.sessions, goal)}/${goal} מחזורי מיקוד היום`;
       }
     };
 
     const render = () => {
       if (!refs.display) return;
       refs.display.textContent = formatTime(state.remainingMs);
-      const modeLabel = state.mode === 'focus' ? 'מצב מיקוד' : (state.mode === 'long' ? 'הפסקה ארוכה' : 'הפסקה קצרה');
+      const modeLabel = state.mode === 'focus' ? 'מיקוד' : (state.mode === 'long' ? 'הפסקה ארוכה' : 'הפסקה קצרה');
       refs.mode.textContent = modeLabel;
       refs.next.textContent = `הבא: ${getNextLabel()}`;
       const totalMs = getDuration(state.mode) * 60000;
@@ -7426,7 +7467,7 @@ const themeToggle = $("themeToggle");
       if (refs.startBtn) refs.startBtn.textContent = state.running ? '⏸️' : '▶️';
       // Update mini player
       if (refs.miniTime) refs.miniTime.textContent = formatTime(state.remainingMs);
-      if (refs.miniMode) refs.miniMode.textContent = state.mode === 'focus' ? 'מיקוד' : (state.mode === 'long' ? 'הפסקה ארוכה' : 'הפסקה');
+      if (refs.miniMode) refs.miniMode.textContent = state.mode === 'focus' ? 'מיקוד' : (state.mode === 'long' ? 'הפסקה ארוכה' : 'הפסקה קצרה');
     };
 
     const setMode = (mode) => {
@@ -7640,7 +7681,7 @@ const themeToggle = $("themeToggle");
     const updateTaskOptions = () => {
       if (!refs.taskSelect) return;
       const prev = refs.taskSelect.value;
-      refs.taskSelect.innerHTML = '<option value="">בחר משימה להתמקד (אופציונלי)</option>';
+      refs.taskSelect.innerHTML = '<option value="">בחר משימת מיקוד (לא חובה)</option>';
       const active = (tasksCache || []).filter(t => !t.completed).slice(0, 50);
       active.forEach(t => {
         const opt = document.createElement('option');
