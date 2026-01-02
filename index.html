@@ -2780,26 +2780,12 @@
       align-items: center;
       gap: 4px;
     }
-    .recurrence-icon {
-      width: 12px;
-      height: 12px;
-      border: 2px solid currentColor;
-      border-top-color: transparent;
-      border-radius: 50%;
-      position: relative;
-      display: inline-block;
-    }
-    .recurrence-icon::after {
-      content: '';
-      position: absolute;
-      top: -1px;
-      right: -1px;
-      width: 0;
-      height: 0;
-      border-left: 4px solid transparent;
-      border-right: 4px solid transparent;
-      border-bottom: 5px solid currentColor;
-      transform: rotate(45deg);
+    .recurrence-icon-svg {
+      width: 13px;
+      height: 13px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 2;
     }
     .task-reminder {
       font-size: var(--font-size-xs);
@@ -7962,7 +7948,8 @@ const themeToggle = $("themeToggle");
     const recurrence = normalizeRecurrence(task.recurrence);
     if (recurrence !== 'none') {
       const label = RECURRENCE_LABELS[recurrence] || recurrence;
-      recurrenceHtml = `<span class="task-recurrence"><span class="recurrence-icon"></span>${label}</span>`;
+      const icon = `<svg class="recurrence-icon-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 0 1 8-8h4"/><path d="M16 4l-2-2"/><path d="M20 12a8 8 0 0 1-8 8H8"/><path d="M8 20l2 2"/></svg>`;
+      recurrenceHtml = `<span class="task-recurrence">${icon}${label}</span>`;
     }
     
     let reminderHtml = '';
