@@ -4,6 +4,8 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Shared Event Countdowns</title>
+  <meta name="theme-color" content="#667eea" />
+  <link rel="manifest" href="manifest.webmanifest" />
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%23667eea'/%3E%3Cstop offset='100%25' stop-color='%23764ba2'/%3E%3C/linearGradient%3E%3C/defs%3E%3Ccircle cx='16' cy='16' r='14' fill='url(%23g)'/%3E%3Cpath d='M16 8v8l5 3' stroke='white' stroke-width='2.5' stroke-linecap='round' fill='none'/%3E%3C/svg%3E" />
   <style>
     :root {
@@ -6837,7 +6839,83 @@
     } catch (e) {}
   };
   
-	  function updateNotifyButton() {
+	  // Web Push (works when closed) requires: HTTPS + Service Worker + a backend sender (VAPID private key).
+	  // 1) Generate VAPID keys on your backend, then paste the PUBLIC key here.
+	  const PUSH_VAPID_PUBLIC_KEY = "BBU7RR-_gZR8MC-QaLiyUJuplTzrDqIYNQtnGJ0m6TlBwLKGrydNf8sBxmpW2EJhTeFNHFbXsQv6z00ZT6GPfZU";
+	  const PUSH_LOCAL_USER_KEY = 'countdown_push_subscription_user';
+
+	  const isPushSupported = () => (
+	    window.isSecureContext &&
+	    'serviceWorker' in navigator &&
+	    'PushManager' in window
+	  );
+
+	  const urlBase64ToUint8Array = (base64String) => {
+	    const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+	    const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+	    const rawData = atob(base64);
+	    const outputArray = new Uint8Array(rawData.length);
+	    for (let i = 0; i < rawData.length; ++i) outputArray[i] = rawData.charCodeAt(i);
+	    return outputArray;
+	  };
+
+	  async function getPushRegistration() {
+	    if (!('serviceWorker' in navigator)) return null;
+	    return await navigator.serviceWorker.getRegistration();
+	  }
+
+	  async function ensurePushRegistration() {
+	    if (!('serviceWorker' in navigator)) return null;
+	    const existing = await getPushRegistration();
+	    if (existing) return existing;
+	    return await navigator.serviceWorker.register('./service-worker.js', { scope: './' });
+	  }
+
+	  async function sha256Base64Url(input) {
+	    const data = new TextEncoder().encode(String(input || ''));
+	    const digest = await crypto.subtle.digest('SHA-256', data);
+	    const bytes = Array.from(new Uint8Array(digest));
+	    const b64 = btoa(String.fromCharCode(...bytes));
+	    return b64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
+	  }
+
+	  async function savePushSubscriptionForUser(userId, subscription) {
+	    if (!userId) return;
+	    if (!subscription) return;
+	    const key = await sha256Base64Url(subscription.endpoint);
+	    const payload = {
+	      sub: subscription.toJSON(),
+	      ua: navigator.userAgent,
+	      createdAt: Date.now()
+	    };
+	    await set(ref(db, `users/${userId}/pushSubscriptions/${key}`), payload);
+	  }
+
+	  async function removePushSubscriptionForUser(userId, subscription) {
+	    if (!userId) return;
+	    if (!subscription) return;
+	    const key = await sha256Base64Url(subscription.endpoint);
+	    await remove(ref(db, `users/${userId}/pushSubscriptions/${key}`));
+	  }
+
+	  async function syncExistingSubscriptionToCurrentUser() {
+	    if (!isPushSupported()) return;
+	    if (!PUSH_VAPID_PUBLIC_KEY) return;
+	    try {
+	      const reg = await getPushRegistration();
+	      if (!reg) return;
+	      const sub = await reg.pushManager.getSubscription();
+	      if (!sub) return;
+	      const prevUser = localStorage.getItem(PUSH_LOCAL_USER_KEY);
+	      if (prevUser && prevUser !== currentUser) {
+	        await removePushSubscriptionForUser(prevUser, sub).catch(() => {});
+	      }
+	      await savePushSubscriptionForUser(currentUser, sub);
+	      localStorage.setItem(PUSH_LOCAL_USER_KEY, currentUser);
+	    } catch (e) {}
+	  }
+
+	  async function refreshNotifyButton() {
 	    if (!notifyBtn) return;
 	    if (!("Notification" in window)) {
 	      notifyBtn.textContent = "🔕";
@@ -6848,51 +6926,134 @@
 	    }
 	    notifyBtn.disabled = false;
 	    notifyBtn.removeAttribute('aria-disabled');
+
 	    const perm = Notification.permission;
-	    if (perm === 'granted') {
-	      notifyBtn.textContent = "🔔";
-	      notifyBtn.title = "Notifications enabled";
-	    } else if (perm === 'denied') {
+	    if (perm === 'denied') {
 	      notifyBtn.textContent = "🔕";
 	      notifyBtn.title = "Notifications blocked (enable in browser settings)";
-	    } else {
-	      notifyBtn.textContent = "🔔";
-	      notifyBtn.title = "Enable notifications";
+	      return;
 	    }
+
+	    if (isPushSupported()) {
+	      try {
+	        const reg = await getPushRegistration();
+	        const sub = reg ? await reg.pushManager.getSubscription() : null;
+	        if (sub && perm === 'granted') {
+	          notifyBtn.textContent = "🔔";
+	          notifyBtn.title = `Push enabled for "${currentUser}" (works even when closed)`;
+	          notifyBtn.setAttribute('aria-pressed', 'true');
+	          return;
+	        }
+	      } catch {}
+	      notifyBtn.textContent = "🔔";
+	      notifyBtn.title = perm === 'granted'
+	        ? "Enable push (works when closed)"
+	        : "Enable notifications";
+	      notifyBtn.setAttribute('aria-pressed', 'false');
+	      return;
+	    }
+
+	    notifyBtn.textContent = "🔔";
+	    notifyBtn.title = perm === 'granted'
+	      ? "Notifications enabled (only while app is open)"
+	      : "Enable notifications";
+	    notifyBtn.setAttribute('aria-pressed', perm === 'granted' ? 'true' : 'false');
 	  }
 
-	  async function requestNotificationPermissionFromUser() {
+	  async function toggleNotificationsFromUser() {
 	    if (!("Notification" in window)) {
 	      alert("Notifications aren't supported in this browser.");
 	      return;
 	    }
 	    if (!window.isSecureContext) {
-	      alert("Browser notifications require HTTPS (or localhost).");
-	      return;
-	    }
-	    if (Notification.permission === 'granted') {
-	      try {
-	        new Notification("Notifications enabled ✅", { body: "You’ll get reminders while this app is running." });
-	      } catch {}
+	      alert("Notifications require HTTPS (GitHub Pages is OK) or localhost.");
 	      return;
 	    }
 	    if (Notification.permission === 'denied') {
-	      alert("Notifications are blocked for this site. Enable them in your browser/OS settings and reload.");
+	      alert("Notifications are blocked for this site. Enable them in browser/OS settings and reload.");
 	      return;
 	    }
-	    try {
-	      const perm = await Notification.requestPermission();
-	      updateNotifyButton();
-	      if (perm === 'granted') {
-	        new Notification("Notifications enabled ✅", { body: "You’ll get reminders while this app is running." });
-	      }
-	    } catch (e) {
-	      console.warn("Notification permission request failed", e);
+
+	    const perm = Notification.permission === 'granted'
+	      ? 'granted'
+	      : await Notification.requestPermission();
+
+	    if (perm !== 'granted') {
+	      await refreshNotifyButton();
+	      return;
 	    }
+
+	    if (!isPushSupported()) {
+	      new Notification("Notifications enabled ✅", { body: "You’ll get reminders while this app is open." });
+	      await refreshNotifyButton();
+	      return;
+	    }
+
+	    if (!PUSH_VAPID_PUBLIC_KEY) {
+	      alert("To enable push while closed, set PUSH_VAPID_PUBLIC_KEY in the code and run a push-sender backend.");
+	      await refreshNotifyButton();
+	      return;
+	    }
+
+	    const reg = await ensurePushRegistration();
+	    const existing = await reg.pushManager.getSubscription();
+	    if (existing) {
+	      const ok = confirm(`Push is enabled for "${currentUser}".\n\nDisable it on this device?`);
+	      if (!ok) return;
+	      await removePushSubscriptionForUser(currentUser, existing).catch(() => {});
+	      await existing.unsubscribe().catch(() => {});
+	      localStorage.removeItem(PUSH_LOCAL_USER_KEY);
+	      await refreshNotifyButton();
+	      return;
+	    }
+
+	    const appServerKey = urlBase64ToUint8Array(PUSH_VAPID_PUBLIC_KEY);
+	    const sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: appServerKey });
+	    await savePushSubscriptionForUser(currentUser, sub);
+	    localStorage.setItem(PUSH_LOCAL_USER_KEY, currentUser);
+	    new Notification("Push enabled ✅", { body: `Push is enabled for "${currentUser}".` });
+	    await refreshNotifyButton();
 	  }
 
-	  if (notifyBtn) notifyBtn.addEventListener('click', requestNotificationPermissionFromUser);
-	  updateNotifyButton();
+	  if (notifyBtn) notifyBtn.addEventListener('click', toggleNotificationsFromUser);
+	  syncExistingSubscriptionToCurrentUser();
+	  refreshNotifyButton();
+
+	  // Optional: allow "Done" action to complete a task by deep-link.
+	  // Your push sender can include: { completeUrl: "/?completeTask=TASK_ID&user=CURRENT_USER" }
+	  async function maybeHandleCompleteTaskLink() {
+	    try {
+	      const url = new URL(window.location.href);
+	      const taskId = url.searchParams.get('completeTask');
+	      const user = url.searchParams.get('user');
+	      if (!taskId) return;
+	      if (user && user !== currentUser) {
+	        // Switch user context, then reload once (so the app writes under the right user path).
+	        localStorage.setItem('countdown_username', user);
+	        url.searchParams.delete('completeTask');
+	        url.searchParams.delete('user');
+	        window.location.replace(url.toString());
+	        return;
+	      }
+	      // Mark completed (leaf set keeps other fields unchanged).
+	      await set(ref(db, `users/${currentUser}/tasks/${taskId}/completed`), true);
+	      // Clean URL to avoid re-trigger
+	      url.searchParams.delete('completeTask');
+	      url.searchParams.delete('user');
+	      window.history.replaceState({}, '', url.toString());
+	    } catch (e) {}
+	  }
+
+	  maybeHandleCompleteTaskLink();
+
+	  // Best-effort handle notification action if app is already open.
+	  if ('serviceWorker' in navigator) {
+	    navigator.serviceWorker.addEventListener('message', (event) => {
+	      const msg = event.data;
+	      if (!msg || msg.type !== 'notificationclick') return;
+	      // Currently handled via deep-link; keep hook for future enhancements.
+	    });
+	  }
 
   const setEventsLoading = (isLoading) => {
     if (!eventList) return;
