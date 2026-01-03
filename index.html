@@ -5512,18 +5512,19 @@
 </head>
 <body>
   <!-- Fixed Header Bar -->
-  <div class="fixed-header-bar">
-    <button class="header-btn active" id="toggleCountdown">⏱️ ספירה לאחור</button>
-    <button class="header-btn" id="toggleTasks">📝 משימות</button>
-    <button class="header-btn" id="togglePomodoro">🍅 פומודורו</button>
-    <button class="header-btn" id="togglePlanner">📅 מתכנן יומי</button>
-    <div class="header-spacer"></div>
-    <button class="header-btn" id="toggleSidebar">📅 לוח</button>
-    <span class="sync-badge hidden" id="syncBadge"><span class="sync-dot"></span><span class="sync-text">Syncing…</span></span>
-    <button class="header-btn icon-only" id="helpShortcuts" aria-label="Keyboard shortcuts" title="קיצורים (H)">?</button>
-    <button class="header-btn icon-only" id="themeToggle" aria-label="Toggle dark mode">🌙</button>
-    <button class="header-btn" id="userBtn" style="margin-left:8px; border:1px solid var(--accent); color:var(--accent);">👤 Guest</button>
-  </div>
+	  <div class="fixed-header-bar">
+	    <button class="header-btn active" id="toggleCountdown">⏱️ ספירה לאחור</button>
+	    <button class="header-btn" id="toggleTasks">📝 משימות</button>
+	    <button class="header-btn" id="togglePomodoro">🍅 פומודורו</button>
+	    <button class="header-btn" id="togglePlanner">📅 מתכנן יומי</button>
+	    <div class="header-spacer"></div>
+	    <button class="header-btn" id="toggleSidebar">📅 לוח</button>
+	    <span class="sync-badge hidden" id="syncBadge"><span class="sync-dot"></span><span class="sync-text">Syncing…</span></span>
+	    <button class="header-btn icon-only" id="notifyBtn" aria-label="Enable notifications" title="Enable notifications">🔔</button>
+	    <button class="header-btn icon-only" id="helpShortcuts" aria-label="Keyboard shortcuts" title="קיצורים (H)">?</button>
+	    <button class="header-btn icon-only" id="themeToggle" aria-label="Toggle dark mode">🌙</button>
+	    <button class="header-btn" id="userBtn" style="margin-left:8px; border:1px solid var(--accent); color:var(--accent);">👤 Guest</button>
+	  </div>
 
   <!-- Task Manager Fullscreen -->
   <div class="task-manager-overlay" id="taskManagerOverlay">
@@ -6697,9 +6698,10 @@
   const clearModal = $("clearModal");
   const confirmClearBtn = $("confirmClearBtn");
   const cancelClearModalBtn = $("cancelClearModalBtn");
-const themeToggle = $("themeToggle");
-  const togglePomodoro = $("togglePomodoro");
-  const pomodoroOverlay = $("pomodoroOverlay");
+	  const themeToggle = $("themeToggle");
+	  const notifyBtn = $("notifyBtn");
+	  const togglePomodoro = $("togglePomodoro");
+	  const pomodoroOverlay = $("pomodoroOverlay");
   
   
   
@@ -6835,14 +6837,62 @@ const themeToggle = $("themeToggle");
     } catch (e) {}
   };
   
-  function requestNotificationPermission() {
-    if (!("Notification" in window)) {
-      console.warn("This browser does not support desktop notifications");
-    } else if (Notification.permission === "default") {
-      Notification.requestPermission();
-    }
-  }
-  requestNotificationPermission();
+	  function updateNotifyButton() {
+	    if (!notifyBtn) return;
+	    if (!("Notification" in window)) {
+	      notifyBtn.textContent = "🔕";
+	      notifyBtn.title = "Notifications are not supported in this browser";
+	      notifyBtn.disabled = true;
+	      notifyBtn.setAttribute('aria-disabled', 'true');
+	      return;
+	    }
+	    notifyBtn.disabled = false;
+	    notifyBtn.removeAttribute('aria-disabled');
+	    const perm = Notification.permission;
+	    if (perm === 'granted') {
+	      notifyBtn.textContent = "🔔";
+	      notifyBtn.title = "Notifications enabled";
+	    } else if (perm === 'denied') {
+	      notifyBtn.textContent = "🔕";
+	      notifyBtn.title = "Notifications blocked (enable in browser settings)";
+	    } else {
+	      notifyBtn.textContent = "🔔";
+	      notifyBtn.title = "Enable notifications";
+	    }
+	  }
+
+	  async function requestNotificationPermissionFromUser() {
+	    if (!("Notification" in window)) {
+	      alert("Notifications aren't supported in this browser.");
+	      return;
+	    }
+	    if (!window.isSecureContext) {
+	      alert("Browser notifications require HTTPS (or localhost).");
+	      return;
+	    }
+	    if (Notification.permission === 'granted') {
+	      try {
+	        new Notification("Notifications enabled ✅", { body: "You’ll get reminders while this app is running." });
+	      } catch {}
+	      return;
+	    }
+	    if (Notification.permission === 'denied') {
+	      alert("Notifications are blocked for this site. Enable them in your browser/OS settings and reload.");
+	      return;
+	    }
+	    try {
+	      const perm = await Notification.requestPermission();
+	      updateNotifyButton();
+	      if (perm === 'granted') {
+	        new Notification("Notifications enabled ✅", { body: "You’ll get reminders while this app is running." });
+	      }
+	    } catch (e) {
+	      console.warn("Notification permission request failed", e);
+	    }
+	  }
+
+	  if (notifyBtn) notifyBtn.addEventListener('click', requestNotificationPermissionFromUser);
+	  updateNotifyButton();
 
   const setEventsLoading = (isLoading) => {
     if (!eventList) return;
@@ -7661,21 +7711,21 @@ const themeToggle = $("themeToggle");
     if (playSound) playReminderSound();
   }
   
-  function triggerAlert(evt) {
-    const reminderMinutes = parseInt(evt.reminder, 10) || 0;
-    const timeString = formatReminderOffset(reminderMinutes);
-    const msg = `${evt.name} starts in ${timeString}!`;
-    
-    if (document.hidden) {
-      if ("Notification" in window && Notification.permission === "granted") {
-        new Notification("Event Reminder ⏰", {
-          body: msg,
-          icon: "https://cdn-icons-png.flaticon.com/512/2693/2693507.png"
-        });
-      }
-      pendingEventAlert = { title: evt.name, message: `Starting in ${timeString}` };
-      return;
-    }
+	  function triggerAlert(evt) {
+	    const reminderMinutes = parseInt(evt.reminder, 10) || 0;
+	    const timeString = formatReminderOffset(reminderMinutes);
+	    const msg = `${evt.name} starts in ${timeString}!`;
+	    
+	    if (document.hidden) {
+	      if ("Notification" in window && Notification.permission === "granted") {
+	        new Notification("Event Reminder ⏰", {
+	          body: msg,
+	          tag: `event-${evt.id || evt.name || 'reminder'}`
+	        });
+	      }
+	      pendingEventAlert = { title: evt.name, message: `Starting in ${timeString}` };
+	      return;
+	    }
     
     showEventAlert(evt.name, `Starting in ${timeString}`, true);
   }
@@ -10035,22 +10085,22 @@ const themeToggle = $("themeToggle");
     taskTickerHandle = setInterval(tick, 60000); // Update every minute
   }
   
-  function triggerTaskAlert(task) {
-    const dueDate = new Date(task.dueDate);
-    const dateStr = dueDate.toLocaleDateString('he-IL', { weekday: 'long', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
-    const title = `📋 תזכורת משימה: ${task.title}`;
-    const message = `מועד יעד: ${dateStr}`;
+	  function triggerTaskAlert(task) {
+	    const dueDate = new Date(task.dueDate);
+	    const dateStr = dueDate.toLocaleDateString('he-IL', { weekday: 'long', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+	    const title = `📋 תזכורת משימה: ${task.title}`;
+	    const message = `מועד יעד: ${dateStr}`;
     
     // Play sound
     if (reminderAudio) {
       reminderAudio.currentTime = 0;
       reminderAudio.play().catch(() => {});
-    }
-    
-    // Show browser notification if permitted
-    if (Notification.permission === 'granted') {
-      new Notification(title, { body: message, icon: '📋', tag: `task-${task.id}` });
-    }
+	    }
+	    
+	    // Show browser notification if permitted
+	    if ("Notification" in window && Notification.permission === 'granted') {
+	      new Notification(title, { body: message, tag: `task-${task.id}` });
+	    }
     
     // Show in-app alert
     showEventAlert(title, message, true);
