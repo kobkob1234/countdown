@@ -9774,6 +9774,11 @@ Your response (JSON array only):`;
         tomorrow.setDate(tomorrow.getDate() + 1);
         const tomorrowStr = tomorrow.toISOString().split('T')[0];
         
+        // Build task list for context
+        const tasksList = tasks.slice(0, 10).map((t, i) => 
+          `${i+1}. "${t.title}" (id: ${t.id}, priority: ${t.priority || 'medium'}${t.dueDate ? ', due: ' + new Date(t.dueDate).toLocaleDateString('he-IL') : ''})`
+        ).join('\n');
+        
         const prompt = `You are a bilingual (Hebrew/English) task management AI assistant. Parse user requests and return actions as JSON.
 The user may write in Hebrew or English - understand both and respond in the same language they used.
 
@@ -9781,12 +9786,15 @@ User message: "${message}"
 
 Today's date: ${todayStr}
 Tomorrow's date: ${tomorrowStr}
-Current tasks: ${tasks.length} tasks exist.
+Current tasks (${tasks.length} total):
+${tasksList || 'No tasks yet'}
 
 Available actions:
 - addTask: {action: "addTask", title: "task name", dueDate: "YYYY-MM-DD", dueTime: "HH:MM", priority: "urgent|high|medium|low", duration: 60}
-- editTask: {action: "editTask", taskId: "...", updates: {title, priority, dueDate, duration}}
-- scheduleTask: {action: "scheduleTask", taskId: "...", date: "YYYY-MM-DD", time: "HH:MM"}
+- editTask: {action: "editTask", taskId: "actual-task-id", updates: {title, priority, dueDate, duration}}
+- deleteTask: {action: "deleteTask", taskId: "actual-task-id"}
+- completeTask: {action: "completeTask", taskId: "actual-task-id"}
+- listTasks: {action: "listTasks"}
 - planDay: {action: "planDay", date: "YYYY-MM-DD"}
 - reply: {action: "reply", message: "..."}
 
@@ -9795,21 +9803,33 @@ Hebrew date keywords to understand:
 - מחר = tomorrow (${tomorrowStr})
 - מחרתיים = day after tomorrow
 - בשעה X = at X o'clock
+- יום ראשון = Sunday, יום שני = Monday, יום שלישי = Tuesday, יום רביעי = Wednesday, יום חמישי = Thursday, יום שישי = Friday, שבת = Saturday
 - דחוף/דחופה = urgent priority
 - גבוה/גבוהה = high priority
 - בינוני/בינונית = medium priority
 - נמוך/נמוכה = low priority
-- הוסף משימה / צור משימה = add task
+- הוסף משימה / צור משימה / תוסיף = add task
 - תזמן / קבע = schedule
 - שנה / ערוך = edit
 - תכנן את היום = plan the day
+- דקות = minutes, שעה/שעות = hour(s)
+- משך / אורך = duration
+- מחק / הסר = delete
+- סיים / השלם = complete task
+- הצג משימות / רשימת משימות = list tasks
 
 Return JSON: {actions: [...], reply: "confirmation in user's language"}
 
 Examples:
-- "הוסף משימה: לקנות חלב מחר ב-17:00" → {actions: [{action: "addTask", title: "לקנות חלב", dueDate: "${tomorrowStr}", dueTime: "17:00"}], reply: "נוספה משימה: לקנות חלב למחר ב-17:00"}
-- "Add task: Buy milk tomorrow at 5pm" → {actions: [{action: "addTask", title: "Buy milk", dueDate: "${tomorrowStr}", dueTime: "17:00"}], reply: "Added task: Buy milk for tomorrow at 5pm"}
-- "תכנן את היום שלי" → {actions: [{action: "planDay", date: "${todayStr}"}], reply: "מתכנן את היום שלך..."}
+- "הוסף משימה: לקנות חלב מחר ב-17:00" → {actions: [{action: "addTask", title: "לקנות חלב", dueDate: "${tomorrowStr}", dueTime: "17:00"}], reply: "✅ נוספה משימה: לקנות חלב למחר ב-17:00"}
+- "צור משימה דחופה: להגיש פרויקט היום משך שעתיים" → {actions: [{action: "addTask", title: "להגיש פרויקט", dueDate: "${todayStr}", priority: "urgent", duration: 120}], reply: "✅ נוספה משימה דחופה!"}
+- "Add task: Buy milk tomorrow at 5pm" → {actions: [{action: "addTask", title: "Buy milk", dueDate: "${tomorrowStr}", dueTime: "17:00"}], reply: "✅ Added task: Buy milk"}
+- "תכנן את היום שלי" → {actions: [{action: "planDay", date: "${todayStr}"}], reply: "🧠 מתכנן את היום שלך..."}
+- "הצג את המשימות" → {actions: [{action: "listTasks"}], reply: "הנה המשימות שלך:"}
+- "סמן משימה 1 כהושלמה" → use completeTask with actual taskId from the list above
+- "מחק את המשימה השנייה" → use deleteTask with actual taskId from the list above
+
+IMPORTANT: When user refers to task by number (e.g., "משימה 1", "task 2"), use the actual taskId from the task list above!
 
 JSON:`;
 
@@ -9840,12 +9860,16 @@ JSON:`;
       switch (action.action) {
         case 'addTask':
           const newTask = {
-            title: action.title || 'New Task',
+            title: action.title || 'משימה חדשה',
             completed: false,
             priority: action.priority || 'medium',
-            estimatedMinutes: action.estimatedMinutes || 60,
-            notes: action.notes || ''
+            content: action.notes || ''
           };
+          
+          // Handle duration (in minutes)
+          if (action.duration && action.duration > 0) {
+            newTask.duration = action.duration;
+          }
           
           if (action.dueDate) {
             const dueDateTime = action.dueTime 
@@ -9859,9 +9883,74 @@ JSON:`;
           break;
           
         case 'planDay':
-          if (typeof DailyPlanner !== 'undefined') {
-            // Trigger plan day for specified date
-            addMessage('Planning your day...');
+          // Trigger AI Plan Day for specified date
+          if (typeof aiPlanEntireDay === 'function') {
+            const planDate = action.date ? new Date(action.date) : new Date();
+            addMessage('🧠 מתכנן את היום... / Planning your day...');
+            try {
+              await aiPlanEntireDay(planDate);
+              addMessage('✅ התכנון הושלם! / Day planned successfully!');
+            } catch (err) {
+              addMessage(`❌ שגיאה בתכנון: ${err.message}`);
+            }
+          } else {
+            addMessage('פונקציית התכנון לא זמינה. נסה ללחוץ על כפתור "🧠 Plan Day" בתוכנית היומית.');
+          }
+          break;
+        
+        case 'listTasks':
+          // List current tasks
+          const taskList = tasks.slice(0, 10).map((t, i) => {
+            const status = t.completed ? '✅' : '⬜';
+            const priority = t.priority === 'urgent' ? '🔴' : t.priority === 'high' ? '🟠' : t.priority === 'low' ? '🟢' : '🟡';
+            const due = t.dueDate ? ` (${new Date(t.dueDate).toLocaleDateString('he-IL')})` : '';
+            return `${i+1}. ${status} ${priority} ${t.title}${due}`;
+          }).join('\n');
+          addMessage(taskList || 'אין משימות / No tasks');
+          break;
+        
+        case 'completeTask':
+          if (action.taskId) {
+            const task = tasks.find(t => t.id === action.taskId);
+            if (task) {
+              const { id, isOwn, isShared, ...cleanTask } = task;
+              await saveTask(action.taskId, { ...cleanTask, completed: true }, task.subject);
+              if (typeof renderTasks === 'function') renderTasks();
+              addMessage(`✅ המשימה "${task.title}" סומנה כהושלמה!`);
+            } else {
+              addMessage('❌ משימה לא נמצאה / Task not found');
+            }
+          }
+          break;
+        
+        case 'deleteTask':
+          if (action.taskId) {
+            const task = tasks.find(t => t.id === action.taskId);
+            if (task) {
+              const taskTitle = task.title;
+              if (typeof remove === 'function' && typeof ref === 'function') {
+                await remove(ref(db, `users/${currentUser}/tasks/${action.taskId}`));
+                if (typeof renderTasks === 'function') renderTasks();
+                addMessage(`🗑️ המשימה "${taskTitle}" נמחקה!`);
+              }
+            } else {
+              addMessage('❌ משימה לא נמצאה / Task not found');
+            }
+          }
+          break;
+        
+        case 'editTask':
+          if (action.taskId && action.updates) {
+            const task = tasks.find(t => t.id === action.taskId);
+            if (task) {
+              const { id, isOwn, isShared, ...cleanTask } = task;
+              const updatedTask = { ...cleanTask, ...action.updates };
+              await saveTask(action.taskId, updatedTask, task.subject);
+              if (typeof renderTasks === 'function') renderTasks();
+              addMessage(`✏️ המשימה "${task.title}" עודכנה!`);
+            } else {
+              addMessage('❌ משימה לא נמצאה / Task not found');
+            }
           }
           break;
           
