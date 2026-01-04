@@ -10380,7 +10380,8 @@
         // Check what was clicked
         const action = e.target.closest('[data-action]')?.dataset.action;
         const isSubtaskCheckbox = e.target.closest('.task-subtask input[type="checkbox"]');
-        const isMainArea = e.target.closest('.task-main') && !isSubtaskCheckbox;
+        const isInlineInput = e.target.tagName === 'INPUT' && e.target.classList.contains('inline-edit-input');
+        const isMainArea = e.target.closest('.task-main') && !isSubtaskCheckbox && !isInlineInput;
         
         if (action === 'toggle' || e.target.closest('.task-checkbox')) {
           // Toggle complete
