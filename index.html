@@ -9740,13 +9740,10 @@ Your response (JSON array only):`;
   // ========================================
   
   const AIChat = (() => {
-    const modal = document.getElementById('aiChatModal');
-    const messagesContainer = document.getElementById('aiChatMessages');
-    const input = document.getElementById('aiChatInput');
-    const sendBtn = document.getElementById('aiChatSend');
-    const closeBtn = document.getElementById('aiChatClose');
+    let modal, messagesContainer, input, sendBtn, closeBtn;
     
     function addMessage(text, isUser = false) {
+      if (!messagesContainer) return;
       const messageDiv = document.createElement('div');
       messageDiv.className = `ai-chat-message ${isUser ? 'user' : 'ai'}`;
       messageDiv.innerHTML = `
@@ -9843,12 +9840,27 @@ JSON:`;
     }
     
     function init() {
-      if (!modal) return;
+      // Get DOM elements
+      modal = document.getElementById('aiChatModal');
+      messagesContainer = document.getElementById('aiChatMessages');
+      input = document.getElementById('aiChatInput');
+      sendBtn = document.getElementById('aiChatSend');
+      closeBtn = document.getElementById('aiChatClose');
       
-      // Open modal
-      document.getElementById('aiChatBtn')?.addEventListener('click', () => {
-        modal.classList.add('open');
-        input?.focus();
+      if (!modal) {
+        console.error('AI Chat modal not found');
+        return;
+      }
+      
+      console.log('AI Chat initialized');
+      
+      // Open modal - Use event delegation for dynamically added button
+      document.addEventListener('click', (e) => {
+        if (e.target.id === 'aiChatBtn' || e.target.closest('#aiChatBtn')) {
+          console.log('AI Chat button clicked');
+          modal.classList.add('open');
+          input?.focus();
+        }
       });
       
       // Close modal
