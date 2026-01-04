@@ -8429,10 +8429,10 @@
       </div>
       
       <div class="ai-chat-examples">
-        <div class="ai-chat-example" data-example="Add task: Meeting with team at 2pm tomorrow">➕ Add task</div>
-        <div class="ai-chat-example" data-example="Schedule all urgent tasks for today">📅 Schedule tasks</div>
-        <div class="ai-chat-example" data-example="Change priority of first task to urgent">⚡ Change priority</div>
-        <div class="ai-chat-example" data-example="Move my 3pm task to 5pm">🔄 Reschedule</div>
+        <div class="ai-chat-example" data-example="הוסף משימה: פגישה עם הצוות מחר ב-14:00">➕ הוסף משימה</div>
+        <div class="ai-chat-example" data-example="תכנן את המשימות שלי להיום">📅 תכנן יום</div>
+        <div class="ai-chat-example" data-example="Add task: Meeting tomorrow at 3pm">➕ Add Task</div>
+        <div class="ai-chat-example" data-example="Plan my day">📅 Plan Day</div>
       </div>
       
       <div class="ai-chat-input-area">
@@ -9759,25 +9759,49 @@ Your response (JSON array only):`;
       sendBtn.disabled = true;
       
       try {
-        const prompt = `You are a task management AI assistant. Parse this user request and return actions as JSON.
+        // Get today's date for context
+        const today = new Date();
+        const todayStr = today.toISOString().split('T')[0];
+        const tomorrow = new Date(today);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        const tomorrowStr = tomorrow.toISOString().split('T')[0];
+        
+        const prompt = `You are a bilingual (Hebrew/English) task management AI assistant. Parse user requests and return actions as JSON.
+The user may write in Hebrew or English - understand both and respond in the same language they used.
 
-User: "${message}"
+User message: "${message}"
 
-Current tasks context: ${tasks.length} tasks exist.
+Today's date: ${todayStr}
+Tomorrow's date: ${tomorrowStr}
+Current tasks: ${tasks.length} tasks exist.
 
 Available actions:
-- addTask: {action: "addTask", title: "...", dueDate: "YYYY-MM-DD", dueTime: "HH:MM", priority: "urgent|high|medium|low", estimatedMinutes: 60}
-- editTask: {action: "editTask", taskId: "...", updates: {title, priority, etc}}
+- addTask: {action: "addTask", title: "task name", dueDate: "YYYY-MM-DD", dueTime: "HH:MM", priority: "urgent|high|medium|low", duration: 60}
+- editTask: {action: "editTask", taskId: "...", updates: {title, priority, dueDate, duration}}
 - scheduleTask: {action: "scheduleTask", taskId: "...", date: "YYYY-MM-DD", time: "HH:MM"}
 - planDay: {action: "planDay", date: "YYYY-MM-DD"}
 - reply: {action: "reply", message: "..."}
 
-Return JSON with: {actions: [...], reply: "confirmation message"}
+Hebrew date keywords to understand:
+- היום = today (${todayStr})
+- מחר = tomorrow (${tomorrowStr})
+- מחרתיים = day after tomorrow
+- בשעה X = at X o'clock
+- דחוף/דחופה = urgent priority
+- גבוה/גבוהה = high priority
+- בינוני/בינונית = medium priority
+- נמוך/נמוכה = low priority
+- הוסף משימה / צור משימה = add task
+- תזמן / קבע = schedule
+- שנה / ערוך = edit
+- תכנן את היום = plan the day
+
+Return JSON: {actions: [...], reply: "confirmation in user's language"}
 
 Examples:
-- "Add task: Buy milk tomorrow at 5pm" → addTask with title, due date
-- "Schedule my tasks" → planDay for today
-- "Change first task to urgent" → Need task list, ask for clarification
+- "הוסף משימה: לקנות חלב מחר ב-17:00" → {actions: [{action: "addTask", title: "לקנות חלב", dueDate: "${tomorrowStr}", dueTime: "17:00"}], reply: "נוספה משימה: לקנות חלב למחר ב-17:00"}
+- "Add task: Buy milk tomorrow at 5pm" → {actions: [{action: "addTask", title: "Buy milk", dueDate: "${tomorrowStr}", dueTime: "17:00"}], reply: "Added task: Buy milk for tomorrow at 5pm"}
+- "תכנן את היום שלי" → {actions: [{action: "planDay", date: "${todayStr}"}], reply: "מתכנן את היום שלך..."}
 
 JSON:`;
 
@@ -9798,7 +9822,7 @@ JSON:`;
         
       } catch (error) {
         console.error('AI Chat error:', error);
-        addMessage(`Error: ${error.message}\n\nTry simpler commands like:\n- "Add task: Task name"\n- "Schedule tasks for today"`);
+        addMessage(`שגיאה: ${error.message}\n\nנסה פקודות פשוטות כמו:\n- "הוסף משימה: שם המשימה"\n- "תכנן את היום שלי"\n\nError: ${error.message}\n\nTry simpler commands like:\n- "Add task: Task name"\n- "Schedule tasks for today"`);
       } finally {
         sendBtn.disabled = false;
       }
