@@ -3063,6 +3063,68 @@
       transform: scale(1.1);
     }
 
+    .event-reminder-wrap {
+      position: relative;
+    }
+    .reminder-btn {
+      width: 28px;
+      height: 28px;
+      border: none;
+      background: transparent;
+      color: #9ca3af;
+      font-size: 14px;
+      cursor: pointer;
+      border-radius: 6px;
+      transition: all 0.15s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .reminder-btn:hover {
+      background: #fef3c7;
+      color: #f59e0b;
+      transform: scale(1.1);
+    }
+    .reminder-btn.has-reminder {
+      color: #f59e0b;
+      background: rgba(245, 158, 11, 0.1);
+    }
+    .event-reminder-dropdown {
+      position: absolute;
+      top: 100%;
+      right: 0;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+      padding: 8px;
+      display: none;
+      z-index: 100;
+      min-width: 140px;
+    }
+    .event-reminder-dropdown.open {
+      display: block;
+    }
+    .event-reminder-option {
+      padding: 8px 12px;
+      font-size: 13px;
+      color: var(--text);
+      cursor: pointer;
+      border-radius: 6px;
+      transition: background 0.15s;
+      white-space: nowrap;
+    }
+    .event-reminder-option:hover {
+      background: var(--day-hover);
+    }
+    .event-reminder-option.active {
+      background: rgba(102, 126, 234, 0.1);
+      color: var(--accent);
+    }
+    .event-reminder-option.remove {
+      color: #ef4444;
+    }
+
     .timer {
       display: flex;
       gap: 8px;
@@ -6657,7 +6719,7 @@
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-  import { getDatabase, ref, set, onValue, push, remove, onChildAdded, onChildChanged, onChildRemoved } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+  import { getDatabase, ref, set, onValue, push, remove, onChildAdded, onChildChanged, onChildRemoved, goOnline, goOffline } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyB_IflOD8CwVLQQjqtz_ZKWzbfgCiOm2Js",
@@ -7263,6 +7325,11 @@
     if (!document.hidden && pendingEventAlert) {
       showEventAlert(pendingEventAlert.title, pendingEventAlert.message, true);
       pendingEventAlert = null;
+    }
+    // Force Firebase reconnect when app becomes visible (fixes mobile sync issues)
+    if (!document.hidden) {
+      goOffline(db);
+      setTimeout(() => goOnline(db), 100);
     }
   });
 
@@ -7994,6 +8061,21 @@
     inputPanel.classList.remove("editing");
   }
 
+  function setEventReminder(id, minutes) {
+    const evt = events.find(e => e.id === id);
+    if (!evt) return;
+    
+    const eventRef = ref(db, `events/${id}`);
+    set(eventRef, { ...evt, reminder: minutes || null });
+  }
+
+  // Close reminder dropdowns when clicking outside
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('.event-reminder-wrap')) {
+      document.querySelectorAll('.event-reminder-dropdown.open').forEach(d => d.classList.remove('open'));
+    }
+  });
+
   function render() {
     refs.clear();
     const frag = document.createDocumentFragment();
@@ -8124,6 +8206,50 @@
       editBtn.textContent = "✎";
       editBtn.title = "Edit";
 
+      // Reminder button with dropdown
+      const reminderWrap = document.createElement("div");
+      reminderWrap.className = "event-reminder-wrap";
+      
+      const reminderBtn = document.createElement("button");
+      reminderBtn.className = `reminder-btn ${evt.reminder ? 'has-reminder' : ''}`;
+      reminderBtn.textContent = "🔔";
+      reminderBtn.title = evt.reminder ? `תזכורת ${evt.reminder} דקות לפני` : "הגדר תזכורת";
+      
+      const reminderDropdown = document.createElement("div");
+      reminderDropdown.className = "event-reminder-dropdown";
+      const reminderOptions = [
+        { label: 'דקה אחת', value: 1 },
+        { label: '5 דקות', value: 5 },
+        { label: '15 דקות', value: 15 },
+        { label: 'שעה', value: 60 },
+        { label: 'יום', value: 1440 },
+        { label: 'הסר תזכורת', value: 0, remove: true }
+      ];
+      reminderOptions.forEach(opt => {
+        if (opt.remove && !evt.reminder) return; // Only show remove if there's a reminder
+        const optEl = document.createElement("div");
+        optEl.className = `event-reminder-option ${opt.remove ? 'remove' : ''} ${evt.reminder === opt.value ? 'active' : ''}`;
+        optEl.textContent = opt.label;
+        optEl.onclick = (e) => {
+          e.stopPropagation();
+          setEventReminder(evt.id, opt.value);
+          reminderDropdown.classList.remove('open');
+        };
+        reminderDropdown.appendChild(optEl);
+      });
+      
+      reminderBtn.onclick = (e) => {
+        e.stopPropagation();
+        // Close other dropdowns
+        document.querySelectorAll('.event-reminder-dropdown.open').forEach(d => {
+          if (d !== reminderDropdown) d.classList.remove('open');
+        });
+        reminderDropdown.classList.toggle('open');
+      };
+      
+      reminderWrap.appendChild(reminderBtn);
+      reminderWrap.appendChild(reminderDropdown);
+
       const deleteBtn = document.createElement("button");
       deleteBtn.className = "delete-btn";
       deleteBtn.textContent = "×";
@@ -8132,6 +8258,7 @@
       actions.className = "event-actions";
       actions.appendChild(pinBtn);
       actions.appendChild(starBtn);
+      actions.appendChild(reminderWrap);
       actions.appendChild(editBtn);
       actions.appendChild(deleteBtn);
 
