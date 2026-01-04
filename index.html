@@ -6904,7 +6904,20 @@
 	    try {
 	      const reg = await getPushRegistration();
 	      if (!reg) return;
-	      const sub = await reg.pushManager.getSubscription();
+	      let sub = await reg.pushManager.getSubscription();
+	      
+	      // If no subscription but permission granted, auto-resubscribe (handles expired subs)
+	      if (!sub && Notification.permission === 'granted') {
+	        try {
+	          const appServerKey = urlBase64ToUint8Array(PUSH_VAPID_PUBLIC_KEY);
+	          sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: appServerKey });
+	          console.log('[Push] Auto-resubscribed');
+	        } catch (e) {
+	          console.warn('[Push] Auto-resubscribe failed:', e);
+	          return;
+	        }
+	      }
+	      
 	      if (!sub) return;
 	      const prevUser = localStorage.getItem(PUSH_LOCAL_USER_KEY);
 	      if (prevUser && prevUser !== currentUser) {
@@ -6912,7 +6925,9 @@
 	      }
 	      await savePushSubscriptionForUser(currentUser, sub);
 	      localStorage.setItem(PUSH_LOCAL_USER_KEY, currentUser);
-	    } catch (e) {}
+	    } catch (e) {
+	      console.warn('[Push] Sync failed:', e);
+	    }
 	  }
 
 	  async function refreshNotifyButton() {
