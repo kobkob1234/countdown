@@ -6154,17 +6154,46 @@
         padding: var(--mobile-spacing-md);
         gap: var(--mobile-spacing-sm);
         flex-wrap: wrap;
+        position: relative;
       }
       
       .task-manager-title {
         font-size: 20px;
         flex: 1;
+        order: 1;
+      }
+      
+      #toggleTaskSidebar {
+        display: inline-flex !important;
+        order: 2;
+        padding: var(--mobile-spacing-sm) var(--mobile-spacing-md);
+        border-radius: var(--mobile-radius);
+        font-size: 14px;
+        height: 40px;
+        background: var(--day-other);
+        border: 1px solid var(--border);
+        align-items: center;
+        gap: 6px;
+        font-weight: 500;
+        transition: all 0.2s;
+      }
+      
+      #toggleTaskSidebar:active {
+        transform: scale(0.95);
+      }
+      
+      #toggleTaskSidebar.active {
+        background: var(--accent);
+        color: white;
+        border-color: var(--accent);
+        box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
       }
       
       .task-manager-close {
         width: var(--mobile-touch-target);
         height: var(--mobile-touch-target);
         font-size: 28px;
+        order: 3;
       }
       
       .task-search-bar {
@@ -6177,6 +6206,12 @@
         padding: var(--mobile-spacing-md);
         font-size: 16px;
         border-radius: var(--mobile-radius);
+        border: 2px solid var(--border);
+      }
+      
+      .task-search-bar input:focus {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
       }
       
       .task-filters {
@@ -6185,6 +6220,11 @@
         -webkit-overflow-scrolling: touch;
         padding: var(--mobile-spacing-xs) 0;
         gap: var(--mobile-spacing-xs);
+        scrollbar-width: none;
+      }
+      
+      .task-filters::-webkit-scrollbar {
+        display: none;
       }
       
       .filter-pill {
@@ -6192,6 +6232,114 @@
         font-size: 14px;
         min-height: 40px;
         white-space: nowrap;
+        border-radius: 20px;
+        font-weight: 500;
+      }
+      
+      /* Task Manager Body */
+      .task-manager-body {
+        padding: var(--mobile-spacing-md);
+        padding-top: var(--mobile-spacing-sm);
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+      }
+      
+      .task-list {
+        display: flex;
+        flex-direction: column;
+        gap: var(--mobile-spacing-md);
+        padding-bottom: var(--mobile-spacing-lg);
+      }
+      
+      .task-group-header {
+        font-size: 14px;
+        padding: var(--mobile-spacing-sm) var(--mobile-spacing-xs);
+        margin-top: var(--mobile-spacing-md);
+        font-weight: 600;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+      
+      /* Mobile Task Sidebar - Slide-in Panel */
+      .task-manager-sidebar {
+        position: fixed;
+        left: 0;
+        top: var(--mobile-header-height);
+        bottom: var(--mobile-bottom-nav-height);
+        width: 280px !important;
+        max-width: 85vw !important;
+        z-index: 600;
+        transform: translateX(-100%);
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        border-right: 1px solid var(--border);
+        border-left: none;
+        box-shadow: 2px 0 12px rgba(0,0,0,0.15);
+        background: var(--card);
+      }
+      
+      .task-manager-sidebar.open {
+        transform: translateX(0);
+      }
+      
+      .task-manager-sidebar-header {
+        padding: var(--mobile-spacing-md);
+        border-bottom: 2px solid var(--border);
+      }
+      
+      .task-manager-sidebar-header h3 {
+        font-size: 16px;
+      }
+      
+      .smart-views-list {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        padding: var(--mobile-spacing-sm);
+      }
+      
+      .smart-view-item {
+        padding: 12px var(--mobile-spacing-md);
+        font-size: 14px;
+        border-radius: 10px;
+        min-height: 44px;
+        display: flex;
+        align-items: center;
+      }
+      
+      .subjects-list {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        padding: var(--mobile-spacing-sm);
+      }
+      
+      .subjects-list-title {
+        display: block !important;
+        padding: var(--mobile-spacing-md);
+        font-size: 12px;
+        text-transform: uppercase;
+        font-weight: 600;
+        color: var(--muted);
+      }
+      
+      .subject-list-item {
+        margin-bottom: 4px;
+      }
+      
+      .subject-list-header {
+        padding: 12px var(--mobile-spacing-md);
+        font-size: 14px;
+        border-radius: 10px;
+        min-height: 44px;
+      }
+      
+      .add-subject-sidebar-btn {
+        margin: var(--mobile-spacing-sm);
+        padding: 12px var(--mobile-spacing-md);
+        font-size: 14px;
+        border-radius: 10px;
+        min-height: 44px;
       }
       
       /* Mobile Task Items */
@@ -6204,27 +6352,78 @@
         box-shadow: var(--mobile-card-shadow);
         border: none;
         border-left: 4px solid var(--task-color, var(--priority-color, var(--border)));
+        background: var(--card);
+        margin-bottom: var(--mobile-spacing-xs);
+        position: relative;
+        overflow: hidden;
+      }
+      
+      /* Task item accent gradient */
+      .task-item::before {
+        opacity: 0.06;
+      }
+      
+      .task-item:active {
+        transform: scale(0.98);
+        transition: transform 0.1s;
+      }
+      
+      .task-item.completed {
+        opacity: 0.65;
+      }
+      
+      .task-item.dragging {
+        opacity: 0.5;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.2);
       }
       
       .task-checkbox {
         width: 28px;
         height: 28px;
         flex-shrink: 0;
+        border-width: 2.5px;
+      }
+      
+      .task-checkbox:active {
+        transform: scale(0.9);
       }
       
       .task-main {
         flex: 1;
-        min-width: calc(100% - 100px);
+        min-width: 0;
+        width: 100%;
       }
       
       .task-title {
         font-size: 16px;
-        line-height: 1.4;
+        line-height: 1.5;
+        font-weight: 600;
+        margin-bottom: 6px;
+      }
+      
+      .task-title-row {
+        display: flex;
+        align-items: flex-start;
+        gap: var(--mobile-spacing-xs);
+        flex-wrap: wrap;
+      }
+      
+      .task-color-dot {
+        width: 14px;
+        height: 14px;
+        margin-top: 3px;
+      }
+      
+      .task-priority-badge {
+        font-size: 10px;
+        padding: 4px 8px;
+        border-radius: 12px;
       }
       
       .task-meta {
         gap: var(--mobile-spacing-xs);
         margin-top: var(--mobile-spacing-xs);
+        flex-wrap: wrap;
       }
       
       .task-due,
@@ -6232,38 +6431,51 @@
       .task-recurrence,
       .task-reminder {
         font-size: 12px;
-        padding: var(--mobile-spacing-xs) var(--mobile-spacing-sm);
+        padding: 6px 10px;
+        border-radius: 8px;
+        font-weight: 500;
+      }
+      
+      .task-subtasks {
+        margin-top: var(--mobile-spacing-sm);
+        padding-top: var(--mobile-spacing-sm);
+      }
+      
+      .task-subtask {
+        padding: var(--mobile-spacing-xs) 0;
+        font-size: 14px;
       }
       
       .task-actions {
         width: 100%;
         justify-content: flex-end;
-        gap: var(--mobile-spacing-xs);
+        gap: var(--mobile-spacing-sm);
         padding-top: var(--mobile-spacing-sm);
         border-top: 1px solid var(--border);
         margin-top: var(--mobile-spacing-sm);
       }
       
       .task-action-btn {
-        width: 40px;
-        height: 40px;
-        font-size: 18px;
-        border-radius: 10px;
+        width: 44px;
+        height: 44px;
+        font-size: 20px;
+        border-radius: 12px;
         background: var(--day-other);
       }
       
       .task-action-btn:active {
-        transform: scale(0.95);
+        transform: scale(0.92);
         background: var(--day-hover);
       }
       
       /* Quick Add Task - Mobile Optimized */
       .quick-add-task {
-        margin-bottom: var(--mobile-spacing-lg);
+        margin: var(--mobile-spacing-md) var(--mobile-spacing-md) var(--mobile-spacing-lg);
         padding: var(--mobile-spacing-md);
         background: var(--card);
         border-radius: var(--mobile-radius);
         box-shadow: var(--mobile-card-shadow);
+        border: 2px solid var(--border);
       }
       
       .quick-add-task input {
@@ -6271,12 +6483,26 @@
         font-size: 16px;
         border-radius: var(--mobile-radius);
         min-height: var(--mobile-touch-target);
+        border: 2px solid var(--border);
+      }
+      
+      .quick-add-task input:focus {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
       }
       
       .nl-hint {
-        font-size: 13px;
+        font-size: 12px;
         padding: var(--mobile-spacing-sm);
         margin-top: var(--mobile-spacing-sm);
+        background: linear-gradient(135deg, rgba(102, 126, 234, 0.05), rgba(118, 75, 162, 0.05));
+        border-radius: 10px;
+        border: 1px solid rgba(102, 126, 234, 0.2);
+      }
+      
+      .nl-hint-examples {
+        margin-top: var(--mobile-spacing-sm);
+        font-size: 11px;
       }
       
       /* ===== MOBILE SIDEBAR (CALENDAR) ===== */
@@ -6294,9 +6520,31 @@
         border-radius: 0;
         transform: translateX(100%);
         transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
       }
       
       .sidebar:not(.hidden) {
+        transform: translateX(0);
+      }
+      
+      /* Task Right Sidebar (Calendar in Task Manager) */
+      #taskRightSidebar {
+        position: fixed;
+        top: var(--mobile-header-height);
+        right: 0;
+        bottom: var(--mobile-bottom-nav-height);
+        width: 90% !important;
+        max-width: 340px !important;
+        min-width: 0 !important;
+        z-index: 601;
+        transform: translateX(100%);
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: -2px 0 12px rgba(0,0,0,0.15);
+        border-left: 1px solid var(--border);
+      }
+      
+      #taskRightSidebar:not(.hidden) {
         transform: translateX(0);
       }
       
@@ -6471,6 +6719,20 @@
         padding: var(--mobile-spacing-md);
       }
       
+      /* ===== MOBILE SIDEBAR BACKDROP ===== */
+      .mobile-sidebar-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 599;
+        display: none;
+        backdrop-filter: blur(2px);
+      }
+      
+      .mobile-sidebar-backdrop.visible {
+        display: block;
+      }
+      
       /* ===== MOBILE KEYBOARD SHORTCUTS - HIDE ===== */
       .shortcuts-overlay {
         display: none !important;
@@ -6569,6 +6831,7 @@
       .empty-state {
         padding: var(--mobile-spacing-lg);
         border-radius: var(--mobile-radius);
+        margin: var(--mobile-spacing-md);
       }
       
       .empty-state svg {
@@ -6579,6 +6842,29 @@
       
       .empty-state p {
         font-size: 16px;
+        line-height: 1.5;
+      }
+      
+      /* No tasks message */
+      .no-tasks-msg {
+        text-align: center;
+        padding: var(--mobile-spacing-lg);
+        color: var(--muted);
+        font-size: 15px;
+        background: var(--day-other);
+        border-radius: var(--mobile-radius);
+        margin: var(--mobile-spacing-md);
+        border: 2px dashed var(--border);
+      }
+      
+      /* Task skeleton loading */
+      .task-skeleton {
+        padding: var(--mobile-spacing-md);
+        border-radius: var(--mobile-radius);
+        background: var(--day-other);
+        margin-bottom: var(--mobile-spacing-sm);
+        height: 100px;
+        animation: shimmer 1.5s ease-in-out infinite;
       }
     }
     
@@ -6672,6 +6958,7 @@
 	    <div class="header-spacer"></div>
 	    <button class="header-btn" id="toggleSidebar">📅 לוח</button>
 	    <span class="sync-badge hidden" id="syncBadge"><span class="sync-dot"></span><span class="sync-text">Syncing…</span></span>
+	    <button class="header-btn icon-only" id="calendarSyncBtn" aria-label="Sync with Calendar" title="סנכרון עם לוח השנה">🔄</button>
 	    <button class="header-btn icon-only" id="notifyBtn" aria-label="Enable notifications" title="Enable notifications">🔔</button>
 	    <button class="header-btn icon-only" id="helpShortcuts" aria-label="Keyboard shortcuts" title="קיצורים (H)">?</button>
 	    <button class="header-btn icon-only" id="themeToggle" aria-label="Toggle dark mode">🌙</button>
@@ -7589,6 +7876,39 @@
     </div>
   </div>
 
+  <!-- Calendar Sync Modal -->
+  <div class="reminder-modal" id="calendarSyncModal" role="dialog" aria-modal="true" aria-labelledby="calendarSyncTitle">
+    <div class="reminder-card" style="max-width: 500px; border-top: 5px solid var(--accent);">
+      <div style="font-size: 40px; margin-bottom: 10px;">📅</div>
+      <h2 id="calendarSyncTitle">סנכרון לוח שנה / Calendar Sync</h2>
+      <p style="color: var(--muted); font-size: 14px; margin-bottom: 20px;">ייבוא אירועים מלוח השנה שלך (חד-כיווני)</p>
+      
+      <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px;">
+        <button class="btn btn-primary" id="syncGoogleCalendar" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px;">
+          <span style="font-size: 20px;">📆</span>
+          <span>Google Calendar</span>
+        </button>
+        
+        <button class="btn btn-primary" id="syncAppleCalendar" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; background: linear-gradient(135deg, #667eea, #764ba2);">
+          <span style="font-size: 20px;">🍎</span>
+          <span>Apple Calendar (iCal)</span>
+        </button>
+      </div>
+      
+      <div id="calendarSyncStatus" style="padding: 12px; border-radius: 8px; background: var(--day-other); color: var(--muted); font-size: 13px; margin-bottom: 16px; display: none;"></div>
+      
+      <div id="calendarEventsList" style="max-height: 300px; overflow-y: auto; margin-bottom: 16px; display: none;">
+        <div style="font-weight: 600; margin-bottom: 8px; color: var(--text);">אירועים שנמצאו / Events Found:</div>
+        <div id="calendarEventsContent" style="display: flex; flex-direction: column; gap: 6px;"></div>
+      </div>
+      
+      <div class="reminder-actions" style="display: flex; gap: 8px;">
+        <button class="btn" id="closeCalendarSyncBtn" style="flex: 1; background: var(--day-other); color: var(--muted);">סגור / Close</button>
+        <button class="btn btn-primary" id="importCalendarEventsBtn" style="flex: 1; display: none;">ייבא / Import</button>
+      </div>
+    </div>
+  </div>
+
   <div class="app-layout">
     <div class="main-content">
       <div class="container">
@@ -7675,6 +7995,9 @@
 
   <!-- Mobile Floating Action Button -->
   <button class="mobile-fab" id="mobileFab" aria-label="הוספה מהירה" style="display: none;">+</button>
+
+  <!-- Mobile Sidebar Backdrop -->
+  <div class="mobile-sidebar-backdrop" id="mobileSidebarBackdrop"></div>
 
   <div class="modal-backdrop" id="clearModal" role="dialog" aria-modal="true" aria-labelledby="clearModalTitle" aria-describedby="clearModalDesc">
     <div class="modal-card">
@@ -8488,6 +8811,326 @@
     themeToggle.textContent = isDark ? '☀️' : '🌙';
     localStorage.setItem(STORAGE_KEYS.THEME, isDark ? 'dark' : 'light');
   };
+
+  // ========================================
+  // CALENDAR SYNC FUNCTIONALITY
+  // ========================================
+  
+  const calendarSyncBtn = $('calendarSyncBtn');
+  const calendarSyncModal = $('calendarSyncModal');
+  const closeCalendarSyncBtn = $('closeCalendarSyncBtn');
+  const syncGoogleCalendar = $('syncGoogleCalendar');
+  const syncAppleCalendar = $('syncAppleCalendar');
+  const calendarSyncStatus = $('calendarSyncStatus');
+  const calendarEventsList = $('calendarEventsList');
+  const calendarEventsContent = $('calendarEventsContent');
+  const importCalendarEventsBtn = $('importCalendarEventsBtn');
+
+  let pendingCalendarEvents = [];
+
+  // Google Calendar API Configuration
+  const GOOGLE_API_KEY = 'AIzaSyBH6g_Wz_RJKmEZL9xYWB6J2QaQ5f8z7hY'; // Replace with your API key
+  const GOOGLE_CLIENT_ID = '123456789.apps.googleusercontent.com'; // Replace with your Client ID
+  const GOOGLE_SCOPES = 'https://www.googleapis.com/auth/calendar.readonly';
+  
+  // Helper function to show status message
+  const showCalendarStatus = (message, type = 'info') => {
+    calendarSyncStatus.textContent = message;
+    calendarSyncStatus.style.display = 'block';
+    calendarSyncStatus.style.background = type === 'error' ? '#fef2f2' : 
+                                          type === 'success' ? '#f0fdf4' : 'var(--day-other)';
+    calendarSyncStatus.style.color = type === 'error' ? '#ef4444' : 
+                                     type === 'success' ? '#10b981' : 'var(--muted)';
+  };
+
+  const hideCalendarStatus = () => {
+    calendarSyncStatus.style.display = 'none';
+  };
+
+  // Open calendar sync modal
+  if (calendarSyncBtn) {
+    calendarSyncBtn.onclick = () => {
+      calendarSyncModal.classList.add('open');
+      hideCalendarStatus();
+      calendarEventsList.style.display = 'none';
+      importCalendarEventsBtn.style.display = 'none';
+      pendingCalendarEvents = [];
+    };
+  }
+
+  // Close calendar sync modal
+  if (closeCalendarSyncBtn) {
+    closeCalendarSyncBtn.onclick = () => {
+      calendarSyncModal.classList.remove('open');
+    };
+  }
+
+  // Click outside to close
+  if (calendarSyncModal) {
+    calendarSyncModal.addEventListener('click', (e) => {
+      if (e.target === calendarSyncModal) {
+        calendarSyncModal.classList.remove('open');
+      }
+    });
+  }
+
+  // Google Calendar Integration
+  if (syncGoogleCalendar) {
+    syncGoogleCalendar.onclick = async () => {
+      showCalendarStatus('🔄 Connecting to Google Calendar...', 'info');
+      
+      try {
+        // Load Google API client library
+        if (!window.gapi) {
+          await loadGoogleAPI();
+        }
+
+        // Initialize Google API
+        await new Promise((resolve, reject) => {
+          gapi.load('client:auth2', resolve);
+        });
+
+        await gapi.client.init({
+          apiKey: GOOGLE_API_KEY,
+          clientId: GOOGLE_CLIENT_ID,
+          discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest'],
+          scope: GOOGLE_SCOPES
+        });
+
+        // Sign in
+        const auth = gapi.auth2.getAuthInstance();
+        if (!auth.isSignedIn.get()) {
+          await auth.signIn();
+        }
+
+        showCalendarStatus('✅ Connected! Fetching events...', 'success');
+
+        // Fetch calendar events (next 30 days)
+        const now = new Date();
+        const oneMonthLater = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+        
+        const response = await gapi.client.calendar.events.list({
+          calendarId: 'primary',
+          timeMin: now.toISOString(),
+          timeMax: oneMonthLater.toISOString(),
+          showDeleted: false,
+          singleEvents: true,
+          maxResults: 50,
+          orderBy: 'startTime'
+        });
+
+        const events = response.result.items || [];
+        
+        if (events.length === 0) {
+          showCalendarStatus('No upcoming events found in your Google Calendar', 'info');
+          return;
+        }
+
+        displayCalendarEvents(events, 'google');
+        
+      } catch (error) {
+        console.error('Google Calendar sync error:', error);
+        showCalendarStatus(`❌ Error: ${error.message || 'Failed to connect to Google Calendar'}`, 'error');
+      }
+    };
+  }
+
+  // Apple Calendar (iCal) Integration
+  if (syncAppleCalendar) {
+    syncAppleCalendar.onclick = async () => {
+      showCalendarStatus('🍎 Apple Calendar requires .ics file import', 'info');
+      
+      // Create file input for .ics files
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = '.ics,.ical';
+      
+      input.onchange = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        
+        showCalendarStatus('🔄 Reading calendar file...', 'info');
+        
+        try {
+          const text = await file.text();
+          const events = parseICalendar(text);
+          
+          if (events.length === 0) {
+            showCalendarStatus('No events found in the .ics file', 'info');
+            return;
+          }
+          
+          displayCalendarEvents(events, 'apple');
+          
+        } catch (error) {
+          console.error('iCal parse error:', error);
+          showCalendarStatus(`❌ Error: ${error.message || 'Failed to read calendar file'}`, 'error');
+        }
+      };
+      
+      input.click();
+    };
+  }
+
+  // Load Google API dynamically
+  function loadGoogleAPI() {
+    return new Promise((resolve, reject) => {
+      if (document.querySelector('script[src*="apis.google.com"]')) {
+        resolve();
+        return;
+      }
+      
+      const script = document.createElement('script');
+      script.src = 'https://apis.google.com/js/api.js';
+      script.onload = resolve;
+      script.onerror = reject;
+      document.head.appendChild(script);
+    });
+  }
+
+  // Parse iCalendar (.ics) format
+  function parseICalendar(icsText) {
+    const events = [];
+    const lines = icsText.split(/\r?\n/);
+    let currentEvent = null;
+    
+    for (let i = 0; i < lines.length; i++) {
+      let line = lines[i].trim();
+      
+      // Handle line folding (lines starting with space or tab)
+      while (i + 1 < lines.length && /^[ \t]/.test(lines[i + 1])) {
+        line += lines[++i].trim();
+      }
+      
+      if (line === 'BEGIN:VEVENT') {
+        currentEvent = {};
+      } else if (line === 'END:VEVENT' && currentEvent) {
+        if (currentEvent.summary && currentEvent.start) {
+          events.push(currentEvent);
+        }
+        currentEvent = null;
+      } else if (currentEvent) {
+        const match = line.match(/^([^:;]+)(?:;([^:]+))?:(.+)$/);
+        if (match) {
+          const [, key, params, value] = match;
+          
+          if (key === 'SUMMARY') {
+            currentEvent.summary = value;
+          } else if (key === 'DTSTART') {
+            currentEvent.start = parseICalDate(value, params);
+          } else if (key === 'DTEND') {
+            currentEvent.end = parseICalDate(value, params);
+          } else if (key === 'DESCRIPTION') {
+            currentEvent.description = value.replace(/\\n/g, '\n');
+          }
+        }
+      }
+    }
+    
+    return events;
+  }
+
+  // Parse iCal date format
+  function parseICalDate(dateStr, params) {
+    // Format: YYYYMMDDTHHMMSS or YYYYMMDD
+    const match = dateStr.match(/^(\d{4})(\d{2})(\d{2})(?:T(\d{2})(\d{2})(\d{2}))?/);
+    if (!match) return null;
+    
+    const [, year, month, day, hour = '00', minute = '00', second = '00'] = match;
+    return new Date(year, month - 1, day, hour, minute, second);
+  }
+
+  // Display calendar events for selection
+  function displayCalendarEvents(calendarEvents, source) {
+    pendingCalendarEvents = calendarEvents.map(evt => {
+      if (source === 'google') {
+        return {
+          name: evt.summary || 'Untitled Event',
+          date: evt.start.dateTime || evt.start.date,
+          notes: evt.description || '',
+          source: 'Google Calendar'
+        };
+      } else {
+        return {
+          name: evt.summary || 'Untitled Event',
+          date: evt.start.toISOString(),
+          notes: evt.description || '',
+          source: 'Apple Calendar'
+        };
+      }
+    });
+    
+    showCalendarStatus(`✅ Found ${pendingCalendarEvents.length} events`, 'success');
+    
+    calendarEventsContent.innerHTML = pendingCalendarEvents.map((evt, idx) => {
+      const eventDate = new Date(evt.date);
+      const dateStr = eventDate.toLocaleString('he-IL', { 
+        year: 'numeric', 
+        month: 'short', 
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+      
+      return `
+        <label style="display: flex; align-items: center; padding: 8px; border-radius: 6px; background: var(--card); border: 1px solid var(--border); cursor: pointer; transition: all 0.2s;" 
+               onmouseover="this.style.background='var(--day-hover)'" 
+               onmouseout="this.style.background='var(--card)'">
+          <input type="checkbox" checked data-event-idx="${idx}" style="margin-left: 8px;">
+          <div style="flex: 1;">
+            <div style="font-weight: 500; color: var(--text);">${escapeHtml(evt.name)}</div>
+            <div style="font-size: 12px; color: var(--muted);">${dateStr}</div>
+          </div>
+        </label>
+      `;
+    }).join('');
+    
+    calendarEventsList.style.display = 'block';
+    importCalendarEventsBtn.style.display = 'block';
+  }
+
+  // Import selected calendar events
+  if (importCalendarEventsBtn) {
+    importCalendarEventsBtn.onclick = async () => {
+      const checkboxes = calendarEventsContent.querySelectorAll('input[type="checkbox"]:checked');
+      const selectedIndices = Array.from(checkboxes).map(cb => parseInt(cb.dataset.eventIdx));
+      
+      if (selectedIndices.length === 0) {
+        showCalendarStatus('Please select at least one event to import', 'error');
+        return;
+      }
+      
+      showCalendarStatus(`🔄 Importing ${selectedIndices.length} events...`, 'info');
+      
+      let imported = 0;
+      for (const idx of selectedIndices) {
+        const evt = pendingCalendarEvents[idx];
+        try {
+          await saveToCloud({
+            name: evt.name,
+            date: evt.date,
+            notes: evt.notes ? `${evt.notes}\n\n[Imported from ${evt.source}]` : `[Imported from ${evt.source}]`,
+            reminder: 60, // Default 1 hour reminder
+            highlighted: false,
+            pinned: false
+          });
+          imported++;
+        } catch (error) {
+          console.error('Failed to import event:', evt.name, error);
+        }
+      }
+      
+      showCalendarStatus(`✅ Successfully imported ${imported} events!`, 'success');
+      
+      setTimeout(() => {
+        calendarSyncModal.classList.remove('open');
+      }, 2000);
+    };
+  }
+
+  // ========================================
+  // END CALENDAR SYNC FUNCTIONALITY
+  // ========================================
 
   // Persist sidebar width
   const savedWidth = localStorage.getItem(STORAGE_KEYS.SIDEBAR_WIDTH);
@@ -15534,6 +16177,52 @@
   };
   
   syncWithHeader();
+  
+  // Mobile Task Sidebar Handler
+  const taskSidebar = document.getElementById('taskSidebar');
+  const toggleTaskSidebarBtn = document.getElementById('toggleTaskSidebar');
+  const mobileSidebarBackdrop = document.getElementById('mobileSidebarBackdrop');
+  
+  const toggleMobileTaskSidebar = () => {
+    if (!isMobile()) return;
+    
+    const isOpen = taskSidebar.classList.contains('open');
+    
+    if (isOpen) {
+      taskSidebar.classList.remove('open');
+      mobileSidebarBackdrop.classList.remove('visible');
+      toggleTaskSidebarBtn?.classList.remove('active');
+    } else {
+      taskSidebar.classList.add('open');
+      mobileSidebarBackdrop.classList.add('visible');
+      toggleTaskSidebarBtn?.classList.add('active');
+    }
+  };
+  
+  toggleTaskSidebarBtn?.addEventListener('click', (e) => {
+    if (isMobile()) {
+      e.preventDefault();
+      e.stopPropagation();
+      toggleMobileTaskSidebar();
+    }
+  });
+  
+  mobileSidebarBackdrop?.addEventListener('click', () => {
+    if (taskSidebar?.classList.contains('open')) {
+      toggleMobileTaskSidebar();
+    }
+  });
+  
+  // Close task sidebar when clicking on a subject/view on mobile
+  if (taskSidebar) {
+    taskSidebar.addEventListener('click', (e) => {
+      if (isMobile() && (e.target.closest('.smart-view-item') || e.target.closest('.subject-list-header'))) {
+        setTimeout(() => {
+          toggleMobileTaskSidebar();
+        }, 200);
+      }
+    });
+  }
   
   // Mobile Floating Action Button (FAB)
   const mobileFab = document.getElementById('mobileFab');
