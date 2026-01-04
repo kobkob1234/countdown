@@ -4704,12 +4704,13 @@
     
     .subject-list-header {
       display: flex;
-      align-items: center;
+      align-items: flex-start;
       padding: 10px 12px;
       border-radius: 8px;
       cursor: pointer;
       transition: all 0.15s;
       gap: 8px;
+      flex-wrap: wrap;
     }
     
     .subject-list-header:hover {
@@ -4727,6 +4728,9 @@
       opacity: 0;
       transition: opacity 0.2s;
       margin-right: auto;
+      flex-shrink: 0;
+      align-self: flex-start;
+      margin-top: 2px;
     }
     
     .subject-action-btn {
@@ -4800,15 +4804,18 @@
       height: 10px;
       border-radius: 50%;
       flex-shrink: 0;
+      margin-top: 2px;
+      align-self: flex-start;
     }
     
     .subject-list-header .subject-name {
       flex: 1;
       font-size: 13px;
       font-weight: 500;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
+      word-wrap: break-word;
+      overflow-wrap: break-word;
+      line-height: 1.4;
+      min-width: 0;
     }
     
     .subject-list-header .subject-count {
@@ -4817,6 +4824,9 @@
       border-radius: 8px;
       background: rgba(0,0,0,0.1);
       color: inherit;
+      flex-shrink: 0;
+      align-self: flex-start;
+      margin-top: 2px;
     }
     
     .subject-list-header.active .subject-count {
@@ -4828,6 +4838,9 @@
       transition: transform 0.25s ease;
       opacity: 0.6;
       cursor: pointer;
+      flex-shrink: 0;
+      align-self: flex-start;
+      margin-top: 4px;
     }
     
     .subject-list-header .collapse-arrow:hover {
@@ -4901,7 +4914,7 @@
     
     .subject-child-item {
       display: flex;
-      align-items: center;
+      align-items: flex-start;
       padding: 8px 12px;
       border-radius: 6px;
       cursor: pointer;
@@ -4925,16 +4938,25 @@
       width: 8px;
       height: 8px;
       border-radius: 50%;
+      flex-shrink: 0;
+      margin-top: 4px;
     }
     
     .subject-child-item .child-name {
       flex: 1;
       font-size: 12px;
+      word-wrap: break-word;
+      overflow-wrap: break-word;
+      line-height: 1.4;
+      min-width: 0;
     }
     
     .subject-child-item .child-count {
       font-size: 10px;
       opacity: 0.7;
+      flex-shrink: 0;
+      align-self: flex-start;
+      margin-top: 2px;
     }
     
     /* Smart Views in Sidebar */
