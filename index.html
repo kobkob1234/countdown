@@ -3311,6 +3311,47 @@
     }
     .undo-toast button:hover { background: rgba(255,255,255,0.3); }
 
+    /* AI Loading Toast */
+    .ai-loading-toast {
+      position: fixed;
+      bottom: 80px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 250;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 20px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border-radius: 12px;
+      box-shadow: 0 8px 32px rgba(102, 126, 234, 0.4);
+      font-size: 14px;
+      font-weight: 500;
+      animation: slideUpFadeIn 0.3s ease-out;
+    }
+    .ai-loading-spinner {
+      width: 20px;
+      height: 20px;
+      border: 2.5px solid rgba(255,255,255,0.3);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    @keyframes slideUpFadeIn {
+      from {
+        opacity: 0;
+        transform: translateX(-50%) translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+      }
+    }
+
     /* Clear confirmation modal */
     .modal-backdrop {
       position: fixed;
@@ -4144,6 +4185,16 @@
     .task-action-btn:hover {
       background: var(--day-hover);
       color: var(--text);
+    }
+    .task-action-btn.ai-btn {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      font-size: 14px;
+    }
+    .task-action-btn.ai-btn:hover {
+      background: linear-gradient(135deg, #5a6fd6 0%, #6a4190 100%);
+      color: white;
+      transform: scale(1.05);
     }
     .task-reminder-wrap {
       position: relative;
@@ -9154,82 +9205,195 @@
   const AI_CONFIG = {
     provider: 'gemini', // 'gemini', 'openai', or 'local'
     gemini: {
-      apiKey: 'AIzaSyAIDx0Vc5ZZEQEh7ve89ADJzW1FOSwfVVc', // Get from: https://makersuite.google.com/app/apikey
-      endpoint: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent'
+      apiKey: 'AIzaSyAIDx0Vc5ZZEQEh7ve89ADJzW1FOSwfVVc',
+      // Gemini 2.0 Flash - Best free model, very fast and capable
+      endpoint: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent'
     },
     openai: {
-      apiKey: 'YOUR_OPENAI_API_KEY', // Get from: https://platform.openai.com/api-keys
+      apiKey: 'YOUR_OPENAI_API_KEY',
       endpoint: 'https://api.openai.com/v1/chat/completions',
       model: 'gpt-3.5-turbo'
     }
   };
 
-  // Call AI API to break down a task into subtasks
-  async function breakDownTaskWithAI(taskTitle, taskNotes = '') {
-    const provider = AI_CONFIG.provider;
+  // Helper function to call Gemini API with proper error handling
+  async function callGeminiAPI(prompt) {
+    const response = await fetch(`${AI_CONFIG.gemini.endpoint}?key=${AI_CONFIG.gemini.apiKey}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{
+          parts: [{ text: prompt }]
+        }],
+        generationConfig: {
+          temperature: 0.7,
+          maxOutputTokens: 1024,
+        },
+        safetySettings: [
+          { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
+          { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" },
+          { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_NONE" },
+          { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" }
+        ]
+      })
+    });
     
-    const prompt = `Break down this task into 3-7 actionable subtasks. Return ONLY a JSON array of strings, no explanation or markdown.
+    const data = await response.json();
+    
+    // Check for API errors
+    if (data.error) {
+      console.error('Gemini API Error:', data.error);
+      throw new Error(data.error.message || 'Gemini API returned an error');
+    }
+    
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${data.error?.message || 'Request failed'}`);
+    }
+    
+    // Check if blocked by safety filters
+    if (data.candidates?.[0]?.finishReason === 'SAFETY') {
+      throw new Error('Content was blocked by safety filters');
+    }
+    
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!text) {
+      console.error('Empty response from Gemini:', data);
+      throw new Error('Empty response from AI');
+    }
+    
+    return text;
+  }
 
-Task: "${taskTitle}"
-${taskNotes ? `Additional context: ${taskNotes}` : ''}
+  // Helper function to call OpenAI API
+  async function callOpenAIAPI(prompt) {
+    const response = await fetch(AI_CONFIG.openai.endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${AI_CONFIG.openai.apiKey}`
+      },
+      body: JSON.stringify({
+        model: AI_CONFIG.openai.model,
+        messages: [{ role: 'user', content: prompt }],
+        temperature: 0.7,
+        max_tokens: 1024
+      })
+    });
+    
+    const data = await response.json();
+    
+    if (data.error) {
+      throw new Error(data.error.message || 'OpenAI API error');
+    }
+    
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: Request failed`);
+    }
+    
+    const text = data.choices?.[0]?.message?.content;
+    if (!text) {
+      throw new Error('Empty response from AI');
+    }
+    
+    return text;
+  }
 
-Example format: ["Subtask 1", "Subtask 2", "Subtask 3"]
-
-Return only the JSON array:`;
-
+  // Parse JSON from AI response (handles markdown code blocks)
+  function parseAIJsonResponse(text) {
+    // Remove markdown code blocks if present
+    let cleaned = text.trim();
+    cleaned = cleaned.replace(/^```(?:json)?\s*\n?/i, '');
+    cleaned = cleaned.replace(/\n?```\s*$/i, '');
+    cleaned = cleaned.trim();
+    
     try {
-      let subtasks = [];
-      
-      if (provider === 'gemini') {
-        const response = await fetch(`${AI_CONFIG.gemini.endpoint}?key=${AI_CONFIG.gemini.apiKey}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [{
-              parts: [{ text: prompt }]
-            }]
-          })
-        });
-        
-        if (!response.ok) throw new Error('Gemini API error');
-        const data = await response.json();
-        const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-        subtasks = JSON.parse(text.replace(/```json\n?|\n?```/g, '').trim());
-        
-      } else if (provider === 'openai') {
-        const response = await fetch(AI_CONFIG.openai.endpoint, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${AI_CONFIG.openai.apiKey}`
-          },
-          body: JSON.stringify({
-            model: AI_CONFIG.openai.model,
-            messages: [{ role: 'user', content: prompt }],
-            temperature: 0.7,
-            max_tokens: 500
-          })
-        });
-        
-        if (!response.ok) throw new Error('OpenAI API error');
-        const data = await response.json();
-        const text = data.choices?.[0]?.message?.content || '';
-        subtasks = JSON.parse(text.replace(/```json\n?|\n?```/g, '').trim());
+      return JSON.parse(cleaned);
+    } catch (e) {
+      // Try to extract JSON array from text
+      const arrayMatch = cleaned.match(/\[[\s\S]*\]/);
+      if (arrayMatch) {
+        return JSON.parse(arrayMatch[0]);
       }
-      
-      if (!Array.isArray(subtasks) || subtasks.length === 0) {
-        throw new Error('Invalid AI response');
-      }
-      
-      return subtasks;
-      
-    } catch (error) {
-      console.error('AI breakdown error:', error);
-      throw error;
+      throw new Error('Could not parse AI response as JSON');
     }
   }
 
-  // Auto-schedule tasks in daily planner using AI/heuristics
+  // Call AI API with automatic provider selection
+  async function callAI(prompt) {
+    const provider = AI_CONFIG.provider;
+    
+    if (provider === 'gemini') {
+      return await callGeminiAPI(prompt);
+    } else if (provider === 'openai') {
+      return await callOpenAIAPI(prompt);
+    } else {
+      throw new Error('No AI provider configured');
+    }
+  }
+
+  // Call AI API to break down a task into subtasks
+  async function breakDownTaskWithAI(taskTitle, taskNotes = '') {
+    const prompt = `You are a productivity assistant. Break down this task into 3-7 actionable, specific subtasks.
+
+Task: "${taskTitle}"
+${taskNotes ? `Context: ${taskNotes}` : ''}
+
+Rules:
+- Each subtask should be clear and actionable
+- Use Hebrew if the task title is in Hebrew, otherwise use English
+- Return ONLY a JSON array of strings, nothing else
+
+Example output format:
+["Research topic thoroughly", "Create outline", "Write first draft", "Edit and revise", "Final review"]
+
+Your response (JSON array only):`;
+
+    try {
+      const text = await callAI(prompt);
+      const subtasks = parseAIJsonResponse(text);
+      
+      if (!Array.isArray(subtasks) || subtasks.length === 0) {
+        throw new Error('Invalid response format');
+      }
+      
+      // Ensure all items are strings
+      return subtasks.map(s => String(s).trim()).filter(s => s.length > 0);
+      
+    } catch (error) {
+      console.error('AI breakdown error:', error);
+      
+      // Fallback to local breakdown
+      console.log('Falling back to local task breakdown...');
+      return generateLocalSubtasks(taskTitle);
+    }
+  }
+
+  // Local fallback for task breakdown (no API needed)
+  function generateLocalSubtasks(taskTitle) {
+    const title = taskTitle.toLowerCase();
+    
+    // Common task patterns with Hebrew support
+    if (title.includes('כתוב') || title.includes('write') || title.includes('essay') || title.includes('paper') || title.includes('מאמר')) {
+      return ['מחקר וחקירה', 'יצירת מתאר', 'כתיבת טיוטה ראשונה', 'עריכה ושיפור', 'הגהה סופית'];
+    }
+    if (title.includes('למד') || title.includes('learn') || title.includes('study') || title.includes('לימוד')) {
+      return ['איסוף חומרי לימוד', 'קריאה ראשונית', 'רישום הערות', 'תרגול ובחינה עצמית', 'סיכום'];
+    }
+    if (title.includes('project') || title.includes('פרויקט')) {
+      return ['הגדרת יעדים', 'תכנון משימות', 'ביצוע שלב 1', 'ביצוע שלב 2', 'בדיקות', 'סיכום'];
+    }
+    if (title.includes('meeting') || title.includes('פגישה')) {
+      return ['הכנת סדר יום', 'איסוף חומרים', 'שליחת הזמנות', 'הכנת מצגת', 'סיכום פגישה'];
+    }
+    if (title.includes('event') || title.includes('אירוע') || title.includes('party') || title.includes('מסיבה')) {
+      return ['תכנון ותקציב', 'הזמנת מקום', 'שליחת הזמנות', 'הזמנת אוכל', 'הכנות אחרונות'];
+    }
+    
+    // Generic breakdown
+    return ['תכנון ומחקר', 'הכנה', 'ביצוע עיקרי', 'בדיקה וסקירה', 'סיום'];
+  }
+
+  // Auto-schedule tasks in daily planner using smart heuristics
   async function autoScheduleTasks() {
     const unscheduledTasks = tasks.filter(t => !t.completed && t.dueDate && !t.plannedDate);
     if (unscheduledTasks.length === 0) {
@@ -9264,7 +9428,7 @@ Return only the JSON array:`;
       const maxDays = Math.min(7, Math.max(1, Math.ceil((dueDate - today) / (24 * 60 * 60 * 1000))));
       
       let scheduledSlot = false;
-      for (let dayOffset = 0; dayOffset < maxDays; dayOffset++) {
+      for (let dayOffset = 0; dayOffset < maxDays && !scheduledSlot; dayOffset++) {
         const checkDate = new Date(today);
         checkDate.setDate(checkDate.getDate() + dayOffset);
         const dateKey = toDateKey(checkDate);
@@ -9274,50 +9438,40 @@ Return only the JSON array:`;
         
         // Find available slots (simple heuristic)
         const duration = task.estimatedMinutes || 60;
-        const slots = [];
         
-        for (let hour = workHours.start; hour < workHours.end; hour++) {
+        for (let hour = workHours.start; hour < workHours.end && !scheduledSlot; hour++) {
           const slotTime = `${String(hour).padStart(2, '0')}:00`;
-          const slotEnd = new Date(checkDate);
-          slotEnd.setHours(hour, duration, 0, 0);
+          const slotStart = new Date(`${dateKey}T${slotTime}`);
+          const slotEnd = new Date(slotStart.getTime() + duration * 60000);
           
           // Check if slot is free
           const hasConflict = dayBlocks.some(block => {
             const blockStart = new Date(`${dateKey}T${block.time}`);
             const blockEnd = new Date(blockStart.getTime() + (block.duration || 60) * 60000);
-            const slotStart = new Date(`${dateKey}T${slotTime}`);
-            
             return (slotStart < blockEnd && slotEnd > blockStart);
           });
           
           if (!hasConflict) {
-            slots.push({ time: slotTime, hour });
+            const block = {
+              id: `auto-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+              time: slotTime,
+              duration: duration,
+              type: 'task',
+              taskId: task.id,
+              title: task.title,
+              color: task.color || (task.subject ? subjects.find(s => s.id === task.subject)?.color : null) || '#667eea'
+            };
+            
+            if (!dailyPlanData[dateKey]) dailyPlanData[dateKey] = [];
+            dailyPlanData[dateKey].push(block);
+            
+            // Update task with planned date
+            const { id, isOwn, isShared, ...clean } = task;
+            saveTask(task.id, { ...clean, plannedDate: dateKey, plannedTime: slotTime }, task.subject);
+            
+            scheduled++;
+            scheduledSlot = true;
           }
-        }
-        
-        // Schedule in first available slot
-        if (slots.length > 0) {
-          const slot = slots[0];
-          const block = {
-            id: `auto-${Date.now()}-${Math.random()}`,
-            time: slot.time,
-            duration: duration,
-            type: 'task',
-            taskId: task.id,
-            title: task.title,
-            color: task.color || (task.subject ? subjects.find(s => s.id === task.subject)?.color : null) || '#667eea'
-          };
-          
-          if (!dailyPlanData[dateKey]) dailyPlanData[dateKey] = [];
-          dailyPlanData[dateKey].push(block);
-          
-          // Update task with planned date
-          const { id, isOwn, isShared, ...clean } = task;
-          saveTask(task.id, { ...clean, plannedDate: dateKey, plannedTime: slot.time }, task.subject);
-          
-          scheduled++;
-          scheduledSlot = true;
-          break;
         }
       }
     }
@@ -9338,41 +9492,43 @@ Return only the JSON array:`;
     }
 
     try {
-      const taskList = activeTasks.map(t => ({
+      const taskList = activeTasks.slice(0, 20).map(t => ({ // Limit to 20 tasks
         title: t.title,
-        due: t.dueDate ? new Date(t.dueDate).toLocaleDateString() : 'no due date',
-        priority: t.priority || 'none'
+        due: t.dueDate ? new Date(t.dueDate).toLocaleDateString('he-IL') : 'no due date',
+        currentPriority: t.priority || 'none'
       }));
 
-      const prompt = `Analyze these tasks and suggest priority levels (urgent/high/medium/low). Consider due dates and task complexity. Return ONLY a JSON array with same order, each item having: {"priority": "urgent|high|medium|low", "reason": "brief explanation"}
+      const prompt = `You are a productivity expert. Analyze these tasks and suggest priority levels.
 
 Tasks:
-${JSON.stringify(taskList, null, 2)}
+${taskList.map((t, i) => `${i + 1}. "${t.title}" - Due: ${t.due} - Current: ${t.currentPriority}`).join('\n')}
 
-Return only JSON array:`;
+For each task, assign one of: urgent, high, medium, low
+Consider:
+- Tasks due soon should be urgent/high
+- Complex tasks need more time
+- Simple tasks can be lower priority
 
-      const provider = AI_CONFIG.provider;
-      let suggestions = [];
+Return ONLY a JSON array with objects in the SAME ORDER as the tasks above.
+Each object must have: {"priority": "urgent|high|medium|low", "reason": "brief 3-5 word reason"}
 
-      if (provider === 'gemini') {
-        const response = await fetch(`${AI_CONFIG.gemini.endpoint}?key=${AI_CONFIG.gemini.apiKey}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: prompt }] }]
-          })
-        });
-        
-        if (!response.ok) throw new Error('Gemini API error');
-        const data = await response.json();
-        const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-        suggestions = JSON.parse(text.replace(/```json\n?|\n?```/g, '').trim());
+Example: [{"priority": "urgent", "reason": "Due tomorrow"}, {"priority": "medium", "reason": "Week away"}]
+
+Your response (JSON array only):`;
+
+      const text = await callAI(prompt);
+      const suggestions = parseAIJsonResponse(text);
+      
+      if (!Array.isArray(suggestions)) {
+        throw new Error('Invalid response format');
       }
 
       // Apply suggestions
       let applied = 0;
+      const validPriorities = ['urgent', 'high', 'medium', 'low'];
+      
       suggestions.forEach((sug, idx) => {
-        if (idx < activeTasks.length && sug.priority) {
+        if (idx < activeTasks.length && sug && validPriorities.includes(sug.priority)) {
           const task = activeTasks[idx];
           const { id, isOwn, isShared, ...clean } = task;
           saveTask(task.id, { ...clean, priority: sug.priority }, task.subject);
@@ -9385,7 +9541,99 @@ Return only JSON array:`;
 
     } catch (error) {
       console.error('AI suggestions error:', error);
-      alert(`❌ שגיאה בקבלת הצעות AI / Error: ${error.message}`);
+      
+      // Offer to use local prioritization
+      const useLocal = confirm(`❌ שגיאת AI: ${error.message}\n\nהאם להשתמש בתיעדוף אוטומטי לפי תאריכים?\nUse automatic prioritization based on due dates?`);
+      
+      if (useLocal) {
+        applyLocalPrioritySuggestions();
+      }
+    }
+  }
+
+  // Local fallback for priority suggestions (no API needed)
+  function applyLocalPrioritySuggestions() {
+    const activeTasks = tasks.filter(t => !t.completed && t.title);
+    const now = new Date();
+    let applied = 0;
+    
+    activeTasks.forEach(task => {
+      let newPriority = 'none';
+      
+      if (task.dueDate) {
+        const dueDate = new Date(task.dueDate);
+        const daysUntilDue = Math.ceil((dueDate - now) / (24 * 60 * 60 * 1000));
+        
+        if (daysUntilDue <= 0) {
+          newPriority = 'urgent'; // Overdue
+        } else if (daysUntilDue <= 1) {
+          newPriority = 'urgent'; // Due today or tomorrow
+        } else if (daysUntilDue <= 3) {
+          newPriority = 'high'; // Due in 2-3 days
+        } else if (daysUntilDue <= 7) {
+          newPriority = 'medium'; // Due this week
+        } else {
+          newPriority = 'low'; // Due later
+        }
+      }
+      
+      if (newPriority !== (task.priority || 'none')) {
+        const { id, isOwn, isShared, ...clean } = task;
+        saveTask(task.id, { ...clean, priority: newPriority }, task.subject);
+        applied++;
+      }
+    });
+    
+    if (typeof renderTasks === 'function') renderTasks();
+    alert(`✅ עודכנו ${applied} משימות לפי תאריכי יעד / Updated ${applied} tasks based on due dates`);
+  }
+
+  // Quick AI breakdown from task list (without opening edit modal)
+  async function handleQuickAIBreakdown(task) {
+    if (!task || !task.title) {
+      alert('אין כותרת למשימה / No task title');
+      return;
+    }
+    
+    // Show loading indicator
+    const loadingToast = document.createElement('div');
+    loadingToast.className = 'ai-loading-toast';
+    loadingToast.innerHTML = `
+      <div class="ai-loading-spinner"></div>
+      <span>AI מפרק את המשימה... / Breaking down task...</span>
+    `;
+    document.body.appendChild(loadingToast);
+    
+    try {
+      const subtasks = await breakDownTaskWithAI(task.title, task.notes || '');
+      
+      // Convert to checklist format
+      const checklist = subtasks.map(text => ({
+        text: text,
+        checked: false
+      }));
+      
+      // Merge with existing checklist if any
+      const existingChecklist = task.checklist || [];
+      const mergedChecklist = [...existingChecklist, ...checklist];
+      
+      // Save the task with new subtasks
+      const { id, isOwn, isShared, ...clean } = task;
+      saveTask(task.id, { ...clean, checklist: mergedChecklist }, task.subject);
+      
+      // Remove loading toast
+      loadingToast.remove();
+      
+      // Refresh UI
+      if (typeof renderTasks === 'function') renderTasks();
+      
+      // Success message
+      alert(`✅ נוספו ${checklist.length} משימות משנה / Added ${checklist.length} subtasks`);
+      
+    } catch (error) {
+      console.error('Quick AI breakdown error:', error);
+      loadingToast.remove();
+      alert(`❌ שגיאה: ${error.message}`);
     }
   }
 
@@ -12185,6 +12433,7 @@ Return only JSON array:`;
           ${subtasksHtml}
         </div>
         <div class="task-actions">
+          <button class="task-action-btn ai-btn" data-action="ai-breakdown" title="פירוק משימה עם AI / AI Break Down" aria-label="AI Break Down">✨</button>
           <div class="task-reminder-wrap">
             <button class="task-reminder-btn ${task.reminder ? 'has-reminder' : ''}" data-action="reminder" title="${task.reminder ? `תזכורת ${task.reminder} דקות לפני` : 'הגדר תזכורת'}">🔔</button>
             <div class="task-reminder-dropdown" data-task-id="${task.id}">
@@ -12419,6 +12668,10 @@ Return only JSON array:`;
           // Edit button
           e.stopPropagation();
           openTaskEditModal(taskId);
+        } else if (action === 'ai-breakdown') {
+          // AI breakdown quick action
+          e.stopPropagation();
+          handleQuickAIBreakdown(task);
         } else if (action === 'duplicate') {
           // Duplicate button
           e.stopPropagation();
