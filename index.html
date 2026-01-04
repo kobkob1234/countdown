@@ -4728,7 +4728,8 @@
       content: attr(title);
       position: absolute;
       bottom: 100%;
-      right: 10px;
+      left: 12px;
+      right: auto;
       background: var(--text);
       color: var(--bg);
       padding: 6px 12px;
@@ -4736,10 +4737,11 @@
       font-size: 12px;
       font-weight: 500;
       white-space: nowrap;
-      z-index: 1000;
+      z-index: 1001;
       box-shadow: 0 2px 8px rgba(0,0,0,0.2);
       pointer-events: none;
       animation: tooltipFade 0.2s ease;
+      margin-bottom: 4px;
     }
     
     @keyframes tooltipFade {
@@ -4882,6 +4884,9 @@
       display: inline-flex;
       align-items: center;
       gap: 3px;
+      flex-shrink: 0;
+      position: relative;
+      z-index: 1;
     }
     .shared-badge svg {
       width: 10px;
