@@ -1,11 +1,25 @@
 <!doctype html>
-<html lang="en">
+<html lang="he" dir="rtl">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=5,user-scalable=yes,viewport-fit=cover" />
   <title>Shared Event Countdowns</title>
-  <meta name="theme-color" content="#667eea" />
+  
+  <!-- PWA Meta Tags -->
+  <meta name="theme-color" content="#667eea" media="(prefers-color-scheme: light)" />
+  <meta name="theme-color" content="#0f172a" media="(prefers-color-scheme: dark)" />
+  <meta name="description" content="Track countdowns to events and manage tasks with reminders" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Countdowns" />
+  <meta name="application-name" content="Countdowns" />
+  <meta name="format-detection" content="telephone=no" />
+  <meta name="msapplication-TileColor" content="#667eea" />
+  <meta name="msapplication-tap-highlight" content="no" />
+  
   <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="icon.svg" />
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%23667eea'/%3E%3Cstop offset='100%25' stop-color='%23764ba2'/%3E%3C/linearGradient%3E%3C/defs%3E%3Ccircle cx='16' cy='16' r='14' fill='url(%23g)'/%3E%3Cpath d='M16 8v8l5 3' stroke='white' stroke-width='2.5' stroke-linecap='round' fill='none'/%3E%3C/svg%3E" />
   <style>
     :root {
@@ -185,17 +199,60 @@
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    /* PWA/Mobile Optimizations */
+    html {
+      -webkit-tap-highlight-color: transparent;
+      -webkit-touch-callout: none;
+      overscroll-behavior: none;
+    }
+    
+    /* Safe area padding for notched phones */
+    @supports (padding: env(safe-area-inset-top)) {
+      body {
+        padding-top: env(safe-area-inset-top);
+        padding-bottom: env(safe-area-inset-bottom);
+        padding-left: env(safe-area-inset-left);
+        padding-right: env(safe-area-inset-right);
+      }
+    }
+    
+    /* Prevent pull-to-refresh in PWA mode */
+    @media (display-mode: standalone) {
+      body {
+        overscroll-behavior-y: contain;
+      }
+    }
+    
+    /* Smoother touch scrolling */
+    .app-layout, .sidebar, .task-list, .event-list {
+      -webkit-overflow-scrolling: touch;
+      scroll-behavior: smooth;
+    }
+    
+    /* Better touch targets */
+    button, a, .clickable, [role="button"] {
+      touch-action: manipulation;
+    }
+    
+    /* Prevent text selection on interactive elements */
+    button, .btn, .task-checkbox, .task-action-btn {
+      -webkit-user-select: none;
+      user-select: none;
+    }
 
     body {
       font-family: var(--font);
       background: var(--bg);
       min-height: 100vh;
+      min-height: 100dvh;
       color: var(--text);
     }
 
     .app-layout {
       display: flex;
       height: calc(100vh - 60px);
+      height: calc(100dvh - 60px);
       align-items: flex-start;
       overflow-y: auto;
       position: relative;
