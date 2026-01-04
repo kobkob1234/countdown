@@ -7576,6 +7576,10 @@
       <button class="btn" id="aiAutoScheduleBtn" style="padding: 8px 14px; font-size: 13px; background: linear-gradient(135deg, #667eea, #764ba2); color: white; border: none; display: inline-flex; align-items: center; gap: 6px; margin: 0 8px;" title="תזמון אוטומטי של משימות באמצעות AI">
         ✨ Auto-Schedule
       </button>
+
+      <button class="btn" id="aiPlanDayBtn" style="padding: 8px 14px; font-size: 13px; background: linear-gradient(135deg, #1e3a8a, #2563eb); color: white; border: none; display: inline-flex; align-items: center; gap: 6px; margin: 0 8px;" title="תכנון יום מלא באמצעות AI (ממקם משימות ולוחות זמנים)">
+        🧠 Plan Day
+      </button>
       
       <button class="btn" id="aiSuggestionsBtn" style="padding: 8px 14px; font-size: 13px; background: linear-gradient(135deg, #f59e0b, #ec4899); color: white; border: none; display: inline-flex; align-items: center; gap: 6px;" title="קבל הצעות AI לעדיפות משימות">
         🤖 AI Suggestions
@@ -16111,6 +16115,120 @@ Your response (JSON array only):`;
       const tasksAdded = syncAllScheduledTasks();
       return countdownsAdded + tasksAdded;
     };
+
+    // AI: Plan entire day (reorders tasks and lays out schedule)
+    const aiPlanEntireDay = async () => {
+      const dateKey = getDateKey(currentDate);
+      const dayLabel = formatDate(currentDate);
+
+      const availableTasks = (typeof tasks !== 'undefined' ? tasks : [])
+        .filter(t => t && !t.completed && t.title)
+        .slice(0, 18); // cap to keep prompt lean
+
+      if (availableTasks.length === 0) {
+        alert('אין משימות לתכנון / No tasks to plan');
+        return;
+      }
+
+      const existingBlocks = getBlocksForDate(currentDate);
+      if (existingBlocks.length > 0) {
+        const confirmReplace = confirm(`פעולה זו תחליף את כל הבלוקים בתאריך זה (${dayLabel}).\nThis will replace the current plan for this day. Continue?`);
+        if (!confirmReplace) return;
+      }
+
+      const normalizedTasks = availableTasks.map(t => {
+        const subj = (typeof subjects !== 'undefined' ? subjects : []).find(s => s.id === t.subject);
+        return {
+          id: t.id,
+          title: t.title,
+          priority: t.priority || 'none',
+          due: t.dueDate ? new Date(t.dueDate).toISOString().split('T')[0] : 'none',
+          estimatedMinutes: t.estimatedMinutes || 60,
+          subject: subj ? subj.name : (t.subject || 'general')
+        };
+      });
+
+      const tasksText = normalizedTasks.map((t, i) => `${i + 1}. id=${t.id} | ${t.title} | priority=${t.priority} | due=${t.due} | est=${t.estimatedMinutes}m | subject=${t.subject}`).join('\n');
+
+      const prompt = `You are an expert day planner. Build a full schedule for ${dayLabel} (${dateKey}) using the tasks below.
+
+Tasks (keep order by importance, schedule chronologically without overlap):
+${tasksText}
+
+Rules:
+- Work hours: 06:00-23:00. Keep within this window.
+- Use task ids. Output only tasks with an id from the list.
+- Start times must be chronological, non-overlapping, HH:MM 24h.
+- Prefer urgent/high first and tasks due soon.
+- Use each task at most once; skip if unsure.
+- Default duration = estimatedMinutes; you may adjust ±20% to fit the day.
+- Add short 10-15m breaks every 90-120m of work (optional, title="Break").
+- Output ONLY JSON array, no prose.
+- JSON schema: [{"taskId":"<id>","start":"09:00","durationMinutes":60,"title":"optional override","note":"optional"}]
+
+Return JSON array only.`;
+
+      const text = await callAI(prompt);
+      const plan = parseAIJsonResponse(text);
+      if (!Array.isArray(plan)) throw new Error('Invalid plan format from AI');
+
+      const MIN_START = 6 * 60;
+      const MAX_END = 23 * 60;
+
+      const newBlocks = [];
+
+      plan.forEach((item, idx) => {
+        const startStr = (item && item.start) ? String(item.start).trim() : null;
+        const startMinutes = startStr ? parseTime(startStr) : null;
+        if (startMinutes === null || isNaN(startMinutes)) return;
+        const rawDuration = parseInt(item.durationMinutes || item.duration || 0, 10);
+        const duration = Math.min(240, Math.max(15, rawDuration || 60));
+        const endMinutes = startMinutes + duration;
+        if (startMinutes < MIN_START || endMinutes > MAX_END) return;
+
+        // Avoid overlaps with already accepted blocks
+        const overlaps = newBlocks.some(b => {
+          const bStart = parseTime(b.start);
+          const bEnd = bStart + (b.duration || 60);
+          return startMinutes < bEnd && endMinutes > bStart;
+        });
+        if (overlaps) return;
+
+        const taskMatch = normalizedTasks.find(t => t.id === item.taskId) || normalizedTasks[idx];
+        if (!taskMatch) return;
+
+        const subj = (typeof subjects !== 'undefined' ? subjects : []).find(s => s.id === taskMatch.subject);
+        const block = {
+          id: generateId(),
+          title: item.title || taskMatch.title,
+          start: formatTime(startMinutes),
+          duration: duration,
+          priority: taskMatch.priority || 'medium',
+          category: taskMatch.subject || 'work',
+          color: subj ? subj.color : '#667eea',
+          date: dateKey,
+          completed: false,
+          reminder: 0,
+          sourceType: 'ai-plan',
+          linkedTaskId: taskMatch.id,
+          note: item.note || ''
+        };
+
+        newBlocks.push(block);
+      });
+
+      if (newBlocks.length === 0) {
+        throw new Error('AI did not return a usable schedule');
+      }
+
+      // Replace plan for the day
+      plannerBlocks = plannerBlocks.filter(b => b.date !== dateKey);
+      plannerBlocks.push(...newBlocks.sort((a, b) => parseTime(a.start) - parseTime(b.start)));
+      saveBlocks();
+      render();
+
+      alert(`✅ נבנה לוח זמנים AI ל-${dayLabel} (${newBlocks.length} בלוקים)`);
+    };
     
     // Open add modal
     const openAddModal = (hour = 9) => {
@@ -16432,6 +16550,29 @@ Your response (JSON array only):`;
       if (refs.prevDay) refs.prevDay.onclick = () => navigateDate(-1);
       if (refs.nextDay) refs.nextDay.onclick = () => navigateDate(1);
       if (refs.todayBtn) refs.todayBtn.onclick = goToToday;
+      
+      // AI Plan Day button
+      const aiPlanDayBtn = $('aiPlanDayBtn');
+      if (aiPlanDayBtn) {
+        aiPlanDayBtn.onclick = async () => {
+          if (!tasksLoaded) {
+            alert('⏳ טוען משימות... / Loading tasks...');
+            return;
+          }
+
+          aiPlanDayBtn.disabled = true;
+          aiPlanDayBtn.innerHTML = '⏳ Planning...';
+          try {
+            await aiPlanEntireDay();
+          } catch (error) {
+            console.error('AI plan day error:', error);
+            alert(`❌ שגיאה בתכנון AI / Error: ${error.message}`);
+          } finally {
+            aiPlanDayBtn.disabled = false;
+            aiPlanDayBtn.innerHTML = '🧠 Plan Day';
+          }
+        };
+      }
       
       // AI Auto-Schedule button
       const aiAutoScheduleBtn = $('aiAutoScheduleBtn');
