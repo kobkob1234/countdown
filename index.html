@@ -9302,22 +9302,64 @@
     return text;
   }
 
-  // Parse JSON from AI response (handles markdown code blocks)
+  // Parse JSON from AI response (handles markdown code blocks and various formats)
   function parseAIJsonResponse(text) {
+    console.log('Raw AI response:', text); // Debug log
+    
     // Remove markdown code blocks if present
     let cleaned = text.trim();
-    cleaned = cleaned.replace(/^```(?:json)?\s*\n?/i, '');
+    
+    // Handle ```json ... ``` or ``` ... ```
+    cleaned = cleaned.replace(/^```(?:json|JSON)?\s*\n?/i, '');
     cleaned = cleaned.replace(/\n?```\s*$/i, '');
     cleaned = cleaned.trim();
     
-    try {
-      return JSON.parse(cleaned);
-    } catch (e) {
-      // Try to extract JSON array from text
-      const arrayMatch = cleaned.match(/\[[\s\S]*\]/);
-      if (arrayMatch) {
-        return JSON.parse(arrayMatch[0]);
+    // Handle cases where AI adds explanation before/after JSON
+    // Try to find JSON array first
+    const arrayMatch = cleaned.match(/\[[\s\S]*?\]/);
+    if (arrayMatch) {
+      try {
+        const parsed = JSON.parse(arrayMatch[0]);
+        if (Array.isArray(parsed)) {
+          console.log('Parsed JSON array:', parsed);
+          return parsed;
+        }
+      } catch (e) {
+        // Continue to other methods
       }
+    }
+    
+    // Try to find JSON object
+    const objectMatch = cleaned.match(/\{[\s\S]*?\}/);
+    if (objectMatch) {
+      try {
+        const parsed = JSON.parse(objectMatch[0]);
+        console.log('Parsed JSON object:', parsed);
+        return parsed;
+      } catch (e) {
+        // Continue to other methods
+      }
+    }
+    
+    // Try direct parse
+    try {
+      const parsed = JSON.parse(cleaned);
+      console.log('Parsed JSON directly:', parsed);
+      return parsed;
+    } catch (e) {
+      // Try to extract nested JSON array (greedy match)
+      const greedyArrayMatch = cleaned.match(/\[[\s\S]*\]/);
+      if (greedyArrayMatch) {
+        try {
+          const parsed = JSON.parse(greedyArrayMatch[0]);
+          console.log('Parsed JSON (greedy array):', parsed);
+          return parsed;
+        } catch (e2) {
+          // Last resort: try to fix common issues
+        }
+      }
+      
+      console.error('Failed to parse AI response as JSON:', cleaned);
       throw new Error('Could not parse AI response as JSON');
     }
   }
