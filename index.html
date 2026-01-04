@@ -7969,10 +7969,12 @@
   };
 
   function formatDate(iso) {
-    return new Date(iso).toLocaleString(undefined, {
-      weekday: 'short', month: 'short', day: 'numeric',
-      hour: '2-digit', minute: '2-digit'
-    });
+    const d = new Date(iso);
+    const day = d.getDate();
+    const month = d.toLocaleString('he-IL', { month: 'short' });
+    const weekday = d.toLocaleString('he-IL', { weekday: 'short' });
+    const time = d.toLocaleString('he-IL', { hour: '2-digit', minute: '2-digit' });
+    return `${weekday}, ${day} ${month}, ${time}`;
   }
   
   function formatReminderOffset(minutes) {
@@ -8705,6 +8707,11 @@
     const row = e.target.closest(".event-row");
     if (!row) return;
     const id = row.dataset.id;
+    
+    // Don't handle clicks on inline edit targets or inputs
+    if (e.target.closest('.event-name') || e.target.closest('.event-date') || e.target.tagName === 'INPUT') {
+      return;
+    }
 
     if (e.target.classList.contains("delete-btn")) {
       if (editingId === id) cancelEdit();
