@@ -9231,7 +9231,7 @@
         }],
         generationConfig: {
           temperature: 0.7,
-          maxOutputTokens: 4096,
+          maxOutputTokens: 8192,
         },
         safetySettings: [
           { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
@@ -16198,7 +16198,7 @@ Your response (JSON array only):`;
 
       const availableTasks = (typeof tasks !== 'undefined' ? tasks : [])
         .filter(t => t && !t.completed && t.title)
-        .slice(0, 18); // cap to keep prompt lean
+        .slice(0, 10); // cap at 10 to avoid truncation
 
       if (availableTasks.length === 0) {
         alert('אין משימות לתכנון / No tasks to plan');
@@ -16215,33 +16215,24 @@ Your response (JSON array only):`;
         const subj = (typeof subjects !== 'undefined' ? subjects : []).find(s => s.id === t.subject);
         return {
           id: t.id,
-          title: t.title,
+          title: t.title.substring(0, 50),
           priority: t.priority || 'none',
-          due: t.dueDate ? new Date(t.dueDate).toISOString().split('T')[0] : 'none',
           estimatedMinutes: t.estimatedMinutes || 60,
           subject: subj ? subj.name : (t.subject || 'general')
         };
       });
 
-      const tasksText = normalizedTasks.map((t, i) => `${i + 1}. id=${t.id} | ${t.title} | priority=${t.priority} | due=${t.due} | est=${t.estimatedMinutes}m | subject=${t.subject}`).join('\n');
+      const tasksText = normalizedTasks.map((t, i) => `${i + 1}. ${t.id}|${t.title}|${t.priority}|${t.estimatedMinutes}m`).join('\n');
 
-      const prompt = `You are an expert day planner. Build a full schedule for ${dayLabel} (${dateKey}) using the tasks below.
+      const prompt = `Schedule for ${dateKey}. Return ONLY JSON array:
 
-Tasks (keep order by importance, schedule chronologically without overlap):
+Tasks:
 ${tasksText}
 
-Rules:
-- Work hours: 06:00-23:00. Keep within this window.
-- Use task ids. Output only tasks with an id from the list.
-- Start times must be chronological, non-overlapping, HH:MM 24h.
-- Prefer urgent/high first and tasks due soon.
-- Use each task at most once; skip if unsure.
-- Default duration = estimatedMinutes; you may adjust ±20% to fit the day.
-- Add short 10-15m breaks every 90-120m of work (optional, title="Break").
-- Output ONLY JSON array, no prose.
-- JSON schema: [{"taskId":"<id>","start":"09:00","durationMinutes":60,"title":"optional override","note":"optional"}]
+Rules: 06:00-23:00, no overlaps, urgent first.
+JSON: [{"taskId":"id","start":"HH:MM","durationMinutes":60}]
 
-Return JSON array only.`;
+Array:`;
 
       const text = await callAI(prompt);
       const plan = parseAIJsonResponse(text);
