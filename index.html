@@ -601,8 +601,15 @@
       align-items: center;
       gap: var(--space-2);
     }
-    .reminder-custom.hidden {
-      display: none;
+    .reminder-custom.hidden,
+    .task-reminder-custom.hidden {
+      display: none !important;
+    }
+    .task-reminder-custom {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      margin-top: var(--space-2);
     }
     .reminder-custom input,
     .reminder-custom select {
@@ -5731,12 +5738,22 @@
               <span>🔔</span>
               <select id="newTaskReminder" style="border: none; background: transparent; color: var(--text); font-size: 13px; outline: none; cursor: pointer;">
                 <option value="0">ללא תזכורת</option>
+                <option value="1">דקה לפני</option>
                 <option value="5">5 דקות לפני</option>
                 <option value="15">15 דקות לפני</option>
                 <option value="30">30 דקות לפני</option>
                 <option value="60">שעה לפני</option>
                 <option value="1440">יום לפני</option>
+                <option value="custom">⚙️ מותאם אישית...</option>
               </select>
+              <div class="task-reminder-custom hidden" id="newTaskReminderCustomWrap">
+                <input type="number" id="newTaskReminderCustomValue" min="1" step="1" style="width: 60px; padding: 4px 8px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px; background: var(--input-bg); color: var(--text);" placeholder="#" />
+                <select id="newTaskReminderCustomUnit" style="padding: 4px 8px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px; background: var(--input-bg); color: var(--text);">
+                  <option value="minutes">דקות</option>
+                  <option value="hours">שעות</option>
+                  <option value="days">ימים</option>
+                </select>
+              </div>
             </div>
             <div class="label-input-wrapper">
               <span>🎨</span>
@@ -5869,14 +5886,30 @@
 
       <div class="task-edit-section">
         <div class="task-edit-section-title">Reminder</div>
+        <div class="quick-reminder-btns" style="display: flex; gap: 8px; margin-bottom: 10px;">
+          <button type="button" class="quick-reminder-btn" data-minutes="1" style="padding: 6px 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--btn-secondary-bg); color: var(--text); font-size: 12px; cursor: pointer;">1 דקה</button>
+          <button type="button" class="quick-reminder-btn" data-minutes="5" style="padding: 6px 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--btn-secondary-bg); color: var(--text); font-size: 12px; cursor: pointer;">5 דקות</button>
+          <button type="button" class="quick-reminder-btn" data-minutes="15" style="padding: 6px 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--btn-secondary-bg); color: var(--text); font-size: 12px; cursor: pointer;">15 דקות</button>
+          <button type="button" class="quick-reminder-btn" data-minutes="60" style="padding: 6px 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--btn-secondary-bg); color: var(--text); font-size: 12px; cursor: pointer;">שעה</button>
+        </div>
         <select id="editTaskReminder" style="padding: 12px 14px; border: 2px solid var(--border); border-radius: 10px; font-size: 14px; background: var(--input-bg); color: var(--text); outline: none; width: 100%; max-width: 250px; cursor: pointer;">
           <option value="0">🔕 ללא תזכורת</option>
+          <option value="1">🔔 דקה לפני</option>
           <option value="5">🔔 5 דקות לפני</option>
           <option value="15">🔔 15 דקות לפני</option>
           <option value="30">🔔 30 דקות לפני</option>
           <option value="60">🔔 שעה לפני</option>
           <option value="1440">🔔 יום לפני</option>
+          <option value="custom">⚙️ מותאם אישית...</option>
         </select>
+        <div class="task-reminder-custom hidden" id="editTaskReminderCustomWrap" style="display: flex; gap: 8px; margin-top: 10px;">
+          <input type="number" id="editTaskReminderCustomValue" min="1" step="1" style="width: 80px; padding: 10px 12px; border: 2px solid var(--border); border-radius: 10px; font-size: 14px; background: var(--input-bg); color: var(--text);" placeholder="מספר" />
+          <select id="editTaskReminderCustomUnit" style="padding: 10px 12px; border: 2px solid var(--border); border-radius: 10px; font-size: 14px; background: var(--input-bg); color: var(--text);">
+            <option value="minutes">דקות</option>
+            <option value="hours">שעות</option>
+            <option value="days">ימים</option>
+          </select>
+        </div>
       </div>
       
       <div class="task-edit-section">
@@ -8662,6 +8695,93 @@
   const PRIORITY_LABELS = { urgent: 'Urgent', high: 'High', medium: 'Medium', low: 'Low', none: '' };
   const RECURRENCE_LABELS = { daily: 'יומי', weekly: 'שבועי', monthly: 'חודשי' };
   
+  // Task Reminder Custom Handling
+  const newTaskReminderCustomWrap = $("newTaskReminderCustomWrap");
+  const newTaskReminderCustomValue = $("newTaskReminderCustomValue");
+  const newTaskReminderCustomUnit = $("newTaskReminderCustomUnit");
+  const editTaskReminderCustomWrap = $("editTaskReminderCustomWrap");
+  const editTaskReminderCustomValue = $("editTaskReminderCustomValue");
+  const editTaskReminderCustomUnit = $("editTaskReminderCustomUnit");
+  
+  // Get reminder value in minutes from custom inputs
+  function getTaskReminderMinutes(selectEl, customValueEl, customUnitEl) {
+    if (!selectEl) return 0;
+    if (selectEl.value === 'custom') {
+      const val = parseInt(customValueEl?.value, 10) || 0;
+      const unit = customUnitEl?.value || 'minutes';
+      if (unit === 'hours') return val * 60;
+      if (unit === 'days') return val * 1440;
+      return val;
+    }
+    return parseInt(selectEl.value, 10) || 0;
+  }
+  
+  // Set reminder UI from minutes value
+  function setTaskReminderUI(selectEl, customWrapEl, customValueEl, customUnitEl, minutes) {
+    if (!selectEl) return;
+    const min = parseInt(minutes, 10) || 0;
+    const optionExists = Array.from(selectEl.options).some(o => o.value === String(min) && o.value !== 'custom');
+    
+    if (min > 0 && !optionExists) {
+      selectEl.value = 'custom';
+      if (customWrapEl) customWrapEl.classList.remove('hidden');
+      
+      let unit = 'minutes';
+      let value = min;
+      if (min % 1440 === 0) {
+        unit = 'days';
+        value = Math.round(min / 1440);
+      } else if (min % 60 === 0) {
+        unit = 'hours';
+        value = Math.round(min / 60);
+      }
+      if (customUnitEl) customUnitEl.value = unit;
+      if (customValueEl) customValueEl.value = String(value);
+      return;
+    }
+    
+    selectEl.value = String(min);
+    if (customWrapEl) customWrapEl.classList.add('hidden');
+    if (customValueEl) customValueEl.value = '';
+    if (customUnitEl) customUnitEl.value = 'minutes';
+  }
+  
+  // New task reminder change handler
+  if (newTaskReminder) {
+    newTaskReminder.addEventListener('change', () => {
+      const isCustom = newTaskReminder.value === 'custom';
+      if (newTaskReminderCustomWrap) newTaskReminderCustomWrap.classList.toggle('hidden', !isCustom);
+      if (isCustom) {
+        if (newTaskReminderCustomUnit && !newTaskReminderCustomUnit.value) newTaskReminderCustomUnit.value = 'minutes';
+        if (newTaskReminderCustomValue && !newTaskReminderCustomValue.value) newTaskReminderCustomValue.value = '10';
+        if (newTaskReminderCustomValue) newTaskReminderCustomValue.focus();
+      }
+    });
+  }
+  
+  // Edit task reminder change handler
+  if (editTaskReminder) {
+    editTaskReminder.addEventListener('change', () => {
+      const isCustom = editTaskReminder.value === 'custom';
+      if (editTaskReminderCustomWrap) editTaskReminderCustomWrap.classList.toggle('hidden', !isCustom);
+      if (isCustom) {
+        if (editTaskReminderCustomUnit && !editTaskReminderCustomUnit.value) editTaskReminderCustomUnit.value = 'minutes';
+        if (editTaskReminderCustomValue && !editTaskReminderCustomValue.value) editTaskReminderCustomValue.value = '10';
+        if (editTaskReminderCustomValue) editTaskReminderCustomValue.focus();
+      }
+    });
+  }
+  
+  // Quick reminder button handlers
+  document.querySelectorAll('.quick-reminder-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const minutes = parseInt(btn.dataset.minutes, 10) || 0;
+      if (editTaskReminder) {
+        setTaskReminderUI(editTaskReminder, editTaskReminderCustomWrap, editTaskReminderCustomValue, editTaskReminderCustomUnit, minutes);
+      }
+    });
+  });
+  
   function getDefaultSubjectId() {
     if (currentSmartView) return '';
     if (currentSubject && currentSubject !== 'all') return currentSubject;
@@ -9448,7 +9568,7 @@
     const dueValue = newTaskDue.value;
     const dueDate = dueValue ? parseLocal(dueValue) : null;
     const recurrence = newTaskRecurrence ? newTaskRecurrence.value : 'none';
-    const reminder = newTaskReminder ? parseInt(newTaskReminder.value, 10) || 0 : 0;
+    const reminder = getTaskReminderMinutes(newTaskReminder, newTaskReminderCustomValue, newTaskReminderCustomUnit);
     const durationEl = document.getElementById('newTaskDuration');
     const duration = durationEl ? parseInt(durationEl.value, 10) || 0 : 0;
     
@@ -9480,6 +9600,9 @@
     newTaskDue.value = '';
     if (newTaskRecurrence) newTaskRecurrence.value = 'none';
     if (newTaskReminder) newTaskReminder.value = '0';
+    if (newTaskReminderCustomWrap) newTaskReminderCustomWrap.classList.add('hidden');
+    if (newTaskReminderCustomValue) newTaskReminderCustomValue.value = '';
+    if (newTaskReminderCustomUnit) newTaskReminderCustomUnit.value = 'minutes';
     if (durationEl) durationEl.value = '0';
     if (newTaskSubject) newTaskSubject.value = '';
     if (quickAddRow) quickAddRow.style.display = 'none';
@@ -10346,9 +10469,9 @@
       editTaskRecurrence.value = normalizeRecurrence(editingTask.recurrence);
     }
     
-    // Set reminder
+    // Set reminder with custom support
     if (editTaskReminder) {
-      editTaskReminder.value = String(editingTask.reminder || 0);
+      setTaskReminderUI(editTaskReminder, editTaskReminderCustomWrap, editTaskReminderCustomValue, editTaskReminderCustomUnit, editingTask.reminder || 0);
     }
     
     // Render checklist
@@ -10458,8 +10581,8 @@
       delete editingTask.recurrence;
     }
     
-    // Update reminder
-    const reminderValue = editTaskReminder ? parseInt(editTaskReminder.value, 10) || 0 : 0;
+    // Update reminder (with custom support)
+    const reminderValue = getTaskReminderMinutes(editTaskReminder, editTaskReminderCustomValue, editTaskReminderCustomUnit);
     if (reminderValue > 0) {
       editingTask.reminder = reminderValue;
     } else {
