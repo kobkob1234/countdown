@@ -11791,9 +11791,9 @@
         <div class="subject-list-item ${isExpanded ? 'expanded' : ''}" data-subject-id="${s.id}">
           <div class="subject-list-header ${isActive ? 'active' : ''}" data-subject="${s.id}" title="${escapeHtml(s.name)}">
             ${hasChildren ? `<span class="collapse-arrow">▼</span>` : ''}
+            ${sharedBadge}
             <span class="subject-color-dot" style="background: ${s.color};"></span>
             <span class="subject-name">${escapeHtml(s.name)}</span>
-            ${sharedBadge}
             ${taskCount > 0 ? `<span class="subject-count">${taskCount}</span>` : ''}
             <div class="subject-actions">
               <button class="subject-action-btn" data-action="add-sub" title="הוסף תת-נושא" aria-label="הוסף תת-נושא">➕</button>
@@ -11810,9 +11810,9 @@
                 const childSharedBadge = childShared ? `<span class="shared-badge" title="משותף">👥</span>` : '';
                 return `
                   <div class="subject-child-item ${childActive ? 'active' : ''}" data-subject="${c.id}" title="${escapeHtml(c.name)}">
+                    ${childSharedBadge}
                     <span class="child-color" style="background: ${c.color};"></span>
                     <span class="child-name">${escapeHtml(c.name)}</span>
-                    ${childSharedBadge}
                     ${childCount > 0 ? `<span class="child-count">${childCount}</span>` : ''}
                     <div class="subject-actions">
                       <button class="subject-action-btn" data-action="edit" title="עריכה">✏️</button>
