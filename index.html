@@ -9596,54 +9596,69 @@
     cleaned = cleaned.replace(/\n?```\s*$/i, '');
     cleaned = cleaned.trim();
     
-    // Handle cases where AI adds explanation before/after JSON
-    // Try to find JSON array first
-    const arrayMatch = cleaned.match(/\[[\s\S]*?\]/);
-    if (arrayMatch) {
-      try {
-        const parsed = JSON.parse(arrayMatch[0]);
-        if (Array.isArray(parsed)) {
-          console.log('Parsed JSON array:', parsed);
-          return parsed;
-        }
-      } catch (e) {
-        // Continue to other methods
-      }
-    }
-    
-    // Try to find JSON object
-    const objectMatch = cleaned.match(/\{[\s\S]*?\}/);
-    if (objectMatch) {
-      try {
-        const parsed = JSON.parse(objectMatch[0]);
-        console.log('Parsed JSON object:', parsed);
-        return parsed;
-      } catch (e) {
-        // Continue to other methods
-      }
-    }
-    
-    // Try direct parse
+    // Try direct parse first
     try {
       const parsed = JSON.parse(cleaned);
       console.log('Parsed JSON directly:', parsed);
       return parsed;
-    } catch (e) {
-      // Try to extract nested JSON array (greedy match)
-      const greedyArrayMatch = cleaned.match(/\[[\s\S]*\]/);
-      if (greedyArrayMatch) {
-        try {
-          const parsed = JSON.parse(greedyArrayMatch[0]);
-          console.log('Parsed JSON (greedy array):', parsed);
-          return parsed;
-        } catch (e2) {
-          // Last resort: try to fix common issues
-        }
-      }
-      
-      console.error('Failed to parse AI response as JSON:', cleaned);
-      throw new Error('Could not parse AI response as JSON');
+    } catch (directError) {
+      console.log('Direct parse failed, trying extraction methods...');
     }
+    
+    // Try to find JSON object with actions (greedy match to get complete object)
+    // Look for {..."actions"...[...]..."reply":...}
+    const objectWithActionsMatch = cleaned.match(/\{[\s\S]*"actions"[\s\S]*\[[\s\S]*\][\s\S]*\}/);
+    if (objectWithActionsMatch) {
+      try {
+        const parsed = JSON.parse(objectWithActionsMatch[0]);
+        console.log('Parsed JSON object with actions:', parsed);
+        return parsed;
+      } catch (e) {
+        console.log('Failed to parse object with actions:', e.message);
+      }
+    }
+    
+    // Try to find any JSON object (greedy match)
+    const greedyObjectMatch = cleaned.match(/\{[\s\S]*\}/);
+    if (greedyObjectMatch) {
+      try {
+        const parsed = JSON.parse(greedyObjectMatch[0]);
+        console.log('Parsed JSON object (greedy):', parsed);
+        return parsed;
+      } catch (e) {
+        console.log('Failed to parse greedy object:', e.message);
+      }
+    }
+    
+    // Try to find JSON object (minimal match)
+    const objectMatch = cleaned.match(/\{[\s\S]*?\}/);
+    if (objectMatch) {
+      try {
+        const parsed = JSON.parse(objectMatch[0]);
+        console.log('Parsed JSON object (minimal):', parsed);
+        return parsed;
+      } catch (e) {
+        console.log('Failed to parse minimal object:', e.message);
+      }
+    }
+    
+    // Legacy support: Try to find JSON array
+    const arrayMatch = cleaned.match(/\[[\s\S]*\]/);
+    if (arrayMatch) {
+      try {
+        const parsed = JSON.parse(arrayMatch[0]);
+        if (Array.isArray(parsed)) {
+          console.log('Parsed JSON array (legacy format):', parsed);
+          // Convert to new format
+          return { actions: parsed, reply: '✅ בוצע! / Done!' };
+        }
+      } catch (e) {
+        console.log('Failed to parse array:', e.message);
+      }
+    }
+    
+    console.error('Failed to parse AI response as JSON. Cleaned text:', cleaned.substring(0, 500));
+    throw new Error('Could not parse AI response as JSON. The AI may have returned invalid JSON or text instead of JSON.');
   }
 
   // Call AI API with automatic provider selection
@@ -9779,65 +9794,106 @@ Your response (JSON array only):`;
           `${i+1}. "${t.title}" (id: ${t.id}, priority: ${t.priority || 'medium'}${t.dueDate ? ', due: ' + new Date(t.dueDate).toLocaleDateString('he-IL') : ''})`
         ).join('\n');
         
+        // Calculate next Sunday
+        const nextSunday = new Date(today);
+        const daysUntilSunday = (7 - today.getDay()) % 7 || 7;
+        nextSunday.setDate(today.getDate() + daysUntilSunday);
+        const nextSundayStr = nextSunday.toISOString().split('T')[0];
+        
         const prompt = `You are a bilingual (Hebrew/English) task management AI assistant. Parse user requests and return actions as JSON.
 The user may write in Hebrew or English - understand both and respond in the same language they used.
 
+CRITICAL: You MUST return VALID JSON in this EXACT format:
+{
+  "actions": [...array of action objects...],
+  "reply": "your confirmation message"
+}
+
 User message: "${message}"
 
-Today's date: ${todayStr}
+Today's date: ${todayStr} (day of week: ${today.toLocaleDateString('en-US', {weekday: 'long'})})
 Tomorrow's date: ${tomorrowStr}
+Next Sunday: ${nextSundayStr}
 Current tasks (${tasks.length} total):
 ${tasksList || 'No tasks yet'}
 
-Available actions:
-- addTask: {action: "addTask", title: "task name", dueDate: "YYYY-MM-DD", dueTime: "HH:MM", priority: "urgent|high|medium|low", duration: 60}
-- editTask: {action: "editTask", taskId: "actual-task-id", updates: {title, priority, dueDate, duration}}
-- deleteTask: {action: "deleteTask", taskId: "actual-task-id"}
-- completeTask: {action: "completeTask", taskId: "actual-task-id"}
-- listTasks: {action: "listTasks"}
-- planDay: {action: "planDay", date: "YYYY-MM-DD"}
-- reply: {action: "reply", message: "..."}
+Available actions (each action must be a valid JSON object):
+1. addTask: {"action": "addTask", "title": "task name", "dueDate": "YYYY-MM-DD", "dueTime": "HH:MM", "priority": "urgent|high|medium|low", "duration": 60}
+2. editTask: {"action": "editTask", "taskId": "actual-task-id", "updates": {"title": "new title", "priority": "medium", "dueDate": "YYYY-MM-DD", "duration": 60}}
+3. deleteTask: {"action": "deleteTask", "taskId": "actual-task-id"}
+4. completeTask: {"action": "completeTask", "taskId": "actual-task-id"}
+5. listTasks: {"action": "listTasks"}
+6. planDay: {"action": "planDay", "date": "YYYY-MM-DD"}
 
-Hebrew date keywords to understand:
+Hebrew date keywords:
 - היום = today (${todayStr})
 - מחר = tomorrow (${tomorrowStr})
 - מחרתיים = day after tomorrow
-- בשעה X = at X o'clock
-- יום ראשון = Sunday, יום שני = Monday, יום שלישי = Tuesday, יום רביעי = Wednesday, יום חמישי = Thursday, יום שישי = Friday, שבת = Saturday
+- יום ראשון הבא = next Sunday (${nextSundayStr})
+- בשעה X = at X o'clock (use 24-hour format)
 - דחוף/דחופה = urgent priority
 - גבוה/גבוהה = high priority
 - בינוני/בינונית = medium priority
 - נמוך/נמוכה = low priority
-- הוסף משימה / צור משימה / תוסיף = add task
-- תזמן / קבע = schedule
-- שנה / ערוך = edit
+- הוסף/הוסיפי/צור/תוסיף = add task
+- תזמן/קבע = schedule
+- שנה/ערוך = edit
 - תכנן את היום = plan the day
 - דקות = minutes, שעה/שעות = hour(s)
-- משך / אורך = duration
-- מחק / הסר = delete
-- סיים / השלם = complete task
-- הצג משימות / רשימת משימות = list tasks
+- משך/אורך = duration
+- מחק/הסר = delete
+- סיים/השלם = complete task
+- הצג משימות/רשימת משימות = list tasks
+- באופן דומה/כמו/גם = also/similar (create another task)
+- ובנוסף/וגם = and also (multiple tasks)
 
-Return JSON: {actions: [...], reply: "confirmation in user's language"}
+Examples of VALID responses:
 
-Examples:
-- "הוסף משימה: לקנות חלב מחר ב-17:00" → {actions: [{action: "addTask", title: "לקנות חלב", dueDate: "${tomorrowStr}", dueTime: "17:00"}], reply: "✅ נוספה משימה: לקנות חלב למחר ב-17:00"}
-- "צור משימה דחופה: להגיש פרויקט היום משך שעתיים" → {actions: [{action: "addTask", title: "להגיש פרויקט", dueDate: "${todayStr}", priority: "urgent", duration: 120}], reply: "✅ נוספה משימה דחופה!"}
-- "Add task: Buy milk tomorrow at 5pm" → {actions: [{action: "addTask", title: "Buy milk", dueDate: "${tomorrowStr}", dueTime: "17:00"}], reply: "✅ Added task: Buy milk"}
-- "תכנן את היום שלי" → {actions: [{action: "planDay", date: "${todayStr}"}], reply: "🧠 מתכנן את היום שלך..."}
-- "הצג את המשימות" → {actions: [{action: "listTasks"}], reply: "הנה המשימות שלך:"}
-- "סמן משימה 1 כהושלמה" → use completeTask with actual taskId from the list above
-- "מחק את המשימה השנייה" → use deleteTask with actual taskId from the list above
+1. Single task:
+{"actions": [{"action": "addTask", "title": "לקנות חלב", "dueDate": "${tomorrowStr}", "dueTime": "17:00"}], "reply": "✅ נוספה משימה: לקנות חלב למחר ב-17:00"}
 
-IMPORTANT: When user refers to task by number (e.g., "משימה 1", "task 2"), use the actual taskId from the task list above!
+2. Multiple tasks:
+{"actions": [{"action": "addTask", "title": "ללכת לסופר", "dueDate": "${todayStr}", "dueTime": "20:00"}, {"action": "addTask", "title": "ללכת לסופר", "dueDate": "${nextSundayStr}", "dueTime": "20:00"}], "reply": "✅ נוספו 2 משימות: ללכת לסופר היום ב-20:00 ובראשון הבא ב-20:00"}
 
-JSON:`;
+3. Urgent task with duration:
+{"actions": [{"action": "addTask", "title": "להגיש פרויקט", "dueDate": "${todayStr}", "priority": "urgent", "duration": 120}], "reply": "✅ נוספה משימה דחופה: להגיש פרויקט (2 שעות)"}
+
+4. Plan day:
+{"actions": [{"action": "planDay", "date": "${todayStr}"}], "reply": "🧠 מתכנן את היום שלך..."}
+
+5. Complete task by number:
+{"actions": [{"action": "completeTask", "taskId": "actual-id-from-list"}], "reply": "✅ המשימה הושלמה!"}
+
+IMPORTANT RULES:
+1. Always return VALID JSON with "actions" array and "reply" string
+2. When user says "באופן דומה ליום X" or "גם ביום X", create a SECOND task with the same title but different date
+3. When user says "ובנוסף" or "וגם", create MULTIPLE tasks
+4. Extract time from "בשעה XX:XX" and use 24-hour format
+5. When referring to "יום ראשון הבא" (next Sunday), use date: ${nextSundayStr}
+6. For task numbers (משימה 1, task 2), use the ACTUAL taskId from the list above
+7. NEVER return plain text, ALWAYS return valid JSON
+
+Return your response as valid JSON now:`;
 
         const aiResponse = await callAI(prompt);
+        console.log('AI Response received:', aiResponse);
+        
         const parsed = parseAIJsonResponse(aiResponse);
+        console.log('Parsed response:', parsed);
+        
+        // Validate response structure
+        if (!parsed) {
+          throw new Error('Failed to parse AI response');
+        }
         
         if (!parsed.actions || !Array.isArray(parsed.actions)) {
-          throw new Error('Invalid AI response format');
+          console.error('Invalid response structure:', parsed);
+          throw new Error('AI response missing actions array. Response: ' + JSON.stringify(parsed).substring(0, 200));
+        }
+        
+        if (parsed.actions.length === 0) {
+          addMessage(parsed.reply || 'לא זיהיתי פעולה לביצוע. נסה שוב / No action recognized. Try again.');
+          return;
         }
         
         // Execute actions
@@ -9846,11 +9902,47 @@ JSON:`;
         }
         
         // Show reply
-        addMessage(parsed.reply || 'Done!');
+        addMessage(parsed.reply || '✅ בוצע! / Done!');
         
       } catch (error) {
         console.error('AI Chat error:', error);
-        addMessage(`שגיאה: ${error.message}\n\nנסה פקודות פשוטות כמו:\n- "הוסף משימה: שם המשימה"\n- "תכנן את היום שלי"\n\nError: ${error.message}\n\nTry simpler commands like:\n- "Add task: Task name"\n- "Schedule tasks for today"`);
+        console.error('Error details:', {
+          message: error.message,
+          stack: error.stack,
+          userMessage: message
+        });
+        
+        // Provide helpful error messages
+        let errorMsg = `❌ שגיאה: ${error.message}\n\n`;
+        
+        if (error.message.includes('parse') || error.message.includes('JSON')) {
+          errorMsg += `התשובה מה-AI לא הייתה בפורמט תקין. נסה:\n` +
+                     `• פשט את הבקשה\n` +
+                     `• הוסף משימה אחת בכל פעם\n` +
+                     `• השתמש בפורמט: "הוסף משימה: [שם] [תאריך] בשעה [שעה]"\n\n` +
+                     `The AI response was not in valid format. Try:\n` +
+                     `• Simplify your request\n` +
+                     `• Add one task at a time\n` +
+                     `• Use format: "Add task: [name] [date] at [time]"`;
+        } else if (error.message.includes('truncated')) {
+          errorMsg += `התשובה נחתכה. נסה:\n` +
+                     `• פקודה פשוטה יותר\n` +
+                     `• פחות משימות\n\n` +
+                     `Response was truncated. Try:\n` +
+                     `• Simpler command\n` +
+                     `• Fewer tasks`;
+        } else {
+          errorMsg += `דוגמאות לפקודות:\n` +
+                     `• "הוסף משימה: ללכת לסופר היום בשעה 20:00"\n` +
+                     `• "צור משימה: להתקשר לרופא מחר ב-14:00"\n` +
+                     `• "תכנן את היום שלי"\n\n` +
+                     `Example commands:\n` +
+                     `• "Add task: Go shopping today at 20:00"\n` +
+                     `• "Create task: Call doctor tomorrow at 14:00"\n` +
+                     `• "Plan my day"`;
+        }
+        
+        addMessage(errorMsg);
       } finally {
         sendBtn.disabled = false;
       }
