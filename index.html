@@ -4087,6 +4087,67 @@
       background: var(--day-hover);
       color: var(--text);
     }
+    .task-reminder-wrap {
+      position: relative;
+    }
+    .task-reminder-btn {
+      width: 32px;
+      height: 32px;
+      border: none;
+      background: transparent;
+      color: var(--muted);
+      font-size: 16px;
+      cursor: pointer;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s;
+    }
+    .task-reminder-btn:hover {
+      background: #fef3c7;
+      color: #f59e0b;
+    }
+    .task-reminder-btn.has-reminder {
+      color: #f59e0b;
+      background: rgba(245, 158, 11, 0.1);
+    }
+    .task-reminder-dropdown {
+      position: absolute;
+      top: 100%;
+      right: 0;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+      padding: 8px;
+      display: none;
+      z-index: 100;
+      min-width: 140px;
+      margin-top: 4px;
+    }
+    .task-reminder-dropdown.open {
+      display: block;
+    }
+    .task-reminder-option {
+      padding: 8px 12px;
+      font-size: 13px;
+      color: var(--text);
+      cursor: pointer;
+      border-radius: 6px;
+      transition: background 0.15s;
+      white-space: nowrap;
+    }
+    .task-reminder-option:hover {
+      background: var(--day-hover);
+    }
+    .task-reminder-option.active {
+      background: rgba(102, 126, 234, 0.1);
+      color: var(--accent);
+    }
+    .task-reminder-option.remove {
+      color: #ef4444;
+    }
     .task-action-btn.delete:hover {
       background: #fef2f2;
       color: var(--danger);
@@ -10198,6 +10259,17 @@
           ${subtasksHtml}
         </div>
         <div class="task-actions">
+          <div class="task-reminder-wrap">
+            <button class="task-reminder-btn ${task.reminder ? 'has-reminder' : ''}" data-action="reminder" title="${task.reminder ? `תזכורת ${task.reminder} דקות לפני` : 'הגדר תזכורת'}">🔔</button>
+            <div class="task-reminder-dropdown" data-task-id="${task.id}">
+              <div class="task-reminder-option" data-minutes="1">דקה אחת</div>
+              <div class="task-reminder-option" data-minutes="5">5 דקות</div>
+              <div class="task-reminder-option" data-minutes="15">15 דקות</div>
+              <div class="task-reminder-option" data-minutes="60">שעה</div>
+              <div class="task-reminder-option" data-minutes="1440">יום</div>
+              ${task.reminder ? '<div class="task-reminder-option remove" data-minutes="0">הסר תזכורת</div>' : ''}
+            </div>
+          </div>
           <button class="task-action-btn" data-action="edit" title="Edit" aria-label="עריכה">✏️</button>
           <button class="task-action-btn" data-action="duplicate" title="Duplicate" aria-label="שכפל">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
@@ -10377,6 +10449,31 @@
           return;
         }
         
+        // Reminder button and dropdown
+        const reminderBtn = e.target.closest('.task-reminder-btn');
+        const reminderOption = e.target.closest('.task-reminder-option');
+        
+        if (reminderBtn) {
+          e.stopPropagation();
+          const dropdown = reminderBtn.nextElementSibling;
+          // Close other dropdowns
+          document.querySelectorAll('.task-reminder-dropdown.open').forEach(d => {
+            if (d !== dropdown) d.classList.remove('open');
+          });
+          dropdown.classList.toggle('open');
+          return;
+        }
+        
+        if (reminderOption) {
+          e.stopPropagation();
+          const minutes = parseInt(reminderOption.dataset.minutes, 10);
+          const { id, ...cleanTask } = task;
+          set(ref(db, `users/${currentUser}/tasks/${taskId}`), { ...cleanTask, reminder: minutes || null });
+          // Close dropdown
+          e.target.closest('.task-reminder-dropdown').classList.remove('open');
+          return;
+        }
+        
         // Check what was clicked
         const action = e.target.closest('[data-action]')?.dataset.action;
         const isSubtaskCheckbox = e.target.closest('.task-subtask input[type="checkbox"]');
@@ -10423,6 +10520,13 @@
   
   // Initialize event delegation once
   setupTaskEventDelegation();
+  
+  // Close task reminder dropdowns when clicking outside
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('.task-reminder-wrap')) {
+      document.querySelectorAll('.task-reminder-dropdown.open').forEach(d => d.classList.remove('open'));
+    }
+  });
   
   let draggingTaskId = null;
   let dragSourceContainer = null;
