@@ -7752,28 +7752,29 @@
     <div class="planner-header-bar">
       <div class="planner-header-title">📅 מתכנן יומי</div>
       
-      <div class="planner-date-nav">
+      <!-- AI Chat Button - Prominent placement -->
+      <button class="btn" id="aiChatBtn" style="padding: 10px 16px; font-size: 14px; font-weight: 600; background: linear-gradient(135deg, #8b5cf6, #ec4899); color: white; border: none; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 2px 8px rgba(139, 92, 246, 0.3); flex-shrink: 0; order: 1;" title="צ'אט עם AI לניהול משימות">
+        💬 AI Chat
+      </button>
+      
+      <div class="planner-date-nav" style="order: 2;">
         <button id="plannerPrevDay">‹</button>
         <span class="planner-current-date" id="plannerCurrentDate">יום ראשון, 1 בינואר 2026</span>
         <button id="plannerNextDay">›</button>
       </div>
       
-      <button class="planner-today-btn" id="plannerTodayBtn">📍 היום</button>
+      <button class="planner-today-btn" id="plannerTodayBtn" style="order: 3;">📍 היום</button>
       
-      <button class="btn" id="aiAutoScheduleBtn" style="padding: 8px 14px; font-size: 13px; background: linear-gradient(135deg, #667eea, #764ba2); color: white; border: none; display: inline-flex; align-items: center; gap: 6px; margin: 0 8px;" title="תזמון אוטומטי של משימות באמצעות AI">
+      <button class="btn" id="aiAutoScheduleBtn" style="padding: 8px 14px; font-size: 13px; background: linear-gradient(135deg, #667eea, #764ba2); color: white; border: none; display: inline-flex; align-items: center; gap: 6px; margin: 0 8px; order: 4;" title="תזמון אוטומטי של משימות באמצעות AI">
         ✨ Auto-Schedule
       </button>
 
-      <button class="btn" id="aiPlanDayBtn" style="padding: 8px 14px; font-size: 13px; background: linear-gradient(135deg, #1e3a8a, #2563eb); color: white; border: none; display: inline-flex; align-items: center; gap: 6px; margin: 0 8px;" title="תכנון יום מלא באמצעות AI (ממקם משימות ולוחות זמנים)">
+      <button class="btn" id="aiPlanDayBtn" style="padding: 8px 14px; font-size: 13px; background: linear-gradient(135deg, #1e3a8a, #2563eb); color: white; border: none; display: inline-flex; align-items: center; gap: 6px; margin: 0 8px; order: 5;" title="תכנון יום מלא באמצעות AI (ממקם משימות ולוחות זמנים)">
         🧠 Plan Day
       </button>
       
-      <button class="btn" id="aiSuggestionsBtn" style="padding: 8px 14px; font-size: 13px; background: linear-gradient(135deg, #f59e0b, #ec4899); color: white; border: none; display: inline-flex; align-items: center; gap: 6px;" title="קבל הצעות AI לעדיפות משימות">
+      <button class="btn" id="aiSuggestionsBtn" style="padding: 8px 14px; font-size: 13px; background: linear-gradient(135deg, #f59e0b, #ec4899); color: white; border: none; display: inline-flex; align-items: center; gap: 6px; order: 6;" title="קבל הצעות AI לעדיפות משימות">
         🤖 AI Suggestions
-      </button>
-      
-      <button class="btn" id="aiChatBtn" style="padding: 8px 14px; font-size: 13px; background: linear-gradient(135deg, #8b5cf6, #ec4899); color: white; border: none; display: inline-flex; align-items: center; gap: 6px;" title="צ'אט עם AI לניהול משימות">
-        💬 AI Chat
       </button>
       
       <div class="planner-view-toggle">
