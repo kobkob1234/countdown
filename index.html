@@ -1267,6 +1267,7 @@
       text-overflow: ellipsis;
       display: -webkit-box;
       -webkit-line-clamp: var(--notes-lines, 1);
+      line-clamp: var(--notes-lines, 1);
       -webkit-box-orient: vertical;
       opacity: 0.85;
     }
@@ -7343,7 +7344,12 @@
       </div>
       
       <div class="task-edit-section">
-        <div class="task-edit-section-title">Subtasks / Checklist</div>
+        <div class="task-edit-section-title">
+          Subtasks / Checklist
+          <button class="btn" id="aiBreakDownBtn" style="margin-right: auto; padding: 6px 12px; font-size: 12px; background: linear-gradient(135deg, #667eea, #764ba2); color: white; border: none; display: inline-flex; align-items: center; gap: 6px;" title="השתמש ב-AI לפרק את המשימה לתת-משימות">
+            ✨ AI Break Down
+          </button>
+        </div>
         <div class="task-checklist" id="editTaskChecklist"></div>
         <div class="checklist-add">
           <input type="text" id="newChecklistItem" placeholder="Add subtask..." />
@@ -7515,6 +7521,14 @@
       </div>
       
       <button class="planner-today-btn" id="plannerTodayBtn">📍 היום</button>
+      
+      <button class="btn" id="aiAutoScheduleBtn" style="padding: 8px 14px; font-size: 13px; background: linear-gradient(135deg, #667eea, #764ba2); color: white; border: none; display: inline-flex; align-items: center; gap: 6px; margin: 0 8px;" title="תזמון אוטומטי של משימות באמצעות AI">
+        ✨ Auto-Schedule
+      </button>
+      
+      <button class="btn" id="aiSuggestionsBtn" style="padding: 8px 14px; font-size: 13px; background: linear-gradient(135deg, #f59e0b, #ec4899); color: white; border: none; display: inline-flex; align-items: center; gap: 6px;" title="קבל הצעות AI לעדיפות משימות">
+        🤖 AI Suggestions
+      </button>
       
       <div class="planner-view-toggle">
         <button class="active" data-view="day">📋 יום</button>
@@ -9130,6 +9144,253 @@
 
   // ========================================
   // END CALENDAR SYNC FUNCTIONALITY
+  // ========================================
+
+  // ========================================
+  // AI-POWERED FEATURES
+  // ========================================
+  
+  // AI Configuration - Replace with your API keys
+  const AI_CONFIG = {
+    provider: 'gemini', // 'gemini', 'openai', or 'local'
+    gemini: {
+      apiKey: 'YOUR_GEMINI_API_KEY', // Get from: https://makersuite.google.com/app/apikey
+      endpoint: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent'
+    },
+    openai: {
+      apiKey: 'YOUR_OPENAI_API_KEY', // Get from: https://platform.openai.com/api-keys
+      endpoint: 'https://api.openai.com/v1/chat/completions',
+      model: 'gpt-3.5-turbo'
+    }
+  };
+
+  // Call AI API to break down a task into subtasks
+  async function breakDownTaskWithAI(taskTitle, taskNotes = '') {
+    const provider = AI_CONFIG.provider;
+    
+    const prompt = `Break down this task into 3-7 actionable subtasks. Return ONLY a JSON array of strings, no explanation or markdown.
+
+Task: "${taskTitle}"
+${taskNotes ? `Additional context: ${taskNotes}` : ''}
+
+Example format: ["Subtask 1", "Subtask 2", "Subtask 3"]
+
+Return only the JSON array:`;
+
+    try {
+      let subtasks = [];
+      
+      if (provider === 'gemini') {
+        const response = await fetch(`${AI_CONFIG.gemini.endpoint}?key=${AI_CONFIG.gemini.apiKey}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{
+              parts: [{ text: prompt }]
+            }]
+          })
+        });
+        
+        if (!response.ok) throw new Error('Gemini API error');
+        const data = await response.json();
+        const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+        subtasks = JSON.parse(text.replace(/```json\n?|\n?```/g, '').trim());
+        
+      } else if (provider === 'openai') {
+        const response = await fetch(AI_CONFIG.openai.endpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${AI_CONFIG.openai.apiKey}`
+          },
+          body: JSON.stringify({
+            model: AI_CONFIG.openai.model,
+            messages: [{ role: 'user', content: prompt }],
+            temperature: 0.7,
+            max_tokens: 500
+          })
+        });
+        
+        if (!response.ok) throw new Error('OpenAI API error');
+        const data = await response.json();
+        const text = data.choices?.[0]?.message?.content || '';
+        subtasks = JSON.parse(text.replace(/```json\n?|\n?```/g, '').trim());
+      }
+      
+      if (!Array.isArray(subtasks) || subtasks.length === 0) {
+        throw new Error('Invalid AI response');
+      }
+      
+      return subtasks;
+      
+    } catch (error) {
+      console.error('AI breakdown error:', error);
+      throw error;
+    }
+  }
+
+  // Auto-schedule tasks in daily planner using AI/heuristics
+  async function autoScheduleTasks() {
+    const unscheduledTasks = tasks.filter(t => !t.completed && t.dueDate && !t.plannedDate);
+    if (unscheduledTasks.length === 0) {
+      alert('אין משימות לתזמון / No tasks to schedule');
+      return;
+    }
+
+    // Sort by priority and due date
+    const sortedTasks = [...unscheduledTasks].sort((a, b) => {
+      const priorityOrder = { urgent: 0, high: 1, medium: 2, low: 3, none: 4 };
+      const aPri = priorityOrder[a.priority || 'none'];
+      const bPri = priorityOrder[b.priority || 'none'];
+      if (aPri !== bPri) return aPri - bPri;
+      
+      const aDate = new Date(a.dueDate).getTime();
+      const bDate = new Date(b.dueDate).getTime();
+      return aDate - bDate;
+    });
+
+    // Find available time slots in the next 7 days
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    let scheduled = 0;
+    const workHours = { start: 9, end: 21 }; // 9 AM to 9 PM
+    
+    for (const task of sortedTasks) {
+      const dueDate = new Date(task.dueDate);
+      dueDate.setHours(0, 0, 0, 0);
+      
+      // Try to schedule task in the next 7 days or before due date
+      const maxDays = Math.min(7, Math.max(1, Math.ceil((dueDate - today) / (24 * 60 * 60 * 1000))));
+      
+      let scheduledSlot = false;
+      for (let dayOffset = 0; dayOffset < maxDays; dayOffset++) {
+        const checkDate = new Date(today);
+        checkDate.setDate(checkDate.getDate() + dayOffset);
+        const dateKey = toDateKey(checkDate);
+        
+        // Get existing blocks for this day
+        const dayBlocks = (dailyPlanData[dateKey] || []);
+        
+        // Find available slots (simple heuristic)
+        const duration = task.estimatedMinutes || 60;
+        const slots = [];
+        
+        for (let hour = workHours.start; hour < workHours.end; hour++) {
+          const slotTime = `${String(hour).padStart(2, '0')}:00`;
+          const slotEnd = new Date(checkDate);
+          slotEnd.setHours(hour, duration, 0, 0);
+          
+          // Check if slot is free
+          const hasConflict = dayBlocks.some(block => {
+            const blockStart = new Date(`${dateKey}T${block.time}`);
+            const blockEnd = new Date(blockStart.getTime() + (block.duration || 60) * 60000);
+            const slotStart = new Date(`${dateKey}T${slotTime}`);
+            
+            return (slotStart < blockEnd && slotEnd > blockStart);
+          });
+          
+          if (!hasConflict) {
+            slots.push({ time: slotTime, hour });
+          }
+        }
+        
+        // Schedule in first available slot
+        if (slots.length > 0) {
+          const slot = slots[0];
+          const block = {
+            id: `auto-${Date.now()}-${Math.random()}`,
+            time: slot.time,
+            duration: duration,
+            type: 'task',
+            taskId: task.id,
+            title: task.title,
+            color: task.color || (task.subject ? subjects.find(s => s.id === task.subject)?.color : null) || '#667eea'
+          };
+          
+          if (!dailyPlanData[dateKey]) dailyPlanData[dateKey] = [];
+          dailyPlanData[dateKey].push(block);
+          
+          // Update task with planned date
+          const { id, isOwn, isShared, ...clean } = task;
+          saveTask(task.id, { ...clean, plannedDate: dateKey, plannedTime: slot.time }, task.subject);
+          
+          scheduled++;
+          scheduledSlot = true;
+          break;
+        }
+      }
+    }
+    
+    saveDailyPlanData();
+    if (typeof renderDailyPlanner === 'function') renderDailyPlanner();
+    if (typeof renderTasks === 'function') renderTasks();
+    
+    alert(`✅ תוזמנו ${scheduled} משימות אוטומטית / Scheduled ${scheduled} tasks automatically`);
+  }
+
+  // Get AI suggestions for task prioritization
+  async function getAISuggestionsForTasks() {
+    const activeTasks = tasks.filter(t => !t.completed && t.title);
+    if (activeTasks.length === 0) {
+      alert('אין משימות לניתוח / No tasks to analyze');
+      return;
+    }
+
+    try {
+      const taskList = activeTasks.map(t => ({
+        title: t.title,
+        due: t.dueDate ? new Date(t.dueDate).toLocaleDateString() : 'no due date',
+        priority: t.priority || 'none'
+      }));
+
+      const prompt = `Analyze these tasks and suggest priority levels (urgent/high/medium/low). Consider due dates and task complexity. Return ONLY a JSON array with same order, each item having: {"priority": "urgent|high|medium|low", "reason": "brief explanation"}
+
+Tasks:
+${JSON.stringify(taskList, null, 2)}
+
+Return only JSON array:`;
+
+      const provider = AI_CONFIG.provider;
+      let suggestions = [];
+
+      if (provider === 'gemini') {
+        const response = await fetch(`${AI_CONFIG.gemini.endpoint}?key=${AI_CONFIG.gemini.apiKey}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }]
+          })
+        });
+        
+        if (!response.ok) throw new Error('Gemini API error');
+        const data = await response.json();
+        const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+        suggestions = JSON.parse(text.replace(/```json\n?|\n?```/g, '').trim());
+      }
+
+      // Apply suggestions
+      let applied = 0;
+      suggestions.forEach((sug, idx) => {
+        if (idx < activeTasks.length && sug.priority) {
+          const task = activeTasks[idx];
+          const { id, isOwn, isShared, ...clean } = task;
+          saveTask(task.id, { ...clean, priority: sug.priority }, task.subject);
+          applied++;
+        }
+      });
+
+      if (typeof renderTasks === 'function') renderTasks();
+      alert(`✅ עודכנו ${applied} משימות עם עדיפויות מוצעות / Updated ${applied} tasks with AI suggestions`);
+
+    } catch (error) {
+      console.error('AI suggestions error:', error);
+      alert(`❌ שגיאה בקבלת הצעות AI / Error: ${error.message}`);
+    }
+  }
+
+  // ========================================
+  // END AI-POWERED FEATURES
   // ========================================
 
   // Persist sidebar width
@@ -12507,6 +12768,46 @@
   newChecklistItem.addEventListener('keypress', (e) => {
     if (e.key === 'Enter') addChecklistItem.click();
   });
+
+  // AI Break Down Task
+  const aiBreakDownBtn = $('aiBreakDownBtn');
+  if (aiBreakDownBtn) {
+    aiBreakDownBtn.onclick = async () => {
+      if (!editingTask || !editingTask.title) {
+        alert('נא להזין כותרת משימה / Please enter a task title first');
+        return;
+      }
+
+      // Check API key configuration
+      if (AI_CONFIG.gemini.apiKey === 'YOUR_GEMINI_API_KEY' && AI_CONFIG.openai.apiKey === 'YOUR_OPENAI_API_KEY') {
+        alert('⚠️ Please configure AI API keys in the code!\n\nEdit index.html and search for "AI_CONFIG" to add your Gemini or OpenAI API key.\n\nGet Gemini key: https://makersuite.google.com/app/apikey\nGet OpenAI key: https://platform.openai.com/api-keys');
+        return;
+      }
+
+      aiBreakDownBtn.disabled = true;
+      aiBreakDownBtn.textContent = '⏳ מפרק...';
+      
+      try {
+        const subtasks = await breakDownTaskWithAI(editingTask.title, editingTask.content);
+        
+        // Add subtasks to checklist
+        if (!editingTask.checklist) editingTask.checklist = [];
+        subtasks.forEach(text => {
+          editingTask.checklist.push({ text, checked: false });
+        });
+        
+        renderEditChecklist();
+        alert(`✅ נוספו ${subtasks.length} תת-משימות / Added ${subtasks.length} subtasks`);
+        
+      } catch (error) {
+        console.error('AI breakdown error:', error);
+        alert(`❌ שגיאה: ${error.message}\n\nMake sure:\n1. API key is configured correctly\n2. You have internet connection\n3. API has sufficient quota`);
+      } finally {
+        aiBreakDownBtn.disabled = false;
+        aiBreakDownBtn.innerHTML = '✨ AI Break Down';
+      }
+    };
+  }
   
   // Delete task
   deleteTaskBtn.onclick = () => {
@@ -15878,6 +16179,61 @@
       if (refs.prevDay) refs.prevDay.onclick = () => navigateDate(-1);
       if (refs.nextDay) refs.nextDay.onclick = () => navigateDate(1);
       if (refs.todayBtn) refs.todayBtn.onclick = goToToday;
+      
+      // AI Auto-Schedule button
+      const aiAutoScheduleBtn = $('aiAutoScheduleBtn');
+      if (aiAutoScheduleBtn) {
+        aiAutoScheduleBtn.onclick = async () => {
+          // Check if tasks are loaded
+          if (!tasksLoaded) {
+            alert('⏳ טוען משימות... / Loading tasks...');
+            return;
+          }
+          
+          aiAutoScheduleBtn.disabled = true;
+          aiAutoScheduleBtn.innerHTML = '⏳ מתזמן...';
+          
+          try {
+            await autoScheduleTasks();
+          } catch (error) {
+            console.error('Auto-schedule error:', error);
+            alert(`❌ שגיאה בתזמון אוטומטי / Error: ${error.message}`);
+          } finally {
+            aiAutoScheduleBtn.disabled = false;
+            aiAutoScheduleBtn.innerHTML = '✨ Auto-Schedule';
+          }
+        };
+      }
+      
+      // AI Suggestions button
+      const aiSuggestionsBtn = $('aiSuggestionsBtn');
+      if (aiSuggestionsBtn) {
+        aiSuggestionsBtn.onclick = async () => {
+          // Check API key configuration
+          if (AI_CONFIG.gemini.apiKey === 'YOUR_GEMINI_API_KEY' && AI_CONFIG.openai.apiKey === 'YOUR_OPENAI_API_KEY') {
+            alert('⚠️ Please configure AI API keys in the code!\n\nEdit index.html and search for "AI_CONFIG" to add your Gemini or OpenAI API key.\n\nGet Gemini key: https://makersuite.google.com/app/apikey\nGet OpenAI key: https://platform.openai.com/api-keys');
+            return;
+          }
+          
+          if (!tasksLoaded) {
+            alert('⏳ טוען משימות... / Loading tasks...');
+            return;
+          }
+          
+          aiSuggestionsBtn.disabled = true;
+          aiSuggestionsBtn.innerHTML = '⏳ מעבד...';
+          
+          try {
+            await getAISuggestionsForTasks();
+          } catch (error) {
+            console.error('AI suggestions error:', error);
+            alert(`❌ שגיאה בקבלת הצעות / Error: ${error.message}`);
+          } finally {
+            aiSuggestionsBtn.disabled = false;
+            aiSuggestionsBtn.innerHTML = '🤖 AI Suggestions';
+          }
+        };
+      }
       
       // View toggle
       if (refs.viewToggle) {
