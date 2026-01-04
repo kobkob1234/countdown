@@ -6632,6 +6632,7 @@
   <!-- Context Menu for Subjects -->
   <div class="context-menu" id="contextMenu">
     <div class="context-menu-item" data-action="edit">✏️ עריכה</div>
+    <div class="context-menu-item" data-action="share">🔗 שתף</div>
     <div class="context-menu-item" data-action="add-sub">➕ הוסף תת-נושא</div>
     <div class="context-menu-divider"></div>
     <div class="context-menu-item danger" data-action="delete">🗑️ מחק</div>
@@ -12127,6 +12128,8 @@
     
     if (action === 'edit') {
       openSubjectModal(contextMenuTarget);
+    } else if (action === 'share') {
+      openShareSubjectModal(contextMenuTarget);
     } else if (action === 'add-sub') {
       openSubjectModal(null, contextMenuTarget);
     } else if (action === 'delete') {
@@ -12342,8 +12345,8 @@
     console.log('openSubjectModal called', { subjectId, parentId });
     editingSubjectId = subjectId;
     updateParentSubjectSelector();
-    shareError.style.display = 'none';
-    shareWithUserInput.value = '';
+    if (shareError) shareError.style.display = 'none';
+    if (shareWithUserInput) shareWithUserInput.value = '';
     
     if (subjectId) {
       const subject = subjects.find(s => s.id === subjectId);
@@ -12389,6 +12392,35 @@
   function closeSubjectModal() {
     subjectModal.classList.remove('open');
     editingSubjectId = null;
+  }
+  
+  // Quick share function - opens subject modal focused on sharing section
+  function openShareSubjectModal(subjectId) {
+    if (!subjectId) return;
+    const subject = subjects.find(s => s.id === subjectId);
+    if (!subject) return;
+    
+    // Open the regular edit modal
+    openSubjectModal(subjectId);
+    
+    // Scroll to and focus on sharing section
+    setTimeout(() => {
+      const sharingSection = document.getElementById('subjectSharingSection');
+      if (sharingSection) {
+        sharingSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        // Highlight the sharing section briefly
+        sharingSection.style.transition = 'background 0.3s, box-shadow 0.3s';
+        sharingSection.style.background = 'rgba(102, 126, 234, 0.15)';
+        sharingSection.style.boxShadow = '0 0 0 2px var(--accent)';
+        if (shareWithUserInput) {
+          shareWithUserInput.focus();
+        }
+        setTimeout(() => {
+          sharingSection.style.background = '';
+          sharingSection.style.boxShadow = '';
+        }, 1500);
+      }
+    }, 100);
   }
   
   subjectModal.addEventListener('click', (e) => {
