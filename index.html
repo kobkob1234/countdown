@@ -9726,6 +9726,10 @@
     if (trSidebar && !trSidebar.classList.contains('hidden')) {
       renderTaskCalendar();
     }
+    // Update daily planner if open
+    if (typeof DailyPlanner !== 'undefined' && DailyPlanner.refreshTasks) {
+      DailyPlanner.refreshTasks();
+    }
   }, (error) => {
     console.error('Tasks sync error:', error);
     clearSyncTimeouts('tasks');
@@ -9955,7 +9959,10 @@
     let dueDateHtml = `<span class="task-due add" data-due-iso="">+ תאריך</span>`;
     if (task.dueDate) {
       const dueDate = new Date(task.dueDate);
-      const dateStr = dueDate.toLocaleDateString('he-IL', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+      const day = dueDate.getDate();
+      const month = dueDate.toLocaleDateString('he-IL', { month: 'short' });
+      const time = dueDate.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });
+      const dateStr = `${day} ${month}, ${time}`;
       const urgencyClass = countdown?.overdue ? 'overdue' : (countdown?.urgency === 'soon' ? 'soon' : '');
       dueDateHtml = `<span class="task-due ${urgencyClass}" data-due-iso="${task.dueDate}">📅 ${dateStr}</span>`;
     }
@@ -10072,7 +10079,10 @@
   function formatTaskDueDisplay(dueIso) {
     if (!dueIso) return '+ תאריך';
     const dueDate = new Date(dueIso);
-    return dueDate.toLocaleDateString('he-IL', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+    const day = dueDate.getDate();
+    const month = dueDate.toLocaleDateString('he-IL', { month: 'short' });
+    const time = dueDate.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });
+    return `${day} ${month}, ${time}`;
   }
 
   function startInlineTaskTitleEdit(titleEl, task) {
@@ -13713,7 +13723,14 @@
       }, 60000);
     };
     
-    return { init, render };
+    // Refresh scheduled tasks (called when tasks change)
+    const refreshTasks = () => {
+      if (refs.scheduledTasksList) {
+        renderScheduledTasks();
+      }
+    };
+    
+    return { init, render, refreshTasks };
   })();
 </script>
 </body>
