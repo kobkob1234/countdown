@@ -9210,8 +9210,8 @@
     provider: 'gemini', // 'gemini', 'openai', or 'local'
     gemini: {
       apiKey: 'AIzaSyAIDx0Vc5ZZEQEh7ve89ADJzW1FOSwfVVc',
-      // Gemini 1.5 Flash (latest) - fast, capable, generous context for free tier
-      endpoint: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent'
+      // Gemini 1.5 Flash (latest) - using v1 endpoint for model availability
+      endpoint: 'https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash-latest:generateContent'
     },
     openai: {
       apiKey: 'YOUR_OPENAI_API_KEY',
@@ -9395,6 +9395,28 @@ Your response (JSON array only):`;
     
     // Generic breakdown
     return ['תכנון ומחקר', 'הכנה', 'ביצוע עיקרי', 'בדיקה וסקירה', 'סיום'];
+  }
+
+  // Persistent storage for heuristic auto-schedule (separate from planner module)
+  const DAILY_PLAN_STORAGE_KEY = 'dailyPlanData';
+  let dailyPlanData = {};
+
+  (function initDailyPlanData() {
+    try {
+      const saved = localStorage.getItem(DAILY_PLAN_STORAGE_KEY);
+      dailyPlanData = saved ? JSON.parse(saved) : {};
+    } catch (e) {
+      console.error('Error loading daily plan data:', e);
+      dailyPlanData = {};
+    }
+  })();
+
+  function saveDailyPlanData() {
+    try {
+      localStorage.setItem(DAILY_PLAN_STORAGE_KEY, JSON.stringify(dailyPlanData));
+    } catch (e) {
+      console.error('Error saving daily plan data:', e);
+    }
   }
 
   // Auto-schedule tasks in daily planner using smart heuristics
