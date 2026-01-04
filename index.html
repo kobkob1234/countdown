@@ -5802,6 +5802,864 @@
     .pomodoro-daily {
       direction: rtl;
     }
+
+    /* ==========================================================================
+       MOBILE & ANDROID PWA REDESIGN
+       Extensive customization for touch-based mobile usage
+       Does NOT affect macOS/desktop web experience
+       ========================================================================== */
+    
+    /* Mobile detection: smartphones and PWA standalone mode */
+    @media screen and (max-width: 768px), (display-mode: standalone) and (max-width: 1024px) {
+      
+      /* ===== ROOT MOBILE VARIABLES ===== */
+      :root {
+        --mobile-touch-target: 48px;
+        --mobile-spacing-xs: 6px;
+        --mobile-spacing-sm: 10px;
+        --mobile-spacing-md: 16px;
+        --mobile-spacing-lg: 24px;
+        --mobile-radius: 16px;
+        --mobile-radius-lg: 24px;
+        --mobile-card-shadow: 0 2px 12px rgba(0,0,0,0.08);
+        --mobile-header-height: 56px;
+        --mobile-bottom-nav-height: 64px;
+      }
+      
+      /* ===== BODY & LAYOUT OPTIMIZATIONS ===== */
+      body {
+        padding-top: var(--mobile-header-height);
+        padding-bottom: calc(var(--mobile-bottom-nav-height) + env(safe-area-inset-bottom, 0px));
+        font-size: 16px; /* Prevent zoom on input focus */
+        -webkit-text-size-adjust: 100%;
+      }
+      
+      /* Hide scrollbar but keep scroll functionality */
+      body::-webkit-scrollbar,
+      .app-layout::-webkit-scrollbar,
+      .task-list::-webkit-scrollbar,
+      .event-list::-webkit-scrollbar {
+        display: none;
+      }
+      
+      body, .app-layout, .task-list, .event-list {
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+      }
+
+      .app-layout {
+        flex-direction: column;
+        height: auto;
+        min-height: calc(100dvh - var(--mobile-header-height) - var(--mobile-bottom-nav-height));
+        padding-bottom: var(--mobile-bottom-nav-height);
+      }
+      
+      /* ===== MOBILE HEADER BAR REDESIGN ===== */
+      .fixed-header-bar {
+        height: var(--mobile-header-height);
+        padding: 0 var(--mobile-spacing-md);
+        gap: var(--mobile-spacing-sm);
+        background: var(--card);
+        border-bottom: none;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      }
+      
+      /* Hide main nav buttons in header - they move to bottom nav */
+      .fixed-header-bar #toggleCountdown,
+      .fixed-header-bar #toggleTasks,
+      .fixed-header-bar #togglePomodoro,
+      .fixed-header-bar #togglePlanner,
+      .fixed-header-bar #toggleSidebar {
+        display: none;
+      }
+      
+      /* Keep utility buttons visible */
+      .fixed-header-bar .header-btn.icon-only {
+        width: var(--mobile-touch-target);
+        height: var(--mobile-touch-target);
+        font-size: 22px;
+        border-radius: 50%;
+        background: var(--day-other);
+      }
+      
+      .fixed-header-bar #userBtn {
+        padding: var(--mobile-spacing-sm) var(--mobile-spacing-md);
+        border-radius: var(--mobile-radius);
+        font-size: 14px;
+      }
+      
+      .sync-badge {
+        padding: var(--mobile-spacing-xs) var(--mobile-spacing-sm);
+        font-size: 11px;
+      }
+      
+      /* ===== MOBILE BOTTOM NAVIGATION BAR ===== */
+      .mobile-bottom-nav {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: var(--mobile-bottom-nav-height);
+        padding-bottom: env(safe-area-inset-bottom, 0px);
+        background: var(--card);
+        border-top: 1px solid var(--border);
+        display: flex !important;
+        justify-content: space-around;
+        align-items: stretch;
+        z-index: 10001;
+        box-shadow: 0 -2px 12px rgba(0,0,0,0.08);
+      }
+      
+      .mobile-nav-item {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 2px;
+        background: transparent;
+        border: none;
+        color: var(--muted);
+        font-size: 11px;
+        font-weight: 500;
+        padding: 8px 4px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        position: relative;
+      }
+      
+      .mobile-nav-item::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 0;
+        height: 3px;
+        background: linear-gradient(135deg, var(--accent), var(--accent2));
+        border-radius: 0 0 3px 3px;
+        transition: width 0.2s ease;
+      }
+      
+      .mobile-nav-item.active {
+        color: var(--accent);
+      }
+      
+      .mobile-nav-item.active::before {
+        width: 24px;
+      }
+      
+      .mobile-nav-icon {
+        font-size: 24px;
+        line-height: 1;
+      }
+      
+      .mobile-nav-label {
+        font-size: 10px;
+        white-space: nowrap;
+      }
+      
+      /* ===== MAIN CONTENT AREA ===== */
+      .main-content {
+        padding: var(--mobile-spacing-md);
+        padding-top: calc(var(--mobile-spacing-md) + 8px);
+      }
+      
+      .container {
+        max-width: 100%;
+        margin: 0;
+      }
+      
+      .header {
+        margin-bottom: var(--mobile-spacing-lg);
+        text-align: right;
+      }
+      
+      .header h1 {
+        font-size: 24px;
+        margin-bottom: var(--mobile-spacing-xs);
+      }
+      
+      .header p {
+        font-size: 14px;
+      }
+      
+      /* ===== MOBILE EVENT CARDS REDESIGN ===== */
+      .event-list {
+        gap: var(--mobile-spacing-md);
+      }
+      
+      .event-row {
+        padding: var(--mobile-spacing-md);
+        border-radius: var(--mobile-radius);
+        flex-direction: column;
+        gap: var(--mobile-spacing-md);
+        box-shadow: var(--mobile-card-shadow);
+        border: none;
+        background: var(--card);
+        position: relative;
+        overflow: hidden;
+      }
+      
+      /* Event color accent bar */
+      .event-row::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: inherit;
+        opacity: 0.8;
+      }
+      
+      .event-row .color-dot {
+        display: none;
+      }
+      
+      .event-row .event-info {
+        width: 100%;
+        text-align: center;
+        padding-bottom: var(--mobile-spacing-sm);
+        border-bottom: 1px solid var(--border);
+      }
+      
+      .event-row .event-name {
+        font-size: 18px;
+        font-weight: 700;
+        margin-bottom: var(--mobile-spacing-xs);
+      }
+      
+      .event-row .event-date {
+        font-size: 13px;
+        color: var(--muted);
+      }
+      
+      /* Mobile Timer Display - Big & Touch Friendly */
+      .event-row .timer {
+        width: 100%;
+        justify-content: center;
+        gap: var(--mobile-spacing-sm);
+      }
+      
+      .event-row .time-unit {
+        flex: 1;
+        max-width: 80px;
+        min-width: 60px;
+        padding: var(--mobile-spacing-sm) var(--mobile-spacing-xs);
+        border-radius: 12px;
+        background: linear-gradient(145deg, var(--day-other), var(--day-hover));
+      }
+      
+      .event-row .time-val {
+        font-size: 26px;
+        font-weight: 800;
+        background: linear-gradient(135deg, var(--text), var(--muted));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+      }
+      
+      .event-row .time-label {
+        font-size: 9px;
+        font-weight: 600;
+        letter-spacing: 0.3px;
+        margin-top: 4px;
+      }
+      
+      /* Mobile Badge */
+      .event-row .badge {
+        align-self: center;
+        font-size: 12px;
+        padding: var(--mobile-spacing-xs) var(--mobile-spacing-md);
+        border-radius: 20px;
+      }
+      
+      /* Mobile Event Actions - Swipe-like buttons */
+      .event-row .event-actions {
+        width: 100%;
+        justify-content: center;
+        gap: var(--mobile-spacing-md);
+        padding-top: var(--mobile-spacing-sm);
+        border-top: 1px solid var(--border);
+      }
+      
+      .event-row .star-btn,
+      .event-row .edit-btn,
+      .event-row .delete-btn {
+        width: var(--mobile-touch-target);
+        height: var(--mobile-touch-target);
+        font-size: 22px;
+        border-radius: 50%;
+        background: var(--day-other);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: transform 0.2s, background 0.2s;
+      }
+      
+      .event-row .star-btn:active,
+      .event-row .edit-btn:active,
+      .event-row .delete-btn:active {
+        transform: scale(0.92);
+      }
+      
+      /* ===== MOBILE INPUT PANEL ===== */
+      .input-panel {
+        padding: var(--mobile-spacing-md);
+        border-radius: var(--mobile-radius);
+        margin-bottom: var(--mobile-spacing-md);
+        box-shadow: var(--mobile-card-shadow);
+        border: none;
+      }
+      
+      .input-row {
+        flex-direction: column;
+        gap: var(--mobile-spacing-sm);
+      }
+      
+      .input-row input,
+      .input-row .reminder-select,
+      .reminder-custom input,
+      .reminder-custom select {
+        width: 100%;
+        padding: var(--mobile-spacing-md);
+        font-size: 16px; /* Prevents zoom on iOS */
+        border-radius: var(--mobile-radius);
+        min-height: var(--mobile-touch-target);
+      }
+      
+      .input-row .btn,
+      .input-panel .btn {
+        width: 100%;
+        padding: var(--mobile-spacing-md);
+        min-height: var(--mobile-touch-target);
+        font-size: 16px;
+        font-weight: 600;
+        border-radius: var(--mobile-radius);
+      }
+      
+      .reminder-custom {
+        flex-direction: column;
+        gap: var(--mobile-spacing-sm);
+      }
+      
+      /* ===== MOBILE TASK MANAGER REDESIGN ===== */
+      .task-manager-overlay {
+        top: 0;
+        z-index: 10002;
+      }
+      
+      .task-manager-header {
+        padding: var(--mobile-spacing-md);
+        gap: var(--mobile-spacing-sm);
+        flex-wrap: wrap;
+      }
+      
+      .task-manager-title {
+        font-size: 20px;
+        flex: 1;
+      }
+      
+      .task-manager-close {
+        width: var(--mobile-touch-target);
+        height: var(--mobile-touch-target);
+        font-size: 28px;
+      }
+      
+      .task-search-bar {
+        width: 100%;
+        order: 10;
+        margin-top: var(--mobile-spacing-sm);
+      }
+      
+      .task-search-bar input {
+        padding: var(--mobile-spacing-md);
+        font-size: 16px;
+        border-radius: var(--mobile-radius);
+      }
+      
+      .task-filters {
+        width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        padding: var(--mobile-spacing-xs) 0;
+        gap: var(--mobile-spacing-xs);
+      }
+      
+      .filter-pill {
+        padding: var(--mobile-spacing-sm) var(--mobile-spacing-md);
+        font-size: 14px;
+        min-height: 40px;
+        white-space: nowrap;
+      }
+      
+      /* Mobile Task Items */
+      .task-item {
+        padding: var(--mobile-spacing-md);
+        border-radius: var(--mobile-radius);
+        gap: var(--mobile-spacing-sm);
+        flex-wrap: wrap;
+        border-left-width: 4px;
+        box-shadow: var(--mobile-card-shadow);
+        border: none;
+        border-left: 4px solid var(--task-color, var(--priority-color, var(--border)));
+      }
+      
+      .task-checkbox {
+        width: 28px;
+        height: 28px;
+        flex-shrink: 0;
+      }
+      
+      .task-main {
+        flex: 1;
+        min-width: calc(100% - 100px);
+      }
+      
+      .task-title {
+        font-size: 16px;
+        line-height: 1.4;
+      }
+      
+      .task-meta {
+        gap: var(--mobile-spacing-xs);
+        margin-top: var(--mobile-spacing-xs);
+      }
+      
+      .task-due,
+      .task-countdown,
+      .task-recurrence,
+      .task-reminder {
+        font-size: 12px;
+        padding: var(--mobile-spacing-xs) var(--mobile-spacing-sm);
+      }
+      
+      .task-actions {
+        width: 100%;
+        justify-content: flex-end;
+        gap: var(--mobile-spacing-xs);
+        padding-top: var(--mobile-spacing-sm);
+        border-top: 1px solid var(--border);
+        margin-top: var(--mobile-spacing-sm);
+      }
+      
+      .task-action-btn {
+        width: 40px;
+        height: 40px;
+        font-size: 18px;
+        border-radius: 10px;
+        background: var(--day-other);
+      }
+      
+      .task-action-btn:active {
+        transform: scale(0.95);
+        background: var(--day-hover);
+      }
+      
+      /* Quick Add Task - Mobile Optimized */
+      .quick-add-task {
+        margin-bottom: var(--mobile-spacing-lg);
+        padding: var(--mobile-spacing-md);
+        background: var(--card);
+        border-radius: var(--mobile-radius);
+        box-shadow: var(--mobile-card-shadow);
+      }
+      
+      .quick-add-task input {
+        padding: var(--mobile-spacing-md);
+        font-size: 16px;
+        border-radius: var(--mobile-radius);
+        min-height: var(--mobile-touch-target);
+      }
+      
+      .nl-hint {
+        font-size: 13px;
+        padding: var(--mobile-spacing-sm);
+        margin-top: var(--mobile-spacing-sm);
+      }
+      
+      /* ===== MOBILE SIDEBAR (CALENDAR) ===== */
+      .sidebar {
+        position: fixed;
+        top: var(--mobile-header-height);
+        left: 0;
+        right: 0;
+        bottom: var(--mobile-bottom-nav-height);
+        width: 100% !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
+        z-index: 500;
+        border: none;
+        border-radius: 0;
+        transform: translateX(100%);
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      
+      .sidebar:not(.hidden) {
+        transform: translateX(0);
+      }
+      
+      .calendar-container {
+        border-radius: var(--mobile-radius);
+        padding: var(--mobile-spacing-md);
+        margin-bottom: var(--mobile-spacing-md);
+      }
+      
+      .calendar-day {
+        min-height: 50px;
+        padding: var(--mobile-spacing-xs);
+        border-radius: 10px;
+      }
+      
+      .calendar-day-number {
+        font-size: 13px;
+        font-weight: 700;
+      }
+      
+      .calendar-event-chip {
+        font-size: 10px;
+        padding: 3px 6px;
+        border-radius: 6px;
+      }
+      
+      /* ===== MOBILE POMODORO REDESIGN ===== */
+      .pomodoro-overlay {
+        top: 0;
+        z-index: 10002;
+      }
+      
+      .pomodoro-header-bar {
+        padding: var(--mobile-spacing-md);
+        height: auto;
+        min-height: var(--mobile-header-height);
+      }
+      
+      .pomodoro-header-title {
+        font-size: 18px;
+      }
+      
+      .pomodoro-content {
+        padding: var(--mobile-spacing-md);
+        padding-bottom: calc(var(--mobile-bottom-nav-height) + var(--mobile-spacing-lg));
+      }
+      
+      .pomodoro-card {
+        padding: var(--mobile-spacing-lg);
+        border-radius: var(--mobile-radius-lg);
+        gap: var(--mobile-spacing-lg);
+      }
+      
+      .pomodoro-timer-wrap {
+        width: 220px;
+        height: 220px;
+      }
+      
+      .pomodoro-time {
+        font-size: 48px;
+      }
+      
+      .pomodoro-controls {
+        gap: var(--mobile-spacing-md);
+      }
+      
+      .pomodoro-btn {
+        width: var(--mobile-touch-target);
+        height: var(--mobile-touch-target);
+        font-size: 20px;
+      }
+      
+      .pomodoro-btn.primary {
+        width: 64px;
+        height: 64px;
+        font-size: 28px;
+      }
+      
+      .pomodoro-presets {
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: var(--mobile-spacing-sm);
+      }
+      
+      .pomodoro-preset {
+        padding: var(--mobile-spacing-sm) var(--mobile-spacing-md);
+        font-size: 13px;
+        min-height: 40px;
+      }
+      
+      /* ===== MOBILE DAILY PLANNER ===== */
+      .planner-overlay {
+        top: 0;
+        z-index: 10002;
+      }
+      
+      .planner-header-bar {
+        padding: var(--mobile-spacing-md);
+        flex-wrap: wrap;
+        gap: var(--mobile-spacing-sm);
+      }
+      
+      .planner-sidebar {
+        display: none;
+      }
+      
+      .planner-content {
+        padding: var(--mobile-spacing-md);
+      }
+      
+      .planner-day-column {
+        min-width: 280px;
+      }
+      
+      .planner-task-card {
+        padding: var(--mobile-spacing-sm) var(--mobile-spacing-md);
+        border-radius: 10px;
+        min-height: 44px;
+      }
+      
+      /* ===== MOBILE MODALS & DRAWERS ===== */
+      .modal-backdrop {
+        padding: var(--mobile-spacing-md);
+        align-items: flex-end;
+      }
+      
+      .modal-card {
+        border-radius: var(--mobile-radius-lg) var(--mobile-radius-lg) 0 0;
+        max-height: 90vh;
+        width: 100%;
+        max-width: 100%;
+        margin: 0;
+      }
+      
+      .modal-header {
+        padding: var(--mobile-spacing-lg) var(--mobile-spacing-md);
+      }
+      
+      .modal-body {
+        padding: var(--mobile-spacing-md);
+      }
+      
+      .modal-actions {
+        padding: var(--mobile-spacing-md);
+        flex-direction: column;
+        gap: var(--mobile-spacing-sm);
+      }
+      
+      .modal-actions .btn {
+        width: 100%;
+        min-height: var(--mobile-touch-target);
+      }
+      
+      /* Day Drawer - Mobile Sheet Style */
+      .day-drawer-backdrop {
+        padding: 0;
+        align-items: flex-end;
+      }
+      
+      .day-drawer {
+        max-width: 100%;
+        width: 100%;
+        border-radius: var(--mobile-radius-lg) var(--mobile-radius-lg) 0 0;
+        max-height: 85vh;
+      }
+      
+      .day-drawer-header {
+        padding: var(--mobile-spacing-lg) var(--mobile-spacing-md);
+      }
+      
+      .day-drawer-content {
+        padding: var(--mobile-spacing-md);
+      }
+      
+      /* ===== MOBILE KEYBOARD SHORTCUTS - HIDE ===== */
+      .shortcuts-overlay {
+        display: none !important;
+      }
+      
+      #helpShortcuts {
+        display: none;
+      }
+      
+      /* ===== MOBILE TOUCH FEEDBACK ===== */
+      @media (hover: none) and (pointer: coarse) {
+        .event-row:hover,
+        .task-item:hover,
+        .calendar-day:hover,
+        .time-unit:hover {
+          transform: none;
+          box-shadow: var(--mobile-card-shadow);
+        }
+        
+        .event-row:active,
+        .task-item:active {
+          transform: scale(0.98);
+          transition: transform 0.1s;
+        }
+        
+        button:active,
+        .btn:active,
+        .header-btn:active,
+        .mobile-nav-item:active {
+          transform: scale(0.95);
+          opacity: 0.8;
+        }
+      }
+      
+      /* ===== FLOATING ACTION BUTTON ===== */
+      .mobile-fab {
+        position: fixed;
+        bottom: calc(var(--mobile-bottom-nav-height) + var(--mobile-spacing-md) + env(safe-area-inset-bottom, 0px));
+        right: var(--mobile-spacing-md);
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--accent), var(--accent2));
+        color: white;
+        border: none;
+        font-size: 28px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 4px 20px rgba(102, 126, 234, 0.4);
+        z-index: 1000;
+        cursor: pointer;
+        transition: transform 0.2s, box-shadow 0.2s;
+      }
+      
+      .mobile-fab:active {
+        transform: scale(0.9);
+      }
+      
+      /* ===== MOBILE SWIPE HINTS ===== */
+      .swipe-indicator {
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 40px;
+        height: 4px;
+        background: var(--border);
+        border-radius: 2px;
+        opacity: 0.5;
+      }
+      
+      /* ===== PULL TO REFRESH INDICATOR ===== */
+      .pull-refresh-indicator {
+        position: fixed;
+        top: var(--mobile-header-height);
+        left: 50%;
+        transform: translateX(-50%) translateY(-100%);
+        background: var(--card);
+        padding: 12px 20px;
+        border-radius: 20px;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 14px;
+        color: var(--muted);
+        z-index: 100;
+        transition: transform 0.3s;
+      }
+      
+      .pull-refresh-indicator.visible {
+        transform: translateX(-50%) translateY(12px);
+      }
+      
+      /* ===== EMPTY STATES - MOBILE ===== */
+      .empty-state {
+        padding: var(--mobile-spacing-lg);
+        border-radius: var(--mobile-radius);
+      }
+      
+      .empty-state svg {
+        width: 64px;
+        height: 64px;
+        margin-bottom: var(--mobile-spacing-md);
+      }
+      
+      .empty-state p {
+        font-size: 16px;
+      }
+    }
+    
+    /* ===== EXTRA SMALL PHONES (320px-375px) ===== */
+    @media screen and (max-width: 375px) {
+      .event-row .time-unit {
+        max-width: 65px;
+        min-width: 50px;
+        padding: 8px 4px;
+      }
+      
+      .event-row .time-val {
+        font-size: 22px;
+      }
+      
+      .event-row .time-label {
+        font-size: 8px;
+      }
+      
+      .task-title {
+        font-size: 15px;
+      }
+      
+      .pomodoro-timer-wrap {
+        width: 180px;
+        height: 180px;
+      }
+      
+      .pomodoro-time {
+        font-size: 40px;
+      }
+    }
+    
+    /* ===== DARK MODE MOBILE ADJUSTMENTS ===== */
+    @media screen and (max-width: 768px) {
+      body.dark .event-row,
+      body.dark .task-item,
+      body.dark .input-panel,
+      body.dark .calendar-container {
+        box-shadow: 0 2px 12px rgba(0,0,0,0.3);
+        border: 1px solid var(--border);
+      }
+      
+      body.dark .mobile-bottom-nav {
+        background: var(--card);
+        box-shadow: 0 -2px 12px rgba(0,0,0,0.3);
+      }
+      
+      body.dark .mobile-fab {
+        box-shadow: 0 4px 20px rgba(102, 126, 234, 0.5);
+      }
+    }
+    
+    /* ===== LANDSCAPE MOBILE ===== */
+    @media screen and (max-width: 896px) and (orientation: landscape) {
+      .mobile-bottom-nav {
+        height: 52px;
+      }
+      
+      .mobile-nav-label {
+        display: none;
+      }
+      
+      .mobile-nav-icon {
+        font-size: 22px;
+      }
+      
+      .pomodoro-timer-wrap {
+        width: 160px;
+        height: 160px;
+      }
+      
+      .pomodoro-time {
+        font-size: 36px;
+      }
+      
+      body {
+        padding-bottom: calc(52px + env(safe-area-inset-bottom, 0px));
+      }
+    }
+
   </style>
 </head>
 <body>
@@ -6814,6 +7672,9 @@
       </div>
     </aside>
   </div>
+
+  <!-- Mobile Floating Action Button -->
+  <button class="mobile-fab" id="mobileFab" aria-label="הוספה מהירה" style="display: none;">+</button>
 
   <div class="modal-backdrop" id="clearModal" role="dialog" aria-modal="true" aria-labelledby="clearModalTitle" aria-describedby="clearModalDesc">
     <div class="modal-card">
@@ -14544,5 +15405,197 @@
     return { init, render, refreshTasks };
   })();
 </script>
+
+<!-- Mobile Bottom Navigation Bar -->
+<nav class="mobile-bottom-nav" id="mobileBottomNav" style="display: none;">
+  <button class="mobile-nav-item active" data-view="countdown">
+    <span class="mobile-nav-icon">⏱️</span>
+    <span class="mobile-nav-label">ספירה</span>
+  </button>
+  <button class="mobile-nav-item" data-view="tasks">
+    <span class="mobile-nav-icon">📝</span>
+    <span class="mobile-nav-label">משימות</span>
+  </button>
+  <button class="mobile-nav-item" data-view="pomodoro">
+    <span class="mobile-nav-icon">🍅</span>
+    <span class="mobile-nav-label">פומודורו</span>
+  </button>
+  <button class="mobile-nav-item" data-view="planner">
+    <span class="mobile-nav-icon">📅</span>
+    <span class="mobile-nav-label">מתכנן</span>
+  </button>
+  <button class="mobile-nav-item" data-view="calendar">
+    <span class="mobile-nav-icon">📆</span>
+    <span class="mobile-nav-label">לוח</span>
+  </button>
+</nav>
+
+<script>
+// Mobile Bottom Navigation Handler
+(function() {
+  const isMobile = () => window.innerWidth <= 768 || 
+    (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches && window.innerWidth <= 1024);
+  
+  const mobileNav = document.getElementById('mobileBottomNav');
+  const navItems = mobileNav.querySelectorAll('.mobile-nav-item');
+  
+  // Show/hide mobile nav based on screen size
+  const updateMobileNavVisibility = () => {
+    if (isMobile()) {
+      mobileNav.style.display = 'flex';
+    } else {
+      mobileNav.style.display = 'none';
+    }
+  };
+  
+  // Initial check
+  updateMobileNavVisibility();
+  
+  // Update on resize
+  window.addEventListener('resize', updateMobileNavVisibility);
+  
+  // Handle navigation clicks
+  navItems.forEach(item => {
+    item.addEventListener('click', () => {
+      const view = item.dataset.view;
+      
+      // Update active state
+      navItems.forEach(i => i.classList.remove('active'));
+      item.classList.add('active');
+      
+      // Update header buttons active state
+      const headerBtns = document.querySelectorAll('.fixed-header-bar .header-btn');
+      headerBtns.forEach(btn => btn.classList.remove('active'));
+      
+      // Navigate to the correct view
+      switch(view) {
+        case 'countdown':
+          // Close all overlays, show countdown
+          document.getElementById('taskManagerOverlay')?.classList.remove('open');
+          document.getElementById('pomodoroOverlay')?.classList.remove('open');
+          document.getElementById('plannerOverlay')?.classList.remove('open');
+          document.getElementById('sidebar')?.classList.add('hidden');
+          document.getElementById('toggleCountdown')?.classList.add('active');
+          break;
+        case 'tasks':
+          document.getElementById('taskManagerOverlay')?.classList.add('open');
+          document.getElementById('pomodoroOverlay')?.classList.remove('open');
+          document.getElementById('plannerOverlay')?.classList.remove('open');
+          document.getElementById('sidebar')?.classList.add('hidden');
+          document.getElementById('toggleTasks')?.classList.add('active');
+          break;
+        case 'pomodoro':
+          document.getElementById('taskManagerOverlay')?.classList.remove('open');
+          document.getElementById('pomodoroOverlay')?.classList.add('open');
+          document.getElementById('plannerOverlay')?.classList.remove('open');
+          document.getElementById('sidebar')?.classList.add('hidden');
+          document.getElementById('togglePomodoro')?.classList.add('active');
+          break;
+        case 'planner':
+          document.getElementById('taskManagerOverlay')?.classList.remove('open');
+          document.getElementById('pomodoroOverlay')?.classList.remove('open');
+          document.getElementById('plannerOverlay')?.classList.add('open');
+          document.getElementById('sidebar')?.classList.add('hidden');
+          document.getElementById('togglePlanner')?.classList.add('active');
+          break;
+        case 'calendar':
+          document.getElementById('taskManagerOverlay')?.classList.remove('open');
+          document.getElementById('pomodoroOverlay')?.classList.remove('open');
+          document.getElementById('plannerOverlay')?.classList.remove('open');
+          const sidebar = document.getElementById('sidebar');
+          if (sidebar) {
+            sidebar.classList.toggle('hidden');
+          }
+          document.getElementById('toggleSidebar')?.classList.add('active');
+          break;
+      }
+    });
+  });
+  
+  // Sync with existing header button clicks
+  const syncWithHeader = () => {
+    const toggleCountdown = document.getElementById('toggleCountdown');
+    const toggleTasks = document.getElementById('toggleTasks');
+    const togglePomodoro = document.getElementById('togglePomodoro');
+    const togglePlanner = document.getElementById('togglePlanner');
+    const toggleSidebar = document.getElementById('toggleSidebar');
+    
+    const updateNav = (view) => {
+      navItems.forEach(item => {
+        item.classList.toggle('active', item.dataset.view === view);
+      });
+    };
+    
+    toggleCountdown?.addEventListener('click', () => updateNav('countdown'));
+    toggleTasks?.addEventListener('click', () => updateNav('tasks'));
+    togglePomodoro?.addEventListener('click', () => updateNav('pomodoro'));
+    togglePlanner?.addEventListener('click', () => updateNav('planner'));
+    toggleSidebar?.addEventListener('click', () => updateNav('calendar'));
+  };
+  
+  syncWithHeader();
+  
+  // Mobile Floating Action Button (FAB)
+  const mobileFab = document.getElementById('mobileFab');
+  
+  const updateFabVisibility = () => {
+    if (isMobile()) {
+      mobileFab.style.display = 'flex';
+    } else {
+      mobileFab.style.display = 'none';
+    }
+  };
+  
+  updateFabVisibility();
+  window.addEventListener('resize', updateFabVisibility);
+  
+  // FAB click handler - context-aware action
+  mobileFab?.addEventListener('click', () => {
+    const activeNavItem = document.querySelector('.mobile-nav-item.active');
+    const currentView = activeNavItem?.dataset.view || 'countdown';
+    
+    switch(currentView) {
+      case 'countdown':
+        // Focus on event name input
+        const eventNameInput = document.getElementById('eventName');
+        if (eventNameInput) {
+          eventNameInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          setTimeout(() => eventNameInput.focus(), 300);
+        }
+        break;
+      case 'tasks':
+        // Focus on task input
+        const taskInput = document.getElementById('newTaskTitle');
+        if (taskInput) {
+          taskInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          setTimeout(() => taskInput.focus(), 300);
+        }
+        break;
+      case 'pomodoro':
+        // Start/pause pomodoro
+        const pomodoroStartBtn = document.querySelector('.pomodoro-btn.primary');
+        pomodoroStartBtn?.click();
+        break;
+      case 'planner':
+        // Open planner add task
+        const plannerAddBtn = document.querySelector('.planner-add-task-btn');
+        plannerAddBtn?.click();
+        break;
+      case 'calendar':
+        // Focus on event input
+        const eventInput = document.getElementById('eventName');
+        if (eventInput) {
+          document.querySelector('.mobile-nav-item[data-view="countdown"]')?.click();
+          setTimeout(() => {
+            eventInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            eventInput.focus();
+          }, 350);
+        }
+        break;
+    }
+  });
+})();
+</script>
+
 </body>
 </html>
