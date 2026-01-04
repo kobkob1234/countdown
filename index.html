@@ -3364,6 +3364,193 @@
       padding: 16px;
     }
     .modal-backdrop.open { display: flex; }
+    
+    /* AI Chat Modal */
+    .ai-chat-modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 300;
+      padding: 16px;
+    }
+    .ai-chat-modal.open { display: flex; }
+    .ai-chat-container {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      width: 90%;
+      max-width: 600px;
+      max-height: 80vh;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    }
+    .ai-chat-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+    }
+    .ai-chat-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .ai-chat-close {
+      background: none;
+      border: none;
+      font-size: 24px;
+      color: var(--muted);
+      cursor: pointer;
+      padding: 4px 8px;
+      border-radius: 6px;
+      transition: all 0.15s;
+    }
+    .ai-chat-close:hover {
+      background: var(--day-hover);
+      color: var(--text);
+    }
+    .ai-chat-messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .ai-chat-message {
+      display: flex;
+      gap: 10px;
+      animation: messageSlideIn 0.3s ease-out;
+    }
+    @keyframes messageSlideIn {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    .ai-chat-message.user {
+      flex-direction: row-reverse;
+    }
+    .ai-chat-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      flex-shrink: 0;
+    }
+    .ai-chat-message.user .ai-chat-avatar {
+      background: linear-gradient(135deg, #667eea, #764ba2);
+    }
+    .ai-chat-message.ai .ai-chat-avatar {
+      background: linear-gradient(135deg, #8b5cf6, #ec4899);
+    }
+    .ai-chat-bubble {
+      max-width: 75%;
+      padding: 10px 14px;
+      border-radius: 12px;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+    .ai-chat-message.user .ai-chat-bubble {
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: white;
+      border-bottom-right-radius: 4px;
+    }
+    .ai-chat-message.ai .ai-chat-bubble {
+      background: var(--day-hover);
+      color: var(--text);
+      border-bottom-left-radius: 4px;
+    }
+    .ai-chat-input-area {
+      padding: 16px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      gap: 10px;
+    }
+    .ai-chat-input {
+      flex: 1;
+      padding: 12px 16px;
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      background: var(--bg);
+      color: var(--text);
+      font-size: 14px;
+      outline: none;
+      transition: all 0.15s;
+    }
+    .ai-chat-input:focus {
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+    .ai-chat-send {
+      width: 44px;
+      height: 44px;
+      border: none;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: white;
+      font-size: 18px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s;
+    }
+    .ai-chat-send:hover {
+      transform: scale(1.05);
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    }
+    .ai-chat-send:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+    .ai-chat-examples {
+      padding: 12px 16px;
+      border-top: 1px solid var(--border);
+      background: var(--bg);
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      font-size: 12px;
+    }
+    .ai-chat-example {
+      padding: 6px 12px;
+      border-radius: 12px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .ai-chat-example:hover {
+      background: var(--day-hover);
+      color: var(--text);
+      border-color: #667eea;
+    }
+    
+    .modal-card {
+      align-items: center;
+      justify-content: center;
+      z-index: 200;
+      padding: 16px;
+    }
+    .modal-backdrop.open { display: flex; }
     .modal-card {
       background: var(--card);
       border: 1px solid var(--border);
@@ -7585,6 +7772,10 @@
         🤖 AI Suggestions
       </button>
       
+      <button class="btn" id="aiChatBtn" style="padding: 8px 14px; font-size: 13px; background: linear-gradient(135deg, #8b5cf6, #ec4899); color: white; border: none; display: inline-flex; align-items: center; gap: 6px;" title="צ'אט עם AI לניהול משימות">
+        💬 AI Chat
+      </button>
+      
       <div class="planner-view-toggle">
         <button class="active" data-view="day">📋 יום</button>
         <button data-view="week">📆 שבוע</button>
@@ -8181,6 +8372,48 @@
       <div class="day-drawer-actions">
         <button class="btn btn-primary" id="addEventToDay">📅 הוסף אירוע</button>
         <button class="btn" id="addTaskToDay" style="background: var(--btn-secondary-bg); color: var(--text);">✅ הוסף משימה</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- AI Chat Assistant Modal -->
+  <div class="ai-chat-modal" id="aiChatModal">
+    <div class="ai-chat-container">
+      <div class="ai-chat-header">
+        <div class="ai-chat-title">
+          <span>💬</span>
+          <span>AI Assistant</span>
+        </div>
+        <button class="ai-chat-close" id="aiChatClose">×</button>
+      </div>
+      
+      <div class="ai-chat-messages" id="aiChatMessages">
+        <div class="ai-chat-message ai">
+          <div class="ai-chat-avatar">🤖</div>
+          <div class="ai-chat-bubble">
+            שלום! אני עוזר AI שיכול לנהל את המשימות שלך.<br>
+            Hi! I'm your AI assistant. I can help you manage tasks.<br><br>
+            Try: "Add task: Buy groceries tomorrow at 5pm" or "Schedule my tasks for today"
+          </div>
+        </div>
+      </div>
+      
+      <div class="ai-chat-examples">
+        <div class="ai-chat-example" data-example="Add task: Meeting with team at 2pm tomorrow">➕ Add task</div>
+        <div class="ai-chat-example" data-example="Schedule all urgent tasks for today">📅 Schedule tasks</div>
+        <div class="ai-chat-example" data-example="Change priority of first task to urgent">⚡ Change priority</div>
+        <div class="ai-chat-example" data-example="Move my 3pm task to 5pm">🔄 Reschedule</div>
+      </div>
+      
+      <div class="ai-chat-input-area">
+        <input 
+          type="text" 
+          class="ai-chat-input" 
+          id="aiChatInput" 
+          placeholder="Type a message... (e.g., 'Add task: Study for exam')"
+          autocomplete="off"
+        />
+        <button class="ai-chat-send" id="aiChatSend">➤</button>
       </div>
     </div>
   </div>
@@ -9471,6 +9704,165 @@ Your response (JSON array only):`;
       console.error('Error saving daily plan data:', e);
     }
   }
+
+  // ========================================
+  // AI CHAT ASSISTANT
+  // ========================================
+  
+  const AIChat = (() => {
+    const modal = document.getElementById('aiChatModal');
+    const messagesContainer = document.getElementById('aiChatMessages');
+    const input = document.getElementById('aiChatInput');
+    const sendBtn = document.getElementById('aiChatSend');
+    const closeBtn = document.getElementById('aiChatClose');
+    
+    function addMessage(text, isUser = false) {
+      const messageDiv = document.createElement('div');
+      messageDiv.className = `ai-chat-message ${isUser ? 'user' : 'ai'}`;
+      messageDiv.innerHTML = `
+        <div class="ai-chat-avatar">${isUser ? '👤' : '🤖'}</div>
+        <div class="ai-chat-bubble">${escapeHtml(text).replace(/\n/g, '<br>')}</div>
+      `;
+      messagesContainer.appendChild(messageDiv);
+      messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
+    
+    async function processUserMessage(message) {
+      addMessage(message, true);
+      sendBtn.disabled = true;
+      
+      try {
+        const prompt = `You are a task management AI assistant. Parse this user request and return actions as JSON.
+
+User: "${message}"
+
+Current tasks context: ${tasks.length} tasks exist.
+
+Available actions:
+- addTask: {action: "addTask", title: "...", dueDate: "YYYY-MM-DD", dueTime: "HH:MM", priority: "urgent|high|medium|low", estimatedMinutes: 60}
+- editTask: {action: "editTask", taskId: "...", updates: {title, priority, etc}}
+- scheduleTask: {action: "scheduleTask", taskId: "...", date: "YYYY-MM-DD", time: "HH:MM"}
+- planDay: {action: "planDay", date: "YYYY-MM-DD"}
+- reply: {action: "reply", message: "..."}
+
+Return JSON with: {actions: [...], reply: "confirmation message"}
+
+Examples:
+- "Add task: Buy milk tomorrow at 5pm" → addTask with title, due date
+- "Schedule my tasks" → planDay for today
+- "Change first task to urgent" → Need task list, ask for clarification
+
+JSON:`;
+
+        const aiResponse = await callAI(prompt);
+        const parsed = parseAIJsonResponse(aiResponse);
+        
+        if (!parsed.actions || !Array.isArray(parsed.actions)) {
+          throw new Error('Invalid AI response format');
+        }
+        
+        // Execute actions
+        for (const action of parsed.actions) {
+          await executeAction(action);
+        }
+        
+        // Show reply
+        addMessage(parsed.reply || 'Done!');
+        
+      } catch (error) {
+        console.error('AI Chat error:', error);
+        addMessage(`Error: ${error.message}\n\nTry simpler commands like:\n- "Add task: Task name"\n- "Schedule tasks for today"`);
+      } finally {
+        sendBtn.disabled = false;
+      }
+    }
+    
+    async function executeAction(action) {
+      switch (action.action) {
+        case 'addTask':
+          const newTask = {
+            title: action.title || 'New Task',
+            completed: false,
+            priority: action.priority || 'medium',
+            estimatedMinutes: action.estimatedMinutes || 60,
+            notes: action.notes || ''
+          };
+          
+          if (action.dueDate) {
+            const dueDateTime = action.dueTime 
+              ? new Date(`${action.dueDate}T${action.dueTime}`)
+              : new Date(`${action.dueDate}T09:00`);
+            newTask.dueDate = dueDateTime.toISOString();
+          }
+          
+          await saveTask(null, newTask, null);
+          if (typeof renderTasks === 'function') renderTasks();
+          break;
+          
+        case 'planDay':
+          if (typeof DailyPlanner !== 'undefined') {
+            // Trigger plan day for specified date
+            addMessage('Planning your day...');
+          }
+          break;
+          
+        case 'reply':
+          // Just a reply, no action needed
+          break;
+      }
+    }
+    
+    function init() {
+      if (!modal) return;
+      
+      // Open modal
+      document.getElementById('aiChatBtn')?.addEventListener('click', () => {
+        modal.classList.add('open');
+        input?.focus();
+      });
+      
+      // Close modal
+      closeBtn?.addEventListener('click', () => modal.classList.remove('open'));
+      modal?.addEventListener('click', (e) => {
+        if (e.target === modal) modal.classList.remove('open');
+      });
+      
+      // Send message
+      const sendMessage = () => {
+        const message = input?.value.trim();
+        if (!message) return;
+        input.value = '';
+        processUserMessage(message);
+      };
+      
+      sendBtn?.addEventListener('click', sendMessage);
+      input?.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') sendMessage();
+      });
+      
+      // Example clicks
+      document.querySelectorAll('.ai-chat-example').forEach(ex => {
+        ex.addEventListener('click', () => {
+          const example = ex.dataset.example;
+          if (input) input.value = example;
+          input?.focus();
+        });
+      });
+    }
+    
+    return { init };
+  })();
+  
+  // Initialize AI Chat after DOM loads
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => AIChat.init());
+  } else {
+    AIChat.init();
+  }
+
+  // ========================================
+  // END AI CHAT ASSISTANT
+  // ========================================
 
   // Auto-schedule tasks in daily planner using smart heuristics
   async function autoScheduleTasks() {
@@ -16035,6 +16427,7 @@ Your response (JSON array only):`;
         const hasTime = task.dueDate.includes('T');
         const timeStr = hasTime ? dueDate.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' }) : 'כל היום';
         
+
         // Check if already synced to planner
         const isSynced = currentBlocks.some(b => b.linkedTaskId === task.id);
         
@@ -16224,12 +16617,12 @@ Your response (JSON array only):`;
 
       const tasksText = normalizedTasks.map((t, i) => `${i + 1}. ${t.id}|${t.title}|${t.priority}|${t.estimatedMinutes}m`).join('\n');
 
-      const prompt = `Schedule for ${dateKey}. Return ONLY JSON array:
+      const prompt = `Schedule for ${dateKey}. Start at 09:00. Return ONLY JSON array:
 
 Tasks:
 ${tasksText}
 
-Rules: 06:00-23:00, no overlaps, urgent first.
+Rules: Start 09:00, end by 23:00, no overlaps, urgent first. Use task durations.
 JSON: [{"taskId":"id","start":"HH:MM","durationMinutes":60}]
 
 Array:`;
@@ -16238,8 +16631,8 @@ Array:`;
       const plan = parseAIJsonResponse(text);
       if (!Array.isArray(plan)) throw new Error('Invalid plan format from AI');
 
-      const MIN_START = 6 * 60;
-      const MAX_END = 23 * 60;
+      const MIN_START = 9 * 60; // 9:00 AM
+      const MAX_END = 23 * 60; // 11:00 PM
 
       const newBlocks = [];
 
@@ -16483,10 +16876,11 @@ Array:`;
       render();
     };
     
-    // Delete block
+    // Delete block (removes only the planner block, NOT the linked task)
     const deleteBlock = () => {
       if (!editingBlockId) return;
       
+      // Only remove the planner block - tasks remain intact
       plannerBlocks = plannerBlocks.filter(b => b.id !== editingBlockId);
       saveBlocks();
       closeModal();
