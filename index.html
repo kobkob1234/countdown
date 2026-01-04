@@ -9231,7 +9231,7 @@
         }],
         generationConfig: {
           temperature: 0.7,
-          maxOutputTokens: 1024,
+          maxOutputTokens: 4096,
         },
         safetySettings: [
           { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
@@ -9257,6 +9257,12 @@
     // Check if blocked by safety filters
     if (data.candidates?.[0]?.finishReason === 'SAFETY') {
       throw new Error('Content was blocked by safety filters');
+    }
+    
+    // Check if response was truncated
+    const finishReason = data.candidates?.[0]?.finishReason;
+    if (finishReason === 'MAX_TOKENS' || finishReason === 'LENGTH') {
+      throw new Error('AI response was truncated. Try reducing the number of tasks.');
     }
     
     const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
@@ -9305,6 +9311,11 @@
   // Parse JSON from AI response (handles markdown code blocks and various formats)
   function parseAIJsonResponse(text) {
     console.log('Raw AI response:', text); // Debug log
+    
+    // Check for truncation indicators
+    if (text.length > 0 && !text.includes(']') && !text.includes('}')) {
+      throw new Error('AI response appears truncated (no closing brackets). Try reducing task count or simplifying.');
+    }
     
     // Remove markdown code blocks if present
     let cleaned = text.trim();
