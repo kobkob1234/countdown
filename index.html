@@ -259,8 +259,8 @@
     }
 
     .sidebar {
-      width: 380px;
-      min-width: 320px;
+      width: 450px;
+      min-width: 380px;
       max-width: 90vw;
       background: var(--card);
       border-left: 1px solid var(--border);
@@ -4702,6 +4702,11 @@
       margin-bottom: 4px;
     }
     
+    .subjects-list {
+      overflow-x: auto;
+      overflow-y: visible;
+    }
+    
     .subject-list-header {
       display: flex;
       align-items: center;
@@ -4710,10 +4715,36 @@
       cursor: pointer;
       transition: all 0.15s;
       gap: 8px;
+      position: relative;
     }
     
     .subject-list-header:hover {
       background: var(--day-hover);
+    }
+    
+    /* Custom tooltip for subject names */
+    .subject-list-header[title]:hover::after,
+    .subject-child-item[title]:hover::after {
+      content: attr(title);
+      position: absolute;
+      bottom: 100%;
+      right: 10px;
+      background: var(--text);
+      color: var(--bg);
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 500;
+      white-space: nowrap;
+      z-index: 1000;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+      pointer-events: none;
+      animation: tooltipFade 0.2s ease;
+    }
+    
+    @keyframes tooltipFade {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
     }
     
     .subject-list-header:hover .subject-actions {
@@ -4808,8 +4839,6 @@
       font-size: 13px;
       font-weight: 500;
       white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
       min-width: 0;
     }
     
@@ -4913,6 +4942,7 @@
       gap: 8px;
       margin-bottom: 2px;
       transform: translateX(0);
+      position: relative;
     }
     
     .subject-child-item:hover {
@@ -4936,8 +4966,6 @@
       flex: 1;
       font-size: 12px;
       white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
       min-width: 0;
     }
     
