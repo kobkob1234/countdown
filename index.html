@@ -9972,6 +9972,9 @@ Return your response as valid JSON now:`;
           
           await saveTask(null, newTask, null);
           if (typeof renderTasks === 'function') renderTasks();
+          if (typeof DailyPlanner !== 'undefined' && DailyPlanner.refreshTasks) {
+            DailyPlanner.refreshTasks();
+          }
           break;
           
         case 'planDay':
@@ -17535,8 +17538,13 @@ Array:`;
     
     // Refresh scheduled tasks (called when tasks change)
     const refreshTasks = () => {
-      if (refs.scheduledTasksList) {
+      if (refs.overlay && refs.overlay.classList.contains('open')) {
+        // Full render to update timeline, scheduled tasks, and quick tasks
+        render();
+      } else if (refs.scheduledTasksList) {
+        // At minimum, update the cached lists for when planner is opened
         renderScheduledTasks();
+        renderQuickTasks();
       }
     };
     
