@@ -9628,13 +9628,8 @@
   }
   
   function sortTasksDefault(taskList) {
-    // Sort by: priority first (urgent first), then by due date (soonest first), then by created date (newest first)
+    // Sort by: due date (soonest first), then by priority, then by created date (newest first)
     return taskList.sort((a, b) => {
-      // Priority comparison
-      const priorityA = PRIORITY_ORDER[a.priority || 'none'];
-      const priorityB = PRIORITY_ORDER[b.priority || 'none'];
-      if (priorityA !== priorityB) return priorityA - priorityB;
-      
       // Due date comparison (tasks with due dates come first, soonest first)
       if (a.dueDate && !b.dueDate) return -1;
       if (!a.dueDate && b.dueDate) return 1;
@@ -9643,21 +9638,70 @@
         if (dueDiff !== 0) return dueDiff;
       }
       
+      // Priority comparison (higher priority first)
+      const priorityA = PRIORITY_ORDER[a.priority || 'none'];
+      const priorityB = PRIORITY_ORDER[b.priority || 'none'];
+      if (priorityA !== priorityB) return priorityA - priorityB;
+      
       // Created date (newest first)
       return new Date(b.createdAt) - new Date(a.createdAt);
     });
   }
   
   function sortTasks(taskList) {
-    const hasManualOrder = taskList.length > 0 && taskList.every(t => Number.isFinite(t.order));
-    if (hasManualOrder) {
-      return taskList.sort((a, b) => {
-        const aOrder = Number.isFinite(a.order) ? a.order : Number.MAX_SAFE_INTEGER;
-        const bOrder = Number.isFinite(b.order) ? b.order : Number.MAX_SAFE_INTEGER;
-        if (aOrder !== bOrder) return aOrder - bOrder;
+    // Check if any tasks have been manually reordered (have manualOrder flag)
+    const manuallyOrdered = taskList.filter(t => t.manualOrder === true);
+    const autoOrdered = taskList.filter(t => t.manualOrder !== true);
+    
+    // Sort auto-ordered tasks by due date (soonest first)
+    sortTasksDefault(autoOrdered);
+    
+    // Sort manually ordered tasks by their order value
+    manuallyOrdered.sort((a, b) => {
+      const aOrder = Number.isFinite(a.order) ? a.order : Number.MAX_SAFE_INTEGER;
+      const bOrder = Number.isFinite(b.order) ? b.order : Number.MAX_SAFE_INTEGER;
+      return aOrder - bOrder;
+    });
+    
+    // Merge: manually ordered tasks stay at their positions, auto-ordered fill the rest
+    // For simplicity, put manually ordered first, then auto-ordered
+    // But we need to respect the order values properly
+    
+    // If there are manual orders, integrate them at their specified positions
+    if (manuallyOrdered.length > 0) {
+      const result = [];
+      let autoIndex = 0;
+      
+      // Create a combined list respecting order values
+      const allTasks = [...taskList];
+      allTasks.sort((a, b) => {
+        // If both have manual order, sort by order
+        if (a.manualOrder && b.manualOrder) {
+          return (a.order || 0) - (b.order || 0);
+        }
+        // If only a has manual order, a comes at its position
+        if (a.manualOrder) {
+          // Compare a's order with b's due date position
+          return -1; // Manual ordered items maintain position
+        }
+        if (b.manualOrder) {
+          return 1;
+        }
+        // Both are auto - sort by due date
+        if (a.dueDate && !b.dueDate) return -1;
+        if (!a.dueDate && b.dueDate) return 1;
+        if (a.dueDate && b.dueDate) {
+          const dueDiff = new Date(a.dueDate) - new Date(b.dueDate);
+          if (dueDiff !== 0) return dueDiff;
+        }
+        const priorityA = PRIORITY_ORDER[a.priority || 'none'];
+        const priorityB = PRIORITY_ORDER[b.priority || 'none'];
+        if (priorityA !== priorityB) return priorityA - priorityB;
         return new Date(b.createdAt) - new Date(a.createdAt);
       });
+      return allTasks;
     }
+    
     return sortTasksDefault(taskList);
   }
   
@@ -10099,25 +10143,9 @@
   let dragSourceContainer = null;
   
   function ensureTaskOrderInitialized() {
-    if (hasManualOrder()) return;
-    const activeList = tasks.filter(t => !t.completed);
-    const completedList = tasks.filter(t => t.completed);
-    sortTasksDefault(activeList);
-    sortTasksDefault(completedList);
-    
-    const updates = [];
-    activeList.forEach((task, index) => {
-      if (task.order !== index) updates.push({ task, order: index });
-    });
-    completedList.forEach((task, index) => {
-      if (task.order !== index) updates.push({ task, order: index });
-    });
-    
-    updates.forEach(({ task, order }) => {
-      task.order = order;
-      const { id, ...cleanTask } = task;
-      set(ref(db, `users/${currentUser}/tasks/${task.id}`), cleanTask);
-    });
+    // Don't initialize order for tasks - let sortTasks handle the default sorting
+    // Only tasks that have been manually dragged will have manualOrder: true
+    return;
   }
   
   function updateTaskOrderFromContainer(container) {
@@ -10128,8 +10156,9 @@
       const taskId = item.dataset.id;
       const task = tasks.find(t => t.id === taskId);
       if (!task) return;
-      if (task.order !== index) {
+      if (task.order !== index || !task.manualOrder) {
         task.order = index;
+        task.manualOrder = true; // Mark as manually ordered when dragged
         updates.push(task);
       }
     });
