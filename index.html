@@ -12447,98 +12447,115 @@
     
     const parentId = parentSubjectSelect.value || null;
     const hasSharing = pendingSharedUsers.length > 0;
+    console.log('Saving subject:', { name, parentId, hasSharing, pendingSharedUsers, editingSubjectId });
     
-    if (hasSharing) {
-      // Save as shared subject
-      const members = {};
-      pendingSharedUsers.forEach(user => {
-        if (user !== currentUser) {
-          members[user] = true;
-        }
-      });
-      
-      const sharedSubjectData = {
-        name,
-        color: selectedSubjectColor,
-        parentId,
-        owner: currentUser,
-        members,
-        createdAt: new Date().toISOString()
-      };
-      
-      if (editingSubjectId) {
-        const existingSubject = subjects.find(s => s.id === editingSubjectId);
-        
-        if (existingSubject?.isShared) {
-          // Update existing shared subject
-          await set(ref(db, `sharedSubjects/${editingSubjectId}`), sharedSubjectData);
-        } else if (existingSubject?.isOwn) {
-          // Convert from own to shared - move tasks
-          const subjectTasks = tasks.filter(t => t.subject === editingSubjectId);
-          
-          // Create in shared location
-          const newSharedRef = push(ref(db, 'sharedSubjects'));
-          const newSharedId = newSharedRef.key;
-          await set(newSharedRef, sharedSubjectData);
-          
-          // Move tasks to shared location
-          for (const task of subjectTasks) {
-            const { id, isOwn, ...taskData } = task;
-            taskData.subject = newSharedId;
-            await set(ref(db, `sharedSubjects/${newSharedId}/tasks/${id}`), taskData);
-            await remove(ref(db, `users/${currentUser}/tasks/${id}`));
+    try {
+      if (hasSharing) {
+        // Save as shared subject
+        const members = {};
+        pendingSharedUsers.forEach(user => {
+          if (user !== currentUser) {
+            members[user] = true;
           }
-          
-          // Delete from own subjects
-          await remove(ref(db, `users/${currentUser}/subjects/${editingSubjectId}`));
-        }
-      } else {
-        // Create new shared subject
-        const newSharedRef = push(ref(db, 'sharedSubjects'));
-        await set(newSharedRef, sharedSubjectData);
-      }
-    } else {
-      // Save as own subject (not shared)
-      const subjectData = {
-        name,
-        color: selectedSubjectColor,
-        parentId,
-        createdAt: new Date().toISOString()
-      };
-      
-      if (editingSubjectId) {
-        const existingSubject = subjects.find(s => s.id === editingSubjectId);
+        });
+        // Also add owner to members for easier querying
+        members[currentUser] = true;
         
-        if (existingSubject?.isShared && existingSubject?.owner === currentUser) {
-          // Convert from shared to own - move tasks back
-          const subjectTasks = tasks.filter(t => t.subject === editingSubjectId);
+        const sharedSubjectData = {
+          name,
+          color: selectedSubjectColor,
+          parentId,
+          owner: currentUser,
+          members,
+          createdAt: new Date().toISOString()
+        };
+        
+        console.log('Shared subject data:', sharedSubjectData);
+        
+        if (editingSubjectId) {
+          const existingSubject = subjects.find(s => s.id === editingSubjectId);
           
-          // Create in own location
-          const newOwnRef = push(subjectsRef);
-          const newOwnId = newOwnRef.key;
-          await set(newOwnRef, subjectData);
-          
-          // Move tasks to own location
-          for (const task of subjectTasks) {
-            const { id, isShared, ...taskData } = task;
-            taskData.subject = newOwnId;
-            await set(ref(db, `users/${currentUser}/tasks/${id}`), taskData);
+          if (existingSubject?.isShared) {
+            // Update existing shared subject
+            await set(ref(db, `sharedSubjects/${editingSubjectId}`), sharedSubjectData);
+          } else if (existingSubject?.isOwn) {
+            // Convert from own to shared - move tasks
+            const subjectTasks = tasks.filter(t => t.subject === editingSubjectId);
+            
+            // Create in shared location
+            const newSharedRef = push(ref(db, 'sharedSubjects'));
+            const newSharedId = newSharedRef.key;
+            await set(newSharedRef, sharedSubjectData);
+            
+            // Move tasks to shared location
+            for (const task of subjectTasks) {
+              const { id, isOwn, ...taskData } = task;
+              taskData.subject = newSharedId;
+              await set(ref(db, `sharedSubjects/${newSharedId}/tasks/${id}`), taskData);
+              await remove(ref(db, `users/${currentUser}/tasks/${id}`));
+            }
+            
+            // Delete from own subjects
+            await remove(ref(db, `users/${currentUser}/subjects/${editingSubjectId}`));
           }
-          
-          // Delete shared subject
-          await remove(ref(db, `sharedSubjects/${editingSubjectId}`));
         } else {
-          // Update existing own subject
-          await set(ref(db, `users/${currentUser}/subjects/${editingSubjectId}`), subjectData);
+          // Create new shared subject
+          console.log('Creating new shared subject...');
+          const newSharedRef = push(ref(db, 'sharedSubjects'));
+          console.log('New shared ref key:', newSharedRef.key);
+          await set(newSharedRef, sharedSubjectData);
+          console.log('Shared subject created successfully');
         }
       } else {
-        // Create new own subject
-        const newSubjectRef = push(subjectsRef);
-        await set(newSubjectRef, subjectData);
+        // Save as own subject (not shared)
+        const subjectData = {
+          name,
+          color: selectedSubjectColor,
+          parentId,
+          createdAt: new Date().toISOString()
+        };
+        
+        console.log('Own subject data:', subjectData);
+        
+        if (editingSubjectId) {
+          const existingSubject = subjects.find(s => s.id === editingSubjectId);
+          
+          if (existingSubject?.isShared && existingSubject?.owner === currentUser) {
+            // Convert from shared to own - move tasks back
+            const subjectTasks = tasks.filter(t => t.subject === editingSubjectId);
+            
+            // Create in own location
+            const newOwnRef = push(subjectsRef);
+            const newOwnId = newOwnRef.key;
+            await set(newOwnRef, subjectData);
+            
+            // Move tasks to own location
+            for (const task of subjectTasks) {
+              const { id, isShared, ...taskData } = task;
+              taskData.subject = newOwnId;
+              await set(ref(db, `users/${currentUser}/tasks/${id}`), taskData);
+            }
+            
+            // Delete shared subject
+            await remove(ref(db, `sharedSubjects/${editingSubjectId}`));
+          } else {
+            // Update existing own subject
+            await set(ref(db, `users/${currentUser}/subjects/${editingSubjectId}`), subjectData);
+          }
+        } else {
+          // Create new own subject
+          console.log('Creating new own subject...');
+          const newSubjectRef = push(subjectsRef);
+          await set(newSubjectRef, subjectData);
+          console.log('Own subject created successfully');
+        }
       }
+      
+      closeSubjectModal();
+    } catch (error) {
+      console.error('Error saving subject:', error);
+      alert('שגיאה בשמירת הנושא: ' + error.message);
     }
-    
-    closeSubjectModal();
   };
   
   subjectNameInput.addEventListener('keypress', (e) => {
