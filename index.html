@@ -10094,9 +10094,10 @@
     if (task.dueDate) {
       const dueDate = new Date(task.dueDate);
       const day = dueDate.getDate();
-      const month = dueDate.toLocaleDateString('he-IL', { month: 'short' });
-      const time = dueDate.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });
-      const dateStr = `${day} ${month}, ${time}`;
+      const month = dueDate.toLocaleString('he-IL', { month: 'short' });
+      const weekday = dueDate.toLocaleString('he-IL', { weekday: 'short' });
+      const time = dueDate.toLocaleString('he-IL', { hour: '2-digit', minute: '2-digit' });
+      const dateStr = `${weekday}, ${day} ${month}, ${time}`;
       const urgencyClass = countdown?.overdue ? 'overdue' : (countdown?.urgency === 'soon' ? 'soon' : '');
       dueDateHtml = `<span class="task-due ${urgencyClass}" data-due-iso="${task.dueDate}">📅 ${dateStr}</span>`;
     }
