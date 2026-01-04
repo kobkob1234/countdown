@@ -4704,13 +4704,12 @@
     
     .subject-list-header {
       display: flex;
-      align-items: flex-start;
+      align-items: center;
       padding: 10px 12px;
       border-radius: 8px;
       cursor: pointer;
       transition: all 0.15s;
       gap: 8px;
-      flex-wrap: wrap;
     }
     
     .subject-list-header:hover {
@@ -4729,8 +4728,6 @@
       transition: opacity 0.2s;
       margin-right: auto;
       flex-shrink: 0;
-      align-self: flex-start;
-      margin-top: 2px;
     }
     
     .subject-action-btn {
@@ -4804,17 +4801,15 @@
       height: 10px;
       border-radius: 50%;
       flex-shrink: 0;
-      margin-top: 2px;
-      align-self: flex-start;
     }
     
     .subject-list-header .subject-name {
       flex: 1;
       font-size: 13px;
       font-weight: 500;
-      word-wrap: break-word;
-      overflow-wrap: break-word;
-      line-height: 1.4;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
       min-width: 0;
     }
     
@@ -4825,8 +4820,6 @@
       background: rgba(0,0,0,0.1);
       color: inherit;
       flex-shrink: 0;
-      align-self: flex-start;
-      margin-top: 2px;
     }
     
     .subject-list-header.active .subject-count {
@@ -4839,8 +4832,6 @@
       opacity: 0.6;
       cursor: pointer;
       flex-shrink: 0;
-      align-self: flex-start;
-      margin-top: 4px;
     }
     
     .subject-list-header .collapse-arrow:hover {
@@ -4914,7 +4905,7 @@
     
     .subject-child-item {
       display: flex;
-      align-items: flex-start;
+      align-items: center;
       padding: 8px 12px;
       border-radius: 6px;
       cursor: pointer;
@@ -4939,15 +4930,14 @@
       height: 8px;
       border-radius: 50%;
       flex-shrink: 0;
-      margin-top: 4px;
     }
     
     .subject-child-item .child-name {
       flex: 1;
       font-size: 12px;
-      word-wrap: break-word;
-      overflow-wrap: break-word;
-      line-height: 1.4;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
       min-width: 0;
     }
     
@@ -4955,8 +4945,6 @@
       font-size: 10px;
       opacity: 0.7;
       flex-shrink: 0;
-      align-self: flex-start;
-      margin-top: 2px;
     }
     
     /* Smart Views in Sidebar */
@@ -11768,7 +11756,7 @@
       
       html += `
         <div class="subject-list-item ${isExpanded ? 'expanded' : ''}" data-subject-id="${s.id}">
-          <div class="subject-list-header ${isActive ? 'active' : ''}" data-subject="${s.id}">
+          <div class="subject-list-header ${isActive ? 'active' : ''}" data-subject="${s.id}" title="${escapeHtml(s.name)}">
             ${hasChildren ? `<span class="collapse-arrow">▼</span>` : ''}
             <span class="subject-color-dot" style="background: ${s.color};"></span>
             <span class="subject-name">${escapeHtml(s.name)}</span>
@@ -11788,7 +11776,7 @@
                 const childShared = c.isShared;
                 const childSharedBadge = childShared ? `<span class="shared-badge" title="משותף">👥</span>` : '';
                 return `
-                  <div class="subject-child-item ${childActive ? 'active' : ''}" data-subject="${c.id}">
+                  <div class="subject-child-item ${childActive ? 'active' : ''}" data-subject="${c.id}" title="${escapeHtml(c.name)}">
                     <span class="child-color" style="background: ${c.color};"></span>
                     <span class="child-name">${escapeHtml(c.name)}</span>
                     ${childSharedBadge}
