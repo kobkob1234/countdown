@@ -1,0 +1,46 @@
+name: Send Push Reminders
+
+on:
+  schedule:
+    # Run every 5 minutes
+    - cron: '*/5 * * * *'
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  send-reminders:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: tools/push-sender/package-lock.json
+
+      - name: Install dependencies
+        working-directory: tools/push-sender
+        run: npm ci
+
+      - name: Create Firebase credentials file
+        run: |
+          echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}' > /tmp/firebase-credentials.json
+
+      - name: Send reminders
+        working-directory: tools/push-sender
+        env:
+          FIREBASE_DATABASE_URL: ${{ secrets.FIREBASE_DATABASE_URL }}
+          GOOGLE_APPLICATION_CREDENTIALS: /tmp/firebase-credentials.json
+          VAPID_SUBJECT: ${{ secrets.VAPID_SUBJECT }}
+          VAPID_PUBLIC_KEY: ${{ secrets.VAPID_PUBLIC_KEY }}
+          VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
+          PUSH_APP_URL: ${{ secrets.PUSH_APP_URL }}
+          TRIGGER_WINDOW_MS: "360000"  # 6 minutes window (slightly more than cron interval)
+        run: node send-reminders.mjs
+
+      - name: Cleanup credentials
+        if: always()
+        run: rm -f /tmp/firebase-credentials.json
