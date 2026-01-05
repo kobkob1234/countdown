@@ -15633,6 +15633,10 @@
 
 	    const ensureTimelineGhost = () => {
 	      if (!refs.timeline) return null;
+	      // Check if ghost element is still attached to the DOM (it may be destroyed after render())
+	      if (timelineGhostEl && !refs.timeline.contains(timelineGhostEl)) {
+	        timelineGhostEl = null;
+	      }
 	      if (!timelineGhostEl) {
 	        timelineGhostEl = document.createElement('div');
 	        timelineGhostEl.className = 'planner-block-ghost';
