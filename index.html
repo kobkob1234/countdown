@@ -8841,6 +8841,39 @@
 	  syncExistingSubscriptionToCurrentUser();
 	  refreshNotifyButton();
 
+	  // Test notification function - can be called from browser console
+	  window.testNotification = async function() {
+	    if (!("Notification" in window)) {
+	      console.error('Notifications not supported');
+	      return 'Notifications not supported';
+	    }
+	    if (Notification.permission !== 'granted') {
+	      console.error('Notification permission not granted:', Notification.permission);
+	      return 'Permission: ' + Notification.permission;
+	    }
+	    if ('serviceWorker' in navigator) {
+	      try {
+	        const registration = await navigator.serviceWorker.ready;
+	        await registration.showNotification("Test Notification 🔔", {
+	          body: "If you see this, notifications are working!",
+	          tag: 'test-notification',
+	          icon: './icon.svg',
+	          vibrate: [200, 100, 200],
+	          requireInteraction: true
+	        });
+	        console.log('Test notification sent via Service Worker');
+	        return 'Success - check your notifications!';
+	      } catch (e) {
+	        console.error('Service Worker notification failed:', e);
+	        return 'Error: ' + e.message;
+	      }
+	    } else {
+	      console.error('Service Worker not supported');
+	      return 'Service Worker not supported';
+	    }
+	  };
+	  console.log('[App] To test notifications, run: testNotification()');
+
 	  // Optional: allow "Done" action to complete a task by deep-link.
 	  // Your push sender can include: { completeUrl: "/?completeTask=TASK_ID&user=CURRENT_USER&sharedSubject=SUBJECT_ID" }
 	  async function maybeHandleCompleteTaskLink() {
@@ -10131,39 +10164,50 @@
 	    const timeString = formatReminderOffset(reminderMinutes);
 	    const msg = `${evt.name} starts in ${timeString}!`;
 	    
-	    if (document.hidden) {
-	      if ("Notification" in window && Notification.permission === "granted") {
-	        // Use Service Worker for mobile compatibility
-	        if ('serviceWorker' in navigator) {
-	          try {
-	            const registration = await navigator.serviceWorker.ready;
-	            await registration.showNotification("Event Reminder ⏰", {
-	              body: msg,
-	              tag: `event-${evt.id || evt.name || 'reminder'}`,
-	              icon: './icon.svg',
-	              vibrate: [200, 100, 200],
-	              requireInteraction: true
-	            });
-	          } catch (e) {
-	            new Notification("Event Reminder ⏰", {
-	              body: msg,
-	              tag: `event-${evt.id || evt.name || 'reminder'}`,
-	              vibrate: [200, 100, 200]
-	            });
-	          }
-	        } else {
-	          new Notification("Event Reminder ⏰", {
+	    // Always try to show system notification (works better on Android)
+	    if ("Notification" in window && Notification.permission === "granted") {
+	      // Use Service Worker for mobile compatibility
+	      if ('serviceWorker' in navigator) {
+	        try {
+	          const registration = await navigator.serviceWorker.ready;
+	          await registration.showNotification("Event Reminder ⏰", {
 	            body: msg,
 	            tag: `event-${evt.id || evt.name || 'reminder'}`,
-	            vibrate: [200, 100, 200]
+	            icon: './icon.svg',
+	            vibrate: [200, 100, 200],
+	            requireInteraction: true,
+	            silent: false
 	          });
+	          console.log('[Notification] Event notification sent:', evt.name);
+	        } catch (e) {
+	          console.error('[Notification] Service Worker notification failed:', e);
+	          try {
+	            new Notification("Event Reminder ⏰", {
+	              body: msg,
+	              tag: `event-${evt.id || evt.name || 'reminder'}`
+	            });
+	          } catch (e2) {
+	            console.error('[Notification] Fallback notification failed:', e2);
+	          }
+	        }
+	      } else {
+	        try {
+	          new Notification("Event Reminder ⏰", {
+	            body: msg,
+	            tag: `event-${evt.id || evt.name || 'reminder'}`
+	          });
+	        } catch (e) {
+	          console.error('[Notification] Regular notification failed:', e);
 	        }
 	      }
-	      pendingEventAlert = { title: evt.name, message: `Starting in ${timeString}` };
-	      return;
 	    }
-    
-    showEventAlert(evt.name, `Starting in ${timeString}`, true);
+	    
+	    // Show in-app alert if visible, or queue for later
+	    if (document.hidden) {
+	      pendingEventAlert = { title: evt.name, message: `Starting in ${timeString}` };
+	    } else {
+	      showEventAlert(evt.name, `Starting in ${timeString}`, true);
+	    }
   }
 
   function calcTime(target) {
@@ -13006,15 +13050,28 @@
 	            icon: './icon.svg',
 	            badge: './icon.svg',
 	            vibrate: [200, 100, 200],
-	            requireInteraction: true
+	            requireInteraction: true,
+	            silent: false
 	          });
+	          console.log('[Notification] Task notification sent:', task.title);
 	        } catch (e) {
+	          console.error('[Notification] Service Worker notification failed:', e);
 	          // Fallback to regular notification
-	          new Notification(title, { body: message, tag: `task-${task.id}`, vibrate: [200, 100, 200] });
+	          try {
+	            new Notification(title, { body: message, tag: `task-${task.id}` });
+	          } catch (e2) {
+	            console.error('[Notification] Fallback notification failed:', e2);
+	          }
 	        }
 	      } else {
-	        new Notification(title, { body: message, tag: `task-${task.id}`, vibrate: [200, 100, 200] });
+	        try {
+	          new Notification(title, { body: message, tag: `task-${task.id}` });
+	        } catch (e) {
+	          console.error('[Notification] Regular notification failed:', e);
+	        }
 	      }
+	    } else {
+	      console.log('[Notification] Permission not granted or Notification not supported');
 	    }
     
     // Show in-app alert
