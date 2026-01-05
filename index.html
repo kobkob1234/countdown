@@ -1173,30 +1173,70 @@
     .planner-hour-content.drop-target { background: rgba(102,126,234,0.15); }
     
     /* Time Blocks */
-    .planner-block {
-      position: absolute;
-      right: 4px;
-      left: 4px;
-      background: var(--priority-bg, var(--day-other));
+	    .planner-block {
+	      position: absolute;
+	      right: 4px;
+	      left: 4px;
+	      background: var(--priority-bg, var(--day-other));
       border-right: 4px solid var(--priority-color, var(--accent));
       border-radius: var(--radius-sm);
       padding: 6px 10px 6px 32px;
-      cursor: pointer;
-      transition: all 0.15s;
-      overflow: hidden;
-      z-index: 1;
-      min-height: 24px;
-      display: flex;
-      flex-direction: column;
-      justify-content: flex-start;
-    }
+	      cursor: grab;
+	      transition: all 0.15s;
+	      overflow: hidden;
+	      z-index: 1;
+	      min-height: 24px;
+	      display: flex;
+	      flex-direction: column;
+	      justify-content: flex-start;
+	      user-select: none;
+	      touch-action: none;
+	    }
     .planner-block:hover { 
       box-shadow: var(--shadow-hover);
       transform: scale(1.02);
       z-index: 10;
       overflow: visible;
     }
-    .planner-block.dragging { opacity: 0.6; z-index: 10; }
+	    .planner-block.dragging { opacity: 0.7; z-index: 12; cursor: grabbing; transform: none; }
+	    .planner-block-resize-handle {
+	      position: absolute;
+	      left: 0;
+	      right: 0;
+	      bottom: 0;
+	      height: 12px;
+	      cursor: ns-resize;
+	      opacity: 0;
+	      transition: opacity 0.15s;
+	      display: flex;
+	      align-items: flex-end;
+	      justify-content: center;
+	      padding-bottom: 3px;
+	      touch-action: none;
+	    }
+	    .planner-block-resize-handle::after {
+	      content: '';
+	      width: 36px;
+	      height: 4px;
+	      border-radius: 999px;
+	      background: rgba(0,0,0,0.18);
+	    }
+	    body.dark .planner-block-resize-handle::after {
+	      background: rgba(255,255,255,0.25);
+	    }
+	    .planner-block:hover .planner-block-resize-handle { opacity: 1; }
+	    .planner-block.compact .planner-block-resize-handle { height: 10px; padding-bottom: 2px; }
+	    .planner-block.extra-compact .planner-block-resize-handle { height: 9px; padding-bottom: 2px; }
+	    
+	    .planner-block-ghost {
+	      position: absolute;
+	      pointer-events: none;
+	      z-index: 20;
+	      border-radius: var(--radius-sm);
+	      border: 1px dashed rgba(102,126,234,0.8);
+	      background: rgba(102,126,234,0.12);
+	      box-shadow: 0 10px 30px rgba(0,0,0,0.18);
+	    }
     /* Compact mode for 15-30 min events */
     .planner-block.compact {
       flex-direction: row;
@@ -3555,6 +3595,54 @@
       background: var(--day-hover);
       color: var(--text);
       border-color: #667eea;
+    }
+
+    /* AI Day Plan Preview */
+    .ai-day-plan-card {
+      max-width: 680px;
+      width: 100%;
+      max-height: 75vh;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .ai-day-plan-list {
+      border: 1px solid var(--border);
+      background: var(--bg);
+      border-radius: 12px;
+      padding: 10px;
+      overflow: auto;
+      flex: 1;
+    }
+    .ai-day-plan-item {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      padding: 8px 10px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--card);
+      margin-bottom: 8px;
+    }
+    .ai-day-plan-item:last-child { margin-bottom: 0; }
+    .ai-day-plan-time {
+      font-weight: 700;
+      color: var(--accent);
+      min-width: 110px;
+      direction: ltr;
+      text-align: left;
+      flex-shrink: 0;
+    }
+    .ai-day-plan-title {
+      flex: 1;
+      color: var(--text);
+      text-align: start;
+      unicode-bidi: plaintext;
+    }
+    .ai-day-plan-meta {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 2px;
     }
     
     /* Mobile: Full width sidebar */
@@ -8891,53 +8979,6 @@
 	      console.warn('[Push] Sync failed:', e);
 	    }
 
-	    /* AI Day Plan Preview */
-	    .ai-day-plan-card {
-	      max-width: 680px;
-	      width: 100%;
-	      max-height: 75vh;
-	      display: flex;
-	      flex-direction: column;
-	      gap: 10px;
-	    }
-	    .ai-day-plan-list {
-	      border: 1px solid var(--border);
-	      background: var(--bg);
-	      border-radius: 12px;
-	      padding: 10px;
-	      overflow: auto;
-	      flex: 1;
-	    }
-	    .ai-day-plan-item {
-	      display: flex;
-	      gap: 10px;
-	      align-items: flex-start;
-	      padding: 8px 10px;
-	      border-radius: 10px;
-	      border: 1px solid var(--border);
-	      background: var(--card);
-	      margin-bottom: 8px;
-	    }
-	    .ai-day-plan-item:last-child { margin-bottom: 0; }
-	    .ai-day-plan-time {
-	      font-weight: 700;
-	      color: var(--accent);
-	      min-width: 110px;
-	      direction: ltr;
-	      text-align: left;
-	      flex-shrink: 0;
-	    }
-	    .ai-day-plan-title {
-	      flex: 1;
-	      color: var(--text);
-	      text-align: start;
-	      unicode-bidi: plaintext;
-	    }
-	    .ai-day-plan-meta {
-	      font-size: 11px;
-	      color: var(--muted);
-	      margin-top: 2px;
-	    }
 	  }
 
 	  async function refreshNotifyButton() {
@@ -16590,9 +16631,9 @@ Your response (JSON array only):`;
       }
     };
     
-    // Render timeline for day view
-    const renderTimeline = () => {
-      if (!refs.timeline) return;
+	    // Render timeline for day view
+	    const renderTimeline = () => {
+	      if (!refs.timeline) return;
       
       const blocks = getBlocksForDate(currentDate);
       const now = new Date();
@@ -16627,12 +16668,13 @@ Your response (JSON array only):`;
       refs.timeline.innerHTML = html;
       
       // Add click handlers for hour content
-      refs.timeline.querySelectorAll('.planner-hour-content').forEach(el => {
-        el.addEventListener('click', (e) => {
-          if (e.target.closest('.planner-block')) return;
-          const hour = parseInt(el.dataset.hour);
-          openAddModal(hour);
-        });
+	      refs.timeline.querySelectorAll('.planner-hour-content').forEach(el => {
+	        el.addEventListener('click', (e) => {
+	          if (Date.now() < suppressBlockClickUntil) return;
+	          if (e.target.closest('.planner-block')) return;
+	          const hour = parseInt(el.dataset.hour);
+	          openAddModal(hour);
+	        });
         
         // Drag and drop handlers for tasks from sidebar
         el.addEventListener('dragover', (e) => {
@@ -16652,13 +16694,15 @@ Your response (JSON array only):`;
         });
       });
       
-      // Add click handlers for blocks
-      refs.timeline.querySelectorAll('.planner-block').forEach(el => {
-        el.addEventListener('click', (e) => {
-          if (e.target.classList.contains('planner-block-checkbox')) return;
-          openEditModal(el.dataset.id);
-        });
-      });
+	      // Add click handlers for blocks
+	      refs.timeline.querySelectorAll('.planner-block').forEach(el => {
+	        el.addEventListener('click', (e) => {
+	          if (Date.now() < suppressBlockClickUntil) return;
+	          if (e.target.classList.contains('planner-block-resize-handle')) return;
+	          if (e.target.classList.contains('planner-block-checkbox')) return;
+	          openEditModal(el.dataset.id);
+	        });
+	      });
       
       // Add checkbox handlers
       refs.timeline.querySelectorAll('.planner-block-checkbox').forEach(el => {
@@ -16711,7 +16755,7 @@ Your response (JSON array only):`;
     };
     
     // Render a single block
-    const renderBlock = (block, hourMinutes) => {
+	    const renderBlock = (block, hourMinutes) => {
       const startMin = parseTime(block.start);
       const offsetMin = startMin - hourMinutes;
       const duration = block.duration || 60;
@@ -16759,17 +16803,224 @@ Your response (JSON array only):`;
         }
       }
       
-      return `
-        <div class="planner-block priority-${priority} ${block.completed ? 'planner-block-completed' : ''} ${compactClass}" 
-             data-id="${block.id}" 
-             style="top: ${topPx}px; height: ${heightPx}px; --priority-color: ${blockColor}; --priority-bg: ${blockBg};">
-          <div class="planner-block-checkbox ${block.completed ? 'checked' : ''}" data-id="${block.id}"></div>
-          <div class="planner-block-title">${categoryIcon} ${escapeHtml(block.title)}</div>
-          <div class="planner-block-time">${block.start} - ${endTime}${reminderText ? ' · ' + reminderText : ''}</div>
-          ${notesHtml}
-        </div>
-      `;
-    };
+	      return `
+	        <div class="planner-block priority-${priority} ${block.completed ? 'planner-block-completed' : ''} ${compactClass}" 
+	             data-id="${block.id}" 
+	             style="top: ${topPx}px; height: ${heightPx}px; --priority-color: ${blockColor}; --priority-bg: ${blockBg};">
+	          <div class="planner-block-checkbox ${block.completed ? 'checked' : ''}" data-id="${block.id}"></div>
+	          <div class="planner-block-title">${categoryIcon} ${escapeHtml(block.title)}</div>
+	          <div class="planner-block-time">${block.start} - ${endTime}${reminderText ? ' · ' + reminderText : ''}</div>
+	          ${notesHtml}
+	          <div class="planner-block-resize-handle" data-id="${block.id}" aria-label="Resize block"></div>
+	        </div>
+	      `;
+	    };
+
+	    // Drag/Resize planner blocks directly on the timeline (Google Calendar-like)
+	    const DAY_START_MINUTES = 6 * 60;
+	    const DAY_END_MINUTES = 24 * 60;
+	    const DRAG_SNAP_MINUTES = 15;
+	    const MIN_BLOCK_MINUTES = 15;
+	    let suppressBlockClickUntil = 0;
+	    let timelineDragState = null;
+	    let timelineGhostEl = null;
+
+	    const clamp = (v, min, max) => Math.min(max, Math.max(min, v));
+	    const snapMinutes = (minutes) => Math.round(minutes / DRAG_SNAP_MINUTES) * DRAG_SNAP_MINUTES;
+
+	    const getMinuteFromClientY = (clientY) => {
+	      if (!refs.timeline) return DAY_START_MINUTES;
+	      const rect = refs.timeline.getBoundingClientRect();
+	      const y = clientY - rect.top;
+	      const minutes = DAY_START_MINUTES + y; // 1px per minute
+	      return clamp(minutes, DAY_START_MINUTES, DAY_END_MINUTES);
+	    };
+
+	    const getBlocksForCurrentDateExcluding = (blockId) => {
+	      const dateKey = getDateKey(currentDate);
+	      return plannerBlocks
+	        .filter(b => b && b.date === dateKey && b.id !== blockId)
+	        .filter(b => Number.isFinite(parseTime(b.start)));
+	    };
+
+	    const rangesOverlap = (aStart, aEnd, bStart, bEnd) => aStart < bEnd && aEnd > bStart;
+
+	    const canPlace = (startMinutes, durationMinutes, others) => {
+	      const endMinutes = startMinutes + durationMinutes;
+	      if (startMinutes < DAY_START_MINUTES) return false;
+	      if (endMinutes > DAY_END_MINUTES) return false;
+	      return !others.some(o => {
+	        const oStart = parseTime(o.start);
+	        const oEnd = oStart + (o.duration || 60);
+	        return rangesOverlap(startMinutes, endMinutes, oStart, oEnd);
+	      });
+	    };
+
+	    const findNearestNonOverlappingStart = (proposedStart, duration, others) => {
+	      const minStart = DAY_START_MINUTES;
+	      const maxStart = DAY_END_MINUTES - duration;
+	      const base = clamp(snapMinutes(proposedStart), minStart, maxStart);
+	      if (canPlace(base, duration, others)) return base;
+	      for (let delta = DRAG_SNAP_MINUTES; delta <= 12 * 60; delta += DRAG_SNAP_MINUTES) {
+	        const forward = base + delta;
+	        if (forward <= maxStart && canPlace(forward, duration, others)) return forward;
+	        const backward = base - delta;
+	        if (backward >= minStart && canPlace(backward, duration, others)) return backward;
+	      }
+	      return null;
+	    };
+
+	    const adjustDurationToAvoidOverlap = (startMinutes, desiredDuration, others) => {
+	      const minDuration = MIN_BLOCK_MINUTES;
+	      const maxDuration = DAY_END_MINUTES - startMinutes;
+	      let duration = clamp(desiredDuration, minDuration, maxDuration);
+	      const desiredEnd = startMinutes + duration;
+
+	      let limitingEnd = desiredEnd;
+	      others.forEach(o => {
+	        const oStart = parseTime(o.start);
+	        if (!Number.isFinite(oStart)) return;
+	        if (oStart <= startMinutes) return;
+	        if (oStart < limitingEnd) {
+	          const oEnd = oStart + (o.duration || 60);
+	          if (rangesOverlap(startMinutes, limitingEnd, oStart, oEnd)) limitingEnd = oStart;
+	        }
+	      });
+
+	      duration = limitingEnd - startMinutes;
+	      if (duration < minDuration) return null;
+	      return duration;
+	    };
+
+	    const ensureTimelineGhost = () => {
+	      if (!refs.timeline) return null;
+	      if (!timelineGhostEl) {
+	        timelineGhostEl = document.createElement('div');
+	        timelineGhostEl.className = 'planner-block-ghost';
+	        timelineGhostEl.style.display = 'none';
+	        refs.timeline.appendChild(timelineGhostEl);
+	      }
+	      const timelineRect = refs.timeline.getBoundingClientRect();
+	      const content = refs.timeline.querySelector('.planner-hour-content');
+	      if (content) {
+	        const contentRect = content.getBoundingClientRect();
+	        const left = contentRect.left - timelineRect.left + 4;
+	        const right = timelineRect.right - contentRect.right + 4;
+	        timelineGhostEl.style.left = `${left}px`;
+	        timelineGhostEl.style.right = `${right}px`;
+	      } else {
+	        timelineGhostEl.style.left = '78px';
+	        timelineGhostEl.style.right = '8px';
+	      }
+	      return timelineGhostEl;
+	    };
+
+	    const showGhost = (startMinutes, durationMinutes) => {
+	      const ghost = ensureTimelineGhost();
+	      if (!ghost) return;
+	      ghost.style.display = 'block';
+	      ghost.style.top = `${startMinutes - DAY_START_MINUTES}px`;
+	      ghost.style.height = `${Math.max(15, durationMinutes)}px`;
+	    };
+
+	    const hideGhost = () => {
+	      if (!timelineGhostEl) return;
+	      timelineGhostEl.style.display = 'none';
+	    };
+
+	    const updateBlockTime = (blockId, nextStartMinutes, nextDurationMinutes) => {
+	      const block = plannerBlocks.find(b => b.id === blockId);
+	      if (!block) return false;
+	      block.start = formatTime(nextStartMinutes);
+	      block.duration = nextDurationMinutes;
+	      saveBlocks();
+	      render();
+	      return true;
+	    };
+
+	    const onTimelinePointerMove = (e) => {
+	      if (!timelineDragState) return;
+	      const minute = getMinuteFromClientY(e.clientY);
+	      const movedPx = Math.abs(e.clientY - timelineDragState.startClientY);
+	      if (movedPx > 3) timelineDragState.moved = true;
+
+	      if (timelineDragState.mode === 'move') {
+	        const proposedStart = minute - timelineDragState.offsetMinutes;
+	        const start = clamp(snapMinutes(proposedStart), DAY_START_MINUTES, DAY_END_MINUTES - timelineDragState.duration);
+	        timelineDragState.proposedStart = start;
+	        showGhost(start, timelineDragState.duration);
+	      } else {
+	        const end = snapMinutes(minute);
+	        const duration = clamp(end - timelineDragState.startMinutes, MIN_BLOCK_MINUTES, DAY_END_MINUTES - timelineDragState.startMinutes);
+	        timelineDragState.proposedDuration = duration;
+	        showGhost(timelineDragState.startMinutes, duration);
+	      }
+	    };
+
+	    const onTimelinePointerUp = () => {
+	      if (!timelineDragState) return;
+	      const { el, blockId, mode, startMinutes, duration, proposedStart, proposedDuration, moved } = timelineDragState;
+	      timelineDragState = null;
+	      window.removeEventListener('pointermove', onTimelinePointerMove);
+	      if (el) el.classList.remove('dragging');
+	      hideGhost();
+
+	      if (!moved) return;
+	      suppressBlockClickUntil = Date.now() + 350;
+
+	      const others = getBlocksForCurrentDateExcluding(blockId);
+
+	      if (mode === 'move') {
+	        const targetStart = Number.isFinite(proposedStart) ? proposedStart : startMinutes;
+	        const resolvedStart = findNearestNonOverlappingStart(targetStart, duration, others);
+	        if (resolvedStart === null) return;
+	        updateBlockTime(blockId, resolvedStart, duration);
+	      } else {
+	        const targetDuration = Number.isFinite(proposedDuration) ? proposedDuration : duration;
+	        const adjusted = adjustDurationToAvoidOverlap(startMinutes, targetDuration, others);
+	        if (adjusted === null) return;
+	        updateBlockTime(blockId, startMinutes, adjusted);
+	      }
+	    };
+
+	    const onTimelinePointerDown = (e) => {
+	      const blockEl = e.target.closest('.planner-block');
+	      if (!blockEl || !refs.timeline || !refs.timeline.contains(blockEl)) return;
+	      if (e.target.classList.contains('planner-block-checkbox')) return;
+
+	      const isResize = !!e.target.closest('.planner-block-resize-handle');
+	      const blockId = blockEl.dataset.id;
+	      const block = plannerBlocks.find(b => b.id === blockId);
+	      if (!block) return;
+
+	      e.preventDefault();
+
+	      const startMinutes = parseTime(block.start);
+	      const duration = block.duration || 60;
+	      const minute = getMinuteFromClientY(e.clientY);
+	      const offsetMinutes = clamp(minute - startMinutes, 0, duration);
+
+	      timelineDragState = {
+	        el: blockEl,
+	        blockId,
+	        mode: isResize ? 'resize' : 'move',
+	        startClientY: e.clientY,
+	        startMinutes,
+	        duration,
+	        offsetMinutes: isResize ? 0 : offsetMinutes,
+	        moved: false,
+	        proposedStart: startMinutes,
+	        proposedDuration: duration
+	      };
+
+	      blockEl.classList.add('dragging');
+	      showGhost(startMinutes, duration);
+	      blockEl.setPointerCapture?.(e.pointerId);
+
+	      window.addEventListener('pointermove', onTimelinePointerMove, { passive: false });
+	      window.addEventListener('pointerup', onTimelinePointerUp, { once: true });
+	      window.addEventListener('pointercancel', onTimelinePointerUp, { once: true });
+	    };
     
     // Render current time indicator
     const renderNowLine = (offsetMinutes) => {
@@ -17774,7 +18025,7 @@ Array:`;
       refs.prevDay = $('plannerPrevDay');
       refs.nextDay = $('plannerNextDay');
       refs.todayBtn = $('plannerTodayBtn');
-      refs.timeline = $('plannerTimeline');
+	      refs.timeline = $('plannerTimeline');
       refs.dayView = $('plannerDayView');
       refs.weekView = $('plannerWeekView');
       refs.miniGrid = $('plannerMiniGrid');
@@ -18358,3 +18609,8 @@ Array:`;
 
 </body>
 </html>
+	      // Timeline drag/resize (event delegation)
+	      if (refs.timeline && !refs.timeline.dataset.dragResizeInit) {
+	        refs.timeline.dataset.dragResizeInit = '1';
+	        refs.timeline.addEventListener('pointerdown', onTimelinePointerDown, { passive: false });
+	      }
