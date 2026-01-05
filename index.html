@@ -5446,6 +5446,60 @@
       font-size: 14px;
       margin-bottom: 20px;
     }
+
+    /* Calendar Sync: Google settings panel */
+    .calendar-sync-settings {
+      margin: 12px 0 16px;
+      text-align: left;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      background: var(--day-other);
+      padding: 12px 12px;
+    }
+    .calendar-sync-settings summary {
+      cursor: pointer;
+      font-weight: 650;
+      color: var(--text);
+      user-select: none;
+    }
+    .calendar-sync-settings summary::-webkit-details-marker { display: none; }
+    .calendar-sync-settings .settings-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+      margin-top: 10px;
+    }
+    .calendar-sync-settings label {
+      font-size: 12px;
+      color: var(--muted);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .calendar-sync-settings input {
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: var(--input-bg);
+      color: var(--text);
+      font-size: 13px;
+      outline: none;
+    }
+    .calendar-sync-settings input:focus {
+      border-color: var(--accent);
+      box-shadow: var(--focus-ring);
+    }
+    .calendar-sync-settings .settings-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 2px;
+    }
+    .calendar-sync-settings .settings-hint {
+      margin-top: 10px;
+      font-size: 11px;
+      color: var(--muted);
+      line-height: 1.35;
+    }
     .reminder-section {
       text-align: right;
       margin-bottom: 16px;
@@ -8178,17 +8232,38 @@
   </div>
 
   <!-- Calendar Sync Modal -->
-  <div class="reminder-modal" id="calendarSyncModal" role="dialog" aria-modal="true" aria-labelledby="calendarSyncTitle">
-    <div class="reminder-card" style="max-width: 500px; border-top: 5px solid var(--accent);">
-      <div style="font-size: 40px; margin-bottom: 10px;">📅</div>
-      <h2 id="calendarSyncTitle">סנכרון לוח שנה / Calendar Sync</h2>
-      <p style="color: var(--muted); font-size: 14px; margin-bottom: 20px;">ייבוא אירועים מלוח השנה שלך (חד-כיווני)</p>
-      
-      <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px;">
-        <button class="btn btn-primary" id="syncGoogleCalendar" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px;">
-          <span style="font-size: 20px;">📆</span>
-          <span>Google Calendar</span>
-        </button>
+	  <div class="reminder-modal" id="calendarSyncModal" role="dialog" aria-modal="true" aria-labelledby="calendarSyncTitle">
+	    <div class="reminder-card" style="max-width: 500px; border-top: 5px solid var(--accent);">
+	      <div style="font-size: 40px; margin-bottom: 10px;">📅</div>
+	      <h2 id="calendarSyncTitle">סנכרון לוח שנה / Calendar Sync</h2>
+	      <p style="color: var(--muted); font-size: 14px; margin-bottom: 20px;">ייבוא אירועים מלוח השנה שלך (חד-כיווני)</p>
+
+	      <details class="calendar-sync-settings" id="googleSettingsDetails">
+	        <summary>⚙️ Google Settings (API Key + Client ID)</summary>
+	        <div class="settings-grid">
+	          <label>
+	            Google API Key
+	            <input id="googleApiKeyInput" type="password" inputmode="text" autocomplete="off" spellcheck="false" placeholder="AIza..." />
+	          </label>
+	          <label>
+	            OAuth Client ID
+	            <input id="googleClientIdInput" type="text" inputmode="text" autocomplete="off" spellcheck="false" placeholder="1234567890-xxxx.apps.googleusercontent.com" />
+	          </label>
+	          <div class="settings-actions">
+	            <button class="btn btn-primary" id="saveGoogleSettingsBtn" type="button" style="flex:1;">Save</button>
+	            <button class="btn" id="resetGoogleSettingsBtn" type="button" style="flex:1; background: var(--day-other); color: var(--muted);">Reset</button>
+	          </div>
+	        </div>
+	        <div class="settings-hint">
+	          Google Calendar sync requires serving this app via `http://localhost` or `https://` and adding that origin to your Google OAuth "Authorized JavaScript origins".
+	        </div>
+	      </details>
+	      
+	      <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px;">
+	        <button class="btn btn-primary" id="syncGoogleCalendar" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px;">
+	          <span style="font-size: 20px;">📆</span>
+	          <span>Google Calendar</span>
+	        </button>
         
         <button class="btn btn-primary" id="syncAppleCalendar" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; background: linear-gradient(135deg, #667eea, #764ba2);">
           <span style="font-size: 20px;">🍎</span>
@@ -8623,7 +8698,9 @@
 
   const STORAGE_KEYS = {
     THEME: 'countdown-theme',
-    SIDEBAR_WIDTH: 'countdown-sidebar-width'
+    SIDEBAR_WIDTH: 'countdown-sidebar-width',
+    GOOGLE_API_KEY: 'countdown-google-api-key',
+    GOOGLE_CLIENT_ID: 'countdown-google-client-id'
   };
   const CACHE_KEYS = {
     EVENTS: 'countdown-events-cache-v1',
@@ -9167,12 +9244,41 @@
   const calendarEventsContent = $('calendarEventsContent');
   const importCalendarEventsBtn = $('importCalendarEventsBtn');
 
-  let pendingCalendarEvents = [];
+	  let pendingCalendarEvents = [];
 
-  // Google Calendar API Configuration
-  const GOOGLE_API_KEY = 'AIzaSyBH6g_Wz_RJKmEZL9xYWB6J2QaQ5f8z7hY'; // Replace with your API key
-  const GOOGLE_CLIENT_ID = '123456789.apps.googleusercontent.com'; // Replace with your Client ID
-  const GOOGLE_SCOPES = 'https://www.googleapis.com/auth/calendar.readonly';
+	  // Google Calendar API Configuration
+	  const GOOGLE_API_KEY_DEFAULT = 'AIzaSyBH6g_Wz_RJKmEZL9xYWB6J2QaQ5f8z7hY'; // Optional; can be overridden in UI
+	  const GOOGLE_CLIENT_ID_DEFAULT = ''; // Set via UI (recommended) or hardcode if desired
+	  const GOOGLE_SCOPES = 'https://www.googleapis.com/auth/calendar.readonly';
+
+	  const googleSettingsDetails = $('googleSettingsDetails');
+	  const googleApiKeyInput = $('googleApiKeyInput');
+	  const googleClientIdInput = $('googleClientIdInput');
+	  const saveGoogleSettingsBtn = $('saveGoogleSettingsBtn');
+	  const resetGoogleSettingsBtn = $('resetGoogleSettingsBtn');
+
+	  const getGoogleApiKey = () => (localStorage.getItem(STORAGE_KEYS.GOOGLE_API_KEY) || GOOGLE_API_KEY_DEFAULT || '').trim();
+	  const getGoogleClientId = () => (localStorage.getItem(STORAGE_KEYS.GOOGLE_CLIENT_ID) || GOOGLE_CLIENT_ID_DEFAULT || '').trim();
+
+	  const isPlaceholderClientId = (clientId) =>
+	    !clientId ||
+	    clientId === 'YOUR_CLIENT_ID.apps.googleusercontent.com' ||
+	    clientId.includes('123456789');
+
+	  const isPlaceholderApiKey = (apiKey) =>
+	    !apiKey ||
+	    apiKey === 'YOUR_API_KEY_HERE' ||
+	    apiKey.includes('YOUR_API_KEY');
+
+	  const syncGoogleSettingsInputsFromStorage = () => {
+	    if (googleApiKeyInput) googleApiKeyInput.value = getGoogleApiKey();
+	    if (googleClientIdInput) googleClientIdInput.value = getGoogleClientId();
+	  };
+
+	  const openGoogleSettings = () => {
+	    if (googleSettingsDetails) googleSettingsDetails.open = true;
+	    if (googleClientIdInput) googleClientIdInput.focus();
+	  };
   
   // Helper function to show status message
   const showCalendarStatus = (message, type = 'info') => {
@@ -9188,11 +9294,36 @@
     calendarSyncStatus.style.display = 'none';
   };
 
+  if (saveGoogleSettingsBtn) {
+    saveGoogleSettingsBtn.onclick = () => {
+      const apiKey = (googleApiKeyInput?.value || '').trim();
+      const clientId = (googleClientIdInput?.value || '').trim();
+
+      if (apiKey) localStorage.setItem(STORAGE_KEYS.GOOGLE_API_KEY, apiKey);
+      else localStorage.removeItem(STORAGE_KEYS.GOOGLE_API_KEY);
+
+      if (clientId) localStorage.setItem(STORAGE_KEYS.GOOGLE_CLIENT_ID, clientId);
+      else localStorage.removeItem(STORAGE_KEYS.GOOGLE_CLIENT_ID);
+
+      showCalendarStatus('✅ Saved Google settings', 'success');
+    };
+  }
+
+  if (resetGoogleSettingsBtn) {
+    resetGoogleSettingsBtn.onclick = () => {
+      localStorage.removeItem(STORAGE_KEYS.GOOGLE_API_KEY);
+      localStorage.removeItem(STORAGE_KEYS.GOOGLE_CLIENT_ID);
+      syncGoogleSettingsInputsFromStorage();
+      showCalendarStatus('🔄 Reset Google settings', 'info');
+    };
+  }
+
   // Open calendar sync modal
   if (calendarSyncBtn) {
     calendarSyncBtn.onclick = () => {
       calendarSyncModal.classList.add('open');
       hideCalendarStatus();
+      syncGoogleSettingsInputsFromStorage();
       calendarEventsList.style.display = 'none';
       importCalendarEventsBtn.style.display = 'none';
       pendingCalendarEvents = [];
@@ -9218,6 +9349,24 @@
   // Google Calendar Integration
   if (syncGoogleCalendar) {
     syncGoogleCalendar.onclick = async () => {
+      if (location.protocol === 'file:') {
+        showCalendarStatus('❌ Google Calendar sign-in does not work from file://. Run the app via http://localhost (e.g. `python3 -m http.server 8000`).', 'error');
+        openGoogleSettings();
+        return;
+      }
+
+      const apiKey = getGoogleApiKey();
+      const clientId = getGoogleClientId();
+      if (isPlaceholderClientId(clientId)) {
+        showCalendarStatus('❌ Missing OAuth Client ID. Open “Google Settings” and paste your Client ID (ends with .apps.googleusercontent.com).', 'error');
+        openGoogleSettings();
+        return;
+      }
+      if (isPlaceholderApiKey(apiKey)) {
+        showCalendarStatus('⚠️ Missing Google API Key. It may still work, but recommended to add one in “Google Settings”.', 'info');
+        openGoogleSettings();
+      }
+
       showCalendarStatus('🔄 Connecting to Google Calendar...', 'info');
       
       try {
@@ -9228,12 +9377,17 @@
 
         // Initialize Google API
         await new Promise((resolve, reject) => {
-          gapi.load('client:auth2', resolve);
+          gapi.load('client:auth2', {
+            callback: resolve,
+            onerror: () => reject(new Error('Failed to load Google auth library')),
+            timeout: 15000,
+            ontimeout: () => reject(new Error('Timed out loading Google auth library'))
+          });
         });
 
         await gapi.client.init({
-          apiKey: GOOGLE_API_KEY,
-          clientId: GOOGLE_CLIENT_ID,
+          apiKey: apiKey || undefined,
+          clientId,
           discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest'],
           scope: GOOGLE_SCOPES
         });
@@ -9271,7 +9425,25 @@
         
       } catch (error) {
         console.error('Google Calendar sync error:', error);
-        showCalendarStatus(`❌ Error: ${error.message || 'Failed to connect to Google Calendar'}`, 'error');
+        const details =
+          error?.result?.error?.message ||
+          error?.details ||
+          error?.error ||
+          error?.message ||
+          (typeof error === 'string' ? error : '');
+
+        let hint = '';
+        const combined = String(details || '');
+        if (/idpiframe_initialization_failed/i.test(combined)) {
+          hint = ' (Tip: allow third‑party cookies or try a different browser/profile.)';
+        } else if (/redirect_uri_mismatch|origin_mismatch/i.test(combined)) {
+          hint = ' (Tip: add this site to “Authorized JavaScript origins” in Google OAuth settings.)';
+        } else if (/invalid_client/i.test(combined)) {
+          hint = ' (Tip: check your OAuth Client ID.)';
+        }
+
+        showCalendarStatus(`❌ Error: ${details || 'Failed to connect to Google Calendar'}${hint}`, 'error');
+        openGoogleSettings();
       }
     };
   }
