@@ -1182,7 +1182,7 @@
       border-radius: var(--radius-sm);
       padding: 6px 10px 6px 32px;
 	      cursor: grab;
-	      transition: all 0.15s;
+	      transition: all 0.15s ease;
 	      overflow: hidden;
 	      z-index: 1;
 	      min-height: 24px;
@@ -1198,44 +1198,81 @@
       z-index: 10;
       overflow: visible;
     }
-	    .planner-block.dragging { opacity: 0.7; z-index: 12; cursor: grabbing; transform: none; }
+	    .planner-block:active {
+	      cursor: grabbing;
+	    }
+	    .planner-block.dragging { 
+	      opacity: 0.5; 
+	      z-index: 12; 
+	      cursor: grabbing; 
+	      transform: none;
+	      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+	    }
 	    .planner-block-resize-handle {
 	      position: absolute;
 	      left: 0;
 	      right: 0;
 	      bottom: 0;
-	      height: 12px;
+	      height: 16px;
 	      cursor: ns-resize;
 	      opacity: 0;
-	      transition: opacity 0.15s;
+	      transition: opacity 0.2s ease;
 	      display: flex;
 	      align-items: flex-end;
 	      justify-content: center;
-	      padding-bottom: 3px;
+	      padding-bottom: 4px;
 	      touch-action: none;
+	      z-index: 2;
 	    }
 	    .planner-block-resize-handle::after {
 	      content: '';
-	      width: 36px;
-	      height: 4px;
+	      width: 40px;
+	      height: 5px;
 	      border-radius: 999px;
-	      background: rgba(0,0,0,0.18);
+	      background: rgba(102,126,234,0.5);
+	      transition: all 0.2s ease;
+	    }
+	    .planner-block-resize-handle:hover::after {
+	      background: rgba(102,126,234,0.8);
+	      height: 6px;
 	    }
 	    body.dark .planner-block-resize-handle::after {
-	      background: rgba(255,255,255,0.25);
+	      background: rgba(102,126,234,0.6);
+	    }
+	    body.dark .planner-block-resize-handle:hover::after {
+	      background: rgba(102,126,234,0.9);
 	    }
 	    .planner-block:hover .planner-block-resize-handle { opacity: 1; }
-	    .planner-block.compact .planner-block-resize-handle { height: 10px; padding-bottom: 2px; }
-	    .planner-block.extra-compact .planner-block-resize-handle { height: 9px; padding-bottom: 2px; }
+	    .planner-block.compact .planner-block-resize-handle { height: 12px; padding-bottom: 2px; }
+	    .planner-block.extra-compact .planner-block-resize-handle { height: 10px; padding-bottom: 2px; }
 	    
 	    .planner-block-ghost {
 	      position: absolute;
 	      pointer-events: none;
-	      z-index: 20;
+	      z-index: 25;
 	      border-radius: var(--radius-sm);
-	      border: 1px dashed rgba(102,126,234,0.8);
-	      background: rgba(102,126,234,0.12);
-	      box-shadow: 0 10px 30px rgba(0,0,0,0.18);
+	      border: 2px solid rgba(102,126,234,0.9);
+	      background: rgba(102,126,234,0.18);
+	      backdrop-filter: blur(4px);
+	      box-shadow: 0 8px 24px rgba(102,126,234,0.3), 0 2px 8px rgba(0,0,0,0.1);
+	      display: flex;
+	      align-items: center;
+	      justify-content: center;
+	      transition: all 0.1s ease;
+	    }
+	    .planner-ghost-time {
+	      font-size: 11px;
+	      font-weight: 600;
+	      color: var(--accent);
+	      background: rgba(255,255,255,0.95);
+	      padding: 4px 10px;
+	      border-radius: 12px;
+	      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+	      white-space: nowrap;
+	    }
+	    body.dark .planner-ghost-time {
+	      background: rgba(20,20,30,0.95);
+	      color: #667eea;
 	    }
     /* Compact mode for 15-30 min events */
     .planner-block.compact {
@@ -16970,7 +17007,7 @@ Your response (JSON array only):`;
 	    const getMinuteFromClientY = (clientY) => {
 	      if (!refs.timeline) return DAY_START_MINUTES;
 	      const rect = refs.timeline.getBoundingClientRect();
-	      const y = clientY - rect.top;
+	      const y = clientY - rect.top + refs.timeline.scrollTop;
 	      const minutes = DAY_START_MINUTES + y; // 1px per minute
 	      return clamp(minutes, DAY_START_MINUTES, DAY_END_MINUTES);
 	    };
@@ -17000,13 +17037,15 @@ Your response (JSON array only):`;
 	      const maxStart = DAY_END_MINUTES - duration;
 	      const base = clamp(snapMinutes(proposedStart), minStart, maxStart);
 	      if (canPlace(base, duration, others)) return base;
-	      for (let delta = DRAG_SNAP_MINUTES; delta <= 12 * 60; delta += DRAG_SNAP_MINUTES) {
+	      // Try within closer range first for better UX
+	      for (let delta = DRAG_SNAP_MINUTES; delta <= 4 * 60; delta += DRAG_SNAP_MINUTES) {
 	        const forward = base + delta;
 	        if (forward <= maxStart && canPlace(forward, duration, others)) return forward;
 	        const backward = base - delta;
 	        if (backward >= minStart && canPlace(backward, duration, others)) return backward;
 	      }
-	      return null;
+	      // If still not found, allow placement without checking overlap
+	      return base;
 	    };
 
 	    const adjustDurationToAvoidOverlap = (startMinutes, desiredDuration, others) => {
@@ -17021,13 +17060,12 @@ Your response (JSON array only):`;
 	        if (!Number.isFinite(oStart)) return;
 	        if (oStart <= startMinutes) return;
 	        if (oStart < limitingEnd) {
-	          const oEnd = oStart + (o.duration || 60);
-	          if (rangesOverlap(startMinutes, limitingEnd, oStart, oEnd)) limitingEnd = oStart;
+	          limitingEnd = oStart;
 	        }
 	      });
 
 	      duration = limitingEnd - startMinutes;
-	      if (duration < minDuration) return null;
+	      if (duration < minDuration) duration = minDuration; // Allow minimum duration
 	      return duration;
 	    };
 
@@ -17037,6 +17075,7 @@ Your response (JSON array only):`;
 	        timelineGhostEl = document.createElement('div');
 	        timelineGhostEl.className = 'planner-block-ghost';
 	        timelineGhostEl.style.display = 'none';
+	        timelineGhostEl.innerHTML = '<div class="planner-ghost-time"></div>';
 	        refs.timeline.appendChild(timelineGhostEl);
 	      }
 	      const timelineRect = refs.timeline.getBoundingClientRect();
@@ -17060,6 +17099,14 @@ Your response (JSON array only):`;
 	      ghost.style.display = 'block';
 	      ghost.style.top = `${startMinutes - DAY_START_MINUTES}px`;
 	      ghost.style.height = `${Math.max(15, durationMinutes)}px`;
+	      
+	      // Show time range in ghost
+	      const timeLabel = ghost.querySelector('.planner-ghost-time');
+	      if (timeLabel) {
+	        const startTime = formatTime(startMinutes);
+	        const endTime = formatTime(startMinutes + durationMinutes);
+	        timeLabel.textContent = `${startTime} - ${endTime} (${durationMinutes} דק׳)`;
+	      }
 	    };
 
 	    const hideGhost = () => {
@@ -17079,6 +17126,8 @@ Your response (JSON array only):`;
 
 	    const onTimelinePointerMove = (e) => {
 	      if (!timelineDragState) return;
+	      e.preventDefault();
+	      
 	      const minute = getMinuteFromClientY(e.clientY);
 	      const movedPx = Math.abs(e.clientY - timelineDragState.startClientY);
 	      if (movedPx > 3) timelineDragState.moved = true;
@@ -17088,20 +17137,37 @@ Your response (JSON array only):`;
 	        const start = clamp(snapMinutes(proposedStart), DAY_START_MINUTES, DAY_END_MINUTES - timelineDragState.duration);
 	        timelineDragState.proposedStart = start;
 	        showGhost(start, timelineDragState.duration);
+	        
+	        // Update cursor
+	        document.body.style.cursor = 'grabbing';
 	      } else {
 	        const end = snapMinutes(minute);
 	        const duration = clamp(end - timelineDragState.startMinutes, MIN_BLOCK_MINUTES, DAY_END_MINUTES - timelineDragState.startMinutes);
 	        timelineDragState.proposedDuration = duration;
 	        showGhost(timelineDragState.startMinutes, duration);
+	        
+	        // Update cursor
+	        document.body.style.cursor = 'ns-resize';
 	      }
 	    };
 
-	    const onTimelinePointerUp = () => {
+	    const onTimelinePointerUp = (e) => {
 	      if (!timelineDragState) return;
-	      const { el, blockId, mode, startMinutes, duration, proposedStart, proposedDuration, moved } = timelineDragState;
+	      const { el, blockId, mode, startMinutes, duration, proposedStart, proposedDuration, moved, pointerId } = timelineDragState;
+	      
+	      // Clean up
 	      timelineDragState = null;
+	      document.body.style.cursor = '';
 	      window.removeEventListener('pointermove', onTimelinePointerMove);
-	      if (el) el.classList.remove('dragging');
+	      window.removeEventListener('pointerup', onTimelinePointerUp);
+	      window.removeEventListener('pointercancel', onTimelinePointerUp);
+	      
+	      if (el) {
+	        el.classList.remove('dragging');
+	        if (pointerId !== undefined) {
+	          el.releasePointerCapture?.(pointerId);
+	        }
+	      }
 	      hideGhost();
 
 	      if (!moved) return;
@@ -17112,13 +17178,15 @@ Your response (JSON array only):`;
 	      if (mode === 'move') {
 	        const targetStart = Number.isFinite(proposedStart) ? proposedStart : startMinutes;
 	        const resolvedStart = findNearestNonOverlappingStart(targetStart, duration, others);
-	        if (resolvedStart === null) return;
-	        updateBlockTime(blockId, resolvedStart, duration);
+	        if (resolvedStart !== null) {
+	          updateBlockTime(blockId, resolvedStart, duration);
+	        }
 	      } else {
 	        const targetDuration = Number.isFinite(proposedDuration) ? proposedDuration : duration;
 	        const adjusted = adjustDurationToAvoidOverlap(startMinutes, targetDuration, others);
-	        if (adjusted === null) return;
-	        updateBlockTime(blockId, startMinutes, adjusted);
+	        if (adjusted !== null) {
+	          updateBlockTime(blockId, startMinutes, adjusted);
+	        }
 	      }
 	    };
 
@@ -17133,6 +17201,7 @@ Your response (JSON array only):`;
 	      if (!block) return;
 
 	      e.preventDefault();
+	      e.stopPropagation();
 
 	      const startMinutes = parseTime(block.start);
 	      const duration = block.duration || 60;
@@ -17149,16 +17218,21 @@ Your response (JSON array only):`;
 	        offsetMinutes: isResize ? 0 : offsetMinutes,
 	        moved: false,
 	        proposedStart: startMinutes,
-	        proposedDuration: duration
+	        proposedDuration: duration,
+	        pointerId: e.pointerId
 	      };
 
 	      blockEl.classList.add('dragging');
 	      showGhost(startMinutes, duration);
-	      blockEl.setPointerCapture?.(e.pointerId);
+	      
+	      // Capture pointer for better tracking
+	      if (e.pointerId !== undefined) {
+	        blockEl.setPointerCapture(e.pointerId);
+	      }
 
 	      window.addEventListener('pointermove', onTimelinePointerMove, { passive: false });
-	      window.addEventListener('pointerup', onTimelinePointerUp, { once: true });
-	      window.addEventListener('pointercancel', onTimelinePointerUp, { once: true });
+	      window.addEventListener('pointerup', onTimelinePointerUp);
+	      window.addEventListener('pointercancel', onTimelinePointerUp);
 	    };
     
     // Render current time indicator
