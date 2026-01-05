@@ -9768,107 +9768,219 @@
   // ========================================
   
   // AI Configuration - Replace with your API keys
-  const AI_CONFIG = {
-    provider: 'gemini', // 'gemini', 'openai', or 'local'
-    gemini: {
-      apiKey: 'AIzaSyAkXcOWS3VDbWVKmQvnkRi750a7tJ_U3us',
-      // Gemini 2.5 Flash - best available model, up to 1M tokens
-      endpoint: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent'
-    },
-    openai: {
-      apiKey: 'YOUR_OPENAI_API_KEY',
-      endpoint: 'https://api.openai.com/v1/chat/completions',
-      model: 'gpt-3.5-turbo'
-    }
-  };
+	  const AI_CONFIG = {
+	    provider: 'gemini', // 'gemini', 'openai', or 'local'
+	    gemini: {
+	      apiKey: 'AIzaSyAkXcOWS3VDbWVKmQvnkRi750a7tJ_U3us',
+	      // Gemini 2.5 Flash - best available model, up to 1M tokens
+	      endpoint: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent'
+	    },
+	    openai: {
+	      apiKey: 'YOUR_OPENAI_API_KEY',
+	      endpoint: 'https://api.openai.com/v1/chat/completions',
+	      model: 'gpt-3.5-turbo'
+	    }
+	  };
 
-  // Helper function to call Gemini API with proper error handling
-  async function callGeminiAPI(prompt) {
-    const response = await fetch(`${AI_CONFIG.gemini.endpoint}?key=${AI_CONFIG.gemini.apiKey}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{
-          parts: [{ text: prompt }]
-        }],
-        generationConfig: {
-          temperature: 0.7,
-          maxOutputTokens: 8192,
-        },
-        safetySettings: [
-          { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
-          { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" },
-          { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_NONE" },
-          { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" }
-        ]
-      })
-    });
-    
-    const data = await response.json();
-    
-    // Check for API errors
-    if (data.error) {
-      console.error('Gemini API Error:', data.error);
-      throw new Error(data.error.message || 'Gemini API returned an error');
-    }
-    
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${data.error?.message || 'Request failed'}`);
-    }
-    
-    // Check if blocked by safety filters
-    if (data.candidates?.[0]?.finishReason === 'SAFETY') {
-      throw new Error('Content was blocked by safety filters');
-    }
-    
-    // Check if response was truncated
-    const finishReason = data.candidates?.[0]?.finishReason;
-    if (finishReason === 'MAX_TOKENS' || finishReason === 'LENGTH') {
-      throw new Error('AI response was truncated. Try reducing the number of tasks.');
-    }
-    
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (!text) {
-      console.error('Empty response from Gemini:', data);
-      throw new Error('Empty response from AI');
-    }
-    
-    return text;
-  }
+	  const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
-  // Helper function to call OpenAI API
-  async function callOpenAIAPI(prompt) {
-    const response = await fetch(AI_CONFIG.openai.endpoint, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${AI_CONFIG.openai.apiKey}`
-      },
-      body: JSON.stringify({
-        model: AI_CONFIG.openai.model,
-        messages: [{ role: 'user', content: prompt }],
-        temperature: 0.7,
-        max_tokens: 1024
-      })
-    });
-    
-    const data = await response.json();
-    
-    if (data.error) {
-      throw new Error(data.error.message || 'OpenAI API error');
-    }
-    
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: Request failed`);
-    }
-    
-    const text = data.choices?.[0]?.message?.content;
-    if (!text) {
-      throw new Error('Empty response from AI');
-    }
-    
-    return text;
-  }
+	  const isLikelyPlaceholderKey = (key) => {
+	    const k = String(key || '').trim();
+	    if (!k) return true;
+	    return k.includes('YOUR_') || k.includes('YOUR-') || k.includes('PASTE_') || k.includes('123456');
+	  };
+
+	  const hasOpenAIKeyConfigured = () => !isLikelyPlaceholderKey(AI_CONFIG.openai.apiKey);
+	  const hasGeminiKeyConfigured = () => !isLikelyPlaceholderKey(AI_CONFIG.gemini.apiKey);
+
+	  function parseRetryAfterMs(response, apiMessage = '') {
+	    try {
+	      const header = response?.headers?.get?.('retry-after');
+	      if (header) {
+	        const seconds = Number(header);
+	        if (Number.isFinite(seconds) && seconds > 0) return Math.ceil(seconds * 1000);
+	      }
+	    } catch {}
+
+	    const msg = String(apiMessage || '');
+	    const match = msg.match(/retry in\s*([0-9.]+)\s*s/i);
+	    if (match) {
+	      const seconds = Number(match[1]);
+	      if (Number.isFinite(seconds) && seconds > 0) return Math.ceil(seconds * 1000);
+	    }
+	    return null;
+	  }
+
+	  function makeRateLimitError(message, retryAfterMs) {
+	    const err = new Error(message);
+	    err.code = 'RATE_LIMIT';
+	    if (Number.isFinite(retryAfterMs)) err.retryAfterMs = retryAfterMs;
+	    return err;
+	  }
+
+	  // Helper function to call Gemini API with proper error handling
+	  async function callGeminiAPI(prompt, opts = {}) {
+	    const maxRetries = Number.isFinite(opts.maxRetries) ? opts.maxRetries : 3;
+	    const timeoutMs = Number.isFinite(opts.timeoutMs) ? opts.timeoutMs : 45000;
+
+	    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+	      const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+	      const timer = controller ? setTimeout(() => controller.abort(), timeoutMs) : null;
+
+	      try {
+	        const response = await fetch(`${AI_CONFIG.gemini.endpoint}?key=${AI_CONFIG.gemini.apiKey}`, {
+	          method: 'POST',
+	          headers: { 'Content-Type': 'application/json' },
+	          body: JSON.stringify({
+	            contents: [{
+	              parts: [{ text: prompt }]
+	            }],
+	            generationConfig: {
+	              temperature: 0.7,
+	              maxOutputTokens: 8192,
+	            },
+	            safetySettings: [
+	              { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
+	              { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" },
+	              { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_NONE" },
+	              { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" }
+	            ]
+	          }),
+	          ...(controller ? { signal: controller.signal } : {})
+	        });
+
+	        const data = await response.json().catch(() => ({}));
+	        const apiMessage = data?.error?.message || '';
+	        const finishReason = data?.candidates?.[0]?.finishReason;
+
+	        // Retry on rate limits / transient backend failures
+	        const isRateLimit =
+	          response.status === 429 ||
+	          data?.error?.status === 'RESOURCE_EXHAUSTED' ||
+	          /quota|rate limit|too many requests/i.test(String(apiMessage));
+	        const isTransient =
+	          isRateLimit ||
+	          response.status === 503 ||
+	          data?.error?.status === 'UNAVAILABLE' ||
+	          response.status === 500 ||
+	          data?.error?.status === 'INTERNAL';
+
+	        if (!response.ok || data?.error) {
+	          if (isTransient && attempt < maxRetries) {
+	            const retryAfterMs = parseRetryAfterMs(response, apiMessage);
+	            const backoffMs = Math.min(8000, 600 * Math.pow(2, attempt)) + Math.floor(Math.random() * 250);
+	            const waitMs = retryAfterMs ?? backoffMs;
+	            console.warn(`[Gemini] transient error (${response.status || data?.error?.status || 'unknown'}), retrying in ${waitMs}ms`);
+	            await sleep(waitMs);
+	            continue;
+	          }
+	          if (isRateLimit) {
+	            const retryAfterMs = parseRetryAfterMs(response, apiMessage);
+	            throw makeRateLimitError(apiMessage || `Rate limited (HTTP ${response.status})`, retryAfterMs);
+	          }
+	          console.error('Gemini API Error:', data?.error || data);
+	          throw new Error(apiMessage || `HTTP ${response.status}: Request failed`);
+	        }
+
+	        // Check if blocked by safety filters
+	        if (finishReason === 'SAFETY') {
+	          throw new Error('Content was blocked by safety filters');
+	        }
+
+	        // Check if response was truncated
+	        if (finishReason === 'MAX_TOKENS' || finishReason === 'LENGTH') {
+	          throw new Error('AI response was truncated. Try reducing the number of tasks.');
+	        }
+
+	        const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+	        if (!text) {
+	          console.error('Empty response from Gemini:', data);
+	          throw new Error('Empty response from AI');
+	        }
+
+	        return text;
+	      } catch (err) {
+	        const aborted = err?.name === 'AbortError';
+	        if (aborted && attempt < maxRetries) {
+	          const waitMs = Math.min(8000, 600 * Math.pow(2, attempt)) + Math.floor(Math.random() * 250);
+	          console.warn(`[Gemini] timeout, retrying in ${waitMs}ms`);
+	          await sleep(waitMs);
+	          continue;
+	        }
+	        throw err;
+	      } finally {
+	        if (timer) clearTimeout(timer);
+	      }
+	    }
+
+	    throw new Error('Gemini request failed after retries');
+	  }
+
+	  // Helper function to call OpenAI API
+	  async function callOpenAIAPI(prompt, opts = {}) {
+	    const maxRetries = Number.isFinite(opts.maxRetries) ? opts.maxRetries : 3;
+	    const timeoutMs = Number.isFinite(opts.timeoutMs) ? opts.timeoutMs : 45000;
+
+	    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+	      const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+	      const timer = controller ? setTimeout(() => controller.abort(), timeoutMs) : null;
+
+	      try {
+	        const response = await fetch(AI_CONFIG.openai.endpoint, {
+	          method: 'POST',
+	          headers: {
+	            'Content-Type': 'application/json',
+	            'Authorization': `Bearer ${AI_CONFIG.openai.apiKey}`
+	          },
+	          body: JSON.stringify({
+	            model: AI_CONFIG.openai.model,
+	            messages: [{ role: 'user', content: prompt }],
+	            temperature: 0.7,
+	            max_tokens: 1024
+	          }),
+	          ...(controller ? { signal: controller.signal } : {})
+	        });
+
+	        const data = await response.json().catch(() => ({}));
+	        const apiMessage = data?.error?.message || '';
+	        const isRateLimit = response.status === 429 || /rate limit|too many requests/i.test(String(apiMessage));
+	        const isTransient = isRateLimit || response.status === 503 || response.status === 500;
+
+	        if (!response.ok || data?.error) {
+	          if (isTransient && attempt < maxRetries) {
+	            const retryAfterMs = parseRetryAfterMs(response, apiMessage);
+	            const backoffMs = Math.min(8000, 600 * Math.pow(2, attempt)) + Math.floor(Math.random() * 250);
+	            const waitMs = retryAfterMs ?? backoffMs;
+	            console.warn(`[OpenAI] transient error (${response.status}), retrying in ${waitMs}ms`);
+	            await sleep(waitMs);
+	            continue;
+	          }
+	          if (isRateLimit) {
+	            const retryAfterMs = parseRetryAfterMs(response, apiMessage);
+	            throw makeRateLimitError(apiMessage || `Rate limited (HTTP ${response.status})`, retryAfterMs);
+	          }
+	          throw new Error(apiMessage || `HTTP ${response.status}: Request failed`);
+	        }
+
+	        const text = data.choices?.[0]?.message?.content;
+	        if (!text) throw new Error('Empty response from AI');
+	        return text;
+	      } catch (err) {
+	        const aborted = err?.name === 'AbortError';
+	        if (aborted && attempt < maxRetries) {
+	          const waitMs = Math.min(8000, 600 * Math.pow(2, attempt)) + Math.floor(Math.random() * 250);
+	          console.warn(`[OpenAI] timeout, retrying in ${waitMs}ms`);
+	          await sleep(waitMs);
+	          continue;
+	        }
+	        throw err;
+	      } finally {
+	        if (timer) clearTimeout(timer);
+	      }
+	    }
+
+	    throw new Error('OpenAI request failed after retries');
+	  }
 
   // Parse JSON from AI response (handles markdown code blocks and various formats)
   function parseAIJsonResponse(text) {
@@ -9952,18 +10064,33 @@
     throw new Error('Could not parse AI response as JSON. The AI may have returned invalid JSON or text instead of JSON.');
   }
 
-  // Call AI API with automatic provider selection
-  async function callAI(prompt) {
-    const provider = AI_CONFIG.provider;
-    
-    if (provider === 'gemini') {
-      return await callGeminiAPI(prompt);
-    } else if (provider === 'openai') {
-      return await callOpenAIAPI(prompt);
-    } else {
-      throw new Error('No AI provider configured');
-    }
-  }
+	  // Call AI API with automatic provider selection
+	  async function callAI(prompt) {
+	    const provider = AI_CONFIG.provider;
+
+	    try {
+	      if (provider === 'gemini') {
+	        return await callGeminiAPI(prompt);
+	      } else if (provider === 'openai') {
+	        return await callOpenAIAPI(prompt);
+	      } else {
+	        throw new Error('No AI provider configured');
+	      }
+	    } catch (err) {
+	      const msg = String(err?.message || '');
+	      const isRateLimited = err?.code === 'RATE_LIMIT' || /quota|rate limit|too many requests/i.test(msg);
+
+	      if (provider === 'gemini' && isRateLimited && hasOpenAIKeyConfigured()) {
+	        console.warn('[AI] Gemini rate limited; falling back to OpenAI');
+	        return await callOpenAIAPI(prompt);
+	      }
+	      if (provider === 'openai' && isRateLimited && hasGeminiKeyConfigured()) {
+	        console.warn('[AI] OpenAI rate limited; falling back to Gemini');
+	        return await callGeminiAPI(prompt);
+	      }
+	      throw err;
+	    }
+	  }
 
   // Call AI API to break down a task into subtasks
   async function breakDownTaskWithAI(taskTitle, taskNotes = '') {
@@ -10207,21 +10334,33 @@ Return your response as valid JSON now:`;
         // Show reply
         addMessage(parsed.reply || '✅ בוצע! / Done!');
         
-      } catch (error) {
-        console.error('AI Chat error:', error);
-        console.error('Error details:', {
-          message: error.message,
-          stack: error.stack,
-          userMessage: message
-        });
-        
-        // Provide helpful error messages
-        let errorMsg = `❌ שגיאה: ${error.message}\n\n`;
-        
-        if (error.message.includes('parse') || error.message.includes('JSON')) {
-          errorMsg += `התשובה מה-AI לא הייתה בפורמט תקין. נסה:\n` +
-                     `• פשט את הבקשה\n` +
-                     `• הוסף משימה אחת בכל פעם\n` +
+	      } catch (error) {
+	        console.error('AI Chat error:', error);
+	        console.error('Error details:', {
+	          message: error.message,
+	          stack: error.stack,
+	          userMessage: message
+	        });
+	        
+	        // Provide helpful error messages
+	        const retryAfterMs = Number.isFinite(error?.retryAfterMs) ? error.retryAfterMs : null;
+	        const retryAfterSec = retryAfterMs ? Math.max(1, Math.ceil(retryAfterMs / 1000)) : null;
+
+	        if (error?.code === 'RATE_LIMIT' || /quota|rate limit|too many requests/i.test(String(error?.message || ''))) {
+	          addMessage(
+	            `⏳ הגעת למגבלת בקשות זמנית ל-AI.\n` +
+	            (retryAfterSec ? `נסה שוב בעוד ${retryAfterSec} שניות.\n\n` : `נסה שוב בעוד כמה שניות.\n\n`) +
+	            `If this keeps happening, consider using a paid API key or switching provider.`
+	          );
+	          return;
+	        }
+
+	        let errorMsg = `❌ שגיאה: ${error.message}\n\n`;
+	        
+	        if (error.message.includes('parse') || error.message.includes('JSON')) {
+	          errorMsg += `התשובה מה-AI לא הייתה בפורמט תקין. נסה:\n` +
+	                     `• פשט את הבקשה\n` +
+	                     `• הוסף משימה אחת בכל פעם\n` +
                      `• השתמש בפורמט: "הוסף משימה: [שם] [תאריך] בשעה [שעה]"\n\n` +
                      `The AI response was not in valid format. Try:\n` +
                      `• Simplify your request\n` +
