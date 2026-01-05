@@ -11621,7 +11621,7 @@
     };
 
     // ============ PICTURE-IN-PICTURE FUNCTIONALITY ============
-    let pipWindow = null;
+    let pipVideo = null;
     let pipAnimationFrame = null;
     let isPiPActive = false;
 
@@ -11672,26 +11672,34 @@
     };
 
     const startPiP = async () => {
-      if (!refs.pipCanvas || !('documentPictureInPicture' in window)) {
-        alert('Picture-in-Picture אינו נתמך בדפדפן זה');
+      if (!refs.pipCanvas) return;
+      
+      // Check if PiP is supported
+      if (!document.pictureInPictureEnabled) {
+        alert('Picture-in-Picture אינו נתמך בדפדפן זה.\nנסה Chrome, Edge, או Safari.');
         return;
       }
 
       try {
-        // Create a video element from canvas
+        // Create or reuse video element
+        if (!pipVideo) {
+          pipVideo = document.createElement('video');
+          pipVideo.muted = true;
+          pipVideo.autoplay = true;
+          pipVideo.loop = true;
+          pipVideo.style.display = 'none';
+          document.body.appendChild(pipVideo);
+        }
+
+        // Get stream from canvas
         const stream = refs.pipCanvas.captureStream(30); // 30 FPS
-        const video = document.createElement('video');
-        video.srcObject = stream;
-        video.muted = true;
-        video.autoplay = true;
-        video.style.width = '100%';
-        video.style.height = '100%';
+        pipVideo.srcObject = stream;
         
         // Play the video
-        await video.play();
+        await pipVideo.play();
         
         // Request PiP
-        pipWindow = await video.requestPictureInPicture();
+        await pipVideo.requestPictureInPicture();
         isPiPActive = true;
         
         if (refs.pipBtn) refs.pipBtn.classList.add('active');
@@ -11700,25 +11708,31 @@
         updatePiPCanvas();
         
         // Handle PiP close
-        video.addEventListener('leavepictureinpicture', () => {
+        const handleLeavePiP = () => {
           isPiPActive = false;
           if (refs.pipBtn) refs.pipBtn.classList.remove('active');
           if (pipAnimationFrame) {
             cancelAnimationFrame(pipAnimationFrame);
             pipAnimationFrame = null;
           }
-          pipWindow = null;
-        });
+          pipVideo.removeEventListener('leavepictureinpicture', handleLeavePiP);
+        };
+        
+        pipVideo.addEventListener('leavepictureinpicture', handleLeavePiP);
         
       } catch (error) {
         console.error('PiP error:', error);
-        alert('שגיאה בהפעלת Picture-in-Picture');
+        alert('שגיאה בהפעלת Picture-in-Picture: ' + error.message);
       }
     };
 
-    const stopPiP = () => {
-      if (pipWindow && document.pictureInPictureElement) {
-        document.exitPictureInPicture().catch(e => console.error('PiP exit error:', e));
+    const stopPiP = async () => {
+      if (document.pictureInPictureElement) {
+        try {
+          await document.exitPictureInPicture();
+        } catch (e) {
+          console.error('PiP exit error:', e);
+        }
       }
       isPiPActive = false;
       if (refs.pipBtn) refs.pipBtn.classList.remove('active');
@@ -11726,7 +11740,6 @@
         cancelAnimationFrame(pipAnimationFrame);
         pipAnimationFrame = null;
       }
-      pipWindow = null;
     };
 
     const initPiP = () => {
@@ -11740,15 +11753,13 @@
         }
       });
       
-      // Check if PiP is supported
-      if (!('documentPictureInPicture' in window)) {
-        // Try standard PiP API
-        const hasStandardPiP = 'pictureInPictureEnabled' in document;
-        if (!hasStandardPiP) {
-          refs.pipBtn.style.opacity = '0.3';
-          refs.pipBtn.style.cursor = 'not-allowed';
-          refs.pipBtn.title = 'Picture-in-Picture לא נתמך בדפדפן זה';
-        }
+      // Check if PiP is supported and show status
+      if (!document.pictureInPictureEnabled) {
+        refs.pipBtn.style.opacity = '0.3';
+        refs.pipBtn.style.cursor = 'not-allowed';
+        refs.pipBtn.title = 'Picture-in-Picture לא נתמך בדפדפן זה';
+      } else {
+        refs.pipBtn.title = 'הצג כחלון צף (Picture-in-Picture)';
       }
     };
 
