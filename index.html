@@ -9541,6 +9541,7 @@
     hasEventsCache = true;
     syncCacheUsed.events = true;
     eventsLoaded = true;
+    markSyncReady('events', 'cache');
     setEventsLoading(false);
     updateSyncBadge();
     render();
@@ -11927,6 +11928,7 @@
     tasks = cachedTasks;
     hasTasksCache = true;
     syncCacheUsed.tasks = true;
+    markSyncReady('tasks', 'cache');
     updateSyncBadge();
     Pomodoro.updateTasks(tasks);
     if (taskManagerOverlay.classList.contains('open')) {
@@ -13020,6 +13022,7 @@
   if (cachedSubjects && cachedSubjects.length) {
     subjects = cachedSubjects;
     syncCacheUsed.subjects = true;
+    markSyncReady('subjects', 'cache');
     updateSyncBadge();
     renderSubjectsSidebar();
     updateSubjectSelectors();
