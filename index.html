@@ -1202,11 +1202,16 @@
 	      cursor: grabbing;
 	    }
 	    .planner-block.dragging { 
-	      opacity: 0.5; 
+	      opacity: 0.4; 
 	      z-index: 12; 
 	      cursor: grabbing; 
-	      transform: none;
+	      transform: scale(0.98);
 	      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+	      transition: opacity 0.1s ease, transform 0.1s ease;
+	    }
+	    .planner-block.resizing {
+	      opacity: 0.6;
+	      transition: opacity 0.1s ease;
 	    }
 	    .planner-block-resize-handle {
 	      position: absolute;
@@ -1265,12 +1270,19 @@
 	      display: flex;
 	      align-items: center;
 	      justify-content: center;
-	      transition: all 0.08s ease;
+	      transition: top 0.05s ease-out, height 0.05s ease-out;
 	      animation: pulseGhost 1.5s ease-in-out infinite;
+	      will-change: top, height;
 	    }
 	    @keyframes pulseGhost {
-	      0%, 100% { box-shadow: 0 8px 24px rgba(102,126,234,0.4), 0 2px 8px rgba(0,0,0,0.15), inset 0 0 0 1px rgba(255,255,255,0.3); }
-	      50% { box-shadow: 0 12px 32px rgba(102,126,234,0.5), 0 4px 12px rgba(0,0,0,0.2), inset 0 0 0 1px rgba(255,255,255,0.5); }
+	      0%, 100% { 
+	        box-shadow: 0 8px 24px rgba(102,126,234,0.4), 0 2px 8px rgba(0,0,0,0.15), inset 0 0 0 1px rgba(255,255,255,0.3);
+	        transform: scale(1);
+	      }
+	      50% { 
+	        box-shadow: 0 12px 32px rgba(102,126,234,0.5), 0 4px 12px rgba(0,0,0,0.2), inset 0 0 0 1px rgba(255,255,255,0.5);
+	        transform: scale(1.01);
+	      }
 	    }
 	    .planner-ghost-time {
 	      font-size: 12px;
@@ -1282,6 +1294,10 @@
 	      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
 	      white-space: nowrap;
 	      border: 2px solid rgba(102,126,234,0.3);
+	      transition: transform 0.2s ease;
+	    }
+	    .planner-block-ghost:hover .planner-ghost-time {
+	      transform: scale(1.05);
 	    }
 	    body.dark .planner-ghost-time {
 	      background: rgba(20,20,30,0.98);
@@ -3457,252 +3473,6 @@
     .modal-backdrop.open { display: flex; }
     
     /* Responsive */
-      position: fixed;
-      top: 56px;
-      right: -380px;
-      bottom: 0;
-      width: 360px;
-      background: var(--card);
-      border-left: 1px solid var(--border);
-      z-index: 2000;
-      display: flex;
-      flex-direction: column;
-      box-shadow: -4px 0 20px rgba(0,0,0,0.1);
-      transition: right 0.3s ease;
-    }
-    .ai-chat-modal.open { right: 0; }
-    .ai-chat-container {
-      display: flex;
-      flex-direction: column;
-      height: 100%;
-    }
-    .ai-chat-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 12px 16px;
-      border-bottom: 1px solid var(--border);
-      background: var(--bg);
-    }
-    .ai-chat-title {
-      font-size: 14px;
-      font-weight: 600;
-      color: var(--text);
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-    .ai-chat-close {
-      background: none;
-      border: none;
-      font-size: 20px;
-      color: var(--muted);
-      cursor: pointer;
-      padding: 2px 6px;
-      border-radius: 4px;
-      transition: all 0.15s;
-    }
-    .ai-chat-close:hover {
-      background: var(--day-hover);
-      color: var(--text);
-    }
-    .ai-chat-messages {
-      flex: 1;
-      overflow-y: auto;
-      padding: 12px;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      background: var(--bg);
-    }
-	    .ai-chat-message {
-	      display: flex;
-	      gap: 8px;
-	      animation: messageSlideIn 0.2s ease-out;
-	    }
-    @keyframes messageSlideIn {
-      from {
-        opacity: 0;
-        transform: translateX(10px);
-      }
-      to {
-        opacity: 1;
-        transform: translateX(0);
-      }
-    }
-    .ai-chat-message.user {
-      flex-direction: row-reverse;
-    }
-    .ai-chat-avatar {
-      width: 28px;
-      height: 28px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 14px;
-      flex-shrink: 0;
-    }
-    .ai-chat-message.user .ai-chat-avatar {
-      background: linear-gradient(135deg, #667eea, #764ba2);
-    }
-    .ai-chat-message.ai .ai-chat-avatar {
-      background: linear-gradient(135deg, #8b5cf6, #ec4899);
-    }
-	    .ai-chat-bubble {
-	      max-width: 85%;
-	      padding: 8px 12px;
-	      border-radius: 10px;
-	      font-size: 13px;
-	      line-height: 1.4;
-	      white-space: pre-wrap;
-	      text-align: start;
-	      unicode-bidi: plaintext;
-	    }
-    .ai-chat-message.user .ai-chat-bubble {
-      background: linear-gradient(135deg, #667eea, #764ba2);
-      color: white;
-      border-bottom-right-radius: 4px;
-    }
-    .ai-chat-message.ai .ai-chat-bubble {
-      background: var(--card);
-      color: var(--text);
-      border: 1px solid var(--border);
-      border-bottom-left-radius: 4px;
-    }
-	    .ai-chat-input-area {
-	      padding: 12px;
-	      border-top: 1px solid var(--border);
-	      display: flex;
-	      gap: 8px;
-	      background: var(--card);
-	      align-items: flex-end;
-	    }
-	    .ai-chat-input {
-	      flex: 1;
-	      padding: 10px 14px;
-	      border: 1px solid var(--border);
-	      border-radius: 16px;
-	      background: var(--bg);
-	      color: var(--text);
-	      font-size: 14px;
-	      outline: none;
-	      transition: all 0.15s;
-	      resize: none;
-	      min-height: 38px;
-	      max-height: 120px;
-	      overflow-y: auto;
-	      line-height: 1.35;
-	      text-align: start;
-	      unicode-bidi: plaintext;
-	    }
-    .ai-chat-input:focus {
-      border-color: #667eea;
-      box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
-    }
-	    .ai-chat-send {
-	      width: 38px;
-	      height: 38px;
-      border: none;
-      border-radius: 50%;
-      background: linear-gradient(135deg, #667eea, #764ba2);
-      color: white;
-      font-size: 16px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: all 0.15s;
-      flex-shrink: 0;
-    }
-    .ai-chat-send:hover {
-      transform: scale(1.05);
-    }
-    .ai-chat-send:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-      transform: none;
-    }
-    .ai-chat-examples {
-      padding: 8px 12px;
-      border-top: 1px solid var(--border);
-      background: var(--card);
-      display: flex;
-      gap: 6px;
-      flex-wrap: wrap;
-      font-size: 11px;
-    }
-    .ai-chat-example {
-      padding: 4px 10px;
-      border-radius: 10px;
-      background: var(--bg);
-      border: 1px solid var(--border);
-      color: var(--muted);
-      cursor: pointer;
-      transition: all 0.15s;
-    }
-    .ai-chat-example:hover {
-      background: var(--day-hover);
-      color: var(--text);
-      border-color: #667eea;
-    }
-
-    /* AI Day Plan Preview */
-    .ai-day-plan-card {
-      max-width: 680px;
-      width: 100%;
-      max-height: 75vh;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-    .ai-day-plan-list {
-      border: 1px solid var(--border);
-      background: var(--bg);
-      border-radius: 12px;
-      padding: 10px;
-      overflow: auto;
-      flex: 1;
-    }
-    .ai-day-plan-item {
-      display: flex;
-      gap: 10px;
-      align-items: flex-start;
-      padding: 8px 10px;
-      border-radius: 10px;
-      border: 1px solid var(--border);
-      background: var(--card);
-      margin-bottom: 8px;
-    }
-    .ai-day-plan-item:last-child { margin-bottom: 0; }
-    .ai-day-plan-time {
-      font-weight: 700;
-      color: var(--accent);
-      min-width: 110px;
-      direction: ltr;
-      text-align: left;
-      flex-shrink: 0;
-    }
-    .ai-day-plan-title {
-      flex: 1;
-      color: var(--text);
-      text-align: start;
-      unicode-bidi: plaintext;
-    }
-    .ai-day-plan-meta {
-      font-size: 11px;
-      color: var(--muted);
-      margin-top: 2px;
-    }
-    
-    /* Mobile: Full width sidebar */
-    @media (max-width: 480px) {
-      .ai-chat-modal {
-        width: 100%;
-        right: -100%;
-      }
-    }
-    
     .modal-card {
       align-items: center;
       justify-content: center;
@@ -9739,864 +9509,177 @@
   // END CALENDAR SYNC FUNCTIONALITY
   // ========================================
 
-  // ========================================
-  // AI-POWERED FEATURES
-  // ========================================
-  
-  // AI Configuration - Replace with your API keys
-	  const AI_CONFIG = {
-	    provider: 'gemini', // 'gemini', 'openai', or 'local'
-	    gemini: {
-	      apiKey: 'AIzaSyAkXcOWS3VDbWVKmQvnkRi750a7tJ_U3us',
-	      // Gemini 2.5 Flash - best available model, up to 1M tokens
-	      endpoint: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent'
-	    },
-	    openai: {
-	      apiKey: 'YOUR_OPENAI_API_KEY',
-	      endpoint: 'https://api.openai.com/v1/chat/completions',
-	      model: 'gpt-3.5-turbo'
-	    }
-	  };
+  // Persist sidebar width
+  const savedWidth = localStorage.getItem(STORAGE_KEYS.SIDEBAR_WIDTH);
+  if (savedWidth) sidebar.style.width = savedWidth;
 
-	  const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+  const resizeObserver = new ResizeObserver(() => {
+    localStorage.setItem(STORAGE_KEYS.SIDEBAR_WIDTH, sidebar.style.width || sidebar.offsetWidth + 'px');
+  });
+  resizeObserver.observe(sidebar);
 
-	  const isLikelyPlaceholderKey = (key) => {
-	    const k = String(key || '').trim();
-	    if (!k) return true;
-	    return k.includes('YOUR_') || k.includes('YOUR-') || k.includes('PASTE_') || k.includes('123456');
-	  };
-
-	  const hasOpenAIKeyConfigured = () => !isLikelyPlaceholderKey(AI_CONFIG.openai.apiKey);
-	  const hasGeminiKeyConfigured = () => !isLikelyPlaceholderKey(AI_CONFIG.gemini.apiKey);
-
-	  function parseRetryAfterMs(response, apiMessage = '') {
-	    try {
-	      const header = response?.headers?.get?.('retry-after');
-	      if (header) {
-	        const seconds = Number(header);
-	        if (Number.isFinite(seconds) && seconds > 0) return Math.ceil(seconds * 1000);
-	      }
-	    } catch {}
-
-	    const msg = String(apiMessage || '');
-	    const match = msg.match(/retry in\s*([0-9.]+)\s*s/i);
-	    if (match) {
-	      const seconds = Number(match[1]);
-	      if (Number.isFinite(seconds) && seconds > 0) return Math.ceil(seconds * 1000);
-	    }
-	    return null;
-	  }
-
-	  function makeRateLimitError(message, retryAfterMs) {
-	    const err = new Error(message);
-	    err.code = 'RATE_LIMIT';
-	    if (Number.isFinite(retryAfterMs)) err.retryAfterMs = retryAfterMs;
-	    return err;
-	  }
-
-	  // Helper function to call Gemini API with proper error handling
-	  async function callGeminiAPI(prompt, opts = {}) {
-	    const maxRetries = Number.isFinite(opts.maxRetries) ? opts.maxRetries : 3;
-	    const timeoutMs = Number.isFinite(opts.timeoutMs) ? opts.timeoutMs : 45000;
-
-	    for (let attempt = 0; attempt <= maxRetries; attempt++) {
-	      const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
-	      const timer = controller ? setTimeout(() => controller.abort(), timeoutMs) : null;
-
-	      try {
-	        const response = await fetch(`${AI_CONFIG.gemini.endpoint}?key=${AI_CONFIG.gemini.apiKey}`, {
-	          method: 'POST',
-	          headers: { 'Content-Type': 'application/json' },
-	          body: JSON.stringify({
-	            contents: [{
-	              parts: [{ text: prompt }]
-	            }],
-	            generationConfig: {
-	              temperature: 0.7,
-	              maxOutputTokens: 8192,
-	            },
-	            safetySettings: [
-	              { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
-	              { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" },
-	              { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_NONE" },
-	              { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" }
-	            ]
-	          }),
-	          ...(controller ? { signal: controller.signal } : {})
-	        });
-
-	        const data = await response.json().catch(() => ({}));
-	        const apiMessage = data?.error?.message || '';
-	        const finishReason = data?.candidates?.[0]?.finishReason;
-
-	        // Retry on rate limits / transient backend failures
-	        const isRateLimit =
-	          response.status === 429 ||
-	          data?.error?.status === 'RESOURCE_EXHAUSTED' ||
-	          /quota|rate limit|too many requests/i.test(String(apiMessage));
-	        const isTransient =
-	          isRateLimit ||
-	          response.status === 503 ||
-	          data?.error?.status === 'UNAVAILABLE' ||
-	          response.status === 500 ||
-	          data?.error?.status === 'INTERNAL';
-
-	        if (!response.ok || data?.error) {
-	          if (isTransient && attempt < maxRetries) {
-	            const retryAfterMs = parseRetryAfterMs(response, apiMessage);
-	            const backoffMs = Math.min(8000, 600 * Math.pow(2, attempt)) + Math.floor(Math.random() * 250);
-	            const waitMs = retryAfterMs ?? backoffMs;
-	            console.warn(`[Gemini] transient error (${response.status || data?.error?.status || 'unknown'}), retrying in ${waitMs}ms`);
-	            await sleep(waitMs);
-	            continue;
-	          }
-	          if (isRateLimit) {
-	            const retryAfterMs = parseRetryAfterMs(response, apiMessage);
-	            throw makeRateLimitError(apiMessage || `Rate limited (HTTP ${response.status})`, retryAfterMs);
-	          }
-	          console.error('Gemini API Error:', data?.error || data);
-	          throw new Error(apiMessage || `HTTP ${response.status}: Request failed`);
-	        }
-
-	        // Check if blocked by safety filters
-	        if (finishReason === 'SAFETY') {
-	          throw new Error('Content was blocked by safety filters');
-	        }
-
-	        // Check if response was truncated
-	        if (finishReason === 'MAX_TOKENS' || finishReason === 'LENGTH') {
-	          throw new Error('AI response was truncated. Try reducing the number of tasks.');
-	        }
-
-	        const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-	        if (!text) {
-	          console.error('Empty response from Gemini:', data);
-	          throw new Error('Empty response from AI');
-	        }
-
-	        return text;
-	      } catch (err) {
-	        const aborted = err?.name === 'AbortError';
-	        if (aborted && attempt < maxRetries) {
-	          const waitMs = Math.min(8000, 600 * Math.pow(2, attempt)) + Math.floor(Math.random() * 250);
-	          console.warn(`[Gemini] timeout, retrying in ${waitMs}ms`);
-	          await sleep(waitMs);
-	          continue;
-	        }
-	        throw err;
-	      } finally {
-	        if (timer) clearTimeout(timer);
-	      }
-	    }
-
-	    throw new Error('Gemini request failed after retries');
-	  }
-
-	  // Helper function to call OpenAI API
-	  async function callOpenAIAPI(prompt, opts = {}) {
-	    const maxRetries = Number.isFinite(opts.maxRetries) ? opts.maxRetries : 3;
-	    const timeoutMs = Number.isFinite(opts.timeoutMs) ? opts.timeoutMs : 45000;
-
-	    for (let attempt = 0; attempt <= maxRetries; attempt++) {
-	      const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
-	      const timer = controller ? setTimeout(() => controller.abort(), timeoutMs) : null;
-
-	      try {
-	        const response = await fetch(AI_CONFIG.openai.endpoint, {
-	          method: 'POST',
-	          headers: {
-	            'Content-Type': 'application/json',
-	            'Authorization': `Bearer ${AI_CONFIG.openai.apiKey}`
-	          },
-	          body: JSON.stringify({
-	            model: AI_CONFIG.openai.model,
-	            messages: [{ role: 'user', content: prompt }],
-	            temperature: 0.7,
-	            max_tokens: 1024
-	          }),
-	          ...(controller ? { signal: controller.signal } : {})
-	        });
-
-	        const data = await response.json().catch(() => ({}));
-	        const apiMessage = data?.error?.message || '';
-	        const isRateLimit = response.status === 429 || /rate limit|too many requests/i.test(String(apiMessage));
-	        const isTransient = isRateLimit || response.status === 503 || response.status === 500;
-
-	        if (!response.ok || data?.error) {
-	          if (isTransient && attempt < maxRetries) {
-	            const retryAfterMs = parseRetryAfterMs(response, apiMessage);
-	            const backoffMs = Math.min(8000, 600 * Math.pow(2, attempt)) + Math.floor(Math.random() * 250);
-	            const waitMs = retryAfterMs ?? backoffMs;
-	            console.warn(`[OpenAI] transient error (${response.status}), retrying in ${waitMs}ms`);
-	            await sleep(waitMs);
-	            continue;
-	          }
-	          if (isRateLimit) {
-	            const retryAfterMs = parseRetryAfterMs(response, apiMessage);
-	            throw makeRateLimitError(apiMessage || `Rate limited (HTTP ${response.status})`, retryAfterMs);
-	          }
-	          throw new Error(apiMessage || `HTTP ${response.status}: Request failed`);
-	        }
-
-	        const text = data.choices?.[0]?.message?.content;
-	        if (!text) throw new Error('Empty response from AI');
-	        return text;
-	      } catch (err) {
-	        const aborted = err?.name === 'AbortError';
-	        if (aborted && attempt < maxRetries) {
-	          const waitMs = Math.min(8000, 600 * Math.pow(2, attempt)) + Math.floor(Math.random() * 250);
-	          console.warn(`[OpenAI] timeout, retrying in ${waitMs}ms`);
-	          await sleep(waitMs);
-	          continue;
-	        }
-	        throw err;
-	      } finally {
-	        if (timer) clearTimeout(timer);
-	      }
-	    }
-
-	    throw new Error('OpenAI request failed after retries');
-	  }
-
-  // Parse JSON from AI response (handles markdown code blocks and various formats)
-  function parseAIJsonResponse(text) {
-    console.log('Raw AI response:', text); // Debug log
-    
-    // Check for truncation indicators
-    if (text.length > 0 && !text.includes(']') && !text.includes('}')) {
-      throw new Error('AI response appears truncated (no closing brackets). Try reducing task count or simplifying.');
-    }
-    
-    // Remove markdown code blocks if present
-    let cleaned = text.trim();
-    
-    // Handle ```json ... ``` or ``` ... ```
-    cleaned = cleaned.replace(/^```(?:json|JSON)?\s*\n?/i, '');
-    cleaned = cleaned.replace(/\n?```\s*$/i, '');
-    cleaned = cleaned.trim();
-    
-    // Try direct parse first
-    try {
-      const parsed = JSON.parse(cleaned);
-      console.log('Parsed JSON directly:', parsed);
-      return parsed;
-    } catch (directError) {
-      console.log('Direct parse failed, trying extraction methods...');
-    }
-    
-    // Try to find JSON object with actions (greedy match to get complete object)
-    // Look for {..."actions"...[...]..."reply":...}
-    const objectWithActionsMatch = cleaned.match(/\{[\s\S]*"actions"[\s\S]*\[[\s\S]*\][\s\S]*\}/);
-    if (objectWithActionsMatch) {
-      try {
-        const parsed = JSON.parse(objectWithActionsMatch[0]);
-        console.log('Parsed JSON object with actions:', parsed);
-        return parsed;
-      } catch (e) {
-        console.log('Failed to parse object with actions:', e.message);
-      }
-    }
-    
-    // Try to find any JSON object (greedy match)
-    const greedyObjectMatch = cleaned.match(/\{[\s\S]*\}/);
-    if (greedyObjectMatch) {
-      try {
-        const parsed = JSON.parse(greedyObjectMatch[0]);
-        console.log('Parsed JSON object (greedy):', parsed);
-        return parsed;
-      } catch (e) {
-        console.log('Failed to parse greedy object:', e.message);
-      }
-    }
-    
-    // Try to find JSON object (minimal match)
-    const objectMatch = cleaned.match(/\{[\s\S]*?\}/);
-    if (objectMatch) {
-      try {
-        const parsed = JSON.parse(objectMatch[0]);
-        console.log('Parsed JSON object (minimal):', parsed);
-        return parsed;
-      } catch (e) {
-        console.log('Failed to parse minimal object:', e.message);
-      }
-    }
-    
-    // Legacy support: Try to find JSON array
-    const arrayMatch = cleaned.match(/\[[\s\S]*\]/);
-    if (arrayMatch) {
-      try {
-        const parsed = JSON.parse(arrayMatch[0]);
-        if (Array.isArray(parsed)) {
-          console.log('Parsed JSON array (legacy format):', parsed);
-          // Convert to new format
-          return { actions: parsed, reply: '✅ בוצע! / Done!' };
-        }
-      } catch (e) {
-        console.log('Failed to parse array:', e.message);
-      }
-    }
-    
-    console.error('Failed to parse AI response as JSON. Cleaned text:', cleaned.substring(0, 500));
-    throw new Error('Could not parse AI response as JSON. The AI may have returned invalid JSON or text instead of JSON.');
+  function parseLocal(value) {
+    const match = String(value || "").match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/);
+    if (!match) return null;
+    const [, Y, Mo, D, H, Mi] = match;
+    return new Date(+Y, +Mo - 1, +D, +H, +Mi, 0, 0);
   }
 
-	  // Call AI API with automatic provider selection
-	  async function callAI(prompt) {
-	    const provider = AI_CONFIG.provider;
-
-	    try {
-	      if (provider === 'gemini') {
-	        return await callGeminiAPI(prompt);
-	      } else if (provider === 'openai') {
-	        return await callOpenAIAPI(prompt);
-	      } else {
-	        throw new Error('No AI provider configured');
-	      }
-	    } catch (err) {
-	      const msg = String(err?.message || '');
-	      const isRateLimited = err?.code === 'RATE_LIMIT' || /quota|rate limit|too many requests/i.test(msg);
-
-	      if (provider === 'gemini' && isRateLimited && hasOpenAIKeyConfigured()) {
-	        console.warn('[AI] Gemini rate limited; falling back to OpenAI');
-	        return await callOpenAIAPI(prompt);
-	      }
-	      if (provider === 'openai' && isRateLimited && hasGeminiKeyConfigured()) {
-	        console.warn('[AI] OpenAI rate limited; falling back to Gemini');
-	        return await callGeminiAPI(prompt);
-	      }
-	      throw err;
-	    }
-	  }
-
-  // Call AI API to break down a task into subtasks
-  async function breakDownTaskWithAI(taskTitle, taskNotes = '') {
-    const prompt = `You are a productivity assistant. Break down this task into 3-7 actionable, specific subtasks.
-
-Task: "${taskTitle}"
-${taskNotes ? `Context: ${taskNotes}` : ''}
-
-Rules:
-- Each subtask should be clear and actionable
-- Use Hebrew if the task title is in Hebrew, otherwise use English
-- Return ONLY a JSON array of strings, nothing else
-
-Example output format:
-["Research topic thoroughly", "Create outline", "Write first draft", "Edit and revise", "Final review"]
-
-Your response (JSON array only):`;
-
-    try {
-      const text = await callAI(prompt);
-      const subtasks = parseAIJsonResponse(text);
-      
-      if (!Array.isArray(subtasks) || subtasks.length === 0) {
-        throw new Error('Invalid response format');
-      }
-      
-      // Ensure all items are strings
-      return subtasks.map(s => String(s).trim()).filter(s => s.length > 0);
-      
-    } catch (error) {
-      console.error('AI breakdown error:', error);
-      
-      // Fallback to local breakdown
-      console.log('Falling back to local task breakdown...');
-      return generateLocalSubtasks(taskTitle);
-    }
+  function toLocalDatetime(isoString) {
+    const d = new Date(isoString);
+    const pad = n => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
   }
 
-  // Local fallback for task breakdown (no API needed)
-  function generateLocalSubtasks(taskTitle) {
-    const title = taskTitle.toLowerCase();
-    
-    // Common task patterns with Hebrew support
-    if (title.includes('כתוב') || title.includes('write') || title.includes('essay') || title.includes('paper') || title.includes('מאמר')) {
-      return ['מחקר וחקירה', 'יצירת מתאר', 'כתיבת טיוטה ראשונה', 'עריכה ושיפור', 'הגהה סופית'];
-    }
-    if (title.includes('למד') || title.includes('learn') || title.includes('study') || title.includes('לימוד')) {
-      return ['איסוף חומרי לימוד', 'קריאה ראשונית', 'רישום הערות', 'תרגול ובחינה עצמית', 'סיכום'];
-    }
-    if (title.includes('project') || title.includes('פרויקט')) {
-      return ['הגדרת יעדים', 'תכנון משימות', 'ביצוע שלב 1', 'ביצוע שלב 2', 'בדיקות', 'סיכום'];
-    }
-    if (title.includes('meeting') || title.includes('פגישה')) {
-      return ['הכנת סדר יום', 'איסוף חומרים', 'שליחת הזמנות', 'הכנת מצגת', 'סיכום פגישה'];
-    }
-    if (title.includes('event') || title.includes('אירוע') || title.includes('party') || title.includes('מסיבה')) {
-      return ['תכנון ותקציב', 'הזמנת מקום', 'שליחת הזמנות', 'הזמנת אוכל', 'הכנות אחרונות'];
-    }
-    
-    // Generic breakdown
-    return ['תכנון ומחקר', 'הכנה', 'ביצוע עיקרי', 'בדיקה וסקירה', 'סיום'];
+  function toDateKey(date) {
+    const d = new Date(date);
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
   }
 
-  // Persistent storage for heuristic auto-schedule (separate from planner module)
-  const DAILY_PLAN_STORAGE_KEY = 'dailyPlanData';
-  let dailyPlanData = {};
-
-  (function initDailyPlanData() {
-    try {
-      const saved = localStorage.getItem(DAILY_PLAN_STORAGE_KEY);
-      dailyPlanData = saved ? JSON.parse(saved) : {};
-    } catch (e) {
-      console.error('Error loading daily plan data:', e);
-      dailyPlanData = {};
-    }
-  })();
-
-  function saveDailyPlanData() {
-    try {
-      localStorage.setItem(DAILY_PLAN_STORAGE_KEY, JSON.stringify(dailyPlanData));
-    } catch (e) {
-      console.error('Error saving daily plan data:', e);
-    }
-  }
-
-  // ========================================
-  // AI CHAT ASSISTANT
-  // ========================================
-  
-	  const AIChat = (() => {
-	    let modal, messagesContainer, input, sendBtn, closeBtn;
-	    
-	    function addMessage(text, isUser = false) {
-	      if (!messagesContainer) return;
-	      const messageDiv = document.createElement('div');
-	      messageDiv.className = `ai-chat-message ${isUser ? 'user' : 'ai'}`;
-
-	      const avatarDiv = document.createElement('div');
-	      avatarDiv.className = 'ai-chat-avatar';
-	      avatarDiv.textContent = isUser ? '👤' : '🤖';
-
-	      const bubbleDiv = document.createElement('div');
-	      bubbleDiv.className = 'ai-chat-bubble';
-	      bubbleDiv.setAttribute('dir', 'auto');
-	      bubbleDiv.setAttribute('lang', 'he');
-	      bubbleDiv.textContent = String(text ?? '');
-
-	      messageDiv.appendChild(avatarDiv);
-	      messageDiv.appendChild(bubbleDiv);
-	      messagesContainer.appendChild(messageDiv);
-	      messagesContainer.scrollTop = messagesContainer.scrollHeight;
-	    }
-    
-    async function processUserMessage(message) {
-      addMessage(message, true);
-      sendBtn.disabled = true;
-      
-      try {
-        // Get today's date for context
-        const today = new Date();
-        const todayStr = today.toISOString().split('T')[0];
-        const tomorrow = new Date(today);
-        tomorrow.setDate(tomorrow.getDate() + 1);
-        const tomorrowStr = tomorrow.toISOString().split('T')[0];
-        
-        // Build task list for context
-        const tasksList = tasks.slice(0, 10).map((t, i) => 
-          `${i+1}. "${t.title}" (id: ${t.id}, priority: ${t.priority || 'medium'}${t.dueDate ? ', due: ' + new Date(t.dueDate).toLocaleDateString('he-IL') : ''})`
-        ).join('\n');
-        
-        // Calculate next Sunday
-        const nextSunday = new Date(today);
-        const daysUntilSunday = (7 - today.getDay()) % 7 || 7;
-        nextSunday.setDate(today.getDate() + daysUntilSunday);
-        const nextSundayStr = nextSunday.toISOString().split('T')[0];
-        
-        const prompt = `You are a bilingual (Hebrew/English) task management AI assistant. Parse user requests and return actions as JSON.
-The user may write in Hebrew or English - understand both and respond in the same language they used.
-
-CRITICAL: You MUST return VALID JSON in this EXACT format:
-{
-  "actions": [...array of action objects...],
-  "reply": "your confirmation message"
-}
-
-User message: "${message}"
-
-Today's date: ${todayStr} (day of week: ${today.toLocaleDateString('en-US', {weekday: 'long'})})
-Tomorrow's date: ${tomorrowStr}
-Next Sunday: ${nextSundayStr}
-Current tasks (${tasks.length} total):
-${tasksList || 'No tasks yet'}
-
-	        Available actions (each action must be a valid JSON object):
-	        1. addTask: {"action": "addTask", "title": "task name", "dueDate": "YYYY-MM-DD", "dueTime": "HH:MM", "priority": "urgent|high|medium|low", "duration": 60}
-	        2. editTask: {"action": "editTask", "taskId": "actual-task-id", "updates": {"title": "new title", "priority": "medium", "dueDate": "YYYY-MM-DD", "duration": 60}}
-	        3. completeTask: {"action": "completeTask", "taskId": "actual-task-id"}
-	        4. listTasks: {"action": "listTasks"}
-	        5. planDay: {"action": "planDay", "date": "YYYY-MM-DD"}  // creates planner blocks; never deletes tasks or countdowns
-	        6. addCountdown: {"action": "addCountdown", "name": "event name", "date": "YYYY-MM-DD", "time": "HH:MM", "notes": "optional", "reminderMinutes": 60}
-	        7. addPlannerBlock: {"action": "addPlannerBlock", "date": "YYYY-MM-DD", "title": "block title", "start": "HH:MM", "durationMinutes": 60, "notes": "optional", "category": "optional"}
-
-Hebrew date keywords:
-- היום = today (${todayStr})
-- מחר = tomorrow (${tomorrowStr})
-- מחרתיים = day after tomorrow
-- יום ראשון הבא = next Sunday (${nextSundayStr})
-- בשעה X = at X o'clock (use 24-hour format)
-- דחוף/דחופה = urgent priority
-- גבוה/גבוהה = high priority
-- בינוני/בינונית = medium priority
-- נמוך/נמוכה = low priority
-- הוסף/הוסיפי/צור/תוסיף = add task
-	        - תזמן/קבע = schedule
-	        - שנה/ערוך = edit
-	        - תכנן את היום / תכנן יומן / תכנן את היומן היומי = plan the day (daily calendar)
-	        - דקות = minutes, שעה/שעות = hour(s)
-	        - משך/אורך = duration
-	        - סיים/השלם = complete task
-	        - הצג משימות/רשימת משימות = list tasks
-	        - הוסף אירוע/ספירה לאחור = add countdown event
-	        - הוסף בלוק/הוסף ליומן = add planner block
-- באופן דומה/כמו/גם = also/similar (create another task)
-- ובנוסף/וגם = and also (multiple tasks)
-
-Examples of VALID responses:
-
-1. Single task:
-{"actions": [{"action": "addTask", "title": "לקנות חלב", "dueDate": "${tomorrowStr}", "dueTime": "17:00"}], "reply": "✅ נוספה משימה: לקנות חלב למחר ב-17:00"}
-
-2. Multiple tasks:
-{"actions": [{"action": "addTask", "title": "ללכת לסופר", "dueDate": "${todayStr}", "dueTime": "20:00"}, {"action": "addTask", "title": "ללכת לסופר", "dueDate": "${nextSundayStr}", "dueTime": "20:00"}], "reply": "✅ נוספו 2 משימות: ללכת לסופר היום ב-20:00 ובראשון הבא ב-20:00"}
-
-3. Urgent task with duration:
-{"actions": [{"action": "addTask", "title": "להגיש פרויקט", "dueDate": "${todayStr}", "priority": "urgent", "duration": 120}], "reply": "✅ נוספה משימה דחופה: להגיש פרויקט (2 שעות)"}
-
-4. Plan day:
-{"actions": [{"action": "planDay", "date": "${todayStr}"}], "reply": "🧠 מתכנן את היום שלך..."}
-
-5. Complete task by number:
-{"actions": [{"action": "completeTask", "taskId": "actual-id-from-list"}], "reply": "✅ המשימה הושלמה!"}
-
-	        IMPORTANT RULES:
-	        1. Always return VALID JSON with "actions" array and "reply" string
-	        1.1 NEVER delete tasks or countdowns. If user asks to delete, reply that you can’t do deletions, and return {"actions": [], "reply": "..."}.
-	        2. When user says "באופן דומה ליום X" or "גם ביום X", create a SECOND task with the same title but different date
-	        3. When user says "ובנוסף" or "וגם", create MULTIPLE tasks
-	        4. Extract time from "בשעה XX:XX" and use 24-hour format
-5. When referring to "יום ראשון הבא" (next Sunday), use date: ${nextSundayStr}
-6. For task numbers (משימה 1, task 2), use the ACTUAL taskId from the list above
-7. NEVER return plain text, ALWAYS return valid JSON
-
-Return your response as valid JSON now:`;
-
-        const aiResponse = await callAI(prompt);
-        console.log('AI Response received:', aiResponse);
-        
-        const parsed = parseAIJsonResponse(aiResponse);
-        console.log('Parsed response:', parsed);
-        
-        // Validate response structure
-        if (!parsed) {
-          throw new Error('Failed to parse AI response');
-        }
-        
-        if (!parsed.actions || !Array.isArray(parsed.actions)) {
-          console.error('Invalid response structure:', parsed);
-          throw new Error('AI response missing actions array. Response: ' + JSON.stringify(parsed).substring(0, 200));
-        }
-        
-        if (parsed.actions.length === 0) {
-          addMessage(parsed.reply || 'לא זיהיתי פעולה לביצוע. נסה שוב / No action recognized. Try again.');
-          return;
-        }
-        
-        // Execute actions
-        for (const action of parsed.actions) {
-          await executeAction(action);
-        }
-        
-        // Show reply
-        addMessage(parsed.reply || '✅ בוצע! / Done!');
-        
-	      } catch (error) {
-	        console.error('AI Chat error:', error);
-	        console.error('Error details:', {
-	          message: error.message,
-	          stack: error.stack,
-	          userMessage: message
-	        });
-	        
-	        // Provide helpful error messages
-	        const retryAfterMs = Number.isFinite(error?.retryAfterMs) ? error.retryAfterMs : null;
-	        const retryAfterSec = retryAfterMs ? Math.max(1, Math.ceil(retryAfterMs / 1000)) : null;
-
-	        if (error?.code === 'RATE_LIMIT' || /quota|rate limit|too many requests/i.test(String(error?.message || ''))) {
-	          addMessage(
-	            `⏳ הגעת למגבלת בקשות זמנית ל-AI.\n` +
-	            (retryAfterSec ? `נסה שוב בעוד ${retryAfterSec} שניות.\n\n` : `נסה שוב בעוד כמה שניות.\n\n`) +
-	            `If this keeps happening, consider using a paid API key or switching provider.`
-	          );
-	          return;
-	        }
-
-	        let errorMsg = `❌ שגיאה: ${error.message}\n\n`;
-	        
-	        if (error.message.includes('parse') || error.message.includes('JSON')) {
-	          errorMsg += `התשובה מה-AI לא הייתה בפורמט תקין. נסה:\n` +
-	                     `• פשט את הבקשה\n` +
-	                     `• הוסף משימה אחת בכל פעם\n` +
-                     `• השתמש בפורמט: "הוסף משימה: [שם] [תאריך] בשעה [שעה]"\n\n` +
-                     `The AI response was not in valid format. Try:\n` +
-                     `• Simplify your request\n` +
-                     `• Add one task at a time\n` +
-                     `• Use format: "Add task: [name] [date] at [time]"`;
-        } else if (error.message.includes('truncated')) {
-          errorMsg += `התשובה נחתכה. נסה:\n` +
-                     `• פקודה פשוטה יותר\n` +
-                     `• פחות משימות\n\n` +
-                     `Response was truncated. Try:\n` +
-                     `• Simpler command\n` +
-                     `• Fewer tasks`;
-        } else {
-          errorMsg += `דוגמאות לפקודות:\n` +
-                     `• "הוסף משימה: ללכת לסופר היום בשעה 20:00"\n` +
-                     `• "צור משימה: להתקשר לרופא מחר ב-14:00"\n` +
-                     `• "תכנן את היום שלי"\n\n` +
-                     `Example commands:\n` +
-                     `• "Add task: Go shopping today at 20:00"\n` +
-                     `• "Create task: Call doctor tomorrow at 14:00"\n` +
-                     `• "Plan my day"`;
-        }
-        
-        addMessage(errorMsg);
-      } finally {
-        sendBtn.disabled = false;
-      }
-    }
-    
-	    async function executeAction(action) {
-	      switch (action.action) {
-        case 'addTask':
-          const newTask = {
-            title: action.title || 'משימה חדשה',
-            completed: false,
-            priority: action.priority || 'medium',
-            content: action.notes || ''
-          };
-          
-          // Handle duration (in minutes)
-          if (action.duration && action.duration > 0) {
-            newTask.duration = action.duration;
-          }
-          
-          if (action.dueDate) {
-            const dueDateTime = action.dueTime 
-              ? new Date(`${action.dueDate}T${action.dueTime}`)
-              : new Date(`${action.dueDate}T09:00`);
-            newTask.dueDate = dueDateTime.toISOString();
-          }
-          
-          await saveTask(null, newTask, null);
-          if (typeof renderTasks === 'function') renderTasks();
-          if (typeof DailyPlanner !== 'undefined' && DailyPlanner.refreshTasks) {
-            DailyPlanner.refreshTasks();
-          }
-          break;
-          
-	        case 'planDay':
-	          // Trigger AI Plan Day for specified date (planner blocks only)
-	          if (typeof DailyPlanner !== 'undefined' && typeof DailyPlanner.planDayWithAI === 'function') {
-	            const planDate = action.date ? new Date(action.date) : new Date();
-	            addMessage('🧠 מתכנן את היום... / Planning your day...');
-	            try {
-	              await DailyPlanner.planDayWithAI(planDate);
-	              addMessage('✅ התכנון מוכן לתצוגה / Plan ready for preview');
-	            } catch (err) {
-	              addMessage(`❌ שגיאה בתכנון: ${err.message}`);
-	            }
-	          } else {
-	            addMessage('פונקציית התכנון לא זמינה. נסה ללחוץ על כפתור "🧠 Plan Day" בתוכנית היומית.');
-	          }
-	          break;
-
-	        case 'addCountdown': {
-	          const name = String(action.name || '').trim();
-	          const date = String(action.date || '').trim();
-	          const time = String(action.time || '09:00').trim();
-	          const notes = String(action.notes || '').trim();
-	          const reminderMinutes = Number.isFinite(Number(action.reminderMinutes)) ? parseInt(action.reminderMinutes, 10) : 0;
-
-	          if (!name || !date) {
-	            addMessage('❌ חסר שם או תאריך לאירוע / Missing countdown name or date');
-	            break;
-	          }
-
-	          const dt = new Date(`${date}T${time}`);
-	          if (isNaN(dt.getTime())) {
-	            addMessage('❌ תאריך/שעה לא תקינים לאירוע / Invalid date/time for countdown');
-	            break;
-	          }
-
-	          await saveToCloud({
-	            name,
-	            date: dt.toISOString(),
-	            notes: notes || null,
-	            reminder: Math.max(0, reminderMinutes || 0),
-	            highlighted: false,
-	            pinned: false
-	          });
-	          addMessage(`✅ נוסף אירוע: ${name}`);
-	          break;
-	        }
-
-	        case 'addPlannerBlock': {
-	          if (typeof DailyPlanner === 'undefined' || typeof DailyPlanner.addPlannerBlock !== 'function') {
-	            addMessage('❌ מתכנן יומי לא זמין / Daily planner not available');
-	            break;
-	          }
-
-	          const date = String(action.date || '').trim();
-	          const title = String(action.title || '').trim();
-	          const start = String(action.start || '').trim();
-	          const durationMinutes = parseInt(action.durationMinutes || 60, 10);
-	          const notes = String(action.notes || '').trim();
-	          const category = String(action.category || '').trim();
-
-	          if (!date || !title || !start) {
-	            addMessage('❌ חסרים שדות לבלוק (תאריך/כותרת/שעה) / Missing planner block fields');
-	            break;
-	          }
-
-	          await DailyPlanner.addPlannerBlock({
-	            date,
-	            title,
-	            start,
-	            durationMinutes,
-	            notes,
-	            category
-	          });
-	          addMessage(`✅ נוסף בלוק ביומן: ${title}`);
-	          break;
-	        }
-        
-        case 'listTasks':
-          // List current tasks
-          const taskList = tasks.slice(0, 10).map((t, i) => {
-            const status = t.completed ? '✅' : '⬜';
-            const priority = t.priority === 'urgent' ? '🔴' : t.priority === 'high' ? '🟠' : t.priority === 'low' ? '🟢' : '🟡';
-            const due = t.dueDate ? ` (${new Date(t.dueDate).toLocaleDateString('he-IL')})` : '';
-            return `${i+1}. ${status} ${priority} ${t.title}${due}`;
-          }).join('\n');
-          addMessage(taskList || 'אין משימות / No tasks');
-          break;
-        
-        case 'completeTask':
-          if (action.taskId) {
-            const task = tasks.find(t => t.id === action.taskId);
-            if (task) {
-              const { id, isOwn, isShared, ...cleanTask } = task;
-              await saveTask(action.taskId, { ...cleanTask, completed: true }, task.subject);
-              if (typeof renderTasks === 'function') renderTasks();
-              addMessage(`✅ המשימה "${task.title}" סומנה כהושלמה!`);
-            } else {
-              addMessage('❌ משימה לא נמצאה / Task not found');
-            }
-          }
-          break;
-        
-	        case 'deleteTask':
-	          addMessage('⚠️ מחיקה דרך AI כבויה. מחיקת משימות/ספירות לאחור מתבצעת רק ידנית מהאפליקציה. / AI deletion is disabled.');
-	          break;
-        
-        case 'editTask':
-          if (action.taskId && action.updates) {
-            const task = tasks.find(t => t.id === action.taskId);
-            if (task) {
-              const { id, isOwn, isShared, ...cleanTask } = task;
-              const updatedTask = { ...cleanTask, ...action.updates };
-              await saveTask(action.taskId, updatedTask, task.subject);
-              if (typeof renderTasks === 'function') renderTasks();
-              addMessage(`✏️ המשימה "${task.title}" עודכנה!`);
-            } else {
-              addMessage('❌ משימה לא נמצאה / Task not found');
-            }
-          }
-          break;
-          
-        case 'reply':
-          // Just a reply, no action needed
-          break;
-      }
-    }
-    
-	    function init() {
-      // Get DOM elements
-      modal = document.getElementById('aiChatModal');
-      messagesContainer = document.getElementById('aiChatMessages');
-      input = document.getElementById('aiChatInput');
-      sendBtn = document.getElementById('aiChatSend');
-      closeBtn = document.getElementById('aiChatClose');
-      
-      if (!modal) {
-        console.error('AI Chat modal not found');
-        return;
-      }
-      
-      console.log('AI Chat initialized');
-      
-      // Open modal - Use event delegation for dynamically added button
-      document.addEventListener('click', (e) => {
-        if (e.target.id === 'aiChatBtn' || e.target.closest('#aiChatBtn')) {
-          console.log('AI Chat button clicked');
-          modal.classList.add('open');
-          input?.focus();
-        }
-      });
-      
-      // Close sidebar
-      closeBtn?.addEventListener('click', () => modal.classList.remove('open'));
-      
-	      const autoGrow = () => {
-	        if (!input) return;
-	        input.style.height = 'auto';
-	        const next = Math.min(120, Math.max(38, input.scrollHeight));
-	        input.style.height = `${next}px`;
-	      };
-
-	      // Send message
-	      const sendMessage = () => {
-	        const message = input?.value.trim();
-	        if (!message) return;
-	        input.value = '';
-	        autoGrow();
-	        processUserMessage(message);
-	      };
-	      
-	      sendBtn?.addEventListener('click', sendMessage);
-	      input?.addEventListener('input', autoGrow);
-	      input?.addEventListener('keydown', (e) => {
-	        if (e.key === 'Enter' && !e.shiftKey) {
-	          e.preventDefault();
-	          sendMessage();
-	        }
-	      });
-      
-      // Example clicks
-	      document.querySelectorAll('.ai-chat-example').forEach(ex => {
-	        ex.addEventListener('click', () => {
-	          const example = ex.dataset.example;
-	          if (input) input.value = example;
-	          autoGrow();
-	          input?.focus();
-	        });
-	      });
-	    }
-    
-    return { init };
-  })();
-  
-  // Initialize AI Chat after DOM loads
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => AIChat.init());
+  const cachedEvents = readCache(CACHE_KEYS.EVENTS);
+  if (cachedEvents && cachedEvents.length) {
+    events = cachedEvents;
+    eventsById.clear();
+    events.forEach(e => eventsById.set(e.id, e));
+    hasEventsCache = true;
+    syncCacheUsed.events = true;
+    eventsLoaded = true;
+    setEventsLoading(false);
+    updateSyncBadge();
+    render();
+    scheduleCalendarRender();
+    startTicker();
   } else {
-    AIChat.init();
+    setEventsLoading(true);
   }
 
-  // ========================================
-  // END AI CHAT ASSISTANT
-  // ========================================
+  function getMonthEvents() {
+    const year = currentMonth.getFullYear();
+    const month = currentMonth.getMonth();
+    return getActiveEvents().filter(evt => {
+      const d = new Date(evt.date);
+      return d.getFullYear() === year && d.getMonth() === month;
+    }).sort((a, b) => new Date(a.date) - new Date(b.date));
+  }
+
+  function renderMonthEventsList() {
+    const monthEvents = getMonthEvents();
+    monthEventsTitle.textContent = `אירועי ${HEBREW_MONTHS[currentMonth.getMonth()]}`;
+
+    if (monthEvents.length === 0) {
+      monthEventsEl.innerHTML = '<div class="no-events-msg">אין אירועים החודש</div>';
+      return;
+    }
+
+    monthEventsEl.innerHTML = monthEvents.map(evt => {
+      const color = getEventColor(evt.id);
+      const d = new Date(evt.date);
+      const dateStr = `${d.getDate()}/${d.getMonth()+1} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+      return `
+        <div class="month-event-item" style="border-right-color: ${color}">
+          <div class="month-event-color" style="background: ${color}"></div>
+          <div class="month-event-info">
+            <div class="month-event-name">${escapeHtml(evt.name)}</div>
+            <div class="month-event-date">${dateStr}</div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  function renderCalendar() {
+    const today = new Date();
+    const todayKey = toDateKey(today);
+    
+    // Build event map by date
+    const eventsByDate = {};
+    getActiveEvents().forEach(evt => {
+      const key = toDateKey(evt.date);
+      if (!eventsByDate[key]) eventsByDate[key] = [];
+      eventsByDate[key].push(evt);
+    });
+
+    let html = '';
+    const sidebar = $("sidebar");
+    
+    // Update view classes on sidebar
+    if (sidebar) {
+      sidebar.classList.toggle('calendar-view-week', eventCalendarView === 'week');
+      sidebar.classList.toggle('calendar-view-day', eventCalendarView === 'day');
+    }
+
+    if (eventCalendarView === 'month') {
+      const year = currentMonth.getFullYear();
+      const month = currentMonth.getMonth();
+      calendarTitle.textContent = `${HEBREW_MONTHS[month]} ${year}`;
+
+      const firstDay = new Date(year, month, 1);
+      const lastDay = new Date(year, month + 1, 0);
+      const startDay = firstDay.getDay();
+      const daysInMonth = lastDay.getDate();
+
+      // Day names
+      for (let i = 0; i < 7; i++) {
+        html += `<div class="calendar-day-name">${HEBREW_DAYS[i]}</div>`;
+      }
+
+      // Previous month days
+      const prevMonth = new Date(year, month, 0);
+      const prevDays = prevMonth.getDate();
+      for (let i = startDay - 1; i >= 0; i--) {
+        const day = prevDays - i;
+        html += `<div class="calendar-day other-month"><div class="calendar-day-number">${day}</div></div>`;
+      }
+
+      // Current month days
+      for (let day = 1; day <= daysInMonth; day++) {
+        const dateKey = `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+        const isToday = dateKey === todayKey;
+        const dayEvents = eventsByDate[dateKey] || [];
+
+        let classes = 'calendar-day';
+        if (isToday) classes += ' today';
+
+        let eventsHtml = '<div class="calendar-day-events">';
+        const maxShow = 2;
+        const showTime = dayEvents.length > 1;
+        dayEvents.slice(0, maxShow).forEach(evt => {
+          const color = getEventColor(evt.id);
+          const safeName = escapeHtml(evt.name);
+          const evtDate = new Date(evt.date);
+          const timeStr = showTime ? `${String(evtDate.getHours()).padStart(2,'0')}:${String(evtDate.getMinutes()).padStart(2,'0')} ` : '';
+          const displayText = timeStr + safeName;
+          eventsHtml += `<div class="calendar-event-chip" style="background: ${color}" title="${safeName}" aria-label="${safeName}" data-event-id="${evt.id}">${displayText}</div>`;
+        });
+        if (dayEvents.length > maxShow) {
+          eventsHtml += `<div class="calendar-more">+${dayEvents.length - maxShow} עוד</div>`;
+        }
+        eventsHtml += '</div>';
+
+        html += `<div class="${classes}" data-date="${dateKey}">
+          <div class="calendar-day-number">${day}</div>
+          ${eventsHtml}
+        </div>`;
+      }
+
+      // Next month days
+      const totalCells = startDay + daysInMonth;
+      const remainingCells = totalCells % 7 === 0 ? 0 : 7 - (totalCells % 7);
+      for (let i = 1; i <= remainingCells; i++) {
+        html += `<div class="calendar-day other-month"><div class="calendar-day-number">${i}</div></div>`;
+      }
+    } else if (eventCalendarView === 'week') {
+      const focus = eventCalendarFocusDate || new Date();
+      const start = getStartOfWeek(focus);
+      const end = new Date(start);
+      end.setDate(start.getDate() + 6);
+      calendarTitle.textContent = `שבוע ${formatHebrewShortDate(start)} - ${formatHebrewShortDate(end)}`;
+
+      for (let i = 0; i < 7; i++) {
+        const dayDate = new Date(start);
+        dayDate.setDate(start.getDate() + i);
+        html += `<div class="calendar-day-name">${HEBREW_DAYS[dayDate.getDay()]}</div>`;
+      }
 
   // Auto-schedule tasks in daily planner using smart heuristics
   async function autoScheduleTasks() {
@@ -17017,6 +16100,7 @@ Your response (JSON array only):`;
 	        timelineGhostEl.innerHTML = '<div class="planner-ghost-time"></div>';
 	        refs.timeline.appendChild(timelineGhostEl);
 	      }
+	      // Always recalculate positioning to ensure accuracy
 	      const timelineRect = refs.timeline.getBoundingClientRect();
 	      const content = refs.timeline.querySelector('.planner-hour-content');
 	      if (content) {
@@ -17035,7 +16119,11 @@ Your response (JSON array only):`;
 	    const showGhost = (startMinutes, durationMinutes) => {
 	      const ghost = ensureTimelineGhost();
 	      if (!ghost) return;
+	      
+	      // Force re-layout for smooth transition
 	      ghost.style.display = 'block';
+	      void ghost.offsetHeight; // Force reflow
+	      
 	      ghost.style.top = `${startMinutes - DAY_START_MINUTES}px`;
 	      ghost.style.height = `${Math.max(15, durationMinutes)}px`;
 	      
@@ -17051,6 +16139,8 @@ Your response (JSON array only):`;
 	    const hideGhost = () => {
 	      if (!timelineGhostEl) return;
 	      timelineGhostEl.style.display = 'none';
+	      // Reset transform and other properties
+	      timelineGhostEl.style.transform = '';
 	    };
 
 	    const updateBlockTime = (blockId, nextStartMinutes, nextDurationMinutes) => {
@@ -17066,6 +16156,7 @@ Your response (JSON array only):`;
 	    const onTimelinePointerMove = (e) => {
 	      if (!timelineDragState) return;
 	      e.preventDefault();
+	      e.stopPropagation(); // Prevent event bubbling
 	      
 	      const minute = getMinuteFromClientY(e.clientY);
 	      const movedPx = Math.abs(e.clientY - timelineDragState.startClientY);
@@ -17075,7 +16166,11 @@ Your response (JSON array only):`;
 	        const proposedStart = minute - timelineDragState.offsetMinutes;
 	        const start = clamp(snapMinutes(proposedStart), DAY_START_MINUTES, DAY_END_MINUTES - timelineDragState.duration);
 	        timelineDragState.proposedStart = start;
-	        showGhost(start, timelineDragState.duration);
+	        
+	        // Update ghost with smooth animation
+	        requestAnimationFrame(() => {
+	          showGhost(start, timelineDragState.duration);
+	        });
 	        
 	        // Update cursor
 	        document.body.style.cursor = 'grabbing';
@@ -17083,7 +16178,11 @@ Your response (JSON array only):`;
 	        const end = snapMinutes(minute);
 	        const duration = clamp(end - timelineDragState.startMinutes, MIN_BLOCK_MINUTES, DAY_END_MINUTES - timelineDragState.startMinutes);
 	        timelineDragState.proposedDuration = duration;
-	        showGhost(timelineDragState.startMinutes, duration);
+	        
+	        // Update ghost with smooth animation
+	        requestAnimationFrame(() => {
+	          showGhost(timelineDragState.startMinutes, duration);
+	        });
 	        
 	        // Update cursor and add resizing class
 	        document.body.style.cursor = 'ns-resize';
@@ -17095,23 +16194,37 @@ Your response (JSON array only):`;
 
 	    const onTimelinePointerUp = (e) => {
 	      if (!timelineDragState) return;
+	      
 	      const { el, blockId, mode, startMinutes, duration, proposedStart, proposedDuration, moved, pointerId } = timelineDragState;
 	      
-	      // Clean up
-	      timelineDragState = null;
-	      document.body.style.cursor = '';
-	      window.removeEventListener('pointermove', onTimelinePointerMove);
+	      // Clean up pointer capture first
+	      if (el && pointerId !== undefined) {
+	        try {
+	          el.releasePointerCapture(pointerId);
+	        } catch (err) {
+	          // Ignore errors if capture was already released
+	        }
+	      }
+	      
+	      // Remove event listeners before clearing state
+	      window.removeEventListener('pointermove', onTimelinePointerMove, { passive: false });
 	      window.removeEventListener('pointerup', onTimelinePointerUp);
 	      window.removeEventListener('pointercancel', onTimelinePointerUp);
 	      
+	      // Clean up visual state
+	      document.body.style.cursor = '';
 	      if (el) {
 	        el.classList.remove('dragging');
 	        el.classList.remove('resizing');
-	        if (pointerId !== undefined) {
-	          el.releasePointerCapture?.(pointerId);
-	        }
 	      }
-	      hideGhost();
+	      
+	      // Hide ghost with animation
+	      requestAnimationFrame(() => {
+	        hideGhost();
+	      });
+	      
+	      // Clear drag state
+	      timelineDragState = null;
 
 	      if (!moved) return;
 	      suppressBlockClickUntil = Date.now() + 350;
@@ -18236,84 +17349,6 @@ Array:`;
       if (refs.prevDay) refs.prevDay.onclick = () => navigateDate(-1);
       if (refs.nextDay) refs.nextDay.onclick = () => navigateDate(1);
       if (refs.todayBtn) refs.todayBtn.onclick = goToToday;
-      
-      // AI Plan Day button
-      const aiPlanDayBtn = $('aiPlanDayBtn');
-      if (aiPlanDayBtn) {
-        aiPlanDayBtn.onclick = async () => {
-          if (!tasksLoaded) {
-            alert('⏳ טוען משימות... / Loading tasks...');
-            return;
-          }
-
-          aiPlanDayBtn.disabled = true;
-          aiPlanDayBtn.innerHTML = '⏳ Planning...';
-          try {
-            await aiPlanEntireDay();
-          } catch (error) {
-            console.error('AI plan day error:', error);
-            alert(`❌ שגיאה בתכנון AI / Error: ${error.message}`);
-          } finally {
-            aiPlanDayBtn.disabled = false;
-            aiPlanDayBtn.innerHTML = '🧠 Plan Day';
-          }
-        };
-      }
-      
-      // AI Auto-Schedule button
-      const aiAutoScheduleBtn = $('aiAutoScheduleBtn');
-      if (aiAutoScheduleBtn) {
-        aiAutoScheduleBtn.onclick = async () => {
-          // Check if tasks are loaded
-          if (!tasksLoaded) {
-            alert('⏳ טוען משימות... / Loading tasks...');
-            return;
-          }
-          
-          aiAutoScheduleBtn.disabled = true;
-          aiAutoScheduleBtn.innerHTML = '⏳ מתזמן...';
-          
-          try {
-            await autoScheduleTasks();
-          } catch (error) {
-            console.error('Auto-schedule error:', error);
-            alert(`❌ שגיאה בתזמון אוטומטי / Error: ${error.message}`);
-          } finally {
-            aiAutoScheduleBtn.disabled = false;
-            aiAutoScheduleBtn.innerHTML = '✨ Auto-Schedule';
-          }
-        };
-      }
-      
-      // AI Suggestions button
-      const aiSuggestionsBtn = $('aiSuggestionsBtn');
-      if (aiSuggestionsBtn) {
-        aiSuggestionsBtn.onclick = async () => {
-          // Check API key configuration
-          if (AI_CONFIG.gemini.apiKey === 'YOUR_GEMINI_API_KEY' && AI_CONFIG.openai.apiKey === 'YOUR_OPENAI_API_KEY') {
-            alert('⚠️ Please configure AI API keys in the code!\n\nEdit index.html and search for "AI_CONFIG" to add your Gemini or OpenAI API key.\n\nGet Gemini key: https://makersuite.google.com/app/apikey\nGet OpenAI key: https://platform.openai.com/api-keys');
-            return;
-          }
-          
-          if (!tasksLoaded) {
-            alert('⏳ טוען משימות... / Loading tasks...');
-            return;
-          }
-          
-          aiSuggestionsBtn.disabled = true;
-          aiSuggestionsBtn.innerHTML = '⏳ מעבד...';
-          
-          try {
-            await getAISuggestionsForTasks();
-          } catch (error) {
-            console.error('AI suggestions error:', error);
-            alert(`❌ שגיאה בקבלת הצעות / Error: ${error.message}`);
-          } finally {
-            aiSuggestionsBtn.disabled = false;
-            aiSuggestionsBtn.innerHTML = '🤖 AI Suggestions';
-          }
-        };
-      }
       
       // View toggle
       if (refs.viewToggle) {
