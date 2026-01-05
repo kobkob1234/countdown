@@ -3456,8 +3456,7 @@
     }
     .modal-backdrop.open { display: flex; }
     
-    /* AI Chat Sidebar */
-    .ai-chat-modal {
+    /* Responsive */
       position: fixed;
       top: 56px;
       right: -380px;
@@ -7996,11 +7995,6 @@
     <div class="planner-header-bar">
       <div class="planner-header-title">📅 מתכנן יומי</div>
       
-      <!-- AI Chat Button - Prominent placement -->
-      <button class="btn" id="aiChatBtn" style="padding: 10px 16px; font-size: 14px; font-weight: 600; background: linear-gradient(135deg, #8b5cf6, #ec4899); color: white; border: none; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 2px 8px rgba(139, 92, 246, 0.3); flex-shrink: 0; order: 1;" title="צ'אט עם AI לניהול משימות">
-        💬 AI Chat
-      </button>
-      
       <div class="planner-date-nav" style="order: 2;">
         <button id="plannerPrevDay">‹</button>
         <span class="planner-current-date" id="plannerCurrentDate">יום ראשון, 1 בינואר 2026</span>
@@ -8008,18 +8002,6 @@
       </div>
       
       <button class="planner-today-btn" id="plannerTodayBtn" style="order: 3;">📍 היום</button>
-      
-      <button class="btn" id="aiAutoScheduleBtn" style="padding: 8px 14px; font-size: 13px; background: linear-gradient(135deg, #667eea, #764ba2); color: white; border: none; display: inline-flex; align-items: center; gap: 6px; margin: 0 8px; order: 4;" title="תזמון אוטומטי של משימות באמצעות AI">
-        ✨ Auto-Schedule
-      </button>
-
-      <button class="btn" id="aiPlanDayBtn" style="padding: 8px 14px; font-size: 13px; background: linear-gradient(135deg, #1e3a8a, #2563eb); color: white; border: none; display: inline-flex; align-items: center; gap: 6px; margin: 0 8px; order: 5;" title="תכנון יום מלא באמצעות AI (ממקם משימות ולוחות זמנים)">
-        🧠 Plan Day
-      </button>
-      
-      <button class="btn" id="aiSuggestionsBtn" style="padding: 8px 14px; font-size: 13px; background: linear-gradient(135deg, #f59e0b, #ec4899); color: white; border: none; display: inline-flex; align-items: center; gap: 6px; order: 6;" title="קבל הצעות AI לעדיפות משימות">
-        🤖 AI Suggestions
-      </button>
       
       <div class="planner-view-toggle">
         <button class="active" data-view="day">📋 יום</button>
@@ -8537,21 +8519,6 @@
 	  </div>
 
 	  <!-- AI Day Plan Preview Modal -->
-	  <div class="modal-backdrop" id="aiDayPlanModal" role="dialog" aria-modal="true" aria-labelledby="aiDayPlanTitle">
-	    <div class="modal-card ai-day-plan-card">
-	      <h3 id="aiDayPlanTitle">🤖 AI Day Plan</h3>
-	      <p id="aiDayPlanDesc" style="color: var(--muted); font-size: 13px; margin: 0;">
-	        Preview before applying. This does not delete tasks or countdowns; it only adds planner blocks.
-	      </p>
-	      <div class="ai-day-plan-list" id="aiDayPlanList"></div>
-	      <div class="modal-actions" style="display: flex; gap: 10px; flex-wrap: wrap;">
-	        <button class="btn btn-primary" id="aiApplyPlanMergeBtn">✅ Apply (Merge)</button>
-	        <button class="btn" id="aiApplyPlanReplaceBtn" style="background: var(--day-other); color: var(--text);">🧹 Replace Day Blocks</button>
-	        <button class="btn btn-cancel" id="aiCancelPlanBtn" style="display:inline-block;">Cancel</button>
-	      </div>
-	    </div>
-	  </div>
-
   <div class="shortcuts-backdrop" id="shortcutsModal" role="dialog" aria-modal="true" aria-labelledby="shortcutsTitle">
     <div class="shortcuts-card">
       <div class="shortcuts-hero">
@@ -8657,48 +8624,6 @@
       </div>
     </div>
   </div>
-
-  <!-- AI Chat Sidebar -->
-  <div class="ai-chat-modal" id="aiChatModal">
-    <div class="ai-chat-container">
-      <div class="ai-chat-header">
-        <div class="ai-chat-title">
-          <span>🤖</span>
-          <span>AI Chat</span>
-        </div>
-        <button class="ai-chat-close" id="aiChatClose">×</button>
-      </div>
-      
-      <div class="ai-chat-messages" id="aiChatMessages">
-        <div class="ai-chat-message ai">
-          <div class="ai-chat-avatar">🤖</div>
-          <div class="ai-chat-bubble">
-            שלום! מה תרצה לעשות?<br>
-            Hi! How can I help?
-          </div>
-        </div>
-      </div>
-      
-      <div class="ai-chat-examples">
-        <div class="ai-chat-example" data-example="הוסף משימה: ללמוד מחר ב-10:00">➕ הוסף</div>
-        <div class="ai-chat-example" data-example="תכנן את היום">📅 תכנן</div>
-        <div class="ai-chat-example" data-example="Add task: Meeting at 3pm">➕ Add</div>
-      </div>
-      
-	      <div class="ai-chat-input-area">
-	        <textarea
-	          class="ai-chat-input" 
-	          id="aiChatInput" 
-	          placeholder="הקלד הודעה... / Type message..."
-	          autocomplete="off"
-	          dir="auto"
-	          lang="he"
-	          rows="1"
-	        ></textarea>
-	        <button class="ai-chat-send" id="aiChatSend">➤</button>
-	      </div>
-	    </div>
-	  </div>
 
   <div class="undo-toast" id="undoToast" role="status" aria-live="polite">
     <span id="undoToastMsg">Event deleted</span>
