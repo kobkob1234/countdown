@@ -9175,8 +9175,8 @@
   const syncBadge = $("syncBadge");
   const syncState = { events: false, tasks: false, subjects: false };
   const syncCacheUsed = { events: false, tasks: false, subjects: false };
-  const SYNC_TIMEOUT_MS = 8000;
-  const SUBJECTS_NO_CACHE_TIMEOUT_MS = 5000;
+  const SYNC_TIMEOUT_MS = 15000;
+  const SUBJECTS_NO_CACHE_TIMEOUT_MS = 8000;
   const syncTimeouts = { events: null, tasks: null, subjects: null, subjectsNoCache: null };
   const clearSyncTimeouts = (key) => {
     const keys = key === 'subjects' ? ['subjects', 'subjectsNoCache'] : [key];
@@ -9192,7 +9192,7 @@
     syncTimeouts[timeoutKey] = setTimeout(() => {
       syncTimeouts[timeoutKey] = null;
       if (syncState[key]) return;
-      console.warn(`[sync] ${key} timeout after ${ms}ms (${reason})`);
+      console.debug(`[sync] ${key} timeout after ${ms}ms (${reason}) - continuing with cache`);
       if (typeof onTimeout === 'function') onTimeout();
       markSyncReady(key, `timeout:${reason}`);
     }, ms);
@@ -18204,6 +18204,12 @@ Array:`;
       renderQuickTasks();
       renderCountdowns();
       renderScheduledTasks();
+      
+      // Initialize drag/resize handlers after render
+      if (refs.timeline && !refs.timeline.dataset.dragResizeInit) {
+        refs.timeline.dataset.dragResizeInit = '1';
+        refs.timeline.addEventListener('pointerdown', onTimelinePointerDown, { passive: false });
+      }
     };
     
     // Navigate date
@@ -18822,8 +18828,3 @@ Array:`;
 
 </body>
 </html>
-	      // Timeline drag/resize (event delegation)
-	      if (refs.timeline && !refs.timeline.dataset.dragResizeInit) {
-	        refs.timeline.dataset.dragResizeInit = '1';
-	        refs.timeline.addEventListener('pointerdown', onTimelinePointerDown, { passive: false });
-	      }
