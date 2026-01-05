@@ -16722,279 +16722,6 @@ Your response (JSON array only):`;
 	      const tasksAdded = syncAllScheduledTasks();
 	      return countdownsAdded + tasksAdded;
 	    };
-
-	    // AI Day Plan: preview + apply (planner blocks only)
-	    let pendingAIDayPlan = null; // { dateKey, dateObj, blocks }
-
-	    const closeAIDayPlanModal = () => {
-	      if (refs.aiDayPlanModal) refs.aiDayPlanModal.classList.remove('open');
-	      pendingAIDayPlan = null;
-	    };
-
-	    const formatDurationLabel = (minutes) => {
-	      const m = Math.max(0, parseInt(minutes || 0, 10) || 0);
-	      if (m >= 60) {
-	        const h = Math.floor(m / 60);
-	        const rem = m % 60;
-	        return rem ? `${h}h ${rem}m` : `${h}h`;
-	      }
-	      return `${m}m`;
-	    };
-
-	    const renderAIDayPlanList = (blocks) => {
-	      if (!refs.aiDayPlanList) return;
-	      if (!blocks || blocks.length === 0) {
-	        refs.aiDayPlanList.innerHTML = '<div class="no-events-msg">אין בלוקים להצגה / No blocks to show</div>';
-	        return;
-	      }
-
-	      refs.aiDayPlanList.innerHTML = blocks.map(b => {
-	        const start = b.start || '??:??';
-	        const startMins = parseTime(start);
-	        const end = Number.isFinite(startMins) ? formatTime(startMins + (b.duration || 60)) : '??:??';
-	        const title = escapeHtml(b.title || 'Block');
-	        const metaParts = [];
-	        if (b.linkedTaskId) metaParts.push('task');
-	        if (b.sourceType) metaParts.push(String(b.sourceType));
-	        metaParts.push(formatDurationLabel(b.duration || 0));
-	        const meta = metaParts.filter(Boolean).join(' • ');
-	        return `
-	          <div class="ai-day-plan-item">
-	            <div class="ai-day-plan-time">${start}–${end}</div>
-	            <div class="ai-day-plan-title" dir="auto">${title}<div class="ai-day-plan-meta">${escapeHtml(meta)}</div></div>
-	          </div>
-	        `;
-	      }).join('');
-	    };
-
-	    const openAIDayPlanModal = ({ dateObj, dateKey, blocks }) => {
-	      pendingAIDayPlan = { dateObj, dateKey, blocks };
-	      if (refs.aiDayPlanTitle) refs.aiDayPlanTitle.textContent = `🤖 AI Day Plan • ${formatDate(dateObj)}`;
-	      if (refs.aiDayPlanDesc) refs.aiDayPlanDesc.textContent =
-	        'Preview before applying. This does not delete tasks or countdowns; it only adds planner blocks.';
-	      renderAIDayPlanList(blocks);
-	      if (refs.aiDayPlanModal) refs.aiDayPlanModal.classList.add('open');
-	    };
-
-	    const overlapsAny = (candidate, others) => {
-	      const cStart = parseTime(candidate.start);
-	      if (!Number.isFinite(cStart)) return true;
-	      const cEnd = cStart + (candidate.duration || 60);
-	      return (others || []).some(o => {
-	        const oStart = parseTime(o.start);
-	        if (!Number.isFinite(oStart)) return false;
-	        const oEnd = oStart + (o.duration || 60);
-	        return cStart < oEnd && cEnd > oStart;
-	      });
-	    };
-
-	    const applyAIDayPlan = (mode) => {
-	      if (!pendingAIDayPlan) return;
-	      const { dateObj, dateKey, blocks } = pendingAIDayPlan;
-	      const existingBlocks = plannerBlocks.filter(b => b.date === dateKey);
-	      const preserved = existingBlocks.filter(b => b.sourceType === 'countdown' || b.sourceType === 'task');
-
-	      if (mode === 'replace') {
-	        plannerBlocks = plannerBlocks.filter(b => b.date !== dateKey || b.sourceType === 'countdown' || b.sourceType === 'task');
-	      }
-
-	      const base = mode === 'replace' ? preserved : existingBlocks;
-	      const accepted = [];
-	      (blocks || []).forEach(b => {
-	        if (overlapsAny(b, base) || overlapsAny(b, accepted)) return;
-	        accepted.push(b);
-	      });
-
-	      plannerBlocks.push(...accepted);
-	      plannerBlocks.sort((a, b) => {
-	        if (a.date !== b.date) return a.date.localeCompare(b.date);
-	        return parseTime(a.start) - parseTime(b.start);
-	      });
-	      saveBlocks();
-
-	      // Jump planner to this date so user sees the result
-	      currentDate = new Date(dateObj);
-	      render();
-	      closeAIDayPlanModal();
-	    };
-
-	    // AI: Plan entire day (reorders tasks and lays out schedule)
-	    const aiPlanEntireDay = async (targetDate = currentDate) => {
-	      currentDate = new Date(targetDate);
-	      const dateKey = getDateKey(currentDate);
-	      const dayLabel = formatDate(currentDate);
-
-	      const allTasks = (typeof tasks !== 'undefined' ? tasks : []).filter(t => t && !t.completed && t.title);
-	      const priorityOrder = { urgent: 0, high: 1, medium: 2, low: 3, none: 4 };
-	      const availableTasks = [...allTasks]
-	        .sort((a, b) => {
-	          const ap = priorityOrder[a.priority || 'none'] ?? 4;
-	          const bp = priorityOrder[b.priority || 'none'] ?? 4;
-	          if (ap !== bp) return ap - bp;
-	          const ad = a.dueDate ? new Date(a.dueDate).getTime() : Number.POSITIVE_INFINITY;
-	          const bd = b.dueDate ? new Date(b.dueDate).getTime() : Number.POSITIVE_INFINITY;
-	          return ad - bd;
-	        })
-	        .slice(0, 12); // cap to avoid truncation
-
-	      const existingBlocks = getBlocksForDate(currentDate);
-
-	      const normalizedTasks = availableTasks.map(t => {
-	        const subj = (typeof subjects !== 'undefined' ? subjects : []).find(s => s.id === t.subject);
-	        return {
-	          id: t.id,
-	          title: t.title.substring(0, 50),
-	          priority: t.priority || 'none',
-	          estimatedMinutes: t.estimatedMinutes || t.duration || 60,
-	          subjectId: t.subject || '',
-	          subjectName: subj ? subj.name : (t.subject || 'general'),
-	          subjectColor: subj ? subj.color : (t.color || '')
-	        };
-	      });
-
-	      const busyWindows = [];
-	      const busyBlocks = (() => {
-	        const blocks = [];
-
-	        // Existing planner blocks (avoid overlaps when merging)
-	        existingBlocks.forEach(b => {
-	          if (!b || !b.start) return;
-	          const start = b.start;
-	          const end = formatTime(parseTime(start) + (b.duration || 60));
-	          blocks.push(`${start}-${end} | ${b.title || 'busy'} | planner`);
-	          busyWindows.push({ start, duration: b.duration || 60 });
-	        });
-
-	        // Countdown events for this day (fixed start, 60m default)
-	        const countdownsForDay = (typeof events !== 'undefined' ? events : []).filter(evt => {
-	          if (!evt?.date) return false;
-	          return getDateKey(new Date(evt.date)) === dateKey;
-	        });
-	        countdownsForDay.forEach(evt => {
-	          const d = new Date(evt.date);
-	          const start = formatTime(d.getHours() * 60 + d.getMinutes());
-	          const end = formatTime(parseTime(start) + 60);
-	          blocks.push(`${start}-${end} | ${evt.name || 'event'} | countdown`);
-	          busyWindows.push({ start, duration: 60 });
-	        });
-
-	        // Tasks that already have a specific due time that day
-	        const fixedTasks = allTasks.filter(t => {
-	          if (!t?.dueDate) return false;
-	          const due = new Date(t.dueDate);
-	          if (getDateKey(due) !== dateKey) return false;
-	          return !(due.getHours() === 0 && due.getMinutes() === 0);
-	        });
-	        fixedTasks.forEach(t => {
-	          const due = new Date(t.dueDate);
-	          const start = formatTime(due.getHours() * 60 + due.getMinutes());
-	          const end = formatTime(parseTime(start) + (t.duration || 30));
-	          blocks.push(`${start}-${end} | ${t.title || 'task'} | fixed-task`);
-	          busyWindows.push({ start, duration: t.duration || 30 });
-	        });
-
-	        return blocks;
-	      })();
-
-	      const tasksText = normalizedTasks.map((t, i) => `${i + 1}. ${t.id}|${t.title}|${t.priority}|${t.estimatedMinutes}m|${t.subjectName}`).join('\n');
-
-	      const prompt = `You are a bilingual (Hebrew/English) daily planner assistant.
-Build a day schedule for date ${dateKey}. Return ONLY a JSON array.
-
-Constraints:
-- Working hours: 09:00-23:00
-- No overlaps
-- Avoid busy blocks listed below
-- Prefer urgent/high priority first
-- Use the provided durations (minutes)
-- You may include short breaks (5-15m) between long focus blocks if there is time
-- If the tasks list is empty, propose a balanced day schedule (focus blocks, breaks, meals)
-- IMPORTANT: Do NOT delete tasks or countdowns. Your output only schedules by creating planner blocks.
-
-Busy blocks (avoid scheduling during these times):
-${busyBlocks.length ? busyBlocks.join('\n') : '(none)'}
-
-Tasks to schedule (id|title|priority|minutes|subject):
-${tasksText}
-
-Return JSON array of blocks ONLY, nothing else.
-JSON schema:
-[
-  {"taskId":"id-or-null","title":"optional override","start":"HH:MM","durationMinutes":60,"note":"optional"}
-]
-
-Array:`;
-
-	      const text = await callAI(prompt);
-	      const plan = parseAIJsonResponse(text);
-	      if (!Array.isArray(plan)) throw new Error('Invalid plan format from AI');
-
-      const MIN_START = 9 * 60; // 9:00 AM
-      const MAX_END = 23 * 60; // 11:00 PM
-
-      const newBlocks = [];
-
-	      const busyForValidation = busyWindows.slice();
-
-	      plan.forEach((item, idx) => {
-	        const startStr = (item && item.start) ? String(item.start).trim() : null;
-	        const startMinutes = startStr ? parseTime(startStr) : null;
-	        if (startMinutes === null || isNaN(startMinutes)) return;
-	        const rawDuration = parseInt(item.durationMinutes || item.duration || 0, 10);
-	        const duration = Math.min(240, Math.max(15, rawDuration || 60));
-	        const endMinutes = startMinutes + duration;
-	        if (startMinutes < MIN_START || endMinutes > MAX_END) return;
-
-	        // Avoid overlaps with already accepted blocks
-	        const overlaps = newBlocks.some(b => {
-	          const bStart = parseTime(b.start);
-	          const bEnd = bStart + (b.duration || 60);
-	          return startMinutes < bEnd && endMinutes > bStart;
-	        });
-	        if (overlaps) return;
-
-	        // Also avoid overlaps with existing planner blocks (merge-safe by default)
-	        const overlapsBusy = busyForValidation.some(b => {
-	          const bStart = parseTime(b.start);
-	          const bEnd = bStart + (b.duration || 60);
-	          return startMinutes < bEnd && endMinutes > bStart;
-	        });
-	        if (overlapsBusy) return;
-
-	        const taskMatch = normalizedTasks.find(t => t.id === item.taskId) || normalizedTasks[idx] || null;
-
-	        const color = taskMatch?.subjectColor || '#667eea';
-	        const category = taskMatch?.subjectName || 'work';
-	        const block = {
-	          id: generateId(),
-	          title: item.title || (taskMatch ? taskMatch.title : 'בלוק חדש'),
-	          start: formatTime(startMinutes),
-	          duration: duration,
-	          priority: taskMatch?.priority || 'medium',
-	          category,
-	          color,
-	          date: dateKey,
-	          completed: false,
-	          reminder: 0,
-	          sourceType: 'ai-plan',
-	          linkedTaskId: taskMatch ? taskMatch.id : null,
-	          note: item.note || ''
-	        };
-
-	        newBlocks.push(block);
-	      });
-
-      if (newBlocks.length === 0) {
-        throw new Error('AI did not return a usable schedule');
-      }
-
-	      // Preview and let the user apply (merge/replace)
-	      openAIDayPlanModal({
-	        dateObj: new Date(currentDate),
-	        dateKey,
-	        blocks: newBlocks.sort((a, b) => parseTime(a.start) - parseTime(b.start))
-	      });
-	    };
     
     // Open add modal
     const openAddModal = (hour = 9) => {
@@ -17318,26 +17045,6 @@ Array:`;
 	      refs.syncAllBtn = $('plannerSyncAllBtn');
 	      refs.syncCountdownsBtn = $('plannerSyncCountdownsBtn');
 	      refs.syncTasksBtn = $('plannerSyncTasksBtn');
-	      refs.aiDayPlanModal = $('aiDayPlanModal');
-	      refs.aiDayPlanList = $('aiDayPlanList');
-	      refs.aiDayPlanTitle = $('aiDayPlanTitle');
-	      refs.aiDayPlanDesc = $('aiDayPlanDesc');
-	      refs.aiApplyPlanMergeBtn = $('aiApplyPlanMergeBtn');
-	      refs.aiApplyPlanReplaceBtn = $('aiApplyPlanReplaceBtn');
-	      refs.aiCancelPlanBtn = $('aiCancelPlanBtn');
-
-	      if (refs.aiCancelPlanBtn) refs.aiCancelPlanBtn.onclick = closeAIDayPlanModal;
-	      if (refs.aiDayPlanModal) {
-	        refs.aiDayPlanModal.addEventListener('click', (e) => {
-	          if (e.target === refs.aiDayPlanModal) closeAIDayPlanModal();
-	        });
-	      }
-	      if (refs.aiApplyPlanMergeBtn) refs.aiApplyPlanMergeBtn.onclick = () => applyAIDayPlan('merge');
-	      if (refs.aiApplyPlanReplaceBtn) refs.aiApplyPlanReplaceBtn.onclick = () => {
-	        const ok = confirm('Replace planner blocks for this day? (Tasks/countdowns are not deleted; this affects planner blocks only)');
-	        if (!ok) return;
-	        applyAIDayPlan('replace');
-	      };
       
       // View toggle
       refs.viewToggle = refs.overlay ? refs.overlay.querySelector('.planner-view-toggle') : null;
@@ -17521,12 +17228,6 @@ Array:`;
 	      }
 	    };
 
-	    const planDayWithAI = async (dateObj = new Date()) => {
-	      if (typeof showView === 'function') showView('planner');
-	      if (!initialized) init();
-	      await aiPlanEntireDay(dateObj);
-	    };
-
 	    const addPlannerBlock = async ({ date, title, start, durationMinutes = 60, notes = '', category = '' }) => {
 	      if (typeof showView === 'function') showView('planner');
 	      if (!initialized) init();
@@ -17553,8 +17254,7 @@ Array:`;
 	        reminder: 0,
 	        completed: false,
 	        date: dateKey,
-	        createdAt: new Date().toISOString(),
-	        sourceType: 'ai'
+	        createdAt: new Date().toISOString()
 	      };
 
 	      plannerBlocks.push(newBlock);
@@ -17563,7 +17263,7 @@ Array:`;
 	      render();
 	    };
 	    
-	    return { init, render, refreshTasks, planDayWithAI, addPlannerBlock };
+	    return { init, render, refreshTasks, addPlannerBlock };
 	  })();
 </script>
 
