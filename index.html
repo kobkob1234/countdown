@@ -3425,11 +3425,11 @@
       gap: 10px;
       background: var(--bg);
     }
-    .ai-chat-message {
-      display: flex;
-      gap: 8px;?
-      animation: messageSlideIn 0.2s ease-out;
-    }
+	    .ai-chat-message {
+	      display: flex;
+	      gap: 8px;
+	      animation: messageSlideIn 0.2s ease-out;
+	    }
     @keyframes messageSlideIn {
       from {
         opacity: 0;
@@ -3459,13 +3459,16 @@
     .ai-chat-message.ai .ai-chat-avatar {
       background: linear-gradient(135deg, #8b5cf6, #ec4899);
     }
-    .ai-chat-bubble {
-      max-width: 85%;
-      padding: 8px 12px;
-      border-radius: 10px;
-      font-size: 13px;
-      line-height: 1.4;
-    }
+	    .ai-chat-bubble {
+	      max-width: 85%;
+	      padding: 8px 12px;
+	      border-radius: 10px;
+	      font-size: 13px;
+	      line-height: 1.4;
+	      white-space: pre-wrap;
+	      text-align: start;
+	      unicode-bidi: plaintext;
+	    }
     .ai-chat-message.user .ai-chat-bubble {
       background: linear-gradient(135deg, #667eea, #764ba2);
       color: white;
@@ -3477,31 +3480,39 @@
       border: 1px solid var(--border);
       border-bottom-left-radius: 4px;
     }
-    .ai-chat-input-area {
-      padding: 12px;
-      border-top: 1px solid var(--border);
-      display: flex;
-      gap: 8px;
-      background: var(--card);
-    }
-    .ai-chat-input {
-      flex: 1;
-      padding: 10px 14px;
-      border: 1px solid var(--border);
-      border-radius: 20px;
-      background: var(--bg);
-      color: var(--text);
-      font-size: 14px;
-      outline: none;
-      transition: all 0.15s;
-    }
+	    .ai-chat-input-area {
+	      padding: 12px;
+	      border-top: 1px solid var(--border);
+	      display: flex;
+	      gap: 8px;
+	      background: var(--card);
+	      align-items: flex-end;
+	    }
+	    .ai-chat-input {
+	      flex: 1;
+	      padding: 10px 14px;
+	      border: 1px solid var(--border);
+	      border-radius: 16px;
+	      background: var(--bg);
+	      color: var(--text);
+	      font-size: 14px;
+	      outline: none;
+	      transition: all 0.15s;
+	      resize: none;
+	      min-height: 38px;
+	      max-height: 120px;
+	      overflow-y: auto;
+	      line-height: 1.35;
+	      text-align: start;
+	      unicode-bidi: plaintext;
+	    }
     .ai-chat-input:focus {
       border-color: #667eea;
       box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
     }
-    .ai-chat-send {
-      width: 38px;
-      height: 38px;
+	    .ai-chat-send {
+	      width: 38px;
+	      height: 38px;
       border: none;
       border-radius: 50%;
       background: linear-gradient(135deg, #667eea, #764ba2);
@@ -8375,16 +8386,32 @@
   <!-- Mobile Sidebar Backdrop -->
   <div class="mobile-sidebar-backdrop" id="mobileSidebarBackdrop"></div>
 
-  <div class="modal-backdrop" id="clearModal" role="dialog" aria-modal="true" aria-labelledby="clearModalTitle" aria-describedby="clearModalDesc">
-    <div class="modal-card">
-      <h3 id="clearModalTitle">Clear all shared events?</h3>
-      <p id="clearModalDesc">This removes every event for everyone. Do you want to continue?</p>
-      <div class="modal-actions">
-        <button class="btn btn-danger" id="confirmClearBtn">Yes, clear everything</button>
-        <button class="btn btn-cancel" id="cancelClearModalBtn" style="display:inline-block;">Keep events</button>
-      </div>
-    </div>
-  </div>
+	  <div class="modal-backdrop" id="clearModal" role="dialog" aria-modal="true" aria-labelledby="clearModalTitle" aria-describedby="clearModalDesc">
+	    <div class="modal-card">
+	      <h3 id="clearModalTitle">Clear all shared events?</h3>
+	      <p id="clearModalDesc">This removes every event for everyone. Do you want to continue?</p>
+	      <div class="modal-actions">
+	        <button class="btn btn-danger" id="confirmClearBtn">Yes, clear everything</button>
+	        <button class="btn btn-cancel" id="cancelClearModalBtn" style="display:inline-block;">Keep events</button>
+	      </div>
+	    </div>
+	  </div>
+
+	  <!-- AI Day Plan Preview Modal -->
+	  <div class="modal-backdrop" id="aiDayPlanModal" role="dialog" aria-modal="true" aria-labelledby="aiDayPlanTitle">
+	    <div class="modal-card ai-day-plan-card">
+	      <h3 id="aiDayPlanTitle">🤖 AI Day Plan</h3>
+	      <p id="aiDayPlanDesc" style="color: var(--muted); font-size: 13px; margin: 0;">
+	        Preview before applying. This does not delete tasks or countdowns; it only adds planner blocks.
+	      </p>
+	      <div class="ai-day-plan-list" id="aiDayPlanList"></div>
+	      <div class="modal-actions" style="display: flex; gap: 10px; flex-wrap: wrap;">
+	        <button class="btn btn-primary" id="aiApplyPlanMergeBtn">✅ Apply (Merge)</button>
+	        <button class="btn" id="aiApplyPlanReplaceBtn" style="background: var(--day-other); color: var(--text);">🧹 Replace Day Blocks</button>
+	        <button class="btn btn-cancel" id="aiCancelPlanBtn" style="display:inline-block;">Cancel</button>
+	      </div>
+	    </div>
+	  </div>
 
   <div class="shortcuts-backdrop" id="shortcutsModal" role="dialog" aria-modal="true" aria-labelledby="shortcutsTitle">
     <div class="shortcuts-card">
@@ -8519,18 +8546,20 @@
         <div class="ai-chat-example" data-example="Add task: Meeting at 3pm">➕ Add</div>
       </div>
       
-      <div class="ai-chat-input-area">
-        <input 
-          type="text" 
-          class="ai-chat-input" 
-          id="aiChatInput" 
-          placeholder="הקלד הודעה... / Type message..."
-          autocomplete="off"
-        />
-        <button class="ai-chat-send" id="aiChatSend">➤</button>
-      </div>
-    </div>
-  </div>
+	      <div class="ai-chat-input-area">
+	        <textarea
+	          class="ai-chat-input" 
+	          id="aiChatInput" 
+	          placeholder="הקלד הודעה... / Type message..."
+	          autocomplete="off"
+	          dir="auto"
+	          lang="he"
+	          rows="1"
+	        ></textarea>
+	        <button class="ai-chat-send" id="aiChatSend">➤</button>
+	      </div>
+	    </div>
+	  </div>
 
   <div class="undo-toast" id="undoToast" role="status" aria-live="polite">
     <span id="undoToastMsg">Event deleted</span>
@@ -8860,6 +8889,54 @@
 	      localStorage.setItem(PUSH_LOCAL_USER_KEY, currentUser);
 	    } catch (e) {
 	      console.warn('[Push] Sync failed:', e);
+	    }
+
+	    /* AI Day Plan Preview */
+	    .ai-day-plan-card {
+	      max-width: 680px;
+	      width: 100%;
+	      max-height: 75vh;
+	      display: flex;
+	      flex-direction: column;
+	      gap: 10px;
+	    }
+	    .ai-day-plan-list {
+	      border: 1px solid var(--border);
+	      background: var(--bg);
+	      border-radius: 12px;
+	      padding: 10px;
+	      overflow: auto;
+	      flex: 1;
+	    }
+	    .ai-day-plan-item {
+	      display: flex;
+	      gap: 10px;
+	      align-items: flex-start;
+	      padding: 8px 10px;
+	      border-radius: 10px;
+	      border: 1px solid var(--border);
+	      background: var(--card);
+	      margin-bottom: 8px;
+	    }
+	    .ai-day-plan-item:last-child { margin-bottom: 0; }
+	    .ai-day-plan-time {
+	      font-weight: 700;
+	      color: var(--accent);
+	      min-width: 110px;
+	      direction: ltr;
+	      text-align: left;
+	      flex-shrink: 0;
+	    }
+	    .ai-day-plan-title {
+	      flex: 1;
+	      color: var(--text);
+	      text-align: start;
+	      unicode-bidi: plaintext;
+	    }
+	    .ai-day-plan-meta {
+	      font-size: 11px;
+	      color: var(--muted);
+	      margin-top: 2px;
 	    }
 	  }
 
@@ -9935,20 +10012,29 @@ Your response (JSON array only):`;
   // AI CHAT ASSISTANT
   // ========================================
   
-  const AIChat = (() => {
-    let modal, messagesContainer, input, sendBtn, closeBtn;
-    
-    function addMessage(text, isUser = false) {
-      if (!messagesContainer) return;
-      const messageDiv = document.createElement('div');
-      messageDiv.className = `ai-chat-message ${isUser ? 'user' : 'ai'}`;
-      messageDiv.innerHTML = `
-        <div class="ai-chat-avatar">${isUser ? '👤' : '🤖'}</div>
-        <div class="ai-chat-bubble">${escapeHtml(text).replace(/\n/g, '<br>')}</div>
-      `;
-      messagesContainer.appendChild(messageDiv);
-      messagesContainer.scrollTop = messagesContainer.scrollHeight;
-    }
+	  const AIChat = (() => {
+	    let modal, messagesContainer, input, sendBtn, closeBtn;
+	    
+	    function addMessage(text, isUser = false) {
+	      if (!messagesContainer) return;
+	      const messageDiv = document.createElement('div');
+	      messageDiv.className = `ai-chat-message ${isUser ? 'user' : 'ai'}`;
+
+	      const avatarDiv = document.createElement('div');
+	      avatarDiv.className = 'ai-chat-avatar';
+	      avatarDiv.textContent = isUser ? '👤' : '🤖';
+
+	      const bubbleDiv = document.createElement('div');
+	      bubbleDiv.className = 'ai-chat-bubble';
+	      bubbleDiv.setAttribute('dir', 'auto');
+	      bubbleDiv.setAttribute('lang', 'he');
+	      bubbleDiv.textContent = String(text ?? '');
+
+	      messageDiv.appendChild(avatarDiv);
+	      messageDiv.appendChild(bubbleDiv);
+	      messagesContainer.appendChild(messageDiv);
+	      messagesContainer.scrollTop = messagesContainer.scrollHeight;
+	    }
     
     async function processUserMessage(message) {
       addMessage(message, true);
@@ -9990,13 +10076,14 @@ Next Sunday: ${nextSundayStr}
 Current tasks (${tasks.length} total):
 ${tasksList || 'No tasks yet'}
 
-Available actions (each action must be a valid JSON object):
-1. addTask: {"action": "addTask", "title": "task name", "dueDate": "YYYY-MM-DD", "dueTime": "HH:MM", "priority": "urgent|high|medium|low", "duration": 60}
-2. editTask: {"action": "editTask", "taskId": "actual-task-id", "updates": {"title": "new title", "priority": "medium", "dueDate": "YYYY-MM-DD", "duration": 60}}
-3. deleteTask: {"action": "deleteTask", "taskId": "actual-task-id"}
-4. completeTask: {"action": "completeTask", "taskId": "actual-task-id"}
-5. listTasks: {"action": "listTasks"}
-6. planDay: {"action": "planDay", "date": "YYYY-MM-DD"}
+	        Available actions (each action must be a valid JSON object):
+	        1. addTask: {"action": "addTask", "title": "task name", "dueDate": "YYYY-MM-DD", "dueTime": "HH:MM", "priority": "urgent|high|medium|low", "duration": 60}
+	        2. editTask: {"action": "editTask", "taskId": "actual-task-id", "updates": {"title": "new title", "priority": "medium", "dueDate": "YYYY-MM-DD", "duration": 60}}
+	        3. completeTask: {"action": "completeTask", "taskId": "actual-task-id"}
+	        4. listTasks: {"action": "listTasks"}
+	        5. planDay: {"action": "planDay", "date": "YYYY-MM-DD"}  // creates planner blocks; never deletes tasks or countdowns
+	        6. addCountdown: {"action": "addCountdown", "name": "event name", "date": "YYYY-MM-DD", "time": "HH:MM", "notes": "optional", "reminderMinutes": 60}
+	        7. addPlannerBlock: {"action": "addPlannerBlock", "date": "YYYY-MM-DD", "title": "block title", "start": "HH:MM", "durationMinutes": 60, "notes": "optional", "category": "optional"}
 
 Hebrew date keywords:
 - היום = today (${todayStr})
@@ -10009,14 +10096,15 @@ Hebrew date keywords:
 - בינוני/בינונית = medium priority
 - נמוך/נמוכה = low priority
 - הוסף/הוסיפי/צור/תוסיף = add task
-- תזמן/קבע = schedule
-- שנה/ערוך = edit
-- תכנן את היום = plan the day
-- דקות = minutes, שעה/שעות = hour(s)
-- משך/אורך = duration
-- מחק/הסר = delete
-- סיים/השלם = complete task
-- הצג משימות/רשימת משימות = list tasks
+	        - תזמן/קבע = schedule
+	        - שנה/ערוך = edit
+	        - תכנן את היום / תכנן יומן / תכנן את היומן היומי = plan the day (daily calendar)
+	        - דקות = minutes, שעה/שעות = hour(s)
+	        - משך/אורך = duration
+	        - סיים/השלם = complete task
+	        - הצג משימות/רשימת משימות = list tasks
+	        - הוסף אירוע/ספירה לאחור = add countdown event
+	        - הוסף בלוק/הוסף ליומן = add planner block
 - באופן דומה/כמו/גם = also/similar (create another task)
 - ובנוסף/וגם = and also (multiple tasks)
 
@@ -10037,11 +10125,12 @@ Examples of VALID responses:
 5. Complete task by number:
 {"actions": [{"action": "completeTask", "taskId": "actual-id-from-list"}], "reply": "✅ המשימה הושלמה!"}
 
-IMPORTANT RULES:
-1. Always return VALID JSON with "actions" array and "reply" string
-2. When user says "באופן דומה ליום X" or "גם ביום X", create a SECOND task with the same title but different date
-3. When user says "ובנוסף" or "וגם", create MULTIPLE tasks
-4. Extract time from "בשעה XX:XX" and use 24-hour format
+	        IMPORTANT RULES:
+	        1. Always return VALID JSON with "actions" array and "reply" string
+	        1.1 NEVER delete tasks or countdowns. If user asks to delete, reply that you can’t do deletions, and return {"actions": [], "reply": "..."}.
+	        2. When user says "באופן דומה ליום X" or "גם ביום X", create a SECOND task with the same title but different date
+	        3. When user says "ובנוסף" or "וגם", create MULTIPLE tasks
+	        4. Extract time from "בשעה XX:XX" and use 24-hour format
 5. When referring to "יום ראשון הבא" (next Sunday), use date: ${nextSundayStr}
 6. For task numbers (משימה 1, task 2), use the ACTUAL taskId from the list above
 7. NEVER return plain text, ALWAYS return valid JSON
@@ -10121,8 +10210,8 @@ Return your response as valid JSON now:`;
       }
     }
     
-    async function executeAction(action) {
-      switch (action.action) {
+	    async function executeAction(action) {
+	      switch (action.action) {
         case 'addTask':
           const newTask = {
             title: action.title || 'משימה חדשה',
@@ -10150,21 +10239,81 @@ Return your response as valid JSON now:`;
           }
           break;
           
-        case 'planDay':
-          // Trigger AI Plan Day for specified date
-          if (typeof aiPlanEntireDay === 'function') {
-            const planDate = action.date ? new Date(action.date) : new Date();
-            addMessage('🧠 מתכנן את היום... / Planning your day...');
-            try {
-              await aiPlanEntireDay(planDate);
-              addMessage('✅ התכנון הושלם! / Day planned successfully!');
-            } catch (err) {
-              addMessage(`❌ שגיאה בתכנון: ${err.message}`);
-            }
-          } else {
-            addMessage('פונקציית התכנון לא זמינה. נסה ללחוץ על כפתור "🧠 Plan Day" בתוכנית היומית.');
-          }
-          break;
+	        case 'planDay':
+	          // Trigger AI Plan Day for specified date (planner blocks only)
+	          if (typeof DailyPlanner !== 'undefined' && typeof DailyPlanner.planDayWithAI === 'function') {
+	            const planDate = action.date ? new Date(action.date) : new Date();
+	            addMessage('🧠 מתכנן את היום... / Planning your day...');
+	            try {
+	              await DailyPlanner.planDayWithAI(planDate);
+	              addMessage('✅ התכנון מוכן לתצוגה / Plan ready for preview');
+	            } catch (err) {
+	              addMessage(`❌ שגיאה בתכנון: ${err.message}`);
+	            }
+	          } else {
+	            addMessage('פונקציית התכנון לא זמינה. נסה ללחוץ על כפתור "🧠 Plan Day" בתוכנית היומית.');
+	          }
+	          break;
+
+	        case 'addCountdown': {
+	          const name = String(action.name || '').trim();
+	          const date = String(action.date || '').trim();
+	          const time = String(action.time || '09:00').trim();
+	          const notes = String(action.notes || '').trim();
+	          const reminderMinutes = Number.isFinite(Number(action.reminderMinutes)) ? parseInt(action.reminderMinutes, 10) : 0;
+
+	          if (!name || !date) {
+	            addMessage('❌ חסר שם או תאריך לאירוע / Missing countdown name or date');
+	            break;
+	          }
+
+	          const dt = new Date(`${date}T${time}`);
+	          if (isNaN(dt.getTime())) {
+	            addMessage('❌ תאריך/שעה לא תקינים לאירוע / Invalid date/time for countdown');
+	            break;
+	          }
+
+	          await saveToCloud({
+	            name,
+	            date: dt.toISOString(),
+	            notes: notes || null,
+	            reminder: Math.max(0, reminderMinutes || 0),
+	            highlighted: false,
+	            pinned: false
+	          });
+	          addMessage(`✅ נוסף אירוע: ${name}`);
+	          break;
+	        }
+
+	        case 'addPlannerBlock': {
+	          if (typeof DailyPlanner === 'undefined' || typeof DailyPlanner.addPlannerBlock !== 'function') {
+	            addMessage('❌ מתכנן יומי לא זמין / Daily planner not available');
+	            break;
+	          }
+
+	          const date = String(action.date || '').trim();
+	          const title = String(action.title || '').trim();
+	          const start = String(action.start || '').trim();
+	          const durationMinutes = parseInt(action.durationMinutes || 60, 10);
+	          const notes = String(action.notes || '').trim();
+	          const category = String(action.category || '').trim();
+
+	          if (!date || !title || !start) {
+	            addMessage('❌ חסרים שדות לבלוק (תאריך/כותרת/שעה) / Missing planner block fields');
+	            break;
+	          }
+
+	          await DailyPlanner.addPlannerBlock({
+	            date,
+	            title,
+	            start,
+	            durationMinutes,
+	            notes,
+	            category
+	          });
+	          addMessage(`✅ נוסף בלוק ביומן: ${title}`);
+	          break;
+	        }
         
         case 'listTasks':
           // List current tasks
@@ -10191,21 +10340,9 @@ Return your response as valid JSON now:`;
           }
           break;
         
-        case 'deleteTask':
-          if (action.taskId) {
-            const task = tasks.find(t => t.id === action.taskId);
-            if (task) {
-              const taskTitle = task.title;
-              if (typeof remove === 'function' && typeof ref === 'function') {
-                await remove(ref(db, `users/${currentUser}/tasks/${action.taskId}`));
-                if (typeof renderTasks === 'function') renderTasks();
-                addMessage(`🗑️ המשימה "${taskTitle}" נמחקה!`);
-              }
-            } else {
-              addMessage('❌ משימה לא נמצאה / Task not found');
-            }
-          }
-          break;
+	        case 'deleteTask':
+	          addMessage('⚠️ מחיקה דרך AI כבויה. מחיקת משימות/ספירות לאחור מתבצעת רק ידנית מהאפליקציה. / AI deletion is disabled.');
+	          break;
         
         case 'editTask':
           if (action.taskId && action.updates) {
@@ -10228,7 +10365,7 @@ Return your response as valid JSON now:`;
       }
     }
     
-    function init() {
+	    function init() {
       // Get DOM elements
       modal = document.getElementById('aiChatModal');
       messagesContainer = document.getElementById('aiChatMessages');
@@ -10255,28 +10392,41 @@ Return your response as valid JSON now:`;
       // Close sidebar
       closeBtn?.addEventListener('click', () => modal.classList.remove('open'));
       
-      // Send message
-      const sendMessage = () => {
-        const message = input?.value.trim();
-        if (!message) return;
-        input.value = '';
-        processUserMessage(message);
-      };
-      
-      sendBtn?.addEventListener('click', sendMessage);
-      input?.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') sendMessage();
-      });
+	      const autoGrow = () => {
+	        if (!input) return;
+	        input.style.height = 'auto';
+	        const next = Math.min(120, Math.max(38, input.scrollHeight));
+	        input.style.height = `${next}px`;
+	      };
+
+	      // Send message
+	      const sendMessage = () => {
+	        const message = input?.value.trim();
+	        if (!message) return;
+	        input.value = '';
+	        autoGrow();
+	        processUserMessage(message);
+	      };
+	      
+	      sendBtn?.addEventListener('click', sendMessage);
+	      input?.addEventListener('input', autoGrow);
+	      input?.addEventListener('keydown', (e) => {
+	        if (e.key === 'Enter' && !e.shiftKey) {
+	          e.preventDefault();
+	          sendMessage();
+	        }
+	      });
       
       // Example clicks
-      document.querySelectorAll('.ai-chat-example').forEach(ex => {
-        ex.addEventListener('click', () => {
-          const example = ex.dataset.example;
-          if (input) input.value = example;
-          input?.focus();
-        });
-      });
-    }
+	      document.querySelectorAll('.ai-chat-example').forEach(ex => {
+	        ex.addEventListener('click', () => {
+	          const example = ex.dataset.example;
+	          if (input) input.value = example;
+	          autoGrow();
+	          input?.focus();
+	        });
+	      });
+	    }
     
     return { init };
   })();
@@ -12210,7 +12360,7 @@ Your response (JSON array only):`;
 
   // ============ POMODORO MODULE (self-contained) ============
   const Pomodoro = (() => {
-    const refs = {
+	    const refs = {
       card: document.getElementById('pomodoroCard'),
       taskSelect: document.getElementById('pomodoroTaskSelect'),
       presets: Array.from(document.querySelectorAll('.pomodoro-preset')),
@@ -16204,10 +16354,11 @@ Your response (JSON array only):`;
   const DailyPlanner = (() => {
     // State
     let currentDate = new Date();
-    let plannerView = 'day'; // 'day' or 'week'
-    let plannerBlocks = [];
-    let editingBlockId = null;
-    let miniCalendarDate = new Date();
+	    let plannerView = 'day'; // 'day' or 'week'
+	    let plannerBlocks = [];
+	    let editingBlockId = null;
+	    let miniCalendarDate = new Date();
+	    let initialized = false;
     
     // Storage key
     const STORAGE_KEY = 'dailyPlannerBlocks';
@@ -16234,11 +16385,18 @@ Your response (JSON array only):`;
       dayTitle: null,
       daySummary: null,
       countdownsList: null,
-      scheduledTasksList: null,
-      syncAllBtn: null,
-      syncCountdownsBtn: null,
-      syncTasksBtn: null
-    };
+	      scheduledTasksList: null,
+	      syncAllBtn: null,
+	      syncCountdownsBtn: null,
+	      syncTasksBtn: null,
+	      aiDayPlanModal: null,
+	      aiDayPlanList: null,
+	      aiDayPlanTitle: null,
+	      aiDayPlanDesc: null,
+	      aiApplyPlanMergeBtn: null,
+	      aiApplyPlanReplaceBtn: null,
+	      aiCancelPlanBtn: null
+	    };
     
     // Hebrew day names
     const hebrewDays = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
@@ -17038,117 +17196,285 @@ Your response (JSON array only):`;
       return added;
     };
     
-    // Sync everything for current date
-    const syncAll = () => {
-      const countdownsAdded = syncAllCountdowns();
-      const tasksAdded = syncAllScheduledTasks();
-      return countdownsAdded + tasksAdded;
-    };
+	    // Sync everything for current date
+	    const syncAll = () => {
+	      const countdownsAdded = syncAllCountdowns();
+	      const tasksAdded = syncAllScheduledTasks();
+	      return countdownsAdded + tasksAdded;
+	    };
 
-    // AI: Plan entire day (reorders tasks and lays out schedule)
-    const aiPlanEntireDay = async () => {
-      const dateKey = getDateKey(currentDate);
-      const dayLabel = formatDate(currentDate);
+	    // AI Day Plan: preview + apply (planner blocks only)
+	    let pendingAIDayPlan = null; // { dateKey, dateObj, blocks }
 
-      const availableTasks = (typeof tasks !== 'undefined' ? tasks : [])
-        .filter(t => t && !t.completed && t.title)
-        .slice(0, 10); // cap at 10 to avoid truncation
+	    const closeAIDayPlanModal = () => {
+	      if (refs.aiDayPlanModal) refs.aiDayPlanModal.classList.remove('open');
+	      pendingAIDayPlan = null;
+	    };
 
-      if (availableTasks.length === 0) {
-        alert('אין משימות לתכנון / No tasks to plan');
-        return;
-      }
+	    const formatDurationLabel = (minutes) => {
+	      const m = Math.max(0, parseInt(minutes || 0, 10) || 0);
+	      if (m >= 60) {
+	        const h = Math.floor(m / 60);
+	        const rem = m % 60;
+	        return rem ? `${h}h ${rem}m` : `${h}h`;
+	      }
+	      return `${m}m`;
+	    };
 
-      const existingBlocks = getBlocksForDate(currentDate);
-      if (existingBlocks.length > 0) {
-        const confirmReplace = confirm(`פעולה זו תחליף את כל הבלוקים בתאריך זה (${dayLabel}).\nThis will replace the current plan for this day. Continue?`);
-        if (!confirmReplace) return;
-      }
+	    const renderAIDayPlanList = (blocks) => {
+	      if (!refs.aiDayPlanList) return;
+	      if (!blocks || blocks.length === 0) {
+	        refs.aiDayPlanList.innerHTML = '<div class="no-events-msg">אין בלוקים להצגה / No blocks to show</div>';
+	        return;
+	      }
 
-      const normalizedTasks = availableTasks.map(t => {
-        const subj = (typeof subjects !== 'undefined' ? subjects : []).find(s => s.id === t.subject);
-        return {
-          id: t.id,
-          title: t.title.substring(0, 50),
-          priority: t.priority || 'none',
-          estimatedMinutes: t.estimatedMinutes || 60,
-          subject: subj ? subj.name : (t.subject || 'general')
-        };
-      });
+	      refs.aiDayPlanList.innerHTML = blocks.map(b => {
+	        const start = b.start || '??:??';
+	        const startMins = parseTime(start);
+	        const end = Number.isFinite(startMins) ? formatTime(startMins + (b.duration || 60)) : '??:??';
+	        const title = escapeHtml(b.title || 'Block');
+	        const metaParts = [];
+	        if (b.linkedTaskId) metaParts.push('task');
+	        if (b.sourceType) metaParts.push(String(b.sourceType));
+	        metaParts.push(formatDurationLabel(b.duration || 0));
+	        const meta = metaParts.filter(Boolean).join(' • ');
+	        return `
+	          <div class="ai-day-plan-item">
+	            <div class="ai-day-plan-time">${start}–${end}</div>
+	            <div class="ai-day-plan-title" dir="auto">${title}<div class="ai-day-plan-meta">${escapeHtml(meta)}</div></div>
+	          </div>
+	        `;
+	      }).join('');
+	    };
 
-      const tasksText = normalizedTasks.map((t, i) => `${i + 1}. ${t.id}|${t.title}|${t.priority}|${t.estimatedMinutes}m`).join('\n');
+	    const openAIDayPlanModal = ({ dateObj, dateKey, blocks }) => {
+	      pendingAIDayPlan = { dateObj, dateKey, blocks };
+	      if (refs.aiDayPlanTitle) refs.aiDayPlanTitle.textContent = `🤖 AI Day Plan • ${formatDate(dateObj)}`;
+	      if (refs.aiDayPlanDesc) refs.aiDayPlanDesc.textContent =
+	        'Preview before applying. This does not delete tasks or countdowns; it only adds planner blocks.';
+	      renderAIDayPlanList(blocks);
+	      if (refs.aiDayPlanModal) refs.aiDayPlanModal.classList.add('open');
+	    };
 
-      const prompt = `Schedule for ${dateKey}. Start at 09:00. Return ONLY JSON array:
+	    const overlapsAny = (candidate, others) => {
+	      const cStart = parseTime(candidate.start);
+	      if (!Number.isFinite(cStart)) return true;
+	      const cEnd = cStart + (candidate.duration || 60);
+	      return (others || []).some(o => {
+	        const oStart = parseTime(o.start);
+	        if (!Number.isFinite(oStart)) return false;
+	        const oEnd = oStart + (o.duration || 60);
+	        return cStart < oEnd && cEnd > oStart;
+	      });
+	    };
 
-Tasks:
+	    const applyAIDayPlan = (mode) => {
+	      if (!pendingAIDayPlan) return;
+	      const { dateObj, dateKey, blocks } = pendingAIDayPlan;
+	      const existingBlocks = plannerBlocks.filter(b => b.date === dateKey);
+	      const preserved = existingBlocks.filter(b => b.sourceType === 'countdown' || b.sourceType === 'task');
+
+	      if (mode === 'replace') {
+	        plannerBlocks = plannerBlocks.filter(b => b.date !== dateKey || b.sourceType === 'countdown' || b.sourceType === 'task');
+	      }
+
+	      const base = mode === 'replace' ? preserved : existingBlocks;
+	      const accepted = [];
+	      (blocks || []).forEach(b => {
+	        if (overlapsAny(b, base) || overlapsAny(b, accepted)) return;
+	        accepted.push(b);
+	      });
+
+	      plannerBlocks.push(...accepted);
+	      plannerBlocks.sort((a, b) => {
+	        if (a.date !== b.date) return a.date.localeCompare(b.date);
+	        return parseTime(a.start) - parseTime(b.start);
+	      });
+	      saveBlocks();
+
+	      // Jump planner to this date so user sees the result
+	      currentDate = new Date(dateObj);
+	      render();
+	      closeAIDayPlanModal();
+	    };
+
+	    // AI: Plan entire day (reorders tasks and lays out schedule)
+	    const aiPlanEntireDay = async (targetDate = currentDate) => {
+	      currentDate = new Date(targetDate);
+	      const dateKey = getDateKey(currentDate);
+	      const dayLabel = formatDate(currentDate);
+
+	      const allTasks = (typeof tasks !== 'undefined' ? tasks : []).filter(t => t && !t.completed && t.title);
+	      const priorityOrder = { urgent: 0, high: 1, medium: 2, low: 3, none: 4 };
+	      const availableTasks = [...allTasks]
+	        .sort((a, b) => {
+	          const ap = priorityOrder[a.priority || 'none'] ?? 4;
+	          const bp = priorityOrder[b.priority || 'none'] ?? 4;
+	          if (ap !== bp) return ap - bp;
+	          const ad = a.dueDate ? new Date(a.dueDate).getTime() : Number.POSITIVE_INFINITY;
+	          const bd = b.dueDate ? new Date(b.dueDate).getTime() : Number.POSITIVE_INFINITY;
+	          return ad - bd;
+	        })
+	        .slice(0, 12); // cap to avoid truncation
+
+	      const existingBlocks = getBlocksForDate(currentDate);
+
+	      const normalizedTasks = availableTasks.map(t => {
+	        const subj = (typeof subjects !== 'undefined' ? subjects : []).find(s => s.id === t.subject);
+	        return {
+	          id: t.id,
+	          title: t.title.substring(0, 50),
+	          priority: t.priority || 'none',
+	          estimatedMinutes: t.estimatedMinutes || t.duration || 60,
+	          subjectId: t.subject || '',
+	          subjectName: subj ? subj.name : (t.subject || 'general'),
+	          subjectColor: subj ? subj.color : (t.color || '')
+	        };
+	      });
+
+	      const busyWindows = [];
+	      const busyBlocks = (() => {
+	        const blocks = [];
+
+	        // Existing planner blocks (avoid overlaps when merging)
+	        existingBlocks.forEach(b => {
+	          if (!b || !b.start) return;
+	          const start = b.start;
+	          const end = formatTime(parseTime(start) + (b.duration || 60));
+	          blocks.push(`${start}-${end} | ${b.title || 'busy'} | planner`);
+	          busyWindows.push({ start, duration: b.duration || 60 });
+	        });
+
+	        // Countdown events for this day (fixed start, 60m default)
+	        const countdownsForDay = (typeof events !== 'undefined' ? events : []).filter(evt => {
+	          if (!evt?.date) return false;
+	          return getDateKey(new Date(evt.date)) === dateKey;
+	        });
+	        countdownsForDay.forEach(evt => {
+	          const d = new Date(evt.date);
+	          const start = formatTime(d.getHours() * 60 + d.getMinutes());
+	          const end = formatTime(parseTime(start) + 60);
+	          blocks.push(`${start}-${end} | ${evt.name || 'event'} | countdown`);
+	          busyWindows.push({ start, duration: 60 });
+	        });
+
+	        // Tasks that already have a specific due time that day
+	        const fixedTasks = allTasks.filter(t => {
+	          if (!t?.dueDate) return false;
+	          const due = new Date(t.dueDate);
+	          if (getDateKey(due) !== dateKey) return false;
+	          return !(due.getHours() === 0 && due.getMinutes() === 0);
+	        });
+	        fixedTasks.forEach(t => {
+	          const due = new Date(t.dueDate);
+	          const start = formatTime(due.getHours() * 60 + due.getMinutes());
+	          const end = formatTime(parseTime(start) + (t.duration || 30));
+	          blocks.push(`${start}-${end} | ${t.title || 'task'} | fixed-task`);
+	          busyWindows.push({ start, duration: t.duration || 30 });
+	        });
+
+	        return blocks;
+	      })();
+
+	      const tasksText = normalizedTasks.map((t, i) => `${i + 1}. ${t.id}|${t.title}|${t.priority}|${t.estimatedMinutes}m|${t.subjectName}`).join('\n');
+
+	      const prompt = `You are a bilingual (Hebrew/English) daily planner assistant.
+Build a day schedule for date ${dateKey}. Return ONLY a JSON array.
+
+Constraints:
+- Working hours: 09:00-23:00
+- No overlaps
+- Avoid busy blocks listed below
+- Prefer urgent/high priority first
+- Use the provided durations (minutes)
+- You may include short breaks (5-15m) between long focus blocks if there is time
+- If the tasks list is empty, propose a balanced day schedule (focus blocks, breaks, meals)
+- IMPORTANT: Do NOT delete tasks or countdowns. Your output only schedules by creating planner blocks.
+
+Busy blocks (avoid scheduling during these times):
+${busyBlocks.length ? busyBlocks.join('\n') : '(none)'}
+
+Tasks to schedule (id|title|priority|minutes|subject):
 ${tasksText}
 
-Rules: Start 09:00, end by 23:00, no overlaps, urgent first. Use task durations.
-JSON: [{"taskId":"id","start":"HH:MM","durationMinutes":60}]
+Return JSON array of blocks ONLY, nothing else.
+JSON schema:
+[
+  {"taskId":"id-or-null","title":"optional override","start":"HH:MM","durationMinutes":60,"note":"optional"}
+]
 
 Array:`;
 
-      const text = await callAI(prompt);
-      const plan = parseAIJsonResponse(text);
-      if (!Array.isArray(plan)) throw new Error('Invalid plan format from AI');
+	      const text = await callAI(prompt);
+	      const plan = parseAIJsonResponse(text);
+	      if (!Array.isArray(plan)) throw new Error('Invalid plan format from AI');
 
       const MIN_START = 9 * 60; // 9:00 AM
       const MAX_END = 23 * 60; // 11:00 PM
 
       const newBlocks = [];
 
-      plan.forEach((item, idx) => {
-        const startStr = (item && item.start) ? String(item.start).trim() : null;
-        const startMinutes = startStr ? parseTime(startStr) : null;
-        if (startMinutes === null || isNaN(startMinutes)) return;
-        const rawDuration = parseInt(item.durationMinutes || item.duration || 0, 10);
-        const duration = Math.min(240, Math.max(15, rawDuration || 60));
-        const endMinutes = startMinutes + duration;
-        if (startMinutes < MIN_START || endMinutes > MAX_END) return;
+	      const busyForValidation = busyWindows.slice();
 
-        // Avoid overlaps with already accepted blocks
-        const overlaps = newBlocks.some(b => {
-          const bStart = parseTime(b.start);
-          const bEnd = bStart + (b.duration || 60);
-          return startMinutes < bEnd && endMinutes > bStart;
-        });
-        if (overlaps) return;
+	      plan.forEach((item, idx) => {
+	        const startStr = (item && item.start) ? String(item.start).trim() : null;
+	        const startMinutes = startStr ? parseTime(startStr) : null;
+	        if (startMinutes === null || isNaN(startMinutes)) return;
+	        const rawDuration = parseInt(item.durationMinutes || item.duration || 0, 10);
+	        const duration = Math.min(240, Math.max(15, rawDuration || 60));
+	        const endMinutes = startMinutes + duration;
+	        if (startMinutes < MIN_START || endMinutes > MAX_END) return;
 
-        const taskMatch = normalizedTasks.find(t => t.id === item.taskId) || normalizedTasks[idx];
-        if (!taskMatch) return;
+	        // Avoid overlaps with already accepted blocks
+	        const overlaps = newBlocks.some(b => {
+	          const bStart = parseTime(b.start);
+	          const bEnd = bStart + (b.duration || 60);
+	          return startMinutes < bEnd && endMinutes > bStart;
+	        });
+	        if (overlaps) return;
 
-        const subj = (typeof subjects !== 'undefined' ? subjects : []).find(s => s.id === taskMatch.subject);
-        const block = {
-          id: generateId(),
-          title: item.title || taskMatch.title,
-          start: formatTime(startMinutes),
-          duration: duration,
-          priority: taskMatch.priority || 'medium',
-          category: taskMatch.subject || 'work',
-          color: subj ? subj.color : '#667eea',
-          date: dateKey,
-          completed: false,
-          reminder: 0,
-          sourceType: 'ai-plan',
-          linkedTaskId: taskMatch.id,
-          note: item.note || ''
-        };
+	        // Also avoid overlaps with existing planner blocks (merge-safe by default)
+	        const overlapsBusy = busyForValidation.some(b => {
+	          const bStart = parseTime(b.start);
+	          const bEnd = bStart + (b.duration || 60);
+	          return startMinutes < bEnd && endMinutes > bStart;
+	        });
+	        if (overlapsBusy) return;
 
-        newBlocks.push(block);
-      });
+	        const taskMatch = normalizedTasks.find(t => t.id === item.taskId) || normalizedTasks[idx] || null;
+
+	        const color = taskMatch?.subjectColor || '#667eea';
+	        const category = taskMatch?.subjectName || 'work';
+	        const block = {
+	          id: generateId(),
+	          title: item.title || (taskMatch ? taskMatch.title : 'בלוק חדש'),
+	          start: formatTime(startMinutes),
+	          duration: duration,
+	          priority: taskMatch?.priority || 'medium',
+	          category,
+	          color,
+	          date: dateKey,
+	          completed: false,
+	          reminder: 0,
+	          sourceType: 'ai-plan',
+	          linkedTaskId: taskMatch ? taskMatch.id : null,
+	          note: item.note || ''
+	        };
+
+	        newBlocks.push(block);
+	      });
 
       if (newBlocks.length === 0) {
         throw new Error('AI did not return a usable schedule');
       }
 
-      // Replace plan for the day
-      plannerBlocks = plannerBlocks.filter(b => b.date !== dateKey);
-      plannerBlocks.push(...newBlocks.sort((a, b) => parseTime(a.start) - parseTime(b.start)));
-      saveBlocks();
-      render();
-
-      alert(`✅ נבנה לוח זמנים AI ל-${dayLabel} (${newBlocks.length} בלוקים)`);
-    };
+	      // Preview and let the user apply (merge/replace)
+	      openAIDayPlanModal({
+	        dateObj: new Date(currentDate),
+	        dateKey,
+	        blocks: newBlocks.sort((a, b) => parseTime(a.start) - parseTime(b.start))
+	      });
+	    };
     
     // Open add modal
     const openAddModal = (hour = 9) => {
@@ -17434,10 +17760,16 @@ Array:`;
       render();
     };
     
-    // Initialize
-    const init = () => {
-      // Get DOM references
-      refs.overlay = $('plannerOverlay');
+	    // Initialize
+	    const init = () => {
+	      if (initialized) {
+	        render();
+	        return;
+	      }
+	      initialized = true;
+
+	      // Get DOM references
+	      refs.overlay = $('plannerOverlay');
       refs.currentDate = $('plannerCurrentDate');
       refs.prevDay = $('plannerPrevDay');
       refs.nextDay = $('plannerNextDay');
@@ -17455,11 +17787,31 @@ Array:`;
       refs.progress = $('plannerProgress');
       refs.dayTitle = $('plannerDayTitle');
       refs.daySummary = $('plannerDaySummary');
-      refs.countdownsList = $('plannerCountdownsList');
-      refs.scheduledTasksList = $('plannerScheduledTasksList');
-      refs.syncAllBtn = $('plannerSyncAllBtn');
-      refs.syncCountdownsBtn = $('plannerSyncCountdownsBtn');
-      refs.syncTasksBtn = $('plannerSyncTasksBtn');
+	      refs.countdownsList = $('plannerCountdownsList');
+	      refs.scheduledTasksList = $('plannerScheduledTasksList');
+	      refs.syncAllBtn = $('plannerSyncAllBtn');
+	      refs.syncCountdownsBtn = $('plannerSyncCountdownsBtn');
+	      refs.syncTasksBtn = $('plannerSyncTasksBtn');
+	      refs.aiDayPlanModal = $('aiDayPlanModal');
+	      refs.aiDayPlanList = $('aiDayPlanList');
+	      refs.aiDayPlanTitle = $('aiDayPlanTitle');
+	      refs.aiDayPlanDesc = $('aiDayPlanDesc');
+	      refs.aiApplyPlanMergeBtn = $('aiApplyPlanMergeBtn');
+	      refs.aiApplyPlanReplaceBtn = $('aiApplyPlanReplaceBtn');
+	      refs.aiCancelPlanBtn = $('aiCancelPlanBtn');
+
+	      if (refs.aiCancelPlanBtn) refs.aiCancelPlanBtn.onclick = closeAIDayPlanModal;
+	      if (refs.aiDayPlanModal) {
+	        refs.aiDayPlanModal.addEventListener('click', (e) => {
+	          if (e.target === refs.aiDayPlanModal) closeAIDayPlanModal();
+	        });
+	      }
+	      if (refs.aiApplyPlanMergeBtn) refs.aiApplyPlanMergeBtn.onclick = () => applyAIDayPlan('merge');
+	      if (refs.aiApplyPlanReplaceBtn) refs.aiApplyPlanReplaceBtn.onclick = () => {
+	        const ok = confirm('Replace planner blocks for this day? (Tasks/countdowns are not deleted; this affects planner blocks only)');
+	        if (!ok) return;
+	        applyAIDayPlan('replace');
+	      };
       
       // View toggle
       refs.viewToggle = refs.overlay ? refs.overlay.querySelector('.planner-view-toggle') : null;
@@ -17709,20 +18061,62 @@ Array:`;
       }, 60000);
     };
     
-    // Refresh scheduled tasks (called when tasks change)
-    const refreshTasks = () => {
-      if (refs.overlay && refs.overlay.classList.contains('open')) {
-        // Full render to update timeline, scheduled tasks, and quick tasks
-        render();
-      } else if (refs.scheduledTasksList) {
-        // At minimum, update the cached lists for when planner is opened
-        renderScheduledTasks();
-        renderQuickTasks();
-      }
-    };
-    
-    return { init, render, refreshTasks };
-  })();
+	    // Refresh scheduled tasks (called when tasks change)
+	    const refreshTasks = () => {
+	      if (refs.overlay && refs.overlay.classList.contains('open')) {
+	        // Full render to update timeline, scheduled tasks, and quick tasks
+	        render();
+	      } else if (refs.scheduledTasksList) {
+	        // At minimum, update the cached lists for when planner is opened
+	        renderScheduledTasks();
+	        renderQuickTasks();
+	      }
+	    };
+
+	    const planDayWithAI = async (dateObj = new Date()) => {
+	      if (typeof showView === 'function') showView('planner');
+	      if (!initialized) init();
+	      await aiPlanEntireDay(dateObj);
+	    };
+
+	    const addPlannerBlock = async ({ date, title, start, durationMinutes = 60, notes = '', category = '' }) => {
+	      if (typeof showView === 'function') showView('planner');
+	      if (!initialized) init();
+
+	      const dateObj = new Date(date);
+	      if (isNaN(dateObj.getTime())) throw new Error('Invalid date');
+	      const dateKey = getDateKey(dateObj);
+
+	      const startMinutes = parseTime(start);
+	      if (!Number.isFinite(startMinutes)) throw new Error('Invalid start time');
+
+	      const duration = Math.min(240, Math.max(15, parseInt(durationMinutes || 60, 10) || 60));
+
+	      const newBlock = {
+	        id: generateId(),
+	        title: String(title || '').trim() || 'בלוק חדש',
+	        start: formatTime(startMinutes),
+	        duration,
+	        category: String(category || '').trim(),
+	        notes: String(notes || '').trim(),
+	        repeat: false,
+	        priority: 'medium',
+	        color: '',
+	        reminder: 0,
+	        completed: false,
+	        date: dateKey,
+	        createdAt: new Date().toISOString(),
+	        sourceType: 'ai'
+	      };
+
+	      plannerBlocks.push(newBlock);
+	      saveBlocks();
+	      currentDate = new Date(dateObj);
+	      render();
+	    };
+	    
+	    return { init, render, refreshTasks, planDayWithAI, addPlannerBlock };
+	  })();
 </script>
 
 <!-- Mobile Bottom Navigation Bar -->
