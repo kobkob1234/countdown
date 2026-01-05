@@ -10140,9 +10140,9 @@
 	            await registration.showNotification("Event Reminder ⏰", {
 	              body: msg,
 	              tag: `event-${evt.id || evt.name || 'reminder'}`,
-	              icon: '/manifest.webmanifest',
+	              icon: './icon.svg',
 	              vibrate: [200, 100, 200],
-	              requireInteraction: false
+	              requireInteraction: true
 	            });
 	          } catch (e) {
 	            new Notification("Event Reminder ⏰", {
@@ -10559,7 +10559,8 @@
       const eventTime = new Date(evt.date).getTime();
       if (!Number.isFinite(eventTime)) return;
       const triggerTime = eventTime - (reminderMinutes * 60000);
-      if (nowMs >= triggerTime && nowMs < triggerTime + 60000) {
+      // Check within 2-minute window to avoid missing notifications
+      if (nowMs >= triggerTime && nowMs < triggerTime + 120000) {
         triggerAlert(evt);
         notifiedEvents.set(evt.id, reminderKey);
       }
@@ -12970,14 +12971,15 @@
         const taskTime = new Date(task.dueDate).getTime();
         if (!Number.isFinite(taskTime)) return;
         const triggerTime = taskTime - (reminderMinutes * 60000);
-        if (nowMs >= triggerTime && nowMs < triggerTime + 60000) {
+        // Check within 2-minute window to avoid missing notifications
+        if (nowMs >= triggerTime && nowMs < triggerTime + 120000) {
           triggerTaskAlert(task);
           notifiedTasks.set(task.id, reminderKey);
         }
       });
     };
     tick();
-    taskTickerHandle = setInterval(tick, 60000); // Update every minute
+    taskTickerHandle = setInterval(tick, 10000); // Check every 10 seconds for accuracy
   }
   
 	  async function triggerTaskAlert(task) {
@@ -13001,10 +13003,10 @@
 	          await registration.showNotification(title, {
 	            body: message,
 	            tag: `task-${task.id}`,
-	            icon: '/manifest.webmanifest',
-	            badge: '/manifest.webmanifest',
+	            icon: './icon.svg',
+	            badge: './icon.svg',
 	            vibrate: [200, 100, 200],
-	            requireInteraction: false
+	            requireInteraction: true
 	          });
 	        } catch (e) {
 	          // Fallback to regular notification
