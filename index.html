@@ -2543,6 +2543,15 @@
       color: white;
     }
 
+    /* Picture-in-Picture button styling */
+    #pomodoroPiP {
+      position: relative;
+    }
+    #pomodoroPiP.active {
+      background: var(--accent);
+      color: white;
+    }
+
     @media (max-width: 768px) {
       .event-row {
         flex-direction: column;
@@ -7652,6 +7661,7 @@
             <button class="pomodoro-btn" id="pomodoroReset" title="איפוס">🔄</button>
             <button class="pomodoro-btn primary" id="pomodoroStart" title="התחל">▶️</button>
             <button class="pomodoro-btn" id="pomodoroSkip" title="דלג">⏭️</button>
+            <button class="pomodoro-btn" id="pomodoroPiP" title="Picture-in-Picture">📌</button>
           </div>
 
           <div id="pomodoroProgress" style="display:none;"></div>
@@ -7747,6 +7757,9 @@
       </div>
     </div>
   </div>
+
+  <!-- Hidden canvas for Picture-in-Picture -->
+  <canvas id="pomodoroPipCanvas" width="400" height="200" style="display: none;"></canvas>
 
   <!-- Pomodoro Mini Player -->
   <div class="pomodoro-mini" id="pomodoroMini">
@@ -11207,7 +11220,10 @@
       miniTime: document.getElementById('pomodoroMiniTime'),
       miniMode: document.getElementById('pomodoroMiniMode'),
       miniToggle: document.getElementById('pomodoroMiniToggle'),
-      miniClose: document.getElementById('pomodoroMiniClose')
+      miniClose: document.getElementById('pomodoroMiniClose'),
+      // Picture-in-Picture refs
+      pipBtn: document.getElementById('pomodoroPiP'),
+      pipCanvas: document.getElementById('pomodoroPipCanvas')
     };
 
     const KEYS = {
@@ -11302,7 +11318,9 @@
       running: false,
       cycle: 0,
       preset: localStorage.getItem(KEYS.PRESET) || 'classic',
-      timerId: null
+      timerId: null,
+      startTimestamp: null,  // Track when timer actually started
+      pausedMs: 0  // Track how much time was on timer when paused
     };
     let stats = loadStats();
     let settings = loadSettings();
@@ -11386,27 +11404,41 @@
     };
 
     const tick = () => {
-      state.remainingMs -= 1000;
-      if (state.remainingMs <= 0) advance(true);
-      render();
+      if (!state.running || !state.startTimestamp) return;
+      
+      // Calculate actual elapsed time based on timestamp (immune to tab throttling)
+      const now = Date.now();
+      const elapsed = now - state.startTimestamp;
+      state.remainingMs = Math.max(0, state.pausedMs - elapsed);
+      
+      if (state.remainingMs <= 0) {
+        advance(true);
+      } else {
+        render();
+      }
     };
 
     const start = () => {
       if (state.running) return;
       state.running = true;
+      state.startTimestamp = Date.now();
+      state.pausedMs = state.remainingMs;
       clearTimer();
-      state.timerId = setInterval(tick, 1000);
+      state.timerId = setInterval(tick, 100); // Check more frequently for accuracy
       render();
     };
 
     const pause = () => {
       state.running = false;
+      state.startTimestamp = null;
       clearTimer();
       render();
     };
 
     const reset = () => {
       state.running = false;
+      state.startTimestamp = null;
+      state.pausedMs = 0;
       clearTimer();
       state.mode = 'focus';
       state.remainingMs = config.focus * 60000;
@@ -11526,6 +11558,8 @@
       const wasRunning = state.running;
       clearTimer();
       state.running = false;
+      state.startTimestamp = null;
+      state.pausedMs = 0;
       if (state.mode === 'focus') {
         if (countFocus) recordFocus();
         state.cycle += 1;
@@ -11584,6 +11618,138 @@
         refs.taskSelect.appendChild(opt);
       });
       if (prev && active.some(t => t.id === prev)) refs.taskSelect.value = prev;
+    };
+
+    // ============ PICTURE-IN-PICTURE FUNCTIONALITY ============
+    let pipWindow = null;
+    let pipAnimationFrame = null;
+    let isPiPActive = false;
+
+    const drawPiPCanvas = () => {
+      if (!refs.pipCanvas) return;
+      const canvas = refs.pipCanvas;
+      const ctx = canvas.getContext('2d');
+      
+      // Clear canvas
+      ctx.fillStyle = '#1a1a2e';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      
+      // Draw time
+      const time = formatTime(state.remainingMs);
+      ctx.font = 'bold 72px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+      ctx.fillStyle = '#ffffff';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(time, canvas.width / 2, canvas.height / 2 - 20);
+      
+      // Draw mode
+      const modeLabel = state.mode === 'focus' ? 'מיקוד' : (state.mode === 'long' ? 'הפסקה ארוכה' : 'הפסקה קצרה');
+      ctx.font = '24px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+      ctx.fillStyle = state.mode === 'focus' ? '#00d4ff' : '#ff6b9d';
+      ctx.fillText(modeLabel, canvas.width / 2, canvas.height / 2 + 40);
+      
+      // Draw progress bar
+      const totalMs = getDuration(state.mode) * 60000;
+      const progress = Math.max(0, Math.min(1, 1 - (state.remainingMs / totalMs)));
+      const barWidth = canvas.width * 0.8;
+      const barHeight = 6;
+      const barX = (canvas.width - barWidth) / 2;
+      const barY = canvas.height - 30;
+      
+      // Background bar
+      ctx.fillStyle = '#2d2d44';
+      ctx.fillRect(barX, barY, barWidth, barHeight);
+      
+      // Progress bar
+      ctx.fillStyle = state.mode === 'focus' ? '#00d4ff' : '#ff6b9d';
+      ctx.fillRect(barX, barY, barWidth * progress, barHeight);
+    };
+
+    const updatePiPCanvas = () => {
+      if (!isPiPActive) return;
+      drawPiPCanvas();
+      pipAnimationFrame = requestAnimationFrame(updatePiPCanvas);
+    };
+
+    const startPiP = async () => {
+      if (!refs.pipCanvas || !('documentPictureInPicture' in window)) {
+        alert('Picture-in-Picture אינו נתמך בדפדפן זה');
+        return;
+      }
+
+      try {
+        // Create a video element from canvas
+        const stream = refs.pipCanvas.captureStream(30); // 30 FPS
+        const video = document.createElement('video');
+        video.srcObject = stream;
+        video.muted = true;
+        video.autoplay = true;
+        video.style.width = '100%';
+        video.style.height = '100%';
+        
+        // Play the video
+        await video.play();
+        
+        // Request PiP
+        pipWindow = await video.requestPictureInPicture();
+        isPiPActive = true;
+        
+        if (refs.pipBtn) refs.pipBtn.classList.add('active');
+        
+        // Start animation loop
+        updatePiPCanvas();
+        
+        // Handle PiP close
+        video.addEventListener('leavepictureinpicture', () => {
+          isPiPActive = false;
+          if (refs.pipBtn) refs.pipBtn.classList.remove('active');
+          if (pipAnimationFrame) {
+            cancelAnimationFrame(pipAnimationFrame);
+            pipAnimationFrame = null;
+          }
+          pipWindow = null;
+        });
+        
+      } catch (error) {
+        console.error('PiP error:', error);
+        alert('שגיאה בהפעלת Picture-in-Picture');
+      }
+    };
+
+    const stopPiP = () => {
+      if (pipWindow && document.pictureInPictureElement) {
+        document.exitPictureInPicture().catch(e => console.error('PiP exit error:', e));
+      }
+      isPiPActive = false;
+      if (refs.pipBtn) refs.pipBtn.classList.remove('active');
+      if (pipAnimationFrame) {
+        cancelAnimationFrame(pipAnimationFrame);
+        pipAnimationFrame = null;
+      }
+      pipWindow = null;
+    };
+
+    const initPiP = () => {
+      if (!refs.pipBtn) return;
+      
+      refs.pipBtn.addEventListener('click', () => {
+        if (isPiPActive) {
+          stopPiP();
+        } else {
+          startPiP();
+        }
+      });
+      
+      // Check if PiP is supported
+      if (!('documentPictureInPicture' in window)) {
+        // Try standard PiP API
+        const hasStandardPiP = 'pictureInPictureEnabled' in document;
+        if (!hasStandardPiP) {
+          refs.pipBtn.style.opacity = '0.3';
+          refs.pipBtn.style.cursor = 'not-allowed';
+          refs.pipBtn.title = 'Picture-in-Picture לא נתמך בדפדפן זה';
+        }
+      }
     };
 
     const init = () => {
@@ -11677,6 +11843,16 @@
           if (overlay) overlay.classList.add('open');
         });
       }
+
+      // Picture-in-Picture setup
+      initPiP();
+
+      // Handle visibility change - force tick when tab becomes visible
+      document.addEventListener('visibilitychange', () => {
+        if (!document.hidden && state.running) {
+          tick(); // Update immediately when returning to tab
+        }
+      });
 
       updatePresetButtons();
       render();
