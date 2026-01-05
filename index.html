@@ -5411,7 +5411,8 @@
       display: none;
       align-items: center;
       justify-content: center;
-      z-index: 600;
+      /* Must sit above full-screen overlays (Planner/Task/Pomodoro) and the fixed header bar */
+      z-index: 15000;
       padding: 20px;
     }
     .reminder-modal.open {
