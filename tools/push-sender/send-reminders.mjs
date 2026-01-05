@@ -312,3 +312,10 @@ console.log(JSON.stringify({
   failed
 }, null, 2));
 
+// Ensure the process exits (Realtime Database keeps sockets open by default)
+try {
+  if (typeof db.goOffline === 'function') db.goOffline();
+} catch {}
+try {
+  await admin.app().delete();
+} catch {}
