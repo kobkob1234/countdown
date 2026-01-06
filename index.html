@@ -19,7 +19,9 @@
   <meta name="msapplication-tap-highlight" content="no" />
   
   <link rel="manifest" href="manifest.webmanifest" />
-  <link rel="apple-touch-icon" href="icon.svg" />
+  <link rel="apple-touch-icon" href="icon-192.png" />
+  <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png" />
+  <link rel="icon" type="image/png" sizes="512x512" href="icon-512.png" />
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%23667eea'/%3E%3Cstop offset='100%25' stop-color='%23764ba2'/%3E%3C/linearGradient%3E%3C/defs%3E%3Ccircle cx='16' cy='16' r='14' fill='url(%23g)'/%3E%3Cpath d='M16 8v8l5 3' stroke='white' stroke-width='2.5' stroke-linecap='round' fill='none'/%3E%3C/svg%3E" />
   <style>
     :root {
@@ -2488,27 +2490,36 @@
     }
 
     /* Pomodoro Mini Player */
-    .pomodoro-mini {
-      position: fixed;
-      bottom: 24px;
-      right: 24px;
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 20px;
-      padding: 16px 24px;
-      box-shadow: 0 8px 32px rgba(0,0,0,0.2);
-      display: none;
-      align-items: center;
-      gap: 16px;
-      z-index: 9999;
-      cursor: pointer;
-      transition: all 0.3s;
-    }
-    .pomodoro-mini.visible { display: flex; }
-    .pomodoro-mini:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 12px 40px rgba(0,0,0,0.25);
-    }
+	    .pomodoro-mini {
+	      position: fixed;
+	      bottom: 24px;
+	      right: 24px;
+	      background: var(--card);
+	      border: 1px solid var(--border);
+	      border-radius: 20px;
+	      padding: 16px 24px;
+	      box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+	      display: none;
+	      align-items: center;
+	      gap: 16px;
+	      z-index: 9999;
+	      cursor: pointer;
+	      transition: all 0.3s;
+	      touch-action: none;
+	    }
+	    .pomodoro-mini.visible { display: flex; }
+	    .pomodoro-mini.dragging {
+	      transition: none;
+	      opacity: 0.95;
+	      box-shadow: 0 12px 40px rgba(0,0,0,0.28);
+	    }
+	    .pomodoro-mini:hover {
+	      transform: translateY(-4px);
+	      box-shadow: 0 12px 40px rgba(0,0,0,0.25);
+	    }
+	    .pomodoro-mini.dragging:hover {
+	      transform: none;
+	    }
     .pomodoro-mini-time {
       font-size: 28px;
       font-weight: 700;
@@ -7414,6 +7425,7 @@
                 <option value="0">ללא תזכורת</option>
                 <option value="1">דקה לפני</option>
                 <option value="5">5 דקות לפני</option>
+                <option value="10">10 דקות לפני</option>
                 <option value="15">15 דקות לפני</option>
                 <option value="30">30 דקות לפני</option>
                 <option value="60">שעה לפני</option>
@@ -7580,6 +7592,7 @@
         <div class="quick-reminder-btns" style="display: flex; gap: 8px; margin-bottom: 10px;">
           <button type="button" class="quick-reminder-btn" data-minutes="1" style="padding: 6px 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--btn-secondary-bg); color: var(--text); font-size: 12px; cursor: pointer;">1 דקה</button>
           <button type="button" class="quick-reminder-btn" data-minutes="5" style="padding: 6px 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--btn-secondary-bg); color: var(--text); font-size: 12px; cursor: pointer;">5 דקות</button>
+          <button type="button" class="quick-reminder-btn" data-minutes="10" style="padding: 6px 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--btn-secondary-bg); color: var(--text); font-size: 12px; cursor: pointer;">10 דקות</button>
           <button type="button" class="quick-reminder-btn" data-minutes="15" style="padding: 6px 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--btn-secondary-bg); color: var(--text); font-size: 12px; cursor: pointer;">15 דקות</button>
           <button type="button" class="quick-reminder-btn" data-minutes="60" style="padding: 6px 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--btn-secondary-bg); color: var(--text); font-size: 12px; cursor: pointer;">שעה</button>
         </div>
@@ -7587,6 +7600,7 @@
           <option value="0">🔕 ללא תזכורת</option>
           <option value="1">🔔 דקה לפני</option>
           <option value="5">🔔 5 דקות לפני</option>
+          <option value="10">🔔 10 דקות לפני</option>
           <option value="15">🔔 15 דקות לפני</option>
           <option value="30">🔔 30 דקות לפני</option>
           <option value="60">🔔 שעה לפני</option>
@@ -8212,6 +8226,7 @@
             <select id="eventReminder" class="reminder-select" aria-label="Reminder time">
               <option value="0">🔕 No Reminder</option>
               <option value="5">5 minutes before</option>
+              <option value="10">10 minutes before</option>
               <option value="60">1 hour before</option>
               <option value="1440">1 day before</option>
               <option value="2880">2 days before</option>
@@ -8677,6 +8692,61 @@
 	    return await navigator.serviceWorker.register('./service-worker.js', { scope: './' });
 	  }
 
+	  const NOTIFICATION_ICON = './icon-192.png';
+	  const NOTIFICATION_BADGE = './icon-192.png';
+
+	  const isIOS = () => /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+	  const isStandalone = () =>
+	    (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) ||
+	    (typeof navigator.standalone === 'boolean' && navigator.standalone);
+
+	  const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+	  async function showSystemNotification(title, options = {}) {
+	    if (!("Notification" in window)) return false;
+	    if (Notification.permission !== 'granted') return false;
+
+	    const merged = {
+	      icon: NOTIFICATION_ICON,
+	      badge: NOTIFICATION_BADGE,
+	      vibrate: [200, 100, 200],
+	      requireInteraction: true,
+	      silent: false,
+	      ...options
+	    };
+	    merged.data = { url: window.location.href, ...(options.data || {}) };
+
+	    // Prefer Service Worker notifications (more reliable on mobile), but never hang waiting for `ready`.
+	    if (window.isSecureContext && 'serviceWorker' in navigator) {
+	      try {
+	        const reg = await getPushRegistration();
+	        if (reg && typeof reg.showNotification === 'function') {
+	          await reg.showNotification(title, merged);
+	          return true;
+	        }
+	      } catch (e) {}
+
+	      try {
+	        const reg = await Promise.race([ensurePushRegistration(), delay(1500).then(() => null)]);
+	        if (reg && typeof reg.showNotification === 'function') {
+	          await reg.showNotification(title, merged);
+	          return true;
+	        }
+	      } catch (e) {
+	        console.warn('[Notification] Service Worker registration failed:', e);
+	      }
+	    }
+
+	    // Fallback: direct Notification API (works in many browsers while the app is open).
+	    try {
+	      new Notification(title, merged);
+	      return true;
+	    } catch (e) {
+	      console.warn('[Notification] new Notification failed:', e);
+	      return false;
+	    }
+	  }
+
 	  async function sha256Base64Url(input) {
 	    const data = new TextEncoder().encode(String(input || ''));
 	    const digest = await crypto.subtle.digest('SHA-256', data);
@@ -8746,6 +8816,21 @@
 	      notifyBtn.setAttribute('aria-disabled', 'true');
 	      return;
 	    }
+	    if (!window.isSecureContext) {
+	      notifyBtn.textContent = "🔒";
+	      notifyBtn.title = "Notifications require HTTPS (or localhost)";
+	      notifyBtn.disabled = true;
+	      notifyBtn.setAttribute('aria-disabled', 'true');
+	      return;
+	    }
+	    if (isIOS() && !isStandalone()) {
+	      notifyBtn.textContent = "📲";
+	      notifyBtn.title = "On iPhone/iPad: install this app (Add to Home Screen) to enable notifications";
+	      notifyBtn.disabled = false;
+	      notifyBtn.removeAttribute('aria-disabled');
+	      notifyBtn.setAttribute('aria-pressed', 'false');
+	      return;
+	    }
 	    notifyBtn.disabled = false;
 	    notifyBtn.removeAttribute('aria-disabled');
 
@@ -8791,6 +8876,10 @@
 	      alert("Notifications require HTTPS (GitHub Pages is OK) or localhost.");
 	      return;
 	    }
+	    if (isIOS() && !isStandalone()) {
+	      alert("On iPhone/iPad, notifications require installing the PWA:\nShare → Add to Home Screen → open the app from the home screen, then enable notifications.");
+	      return;
+	    }
 	    if (Notification.permission === 'denied') {
 	      alert("Notifications are blocked for this site. Enable them in browser/OS settings and reload.");
 	      return;
@@ -8806,7 +8895,7 @@
 	    }
 
 	    if (!isPushSupported()) {
-	      new Notification("Notifications enabled ✅", { body: "You’ll get reminders while this app is open." });
+	      showSystemNotification("Notifications enabled ✅", { body: "You’ll get reminders while this app is open.", requireInteraction: false }).catch(() => {});
 	      await refreshNotifyButton();
 	      return;
 	    }
@@ -8830,16 +8919,28 @@
 	    }
 
 	    const appServerKey = urlBase64ToUint8Array(PUSH_VAPID_PUBLIC_KEY);
-	    const sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: appServerKey });
-	    await savePushSubscriptionForUser(currentUser, sub);
-	    localStorage.setItem(PUSH_LOCAL_USER_KEY, currentUser);
-	    new Notification("Push enabled ✅", { body: `Push is enabled for "${currentUser}".` });
+	    let sub = null;
+	    try {
+	      sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: appServerKey });
+	      await savePushSubscriptionForUser(currentUser, sub);
+	      localStorage.setItem(PUSH_LOCAL_USER_KEY, currentUser);
+	      showSystemNotification("Push enabled ✅", { body: `Push is enabled for "${currentUser}".`, requireInteraction: false }).catch(() => {});
+	    } catch (e) {
+	      console.warn('[Push] subscribe/save failed:', e);
+	      try { if (sub) await sub.unsubscribe(); } catch {}
+	      alert("Failed to enable push notifications. Check connection and try again.");
+	    }
 	    await refreshNotifyButton();
 	  }
 
 	  if (notifyBtn) notifyBtn.addEventListener('click', toggleNotificationsFromUser);
-	  syncExistingSubscriptionToCurrentUser();
-	  refreshNotifyButton();
+	  (async () => {
+	    if (window.isSecureContext && 'serviceWorker' in navigator) {
+	      try { await ensurePushRegistration(); } catch (e) { console.warn('[SW] register failed:', e); }
+	    }
+	    await syncExistingSubscriptionToCurrentUser();
+	    await refreshNotifyButton();
+	  })();
 
 	  // Test notification function - can be called from browser console
 	  window.testNotification = async function() {
@@ -8851,73 +8952,19 @@
 	      console.error('Notification permission not granted:', Notification.permission);
 	      return 'Permission: ' + Notification.permission;
 	    }
-	    if ('serviceWorker' in navigator) {
-	      try {
-	        const registration = await navigator.serviceWorker.ready;
-	        await registration.showNotification("Test Notification 🔔", {
-	          body: "If you see this, notifications are working!",
-	          tag: 'test-notification',
-	          icon: './icon.svg',
-	          vibrate: [200, 100, 200],
-	          requireInteraction: true
-	        });
-	        console.log('Test notification sent via Service Worker');
-	        return 'Success - check your notifications!';
-	      } catch (e) {
-	        console.error('Service Worker notification failed:', e);
-	        return 'Error: ' + e.message;
-	      }
-	    } else {
-	      console.error('Service Worker not supported');
-	      return 'Service Worker not supported';
+	    const ok = await showSystemNotification("Test Notification 🔔", {
+	      body: "If you see this, notifications are working!",
+	      tag: 'test-notification',
+	      requireInteraction: true,
+	      renotify: true
+	    });
+	    if (ok) {
+	      console.log('Test notification sent');
+	      return 'Success - check your notifications!';
 	    }
+	    return 'Error: could not send notification (check browser support + permissions)';
 	  };
 	  console.log('[App] To test notifications, run: testNotification()');
-
-	  // Optional: allow "Done" action to complete a task by deep-link.
-	  // Your push sender can include: { completeUrl: "/?completeTask=TASK_ID&user=CURRENT_USER&sharedSubject=SUBJECT_ID" }
-	  async function maybeHandleCompleteTaskLink() {
-	    try {
-	      const url = new URL(window.location.href);
-	      const taskId = url.searchParams.get('completeTask');
-	      const user = url.searchParams.get('user');
-	      const sharedSubjectId = url.searchParams.get('sharedSubject');
-	      if (!taskId) return;
-	      if (user && user !== currentUser) {
-	        // Switch user context, then reload once (so the app writes under the right user path).
-	        localStorage.setItem('countdown_username', user);
-	        url.searchParams.delete('completeTask');
-	        url.searchParams.delete('user');
-	        url.searchParams.delete('sharedSubject');
-	        window.location.replace(url.toString());
-	        return;
-	      }
-	      // Mark completed (leaf set keeps other fields unchanged).
-	      if (sharedSubjectId) {
-	        // Shared task
-	        await set(ref(db, `sharedSubjects/${sharedSubjectId}/tasks/${taskId}/completed`), true);
-	      } else {
-	        // Own task
-	        await set(ref(db, `users/${currentUser}/tasks/${taskId}/completed`), true);
-	      }
-	      // Clean URL to avoid re-trigger
-	      url.searchParams.delete('completeTask');
-	      url.searchParams.delete('user');
-	      url.searchParams.delete('sharedSubject');
-	      window.history.replaceState({}, '', url.toString());
-	    } catch (e) {}
-	  }
-
-	  maybeHandleCompleteTaskLink();
-
-	  // Best-effort handle notification action if app is already open.
-	  if ('serviceWorker' in navigator) {
-	    navigator.serviceWorker.addEventListener('message', (event) => {
-	      const msg = event.data;
-	      if (!msg || msg.type !== 'notificationclick') return;
-	      // Currently handled via deep-link; keep hook for future enhancements.
-	    });
-	  }
 
   const setEventsLoading = (isLoading) => {
     if (!eventList) return;
@@ -10164,43 +10211,11 @@
 	    const timeString = formatReminderOffset(reminderMinutes);
 	    const msg = `${evt.name} starts in ${timeString}!`;
 	    
-	    // Always try to show system notification (works better on Android)
-	    if ("Notification" in window && Notification.permission === "granted") {
-	      // Use Service Worker for mobile compatibility
-	      if ('serviceWorker' in navigator) {
-	        try {
-	          const registration = await navigator.serviceWorker.ready;
-	          await registration.showNotification("Event Reminder ⏰", {
-	            body: msg,
-	            tag: `event-${evt.id || evt.name || 'reminder'}`,
-	            icon: './icon.svg',
-	            vibrate: [200, 100, 200],
-	            requireInteraction: true,
-	            silent: false
-	          });
-	          console.log('[Notification] Event notification sent:', evt.name);
-	        } catch (e) {
-	          console.error('[Notification] Service Worker notification failed:', e);
-	          try {
-	            new Notification("Event Reminder ⏰", {
-	              body: msg,
-	              tag: `event-${evt.id || evt.name || 'reminder'}`
-	            });
-	          } catch (e2) {
-	            console.error('[Notification] Fallback notification failed:', e2);
-	          }
-	        }
-	      } else {
-	        try {
-	          new Notification("Event Reminder ⏰", {
-	            body: msg,
-	            tag: `event-${evt.id || evt.name || 'reminder'}`
-	          });
-	        } catch (e) {
-	          console.error('[Notification] Regular notification failed:', e);
-	        }
-	      }
-	    }
+	    showSystemNotification("Event Reminder ⏰", {
+	      body: msg,
+	      tag: `event-${evt.id || evt.name || 'reminder'}`,
+	      renotify: true
+	    }).catch(() => {});
 	    
 	    // Show in-app alert if visible, or queue for later
 	    if (document.hidden) {
@@ -11018,6 +11033,7 @@
   let selectedTaskColor = '';
   let currentFilter = 'all';
   let taskTickerHandle = null;
+  let taskReminderTickerHandle = null;
   // Shared subject state (used by Task Manager + Subjects sidebar)
   let subjects = [];
   let currentSubject = 'all';
@@ -11607,7 +11623,7 @@
       }
     };
 
-    const alert = () => {
+    const playAlarm = () => {
       if (!settings.soundEnabled) {
         // Still vibrate even if sound is off
         if (navigator.vibrate) navigator.vibrate([100, 50, 100, 50, 200]);
@@ -11635,7 +11651,7 @@
         setMode('focus');
       }
       render();
-      alert();
+      playAlarm();
       // Auto-continue: only start next phase if setting is enabled
       if (settings.autoContinue) {
         start();
@@ -11745,7 +11761,7 @@
       
       // Check if PiP is supported
       if (!document.pictureInPictureEnabled) {
-        alert('Picture-in-Picture אינו נתמך בדפדפן זה.\nנסה Chrome, Edge, או Safari.');
+        window.alert('Picture-in-Picture אינו נתמך בדפדפן זה.\nנסה Chrome, Edge, או Safari.');
         return;
       }
 
@@ -11791,7 +11807,7 @@
         
       } catch (error) {
         console.error('PiP error:', error);
-        alert('שגיאה בהפעלת Picture-in-Picture: ' + error.message);
+        window.alert('שגיאה בהפעלת Picture-in-Picture: ' + error.message);
       }
     };
 
@@ -11811,26 +11827,36 @@
       }
     };
 
-    const initPiP = () => {
-      if (!refs.pipBtn) return;
-      
-      refs.pipBtn.addEventListener('click', () => {
-        if (isPiPActive) {
-          stopPiP();
-        } else {
-          startPiP();
-        }
-      });
-      
-      // Check if PiP is supported and show status
-      if (!document.pictureInPictureEnabled) {
-        refs.pipBtn.style.opacity = '0.3';
-        refs.pipBtn.style.cursor = 'not-allowed';
-        refs.pipBtn.title = 'Picture-in-Picture לא נתמך בדפדפן זה';
-      } else {
-        refs.pipBtn.title = 'הצג כחלון צף (Picture-in-Picture)';
-      }
-    };
+	    const initPiP = () => {
+	      if (!refs.pipBtn) return;
+
+	      const pipSupported = !!document.pictureInPictureEnabled;
+
+	      const setMiniVisible = (visible) => {
+	        const enabled = !!visible;
+	        if (refs.miniToggle) refs.miniToggle.checked = enabled;
+	        try { localStorage.setItem('pomodoro-mini-enabled', enabled ? 'true' : 'false'); } catch (e) {}
+	        if (refs.mini) refs.mini.classList.toggle('visible', enabled);
+	        if (refs.pipBtn) refs.pipBtn.classList.toggle('active', enabled && !pipSupported);
+	      };
+
+	      refs.pipBtn.addEventListener('click', () => {
+	        if (pipSupported) {
+	          if (isPiPActive) stopPiP();
+	          else startPiP();
+	          return;
+	        }
+	        // Fallback: show a draggable mini timer (works even when PiP isn't supported).
+	        const currentlyVisible = !!refs.mini && refs.mini.classList.contains('visible');
+	        setMiniVisible(!currentlyVisible);
+	      });
+
+	      if (!pipSupported) {
+	        refs.pipBtn.title = 'הצג מיני-טיימר צף (גרירה להזזה)';
+	      } else {
+	        refs.pipBtn.title = 'הצג כחלון צף (Picture-in-Picture)';
+	      }
+	    };
 
     const init = () => {
       if (!refs.card) return;
@@ -11894,35 +11920,106 @@
       if (refs.skipBtn) refs.skipBtn.onclick = () => advance(false);
       if (refs.resetBtn) refs.resetBtn.onclick = reset;
 
-      // Mini player setup
-      const MINI_KEY = 'pomodoro-mini-enabled';
-      const miniEnabled = localStorage.getItem(MINI_KEY) === 'true';
-      if (refs.miniToggle) {
-        refs.miniToggle.checked = miniEnabled;
-        if (refs.mini) refs.mini.classList.toggle('visible', miniEnabled);
-      }
-      if (refs.miniToggle) {
-        refs.miniToggle.addEventListener('change', () => {
-          const enabled = refs.miniToggle.checked;
-          localStorage.setItem(MINI_KEY, enabled ? 'true' : 'false');
-          if (refs.mini) refs.mini.classList.toggle('visible', enabled);
-        });
-      }
-      if (refs.miniClose) {
-        refs.miniClose.addEventListener('click', () => {
-          if (refs.miniToggle) refs.miniToggle.checked = false;
-          localStorage.setItem(MINI_KEY, 'false');
-          if (refs.mini) refs.mini.classList.remove('visible');
-        });
-      }
-      // Click on mini player opens Pomodoro overlay
-      if (refs.mini) {
-        refs.mini.addEventListener('click', (e) => {
-          if (e.target === refs.miniClose) return;
-          const overlay = document.getElementById('pomodoroOverlay');
-          if (overlay) overlay.classList.add('open');
-        });
-      }
+	      // Mini player setup
+	      const MINI_KEY = 'pomodoro-mini-enabled';
+	      const MINI_POS_KEY = 'pomodoro-mini-pos-v1';
+	      let miniDragging = false;
+	      let miniDragged = false;
+	      const miniEnabled = localStorage.getItem(MINI_KEY) === 'true';
+	      if (refs.miniToggle) {
+	        refs.miniToggle.checked = miniEnabled;
+	        if (refs.mini) refs.mini.classList.toggle('visible', miniEnabled);
+	      }
+	      if (refs.miniToggle) {
+	        refs.miniToggle.addEventListener('change', () => {
+	          const enabled = refs.miniToggle.checked;
+	          localStorage.setItem(MINI_KEY, enabled ? 'true' : 'false');
+	          if (refs.mini) refs.mini.classList.toggle('visible', enabled);
+	          if (refs.pipBtn && !document.pictureInPictureEnabled) refs.pipBtn.classList.toggle('active', enabled);
+	        });
+	      }
+	      if (refs.miniClose) {
+	        refs.miniClose.addEventListener('click', () => {
+	          if (refs.miniToggle) refs.miniToggle.checked = false;
+	          localStorage.setItem(MINI_KEY, 'false');
+	          if (refs.mini) refs.mini.classList.remove('visible');
+	          if (refs.pipBtn && !document.pictureInPictureEnabled) refs.pipBtn.classList.remove('active');
+	        });
+	      }
+	      // Restore mini player position (if dragged previously)
+	      if (refs.mini) {
+	        try {
+	          const raw = localStorage.getItem(MINI_POS_KEY);
+	          const parsed = raw ? JSON.parse(raw) : null;
+	          if (parsed && Number.isFinite(parsed.left) && Number.isFinite(parsed.top)) {
+	            refs.mini.style.left = `${parsed.left}px`;
+	            refs.mini.style.top = `${parsed.top}px`;
+	            refs.mini.style.right = 'auto';
+	            refs.mini.style.bottom = 'auto';
+	          }
+	        } catch (e) {}
+	      }
+	      // Draggable mini player
+	      if (refs.mini) {
+	        const clamp = (v, min, max) => Math.min(max, Math.max(min, v));
+	        refs.mini.addEventListener('pointerdown', (e) => {
+	          if (e.button !== undefined && e.button !== 0) return;
+	          if (e.target === refs.miniClose) return;
+	          e.preventDefault();
+	          miniDragged = false;
+	          miniDragging = true;
+	          refs.mini.classList.add('dragging');
+	          try { refs.mini.setPointerCapture(e.pointerId); } catch (err) {}
+
+	          const startX = e.clientX;
+	          const startY = e.clientY;
+	          const rect = refs.mini.getBoundingClientRect();
+	          const offsetX = startX - rect.left;
+	          const offsetY = startY - rect.top;
+
+	          const move = (ev) => {
+	            if (!miniDragging) return;
+	            const dx = Math.abs(ev.clientX - startX);
+	            const dy = Math.abs(ev.clientY - startY);
+	            if (dx + dy > 4) miniDragged = true;
+
+	            const maxLeft = window.innerWidth - rect.width - 8;
+	            const maxTop = window.innerHeight - rect.height - 8;
+	            const left = clamp(ev.clientX - offsetX, 8, Math.max(8, maxLeft));
+	            const top = clamp(ev.clientY - offsetY, 8, Math.max(8, maxTop));
+	            refs.mini.style.left = `${left}px`;
+	            refs.mini.style.top = `${top}px`;
+	            refs.mini.style.right = 'auto';
+	            refs.mini.style.bottom = 'auto';
+	          };
+
+	          const up = () => {
+	            if (!miniDragging) return;
+	            miniDragging = false;
+	            refs.mini.classList.remove('dragging');
+	            window.removeEventListener('pointermove', move);
+	            window.removeEventListener('pointerup', up);
+	            window.removeEventListener('pointercancel', up);
+	            try {
+	              const r = refs.mini.getBoundingClientRect();
+	              localStorage.setItem(MINI_POS_KEY, JSON.stringify({ left: Math.round(r.left), top: Math.round(r.top) }));
+	            } catch (err) {}
+	          };
+
+	          window.addEventListener('pointermove', move, { passive: true });
+	          window.addEventListener('pointerup', up, { passive: true });
+	          window.addEventListener('pointercancel', up, { passive: true });
+	        });
+	      }
+	      // Click on mini player opens Pomodoro overlay
+	      if (refs.mini) {
+	        refs.mini.addEventListener('click', (e) => {
+	          if (e.target === refs.miniClose) return;
+	          if (miniDragged) return;
+	          const overlay = document.getElementById('pomodoroOverlay');
+	          if (overlay) overlay.classList.add('open');
+	        });
+	      }
 
       // Picture-in-Picture setup
       initPiP();
@@ -12015,7 +12112,11 @@
     
     currentView = view;
     updateHeaderButtons();
+    try { window.dispatchEvent(new CustomEvent('app:viewchange', { detail: { view } })); } catch (e) {}
   };
+
+  // Expose for non-module scripts (e.g. mobile bottom nav handler)
+  window.showView = showView;
   
   toggleCountdown.onclick = () => showView('countdown');
   toggleTasks.onclick = () => showView('tasks');
@@ -13002,28 +13103,34 @@
           el.className = 'task-countdown ' + (countdown.overdue ? 'overdue' : (countdown.urgency === 'soon' ? 'soon' : ''));
         }
       });
-      
-      // Check task reminders
-      const nowMs = Date.now();
-      tasks.forEach(task => {
-        if (task.completed) return;
-        const reminderMinutes = parseInt(task.reminder, 10) || 0;
-        if (!reminderMinutes) return;
-        if (!task.dueDate) return;
-        const reminderKey = `${task.dueDate}|${reminderMinutes}`;
-        if (notifiedTasks.get(task.id) === reminderKey) return;
-        const taskTime = new Date(task.dueDate).getTime();
-        if (!Number.isFinite(taskTime)) return;
-        const triggerTime = taskTime - (reminderMinutes * 60000);
-        // Check within 2-minute window to avoid missing notifications
-        if (nowMs >= triggerTime && nowMs < triggerTime + 120000) {
-          triggerTaskAlert(task);
-          notifiedTasks.set(task.id, reminderKey);
-        }
-      });
     };
     tick();
     taskTickerHandle = setInterval(tick, 10000); // Check every 10 seconds for accuracy
+  }
+
+  function checkTaskReminders() {
+    const nowMs = Date.now();
+    tasks.forEach(task => {
+      if (task.completed) return;
+      const reminderMinutes = parseInt(task.reminder, 10) || 0;
+      if (!reminderMinutes) return;
+      if (!task.dueDate) return;
+      const reminderKey = `${task.dueDate}|${reminderMinutes}`;
+      if (notifiedTasks.get(task.id) === reminderKey) return;
+      const taskTime = new Date(task.dueDate).getTime();
+      if (!Number.isFinite(taskTime)) return;
+      const triggerTime = taskTime - (reminderMinutes * 60000);
+      if (nowMs >= triggerTime && nowMs < triggerTime + 120000) {
+        triggerTaskAlert(task);
+        notifiedTasks.set(task.id, reminderKey);
+      }
+    });
+  }
+
+  function startTaskReminderTicker() {
+    if (taskReminderTickerHandle) return;
+    checkTaskReminders();
+    taskReminderTickerHandle = setInterval(checkTaskReminders, 10000);
   }
   
 	  async function triggerTaskAlert(task) {
@@ -13039,40 +13146,11 @@
 	    }
 	    
 	    // Show browser notification if permitted - use Service Worker for mobile compatibility
-	    if ("Notification" in window && Notification.permission === 'granted') {
-	      // Try Service Worker first (works better on mobile)
-	      if ('serviceWorker' in navigator) {
-	        try {
-	          const registration = await navigator.serviceWorker.ready;
-	          await registration.showNotification(title, {
-	            body: message,
-	            tag: `task-${task.id}`,
-	            icon: './icon.svg',
-	            badge: './icon.svg',
-	            vibrate: [200, 100, 200],
-	            requireInteraction: true,
-	            silent: false
-	          });
-	          console.log('[Notification] Task notification sent:', task.title);
-	        } catch (e) {
-	          console.error('[Notification] Service Worker notification failed:', e);
-	          // Fallback to regular notification
-	          try {
-	            new Notification(title, { body: message, tag: `task-${task.id}` });
-	          } catch (e2) {
-	            console.error('[Notification] Fallback notification failed:', e2);
-	          }
-	        }
-	      } else {
-	        try {
-	          new Notification(title, { body: message, tag: `task-${task.id}` });
-	        } catch (e) {
-	          console.error('[Notification] Regular notification failed:', e);
-	        }
-	      }
-	    } else {
-	      console.log('[Notification] Permission not granted or Notification not supported');
-	    }
+	    showSystemNotification(title, {
+	      body: message,
+	      tag: `task-${task.id}`,
+	      renotify: true
+	    }).catch(() => {});
     
     // Show in-app alert
     showEventAlert(title, message, true);
@@ -15308,6 +15386,7 @@
 
   // Kick off Pomodoro UI
   Pomodoro.init();
+  startTaskReminderTicker();
 
   // ============ DAILY REMINDER ============
   const closeReminderBtn = $("closeReminderBtn");
@@ -17097,6 +17176,52 @@
 	    
 	    return { init, render, refreshTasks, addPlannerBlock };
 	  })();
+
+  // Handle Notification Actions (Complete Task)
+  const handleCompleteTask = (taskId) => {
+    const task = tasks.find(t => t.id === taskId);
+    if (task && !task.completed) {
+      console.log('Completing task from notification:', taskId);
+      if (typeof maybeCreateRecurringTask === 'function') {
+        maybeCreateRecurringTask(task);
+      }
+      const { id, isOwn, isShared, ...cleanTask } = task;
+      saveTask(taskId, { ...cleanTask, completed: true }, task.subject);
+      
+      if (typeof showToast === 'function') {
+        showToast(`Task "${task.title}" completed!`);
+      }
+    }
+  };
+
+  const urlParams = new URLSearchParams(window.location.search);
+  const completeTaskId = urlParams.get('completeTask');
+  if (completeTaskId) {
+    const checkData = setInterval(() => {
+      if (typeof tasks !== 'undefined' && tasks.length > 0) {
+        clearInterval(checkData);
+        handleCompleteTask(completeTaskId);
+        const url = new URL(window.location);
+        url.searchParams.delete('completeTask');
+        url.searchParams.delete('user');
+        url.searchParams.delete('sharedSubject');
+        window.history.replaceState({}, '', url);
+      }
+    }, 500);
+    setTimeout(() => clearInterval(checkData), 10000);
+  }
+
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.addEventListener('message', (event) => {
+      if (event.data && event.data.action === 'complete') {
+        const url = new URL(event.data.url, window.location.origin);
+        const tid = url.searchParams.get('completeTask');
+        if (tid) {
+          handleCompleteTask(tid);
+        }
+      }
+    });
+  }
 </script>
 
 <!-- Mobile Bottom Navigation Bar -->
@@ -17155,52 +17280,17 @@
       // Update active state
       navItems.forEach(i => i.classList.remove('active'));
       item.classList.add('active');
-      
-      // Update header buttons active state
-      const headerBtns = document.querySelectorAll('.fixed-header-bar .header-btn');
-      headerBtns.forEach(btn => btn.classList.remove('active'));
-      
-      // Navigate to the correct view
-      switch(view) {
-        case 'countdown':
-          // Close all overlays, show countdown
-          document.getElementById('taskManagerOverlay')?.classList.remove('open');
-          document.getElementById('pomodoroOverlay')?.classList.remove('open');
-          document.getElementById('plannerOverlay')?.classList.remove('open');
+
+      // Prefer the app's canonical view switcher (keeps tickers + state consistent)
+      if (typeof window.showView === 'function') {
+        if (view === 'calendar') {
+          window.showView('countdown');
+          document.getElementById('toggleSidebar')?.click();
+        } else {
+          window.showView(view);
           document.getElementById('sidebar')?.classList.add('hidden');
-          document.getElementById('toggleCountdown')?.classList.add('active');
-          break;
-        case 'tasks':
-          document.getElementById('taskManagerOverlay')?.classList.add('open');
-          document.getElementById('pomodoroOverlay')?.classList.remove('open');
-          document.getElementById('plannerOverlay')?.classList.remove('open');
-          document.getElementById('sidebar')?.classList.add('hidden');
-          document.getElementById('toggleTasks')?.classList.add('active');
-          break;
-        case 'pomodoro':
-          document.getElementById('taskManagerOverlay')?.classList.remove('open');
-          document.getElementById('pomodoroOverlay')?.classList.add('open');
-          document.getElementById('plannerOverlay')?.classList.remove('open');
-          document.getElementById('sidebar')?.classList.add('hidden');
-          document.getElementById('togglePomodoro')?.classList.add('active');
-          break;
-        case 'planner':
-          document.getElementById('taskManagerOverlay')?.classList.remove('open');
-          document.getElementById('pomodoroOverlay')?.classList.remove('open');
-          document.getElementById('plannerOverlay')?.classList.add('open');
-          document.getElementById('sidebar')?.classList.add('hidden');
-          document.getElementById('togglePlanner')?.classList.add('active');
-          break;
-        case 'calendar':
-          document.getElementById('taskManagerOverlay')?.classList.remove('open');
-          document.getElementById('pomodoroOverlay')?.classList.remove('open');
-          document.getElementById('plannerOverlay')?.classList.remove('open');
-          const sidebar = document.getElementById('sidebar');
-          if (sidebar) {
-            sidebar.classList.toggle('hidden');
-          }
-          document.getElementById('toggleSidebar')?.classList.add('active');
-          break;
+        }
+        return;
       }
     });
   });
@@ -17224,6 +17314,12 @@
     togglePomodoro?.addEventListener('click', () => updateNav('pomodoro'));
     togglePlanner?.addEventListener('click', () => updateNav('planner'));
     toggleSidebar?.addEventListener('click', () => updateNav('calendar'));
+
+    window.addEventListener('app:viewchange', (e) => {
+      const v = e?.detail?.view;
+      if (!v) return;
+      updateNav(v);
+    });
   };
   
   syncWithHeader();
