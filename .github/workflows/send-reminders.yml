@@ -8,7 +8,10 @@ on:
 
 concurrency:
   group: send-push-reminders
-  cancel-in-progress: true
+  cancel-in-progress: false
+
+permissions:
+  contents: read
 
 jobs:
   send-reminders:
@@ -77,7 +80,26 @@ jobs:
         env:
           FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
         run: |
-          printf '%s' "$FIREBASE_SERVICE_ACCOUNT_JSON" > /tmp/firebase-credentials.json
+          node -e 'const fs=require("fs"); let s=process.env.FIREBASE_SERVICE_ACCOUNT_JSON||""; s=s.trim(); if(!s) { console.error("Missing secret FIREBASE_SERVICE_ACCOUNT_JSON"); process.exit(1); } let json=s; if(!json.startsWith("{")) { try { json=Buffer.from(s,"base64").toString("utf8").trim(); } catch {} } try { JSON.parse(json); } catch(e) { console.error("FIREBASE_SERVICE_ACCOUNT_JSON is not valid JSON (or base64-encoded JSON)."); throw e; } fs.writeFileSync("/tmp/firebase-credentials.json", json, { mode: 0o600 });'
+
+      - name: Validate configuration
+        working-directory: ${{ github.workspace }}
+        env:
+          VAPID_PUBLIC_KEY: ${{ secrets.VAPID_PUBLIC_KEY }}
+          FIREBASE_DATABASE_URL: ${{ secrets.FIREBASE_DATABASE_URL }}
+          PUSH_APP_URL: ${{ secrets.PUSH_APP_URL }}
+        run: |
+          set -euo pipefail
+          : "${VAPID_PUBLIC_KEY:?Missing secret VAPID_PUBLIC_KEY}"
+          : "${FIREBASE_DATABASE_URL:?Missing secret FIREBASE_DATABASE_URL}"
+          : "${PUSH_APP_URL:?Missing secret PUSH_APP_URL}"
+
+          CODE_VAPID_PUBLIC_KEY="$(node -e 'const fs=require("fs"); const s=fs.readFileSync("index.html","utf8"); const m=s.match(/PUSH_VAPID_PUBLIC_KEY\\s*=\\s*[\"\\x27]([^\"\\x27]+)[\"\\x27]/); if(!m){ console.error("Could not find PUSH_VAPID_PUBLIC_KEY in index.html"); process.exit(1); } process.stdout.write(m[1]);')"
+          if [ "$CODE_VAPID_PUBLIC_KEY" != "$VAPID_PUBLIC_KEY" ]; then
+            echo "VAPID_PUBLIC_KEY secret does not match PUSH_VAPID_PUBLIC_KEY in index.html." >&2
+            echo "They must be the same key, otherwise push delivery will fail." >&2
+            exit 1
+          fi
 
       - name: Send reminders
         working-directory: ${{ steps.locate.outputs.dir }}
@@ -88,7 +110,7 @@ jobs:
           VAPID_PUBLIC_KEY: ${{ secrets.VAPID_PUBLIC_KEY }}
           VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
           PUSH_APP_URL: ${{ secrets.PUSH_APP_URL }}
-          TRIGGER_WINDOW_MS: "360000"  # 6 minutes window (slightly more than cron interval)
+          TRIGGER_WINDOW_MS: "3600000"  # 1 hour window (GitHub cron can be delayed)
         run: node send-reminders.mjs
 
       - name: Cleanup credentials

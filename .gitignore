@@ -1,0 +1,12 @@
+.DS_Store
+
+# Node
+node_modules/
+tools/push-sender/node_modules/
+npm-debug.log*
+
+# Secrets / credentials (do not commit)
+*-firebase-adminsdk-*.json
+**/firebase-credentials.json
+tools/push-sender/.env
+tools/push-sender/vapid-keys.json

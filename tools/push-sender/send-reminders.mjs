@@ -20,7 +20,15 @@ if (!VAPID_SUBJECT) throw new Error('Missing env VAPID_SUBJECT');
 if (!VAPID_PUBLIC_KEY) throw new Error('Missing env VAPID_PUBLIC_KEY');
 if (!VAPID_PRIVATE_KEY) throw new Error('Missing env VAPID_PRIVATE_KEY');
 
-const APP_URL = new URL(PUSH_APP_URL || 'http://localhost/');
+function normalizeAppUrl(input) {
+  const u = new URL(input || 'http://localhost/');
+  u.hash = '';
+  u.search = '';
+  if (!u.pathname.endsWith('/')) u.pathname = `${u.pathname}/`;
+  return u;
+}
+
+const APP_URL = normalizeAppUrl(PUSH_APP_URL);
 const WINDOW_MS = Number.parseInt(TRIGGER_WINDOW_MS || '90000', 10); // default: 90s late-allowed window
 const isDryRun = String(DRY_RUN || '').toLowerCase() === 'true';
 
@@ -81,8 +89,9 @@ async function markFailed(ref, extra = {}) {
 }
 
 function buildUrl(pathname = '/', params = {}) {
-  const u = new URL(APP_URL.toString());
-  u.pathname = new URL(pathname, u).pathname;
+  const rawPath = String(pathname || '.');
+  const relPath = rawPath === '/' ? '.' : rawPath.replace(/^\/+/, '') || '.';
+  const u = new URL(relPath, APP_URL);
   for (const [k, v] of Object.entries(params)) {
     if (v === null || v === undefined || v === '') continue;
     u.searchParams.set(k, String(v));
