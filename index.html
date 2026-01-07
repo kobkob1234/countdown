@@ -8986,14 +8986,7 @@
   <!-- Hidden canvas for Picture-in-Picture -->
   <canvas id="pomodoroPipCanvas" width="400" height="200" style="display: none;"></canvas>
 
-  <!-- Pomodoro Mini Player -->
-  <div class="pomodoro-mini" id="pomodoroMini">
-    <div>
-      <div class="pomodoro-mini-time" id="pomodoroMiniTime">25:00</div>
-      <div class="pomodoro-mini-mode" id="pomodoroMiniMode">מיקוד</div>
-    </div>
-    <button class="pomodoro-mini-close" id="pomodoroMiniClose" aria-label="סגור">×</button>
-  </div>
+
 
   <!-- ============== DAILY PLANNER ============== -->
   <div class="planner-overlay" id="plannerOverlay">
@@ -18606,6 +18599,15 @@
       });
     }
   </script>
+
+  <!-- Pomodoro Mini Player (Moved to root for visibility) -->
+  <div class="pomodoro-mini" id="pomodoroMini">
+    <div>
+      <div class="pomodoro-mini-time" id="pomodoroMiniTime">25:00</div>
+      <div class="pomodoro-mini-mode" id="pomodoroMiniMode">מיקוד</div>
+    </div>
+    <button class="pomodoro-mini-close" id="pomodoroMiniClose" aria-label="סגור">×</button>
+  </div>
 
   <!-- Mobile Bottom Navigation Bar -->
   <nav class="mobile-bottom-nav" id="mobileBottomNav" style="display: none;">
