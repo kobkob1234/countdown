@@ -12999,7 +12999,15 @@
           pipVideo.srcObject = stream;
 
           // Play the video
-          await pipVideo.play();
+          // Play the video - handle "interrupted by a new load request" error
+          try {
+            await pipVideo.play();
+          } catch (err) {
+            console.warn('PiP video play interrupted, retrying...', err);
+            // Retry once after a short delay
+            await new Promise(r => setTimeout(r, 50));
+            await pipVideo.play();
+          }
 
           // Request PiP
           await pipVideo.requestPictureInPicture();
