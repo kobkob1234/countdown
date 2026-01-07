@@ -316,6 +316,662 @@
       user-select: none;
     }
 
+    /* ============ ENHANCED FEATURES CSS ============ */
+
+    /* Command Palette */
+    .command-palette-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(4px);
+      z-index: 20000;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding-top: 15vh;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.15s, visibility 0.15s;
+    }
+
+    .command-palette-backdrop.open {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .command-palette {
+      background: var(--card);
+      border-radius: 16px;
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.3);
+      width: 90%;
+      max-width: 560px;
+      max-height: 70vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      transform: translateY(-20px) scale(0.95);
+      transition: transform 0.2s;
+    }
+
+    .command-palette-backdrop.open .command-palette {
+      transform: translateY(0) scale(1);
+    }
+
+    .command-palette-input-wrap {
+      padding: 16px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .command-palette-input {
+      width: 100%;
+      padding: 14px 18px;
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      font-size: 16px;
+      background: var(--input-bg);
+      color: var(--text);
+      outline: none;
+    }
+
+    .command-palette-input:focus {
+      border-color: var(--accent);
+    }
+
+    .command-palette-results {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px;
+    }
+
+    .command-palette-item {
+      padding: 12px 16px;
+      border-radius: 10px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      transition: background 0.1s;
+    }
+
+    .command-palette-item:hover,
+    .command-palette-item.selected {
+      background: var(--day-hover);
+    }
+
+    .command-palette-item.selected {
+      background: var(--accent);
+      color: white;
+    }
+
+    .command-palette-icon {
+      font-size: 20px;
+      width: 32px;
+      text-align: center;
+    }
+
+    .command-palette-label {
+      flex: 1;
+      font-size: 14px;
+    }
+
+    .command-palette-shortcut {
+      font-size: 11px;
+      color: var(--muted);
+      background: var(--day-other);
+      padding: 3px 8px;
+      border-radius: 6px;
+    }
+
+    .command-palette-item.selected .command-palette-shortcut {
+      background: rgba(255, 255, 255, 0.2);
+      color: white;
+    }
+
+    .command-palette-empty {
+      padding: 40px 16px;
+      text-align: center;
+      color: var(--muted);
+    }
+
+    .command-palette-section-title {
+      padding: 8px 16px 4px;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    /* Task Completion Confetti Animation */
+    @keyframes confettiPop {
+      0% {
+        transform: scale(0) rotate(0deg);
+        opacity: 1;
+      }
+
+      50% {
+        transform: scale(1.2) rotate(180deg);
+        opacity: 0.8;
+      }
+
+      100% {
+        transform: scale(0) rotate(360deg) translateY(-100px);
+        opacity: 0;
+      }
+    }
+
+    @keyframes confettiFall {
+      0% {
+        transform: translateY(0) rotate(0deg);
+        opacity: 1;
+      }
+
+      100% {
+        transform: translateY(150px) rotate(720deg);
+        opacity: 0;
+      }
+    }
+
+    .confetti-container {
+      position: fixed;
+      pointer-events: none;
+      z-index: 30000;
+    }
+
+    .confetti-piece {
+      position: absolute;
+      width: 10px;
+      height: 10px;
+      border-radius: 2px;
+      animation: confettiFall 1.2s ease-out forwards;
+    }
+
+    .task-item.completing {
+      animation: taskCompleteFlash 0.4s ease-out;
+    }
+
+    @keyframes taskCompleteFlash {
+      0% {
+        background: var(--card);
+      }
+
+      50% {
+        background: rgba(34, 197, 94, 0.2);
+      }
+
+      100% {
+        background: var(--card);
+      }
+    }
+
+    /* Pomodoro Progress Ring */
+    .pomodoro-ring-container {
+      position: relative;
+      width: 200px;
+      height: 200px;
+      margin: 0 auto 20px;
+    }
+
+    .pomodoro-ring-svg {
+      transform: rotate(-90deg);
+      width: 100%;
+      height: 100%;
+    }
+
+    .pomodoro-ring-bg {
+      fill: none;
+      stroke: var(--border);
+      stroke-width: 8;
+    }
+
+    .pomodoro-ring-progress {
+      fill: none;
+      stroke: var(--accent);
+      stroke-width: 8;
+      stroke-linecap: round;
+      transition: stroke-dashoffset 0.3s ease;
+    }
+
+    .pomodoro-ring-progress.break {
+      stroke: #22c55e;
+    }
+
+    .pomodoro-ring-time {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .pomodoro-ring-time-display {
+      font-size: 48px;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .pomodoro-ring-mode-label {
+      font-size: 14px;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+
+    /* Calendar Week Numbers */
+    .calendar-week-number {
+      font-size: 10px;
+      color: var(--muted);
+      text-align: center;
+      padding: 8px 4px;
+      font-weight: 500;
+    }
+
+    .calendar-grid.with-week-numbers {
+      grid-template-columns: 28px repeat(7, 1fr);
+    }
+
+    /* Calendar Busy Day Indicator */
+    .calendar-day.busy-day {
+      box-shadow: inset 0 0 0 2px var(--accent);
+    }
+
+    .calendar-day.very-busy-day {
+      box-shadow: inset 0 0 0 2px var(--accent), 0 0 12px rgba(102, 126, 234, 0.3);
+    }
+
+    .calendar-day-count {
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 16px;
+      height: 16px;
+      background: var(--accent);
+      color: white;
+      border-radius: 50%;
+      font-size: 9px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Calendar Hover Preview */
+    .calendar-day-preview {
+      position: absolute;
+      bottom: 100%;
+      left: 50%;
+      transform: translateX(-50%) translateY(10px);
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px;
+      min-width: 200px;
+      max-width: 280px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.2s ease;
+      z-index: 100;
+      pointer-events: none;
+    }
+
+    .calendar-day:hover .calendar-day-preview {
+      opacity: 1;
+      visibility: visible;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    .calendar-day-preview-title {
+      font-weight: 600;
+      font-size: 13px;
+      margin-bottom: 8px;
+      color: var(--text);
+    }
+
+    .calendar-day-preview-item {
+      font-size: 12px;
+      color: var(--muted);
+      padding: 4px 0;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .calendar-day-preview-item:last-child {
+      border-bottom: none;
+    }
+
+    /* Mobile Swipe Actions */
+    .task-item-swipe-container {
+      position: relative;
+      overflow: hidden;
+    }
+
+    .task-item-swipe-actions {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      display: flex;
+      align-items: center;
+      transition: transform 0.2s;
+    }
+
+    .task-item-swipe-actions.left {
+      right: 100%;
+      padding-right: 12px;
+    }
+
+    .task-item-swipe-actions.right {
+      left: 100%;
+      padding-left: 12px;
+    }
+
+    .swipe-action-btn {
+      width: 60px;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      font-size: 11px;
+      font-weight: 500;
+      border: none;
+      cursor: pointer;
+    }
+
+    .swipe-action-btn.complete {
+      background: #22c55e;
+      color: white;
+    }
+
+    .swipe-action-btn.delete {
+      background: #ef4444;
+      color: white;
+    }
+
+    .task-item.swiping {
+      transition: transform 0.1s ease-out;
+    }
+
+    /* Bottom Sheet Modal (Mobile) */
+    @media (max-width: 768px) {
+      .task-edit-modal.bottom-sheet .task-edit-card {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        max-height: 85vh;
+        border-radius: 24px 24px 0 0;
+        margin: 0;
+        transform: translateY(100%);
+        transition: transform 0.3s ease-out;
+      }
+
+      .task-edit-modal.bottom-sheet.open .task-edit-card {
+        transform: translateY(0);
+      }
+
+      .bottom-sheet-handle {
+        width: 36px;
+        height: 4px;
+        background: var(--border);
+        border-radius: 2px;
+        margin: 12px auto 8px;
+      }
+    }
+
+    /* Pull to Refresh */
+    .pull-to-refresh {
+      position: fixed;
+      top: 56px;
+      left: 50%;
+      transform: translateX(-50%) translateY(-100%);
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      transition: transform 0.2s;
+      z-index: 1000;
+    }
+
+    .pull-to-refresh.pulling {
+      transform: translateX(-50%) translateY(20px);
+    }
+
+    .pull-to-refresh.refreshing .pull-spinner {
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      100% {
+        transform: rotate(360deg);
+      }
+    }
+
+    /* Fuzzy Search Highlight */
+    .search-highlight {
+      background: rgba(234, 179, 8, 0.3);
+      border-radius: 2px;
+      padding: 0 2px;
+    }
+
+    /* Enhanced Context Menu */
+    .context-menu {
+      min-width: 180px;
+    }
+
+    .context-menu-divider {
+      height: 1px;
+      background: var(--border);
+      margin: 6px 0;
+    }
+
+    .context-menu-item-icon {
+      width: 20px;
+      text-align: center;
+      margin-right: 8px;
+    }
+
+    .context-menu-item-shortcut {
+      margin-left: auto;
+      font-size: 11px;
+      color: var(--muted);
+      padding-left: 16px;
+    }
+
+    .context-menu-submenu {
+      position: relative;
+    }
+
+    .context-menu-submenu::after {
+      content: '▶';
+      position: absolute;
+      right: 8px;
+      font-size: 8px;
+      color: var(--muted);
+    }
+
+    /* Undo/Redo Toast */
+    .undo-stack-toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px 20px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+      z-index: 10000;
+      opacity: 0;
+      transition: all 0.3s ease;
+    }
+
+    .undo-stack-toast.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+
+    .undo-stack-message {
+      font-size: 14px;
+      color: var(--text);
+    }
+
+    .undo-stack-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .undo-stack-btn {
+      padding: 6px 14px;
+      border: none;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .undo-stack-btn.undo {
+      background: var(--accent);
+      color: white;
+    }
+
+    .undo-stack-btn.dismiss {
+      background: var(--btn-secondary-bg);
+      color: var(--text);
+    }
+
+    /* Advanced Recurrence Picker */
+    .recurrence-picker {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .recurrence-days {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .recurrence-day-btn {
+      width: 36px;
+      height: 36px;
+      border: 2px solid var(--border);
+      border-radius: 50%;
+      background: var(--input-bg);
+      color: var(--text);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .recurrence-day-btn:hover {
+      border-color: var(--accent);
+    }
+
+    .recurrence-day-btn.selected {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: white;
+    }
+
+    .recurrence-interval {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .recurrence-interval-input {
+      width: 60px;
+      padding: 8px 12px;
+      border: 2px solid var(--border);
+      border-radius: 8px;
+      font-size: 14px;
+      text-align: center;
+      background: var(--input-bg);
+      color: var(--text);
+    }
+
+    /* Vim-style Focus Indicator */
+    .task-item.vim-focused {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+
+    /* Enhanced Task Card */
+    .task-item.enhanced {
+      position: relative;
+      border-left: 4px solid transparent;
+    }
+
+    .task-item.enhanced.priority-urgent {
+      border-left-color: #ef4444;
+    }
+
+    .task-item.enhanced.priority-high {
+      border-left-color: #f97316;
+    }
+
+    .task-item.enhanced.priority-medium {
+      border-left-color: #eab308;
+    }
+
+    .task-item.enhanced.priority-low {
+      border-left-color: #22c55e;
+    }
+
+    .task-due-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 8px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 500;
+      background: var(--day-other);
+      color: var(--muted);
+    }
+
+    .task-due-chip.overdue {
+      background: rgba(239, 68, 68, 0.15);
+      color: #ef4444;
+    }
+
+    .task-due-chip.today {
+      background: rgba(34, 197, 94, 0.15);
+      color: #22c55e;
+    }
+
+    .task-due-chip.soon {
+      background: rgba(234, 179, 8, 0.15);
+      color: #ca8a04;
+    }
+
+    /* Drag & Drop Calendar */
+    .calendar-day.drag-over {
+      background: rgba(102, 126, 234, 0.1);
+      border-color: var(--accent);
+    }
+
+    .task-item.dragging-to-calendar {
+      opacity: 0.5;
+    }
+
+    /* ============ END ENHANCED FEATURES CSS ============ */
+
     body {
       font-family: var(--font);
       background: var(--bg);
@@ -8582,8 +9238,11 @@
                   style="border: none; background: transparent; color: var(--text); font-size: 13px; outline: none; cursor: pointer;">
                   <option value="none">ללא חזרה</option>
                   <option value="daily">יומי</option>
+                  <option value="weekdays">ימי חול</option>
                   <option value="weekly">שבועי</option>
+                  <option value="biweekly">דו-שבועי</option>
                   <option value="monthly">חודשי</option>
+                  <option value="yearly">שנתי</option>
                 </select>
               </div>
               <div class="label-input-wrapper">
@@ -8782,8 +9441,11 @@
           style="padding: 12px 14px; border: 2px solid var(--border); border-radius: 10px; font-size: 14px; background: var(--input-bg); color: var(--text); outline: none; width: 100%; max-width: 250px; cursor: pointer;">
           <option value="none">ללא חזרה</option>
           <option value="daily">יומי</option>
+          <option value="weekdays">ימי חול (א׳-ה׳)</option>
           <option value="weekly">שבועי</option>
+          <option value="biweekly">דו-שבועי</option>
           <option value="monthly">חודשי</option>
+          <option value="yearly">שנתי</option>
         </select>
       </div>
 
@@ -9657,6 +10319,34 @@
   <div class="undo-toast" id="undoToast" role="status" aria-live="polite">
     <span id="undoToastMsg">Event deleted</span>
     <button id="undoToastUndo" aria-label="Undo delete">Undo</button>
+  </div>
+
+  <!-- Command Palette -->
+  <div class="command-palette-backdrop" id="commandPalette" role="dialog" aria-modal="true"
+    aria-label="Command Palette">
+    <div class="command-palette">
+      <div class="command-palette-input-wrap">
+        <input type="text" class="command-palette-input" id="commandPaletteInput"
+          placeholder="חפש פקודות, אירועים או משימות..." autocomplete="off" />
+      </div>
+      <div class="command-palette-results" id="commandPaletteResults">
+        <!-- Results populated by JS -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Pull to Refresh Indicator -->
+  <div class="pull-to-refresh" id="pullToRefresh">
+    <span class="pull-spinner">🔄</span>
+  </div>
+
+  <!-- Advanced Undo Stack Toast -->
+  <div class="undo-stack-toast" id="undoStackToast" role="status" aria-live="polite">
+    <span class="undo-stack-message" id="undoStackMessage">פעולה בוצעה</span>
+    <div class="undo-stack-actions">
+      <button class="undo-stack-btn undo" id="undoStackUndo">↩️ בטל (Cmd+Z)</button>
+      <button class="undo-stack-btn dismiss" id="undoStackDismiss">סגור</button>
+    </div>
   </div>
 
   <!-- Pomodoro Mini Player (Moved to root for visibility) -->
@@ -12100,6 +12790,12 @@
     // Escape key handler (consolidated)
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') {
+        // Close command palette first (highest priority for new feature)
+        const cmdPalette = $("commandPalette");
+        if (cmdPalette && cmdPalette.classList.contains('open')) {
+          closeCommandPalette();
+          return;
+        }
         if (shortcutsModal && shortcutsModal.classList.contains('open')) {
           closeShortcuts();
           return;
@@ -12148,6 +12844,408 @@
         }
       }
     });
+
+    // ============ COMMAND PALETTE ============
+    const commandPaletteEl = $("commandPalette");
+    const commandPaletteInput = $("commandPaletteInput");
+    const commandPaletteResults = $("commandPaletteResults");
+    let commandPaletteSelectedIndex = 0;
+    let commandPaletteItems = [];
+
+    const COMMANDS = [
+      { id: 'newTask', icon: '✅', label: 'משימה חדשה', shortcut: 'N', action: () => { if (typeof showView === 'function') showView('tasks'); setTimeout(() => newTaskTitle?.focus(), 100); } },
+      { id: 'newEvent', icon: '📅', label: 'אירוע חדש', shortcut: 'G', action: () => { if (typeof showView === 'function') showView('countdown'); setTimeout(() => eventName?.focus(), 100); } },
+      { id: 'goToday', icon: '📆', label: 'עבור להיום', shortcut: 'T', action: goToToday },
+      { id: 'openPomodoro', icon: '🍅', label: 'פתח פומודורו', shortcut: 'P', action: openPomodoro },
+      { id: 'openTasks', icon: '📋', label: 'עבור למשימות', shortcut: 'M', action: openTasksView },
+      { id: 'openCountdown', icon: '⏱️', label: 'עבור לספירה לאחור', shortcut: 'G', action: openCountdownView },
+      { id: 'toggleCalendar', icon: '📅', label: 'הצג/הסתר לוח שנה', shortcut: 'C', action: toggleCalendarSidebar },
+      { id: 'toggleTheme', icon: '🌙', label: 'מצב כהה/בהיר', shortcut: 'D', action: toggleTheme },
+      { id: 'openShortcuts', icon: '⌨️', label: 'קיצורי מקלדת', shortcut: 'H', action: openShortcuts },
+      { id: 'search', icon: '🔍', label: 'חפש משימות', shortcut: '/', action: focusTaskSearch },
+    ];
+
+    function openCommandPalette() {
+      if (!commandPaletteEl) return;
+      commandPaletteEl.classList.add('open');
+      commandPaletteInput.value = '';
+      commandPaletteSelectedIndex = 0;
+      renderCommandPaletteResults('');
+      setTimeout(() => commandPaletteInput.focus(), 50);
+    }
+
+    function closeCommandPalette() {
+      if (!commandPaletteEl) return;
+      commandPaletteEl.classList.remove('open');
+    }
+
+    function fuzzyMatch(text, query) {
+      if (!query) return { match: true, score: 0 };
+      const lowerText = text.toLowerCase();
+      const lowerQuery = query.toLowerCase();
+
+      // Exact match scores highest
+      if (lowerText.includes(lowerQuery)) {
+        return { match: true, score: 100 - lowerText.indexOf(lowerQuery) };
+      }
+
+      // Fuzzy match - each character in sequence
+      let queryIdx = 0;
+      let score = 0;
+      for (let i = 0; i < lowerText.length && queryIdx < lowerQuery.length; i++) {
+        if (lowerText[i] === lowerQuery[queryIdx]) {
+          score += 10;
+          queryIdx++;
+        }
+      }
+      return { match: queryIdx === lowerQuery.length, score };
+    }
+
+    function highlightMatch(text, query) {
+      if (!query) return escapeHtml(text);
+      const lowerText = text.toLowerCase();
+      const lowerQuery = query.toLowerCase();
+      const idx = lowerText.indexOf(lowerQuery);
+      if (idx === -1) return escapeHtml(text);
+      return escapeHtml(text.substring(0, idx)) +
+        '<span class="search-highlight">' + escapeHtml(text.substring(idx, idx + query.length)) + '</span>' +
+        escapeHtml(text.substring(idx + query.length));
+    }
+
+    function renderCommandPaletteResults(query) {
+      commandPaletteItems = [];
+      let html = '';
+
+      // Commands section
+      const matchedCommands = COMMANDS.filter(cmd => {
+        const result = fuzzyMatch(cmd.label, query);
+        return result.match;
+      }).slice(0, 5);
+
+      if (matchedCommands.length > 0) {
+        html += '<div class="command-palette-section-title">פקודות</div>';
+        matchedCommands.forEach((cmd, i) => {
+          commandPaletteItems.push({ type: 'command', data: cmd });
+          html += `<div class="command-palette-item ${i === commandPaletteSelectedIndex ? 'selected' : ''}" data-index="${commandPaletteItems.length - 1}">
+            <span class="command-palette-icon">${cmd.icon}</span>
+            <span class="command-palette-label">${highlightMatch(cmd.label, query)}</span>
+            ${cmd.shortcut ? `<span class="command-palette-shortcut">${cmd.shortcut}</span>` : ''}
+          </div>`;
+        });
+      }
+
+      // Search events
+      if (query.length >= 2) {
+        const matchedEvents = events.filter(evt => fuzzyMatch(evt.name, query).match).slice(0, 3);
+        if (matchedEvents.length > 0) {
+          html += '<div class="command-palette-section-title">אירועים</div>';
+          matchedEvents.forEach(evt => {
+            commandPaletteItems.push({ type: 'event', data: evt });
+            const idx = commandPaletteItems.length - 1;
+            html += `<div class="command-palette-item ${idx === commandPaletteSelectedIndex ? 'selected' : ''}" data-index="${idx}">
+              <span class="command-palette-icon">📅</span>
+              <span class="command-palette-label">${highlightMatch(evt.name, query)}</span>
+              <span class="command-palette-shortcut">${formatDate(evt.date).split(',')[0]}</span>
+            </div>`;
+          });
+        }
+
+        // Search tasks
+        const matchedTasks = tasks.filter(t => fuzzyMatch(t.title, query).match).slice(0, 3);
+        if (matchedTasks.length > 0) {
+          html += '<div class="command-palette-section-title">משימות</div>';
+          matchedTasks.forEach(task => {
+            commandPaletteItems.push({ type: 'task', data: task });
+            const idx = commandPaletteItems.length - 1;
+            html += `<div class="command-palette-item ${idx === commandPaletteSelectedIndex ? 'selected' : ''}" data-index="${idx}">
+              <span class="command-palette-icon">${task.completed ? '✅' : '⬜'}</span>
+              <span class="command-palette-label">${highlightMatch(task.title, query)}</span>
+            </div>`;
+          });
+        }
+      }
+
+      if (commandPaletteItems.length === 0) {
+        html = '<div class="command-palette-empty">לא נמצאו תוצאות</div>';
+      }
+
+      commandPaletteResults.innerHTML = html;
+    }
+
+    function executeCommandPaletteItem(index) {
+      const item = commandPaletteItems[index];
+      if (!item) return;
+      closeCommandPalette();
+
+      if (item.type === 'command') {
+        item.data.action();
+      } else if (item.type === 'event') {
+        if (typeof showView === 'function') showView('countdown');
+        setTimeout(() => {
+          const row = document.querySelector(`.event-row[data-id="${item.data.id}"]`);
+          if (row) row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 100);
+      } else if (item.type === 'task') {
+        if (typeof showView === 'function') showView('tasks');
+        setTimeout(() => openTaskEditModal(item.data.id), 100);
+      }
+    }
+
+    if (commandPaletteInput) {
+      commandPaletteInput.addEventListener('input', () => {
+        commandPaletteSelectedIndex = 0;
+        renderCommandPaletteResults(commandPaletteInput.value.trim());
+      });
+
+      commandPaletteInput.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          commandPaletteSelectedIndex = Math.min(commandPaletteSelectedIndex + 1, commandPaletteItems.length - 1);
+          renderCommandPaletteResults(commandPaletteInput.value.trim());
+        } else if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          commandPaletteSelectedIndex = Math.max(commandPaletteSelectedIndex - 1, 0);
+          renderCommandPaletteResults(commandPaletteInput.value.trim());
+        } else if (e.key === 'Enter') {
+          e.preventDefault();
+          executeCommandPaletteItem(commandPaletteSelectedIndex);
+        }
+      });
+    }
+
+    if (commandPaletteResults) {
+      commandPaletteResults.addEventListener('click', (e) => {
+        const item = e.target.closest('.command-palette-item');
+        if (item) {
+          const idx = parseInt(item.dataset.index, 10);
+          executeCommandPaletteItem(idx);
+        }
+      });
+    }
+
+    if (commandPaletteEl) {
+      commandPaletteEl.addEventListener('click', (e) => {
+        if (e.target === commandPaletteEl) closeCommandPalette();
+      });
+    }
+
+    // Cmd+K or Ctrl+K to open command palette
+    document.addEventListener('keydown', (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        openCommandPalette();
+      }
+    });
+
+    // ============ CONFETTI ANIMATION ============
+    const CONFETTI_COLORS = ['#667eea', '#22c55e', '#f59e0b', '#ec4899', '#8b5cf6', '#06b6d4'];
+
+    function createConfetti(x, y) {
+      const container = document.createElement('div');
+      container.className = 'confetti-container';
+      container.style.left = x + 'px';
+      container.style.top = y + 'px';
+
+      for (let i = 0; i < 20; i++) {
+        const piece = document.createElement('div');
+        piece.className = 'confetti-piece';
+        piece.style.background = CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)];
+        piece.style.left = (Math.random() * 60 - 30) + 'px';
+        piece.style.animationDelay = (Math.random() * 0.3) + 's';
+        piece.style.animationDuration = (0.8 + Math.random() * 0.6) + 's';
+        container.appendChild(piece);
+      }
+
+      document.body.appendChild(container);
+      setTimeout(() => container.remove(), 1500);
+    }
+
+    // ============ UNDO/REDO STACK ============
+    const undoStack = [];
+    const redoStack = [];
+    const MAX_UNDO_STACK = 50;
+    const undoStackToast = $("undoStackToast");
+    const undoStackMessage = $("undoStackMessage");
+    const undoStackUndoBtn = $("undoStackUndo");
+    const undoStackDismissBtn = $("undoStackDismiss");
+    let undoStackTimeout = null;
+
+    function pushToUndoStack(action) {
+      undoStack.push(action);
+      if (undoStack.length > MAX_UNDO_STACK) undoStack.shift();
+      redoStack.length = 0; // Clear redo stack on new action
+      showUndoStackToast(action.message);
+    }
+
+    function showUndoStackToast(message) {
+      if (!undoStackToast) return;
+      undoStackMessage.textContent = message;
+      undoStackToast.classList.add('show');
+      if (undoStackTimeout) clearTimeout(undoStackTimeout);
+      undoStackTimeout = setTimeout(() => undoStackToast.classList.remove('show'), 8000);
+    }
+
+    function hideUndoStackToast() {
+      if (!undoStackToast) return;
+      undoStackToast.classList.remove('show');
+      if (undoStackTimeout) clearTimeout(undoStackTimeout);
+    }
+
+    function performUndo() {
+      const action = undoStack.pop();
+      if (!action) return;
+      redoStack.push(action);
+
+      if (action.type === 'deleteTask' && action.taskData) {
+        const { id, ...data } = action.taskData;
+        createTask(data);
+      } else if (action.type === 'deleteEvent' && action.eventData) {
+        saveToCloud(action.eventData);
+      } else if (action.type === 'completeTask' && action.taskId) {
+        const task = tasks.find(t => t.id === action.taskId);
+        if (task) {
+          const { id, ...clean } = task;
+          saveTask(action.taskId, { ...clean, completed: !task.completed }, task.subject);
+        }
+      }
+      hideUndoStackToast();
+    }
+
+    function performRedo() {
+      const action = redoStack.pop();
+      if (!action) return;
+      undoStack.push(action);
+
+      if (action.type === 'deleteTask' && action.taskId) {
+        const task = tasks.find(t => t.id === action.taskId);
+        if (task) removeTask(task);
+      } else if (action.type === 'deleteEvent' && action.eventId) {
+        deleteFromCloud(action.eventId);
+      }
+    }
+
+    if (undoStackUndoBtn) undoStackUndoBtn.onclick = performUndo;
+    if (undoStackDismissBtn) undoStackDismissBtn.onclick = hideUndoStackToast;
+
+    // Cmd+Z for undo, Cmd+Shift+Z for redo
+    document.addEventListener('keydown', (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'z') {
+        if (isEditableTarget(e.target)) return; // Don't interfere with text editing
+        e.preventDefault();
+        if (e.shiftKey) {
+          performRedo();
+        } else {
+          performUndo();
+        }
+      }
+    });
+
+    // ============ VIM-STYLE NAVIGATION ============
+    let vimFocusedTaskIndex = -1;
+
+    function updateVimFocus() {
+      document.querySelectorAll('.task-item.vim-focused').forEach(el => el.classList.remove('vim-focused'));
+      const taskItems = Array.from(document.querySelectorAll('.task-item:not(.completed-task)'));
+      if (vimFocusedTaskIndex >= 0 && vimFocusedTaskIndex < taskItems.length) {
+        taskItems[vimFocusedTaskIndex].classList.add('vim-focused');
+        taskItems[vimFocusedTaskIndex].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (isEditableTarget(e.target)) return;
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+
+      const taskItems = Array.from(document.querySelectorAll('.task-item:not(.completed-task)'));
+      if (taskItems.length === 0) return;
+
+      if (e.key === 'j') {
+        e.preventDefault();
+        vimFocusedTaskIndex = Math.min(vimFocusedTaskIndex + 1, taskItems.length - 1);
+        if (vimFocusedTaskIndex < 0) vimFocusedTaskIndex = 0;
+        updateVimFocus();
+      } else if (e.key === 'k') {
+        e.preventDefault();
+        vimFocusedTaskIndex = Math.max(vimFocusedTaskIndex - 1, 0);
+        updateVimFocus();
+      } else if (e.key === 'Enter' && vimFocusedTaskIndex >= 0) {
+        e.preventDefault();
+        const taskEl = taskItems[vimFocusedTaskIndex];
+        if (taskEl) {
+          const taskId = taskEl.dataset.id;
+          if (taskId && typeof openTaskEditModal === 'function') openTaskEditModal(taskId);
+        }
+      } else if (e.key === 'x' && vimFocusedTaskIndex >= 0) {
+        e.preventDefault();
+        const taskEl = taskItems[vimFocusedTaskIndex];
+        if (taskEl) {
+          const checkbox = taskEl.querySelector('.task-checkbox');
+          if (checkbox) checkbox.click();
+        }
+      }
+    });
+
+    // ============ ENHANCED RIGHT-CLICK CONTEXT MENUS ============
+    // Add context menu to empty areas for quick add
+    document.addEventListener('contextmenu', (e) => {
+      // Check if click is on a task item or event row - those have their own context menus
+      if (e.target.closest('.task-item') || e.target.closest('.event-row')) return;
+
+      // Check if in task view or countdown view
+      const inTaskView = $("taskManagerOverlay")?.classList.contains('open');
+      const mainContent = e.target.closest('.main-content, .task-list-container, .event-list');
+
+      if (mainContent) {
+        e.preventDefault();
+        showQuickAddContextMenu(e.clientX, e.clientY, inTaskView);
+      }
+    });
+
+    function showQuickAddContextMenu(x, y, isTaskView) {
+      // Remove existing
+      document.querySelectorAll('.quick-add-context-menu').forEach(m => m.remove());
+
+      const menu = document.createElement('div');
+      menu.className = 'context-menu quick-add-context-menu';
+      menu.style.cssText = `position: fixed; left: ${x}px; top: ${y}px; z-index: 15000;`;
+
+      const items = [
+        { icon: '✅', label: 'משימה חדשה', action: () => { if (typeof showView === 'function') showView('tasks'); setTimeout(() => newTaskTitle?.focus(), 100); } },
+        { icon: '📅', label: 'אירוע חדש', action: () => { if (typeof showView === 'function') showView('countdown'); setTimeout(() => eventName?.focus(), 100); } },
+        { divider: true },
+        { icon: '🍅', label: 'פתח פומודורו', action: openPomodoro },
+        { icon: '📅', label: 'עבור להיום', action: goToToday },
+      ];
+
+      items.forEach(item => {
+        if (item.divider) {
+          const div = document.createElement('div');
+          div.className = 'context-menu-divider';
+          menu.appendChild(div);
+          return;
+        }
+        const el = document.createElement('div');
+        el.className = 'context-menu-item';
+        el.innerHTML = `<span class="context-menu-item-icon">${item.icon}</span>${item.label}`;
+        el.onclick = () => { menu.remove(); item.action(); };
+        menu.appendChild(el);
+      });
+
+      document.body.appendChild(menu);
+
+      // Close on click outside
+      setTimeout(() => {
+        const closeHandler = (e) => {
+          if (!menu.contains(e.target)) {
+            menu.remove();
+            document.removeEventListener('click', closeHandler);
+          }
+        };
+        document.addEventListener('click', closeHandler);
+      }, 0);
+    }
+
+    // ============ END NEW FEATURES ============
 
     eventList.onclick = e => {
       const row = e.target.closest(".event-row");
@@ -12495,9 +13593,32 @@
       if (Number.isNaN(base.getTime())) return null;
       if (base < now) base = now;
       const next = new Date(base);
-      if (type === 'daily') next.setDate(next.getDate() + 1);
-      if (type === 'weekly') next.setDate(next.getDate() + 7);
-      if (type === 'monthly') next.setMonth(next.getMonth() + 1);
+
+      switch (type) {
+        case 'daily':
+          next.setDate(next.getDate() + 1);
+          break;
+        case 'weekdays':
+          // Skip to next weekday (Sunday=0, Saturday=6)
+          do {
+            next.setDate(next.getDate() + 1);
+          } while (next.getDay() === 0 || next.getDay() === 6 || next.getDay() === 5);
+          break;
+        case 'weekly':
+          next.setDate(next.getDate() + 7);
+          break;
+        case 'biweekly':
+          next.setDate(next.getDate() + 14);
+          break;
+        case 'monthly':
+          next.setMonth(next.getMonth() + 1);
+          break;
+        case 'yearly':
+          next.setFullYear(next.getFullYear() + 1);
+          break;
+        default:
+          return null;
+      }
       return next;
     }
 
@@ -14202,6 +15323,17 @@
             const nextCompleted = !task.completed;
             if (nextCompleted) {
               maybeCreateRecurringTask(task);
+              // Add confetti celebration animation
+              if (typeof createConfetti === 'function') {
+                const rect = taskItem.getBoundingClientRect();
+                createConfetti(rect.left + 20, rect.top + rect.height / 2);
+              }
+              taskItem.classList.add('completing');
+              setTimeout(() => taskItem.classList.remove('completing'), 500);
+              // Push to undo stack
+              if (typeof pushToUndoStack === 'function') {
+                pushToUndoStack({ type: 'completeTask', taskId, message: `✅ "${task.title}" הושלם` });
+              }
             }
             const { id, isOwn, isShared, ...cleanTask } = task;
             saveTask(taskId, { ...cleanTask, completed: nextCompleted }, task.subject);
@@ -14959,6 +16091,10 @@
     // Helper to remove task from correct location
     function removeTask(task) {
       if (!task) return;
+      // Push to undo stack before deleting
+      if (typeof pushToUndoStack === 'function') {
+        pushToUndoStack({ type: 'deleteTask', taskId: task.id, taskData: { ...task }, message: `🗑️ "${task.title}" נמחק` });
+      }
       const subject = subjects.find(s => s.id === task.subject);
       if (subject?.isShared || task.isShared) {
         return remove(ref(db, `sharedSubjects/${task.subject}/tasks/${task.id}`));
