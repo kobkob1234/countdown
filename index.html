@@ -13148,8 +13148,14 @@
         if (refs.miniToggle) {
           refs.miniToggle.addEventListener('change', () => {
             const enabled = refs.miniToggle.checked;
+            console.log('[Pomodoro] Mini toggle changed:', enabled, 'refs.mini exists:', !!refs.mini);
             localStorage.setItem(MINI_KEY, enabled ? 'true' : 'false');
-            if (refs.mini) refs.mini.classList.toggle('visible', enabled);
+            if (refs.mini) {
+              refs.mini.classList.toggle('visible', enabled);
+              console.log('[Pomodoro] Mini visible class:', refs.mini.classList.contains('visible'));
+            } else {
+              console.warn('[Pomodoro] refs.mini is null!');
+            }
             if (refs.pipBtn && !document.pictureInPictureEnabled) refs.pipBtn.classList.toggle('active', enabled);
           });
         }
