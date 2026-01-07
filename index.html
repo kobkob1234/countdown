@@ -13436,8 +13436,21 @@
     function toggleTaskComplete(taskId) {
       const task = tasks.find(t => t.id === taskId);
       if (!task) return;
+      const nextCompleted = !task.completed;
+      if (nextCompleted) {
+        // Trigger confetti for completing via context menu
+        const taskEl = document.querySelector(`.task-item[data-id="${taskId}"]`);
+        if (taskEl && typeof createConfetti === 'function') {
+          const rect = taskEl.getBoundingClientRect();
+          createConfetti(rect.left + 20, rect.top + rect.height / 2);
+        }
+        if (typeof maybeCreateRecurringTask === 'function') maybeCreateRecurringTask(task);
+        if (typeof pushToUndoStack === 'function') {
+          pushToUndoStack({ type: 'completeTask', taskId, message: `✅ "${task.title}" הושלם` });
+        }
+      }
       const { id, isOwn, isShared, ...clean } = task;
-      saveTask(taskId, { ...clean, completed: !task.completed }, task.subject);
+      saveTask(taskId, { ...clean, completed: nextCompleted }, task.subject);
     }
 
     function duplicateTask(taskId) {
@@ -13527,11 +13540,13 @@
         return;
       }
 
-      // Quick add for empty areas (existing)
-      if (e.target.closest('.event-row')) return;
+      // Skip event-row (handled by showEventContextMenu), event-list, and empty-state (handled by showAddEventContextMenu)
+      if (e.target.closest('.event-row') || e.target.closest('.event-list') || e.target.closest('.empty-state')) return;
+
+      // Quick add for empty areas in task manager only
       const inTaskView = $("taskManagerOverlay")?.classList.contains('open');
-      const mainContent = e.target.closest('.main-content, .task-list-container, .event-list');
-      if (mainContent) {
+      const mainContent = e.target.closest('.main-content, .task-list-container');
+      if (mainContent && inTaskView) {
         e.preventDefault();
         showQuickAddContextMenu(e.clientX, e.clientY, inTaskView);
       }
