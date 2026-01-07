@@ -10293,77 +10293,169 @@
 
   <!-- Guide/Help Modal -->
   <div class="shortcuts-backdrop" id="guideModal" role="dialog" aria-modal="true" aria-labelledby="guideTitle">
-    <div class="shortcuts-card" style="max-width: 700px;">
+    <div class="shortcuts-card" style="max-width: 800px; max-height: 90vh; overflow-y: auto;">
       <div class="shortcuts-hero">
         <div>
           <div class="shortcuts-eyebrow">❓ מדריך האפליקציה</div>
-          <div class="shortcuts-title" id="guideTitle">Guide & Quick Reference</div>
+          <div class="shortcuts-title" id="guideTitle">Complete Guide & Shortcuts</div>
           <div class="shortcuts-subtitle">? לפתיחה/סגירה</div>
         </div>
         <button class="shortcuts-close" id="guideClose" aria-label="Close guide">×</button>
       </div>
       <div class="shortcuts-body">
+        <!-- Keyboard Shortcuts Section -->
         <div class="shortcuts-section">
-          <div class="shortcuts-section-title">🖱️ קליק ימני (Context Menu)</div>
-          <div class="shortcuts-grid">
-            <div class="shortcut-item">
-              <div class="shortcut-label">על משימה: עריכה, שכפול, מחיקה, עדיפות, העברה לנושא</div>
-              <div class="shortcut-keys"><span class="keycap wide">→ משימה</span></div>
-            </div>
-            <div class="shortcut-item">
-              <div class="shortcut-label">על אירוע: עריכה, שכפול, מחיקה, מועדף, נעיצה</div>
-              <div class="shortcut-keys"><span class="keycap wide">→ אירוע</span></div>
-            </div>
-            <div class="shortcut-item">
-              <div class="shortcut-label">על יום בלוח שנה: הוספת משימה/אירוע ליום</div>
-              <div class="shortcut-keys"><span class="keycap wide">→ יום</span></div>
-            </div>
-            <div class="shortcut-item">
-              <div class="shortcut-label">על אזור ריק: הוספה מהירה של משימה/אירוע</div>
-              <div class="shortcut-keys"><span class="keycap wide">→ ריק</span></div>
-            </div>
-          </div>
-        </div>
-        <div class="shortcuts-section">
-          <div class="shortcuts-section-title">⌨️ קיצורי מקלדת עיקריים</div>
+          <div class="shortcuts-section-title">⌨️ קיצורי מקלדת - ניווט ותצוגות</div>
           <div class="shortcuts-grid">
             <div class="shortcut-item">
               <div class="shortcut-label">פתח פלטת פקודות (חיפוש מהיר)</div>
               <div class="shortcut-keys"><span class="keycap">⌘</span><span class="keycap">K</span></div>
             </div>
             <div class="shortcut-item">
-              <div class="shortcut-label">בטל פעולה אחרונה</div>
+              <div class="shortcut-label">קפיצה ל״היום״</div>
+              <div class="shortcut-keys"><span class="keycap">T</span></div>
+            </div>
+            <div class="shortcut-item">
+              <div class="shortcut-label">פתח פומודורו</div>
+              <div class="shortcut-keys"><span class="keycap">P</span></div>
+            </div>
+            <div class="shortcut-item">
+              <div class="shortcut-label">הצג/הסתר לוח שנה</div>
+              <div class="shortcut-keys"><span class="keycap">C</span></div>
+            </div>
+            <div class="shortcut-item">
+              <div class="shortcut-label">מעבר למשימות</div>
+              <div class="shortcut-keys"><span class="keycap">M</span></div>
+            </div>
+            <div class="shortcut-item">
+              <div class="shortcut-label">חזרה לספירה לאחור</div>
+              <div class="shortcut-keys"><span class="keycap">G</span></div>
+            </div>
+            <div class="shortcut-item">
+              <div class="shortcut-label">חיפוש משימות</div>
+              <div class="shortcut-keys"><span class="keycap">/</span></div>
+            </div>
+            <div class="shortcut-item">
+              <div class="shortcut-label">מצב כהה/בהיר</div>
+              <div class="shortcut-keys"><span class="keycap">D</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="shortcuts-section">
+          <div class="shortcuts-section-title">⌨️ קיצורי מקלדת - יצירה ועריכה</div>
+          <div class="shortcuts-grid">
+            <div class="shortcut-item">
+              <div class="shortcut-label">פוקוס על הוספה מהירה</div>
+              <div class="shortcut-keys"><span class="keycap">N</span></div>
+            </div>
+            <div class="shortcut-item">
+              <div class="shortcut-label">בטל פעולה אחרונה (Undo)</div>
               <div class="shortcut-keys"><span class="keycap">⌘</span><span class="keycap">Z</span></div>
             </div>
             <div class="shortcut-item">
-              <div class="shortcut-label">ניווט בין משימות (Vim)</div>
-              <div class="shortcut-keys"><span class="keycap">J</span>/<span class="keycap">K</span></div>
+              <div class="shortcut-label">חזור על פעולה (Redo)</div>
+              <div class="shortcut-keys"><span class="keycap">⌘</span><span class="keycap">⇧</span><span
+                  class="keycap">Z</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="shortcuts-section">
+          <div class="shortcuts-section-title">⌨️ ניווט Vim-Style במשימות</div>
+          <div class="shortcuts-grid">
+            <div class="shortcut-item">
+              <div class="shortcut-label">ירידה למשימה הבאה</div>
+              <div class="shortcut-keys"><span class="keycap">J</span></div>
+            </div>
+            <div class="shortcut-item">
+              <div class="shortcut-label">עלייה למשימה הקודמת</div>
+              <div class="shortcut-keys"><span class="keycap">K</span></div>
             </div>
             <div class="shortcut-item">
               <div class="shortcut-label">סמן משימה כהושלמה</div>
               <div class="shortcut-keys"><span class="keycap">X</span></div>
             </div>
+            <div class="shortcut-item">
+              <div class="shortcut-label">ערוך משימה מסומנת</div>
+              <div class="shortcut-keys"><span class="keycap wide">Enter</span></div>
+            </div>
           </div>
         </div>
+
         <div class="shortcuts-section">
-          <div class="shortcuts-section-title">✨ פיצ׳רים חדשים</div>
+          <div class="shortcuts-section-title">⌨️ קיצורי מערכת</div>
+          <div class="shortcuts-grid">
+            <div class="shortcut-item">
+              <div class="shortcut-label">סגור מודאלים/חלונות</div>
+              <div class="shortcut-keys"><span class="keycap wide">Esc</span></div>
+            </div>
+            <div class="shortcut-item">
+              <div class="shortcut-label">פתח מדריך זה</div>
+              <div class="shortcut-keys"><span class="keycap">?</span></div>
+            </div>
+            <div class="shortcut-item">
+              <div class="shortcut-label">פתח/סגור חלון קיצורים (ישן)</div>
+              <div class="shortcut-keys"><span class="keycap">H</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right-Click Section -->
+        <div class="shortcuts-section">
+          <div class="shortcuts-section-title">🖱️ קליק ימני (Context Menu)</div>
+          <div class="shortcuts-grid">
+            <div class="shortcut-item">
+              <div class="shortcut-label">על משימה: השלם, ערוך, שכפל, מחק, עדיפות, תאריך, תזכורת, נושא</div>
+              <div class="shortcut-keys"><span class="keycap wide">→ משימה</span></div>
+            </div>
+            <div class="shortcut-item">
+              <div class="shortcut-label">על אירוע: ערוך, שכפל, מחק, מועדף, נעיצה</div>
+              <div class="shortcut-keys"><span class="keycap wide">→ אירוע</span></div>
+            </div>
+            <div class="shortcut-item">
+              <div class="shortcut-label">על יום בלוח שנה: הוסף משימה/אירוע ליום</div>
+              <div class="shortcut-keys"><span class="keycap wide">→ יום</span></div>
+            </div>
+            <div class="shortcut-item">
+              <div class="shortcut-label">על סרגל צד: נושא חדש, פילטרים מהירים</div>
+              <div class="shortcut-keys"><span class="keycap wide">→ סרגל צד</span></div>
+            </div>
+            <div class="shortcut-item">
+              <div class="shortcut-label">על כותרת: ניווט, הגדרות, קיצורים</div>
+              <div class="shortcut-keys"><span class="keycap wide">→ כותרת</span></div>
+            </div>
+            <div class="shortcut-item">
+              <div class="shortcut-label">על פומודורו: התחל, אפס, סגור</div>
+              <div class="shortcut-keys"><span class="keycap wide">→ פומודורו</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Features Section -->
+        <div class="shortcuts-section">
+          <div class="shortcuts-section-title">✨ פיצ׳רים נוספים</div>
           <div class="shortcuts-grid">
             <div class="shortcut-item">
               <div class="shortcut-label">🎉 קונפטי בהשלמת משימה</div>
               <div class="shortcut-keys"><span class="keycap wide">אוטומטי</span></div>
             </div>
             <div class="shortcut-item">
-              <div class="shortcut-label">🔄 חזרות מתקדמות: דו-שבועי, ימי חול, שנתי</div>
+              <div class="shortcut-label">🔄 חזרות: יומי, שבועי, דו-שבועי, חודשי, שנתי, ימי חול</div>
               <div class="shortcut-keys"><span class="keycap wide">בעריכה</span></div>
             </div>
             <div class="shortcut-item">
               <div class="shortcut-label">↩️ Undo/Redo עד 50 פעולות</div>
-              <div class="shortcut-keys"><span class="keycap">⌘</span><span class="keycap">Z</span>/<span
-                  class="keycap">⇧</span><span class="keycap">Z</span></div>
+              <div class="shortcut-keys"><span class="keycap">⌘</span><span class="keycap">Z</span></div>
+            </div>
+            <div class="shortcut-item">
+              <div class="shortcut-label">🔔 התראות Push (גם כשהאפליקציה סגורה)</div>
+              <div class="shortcut-keys"><span class="keycap wide">לחץ 🔔</span></div>
             </div>
           </div>
         </div>
-        <div class="shortcut-note">💡 לחצו H לקיצורי מקלדת מלאים | ? למדריך זה</div>
+
+        <div class="shortcut-note">💡 קיצורי מקלדת פועלים רק כשלא מקלידים בתוך שדה טקסט</div>
       </div>
     </div>
   </div>
