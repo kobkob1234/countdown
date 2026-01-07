@@ -109,24 +109,46 @@ async function sendToSubscription({ userId, subKey, subscription, payload, dedup
   if (!committed) return { skipped: true };
 
   if (isDryRun) {
+    console.log(`[DRY_RUN] Would send to user=${userId} sub=${subKey.slice(0, 8)}...`);
     await markSent(ref, { dryRun: true, dedupeKey });
     return { ok: true, dryRun: true };
   }
 
-  try {
-    await webpush.sendNotification(subscription, JSON.stringify(payload));
-    await markSent(ref, { dedupeKey });
-    return { ok: true };
-  } catch (err) {
-    const statusCode = err?.statusCode;
-    const message = err?.message || String(err);
-    await markFailed(ref, { statusCode: statusCode || null, message, dedupeKey });
+  // Retry logic for transient failures
+  const MAX_RETRIES = 3;
+  const RETRY_STATUS_CODES = [429, 500, 502, 503, 504];
 
-    // Cleanup expired subscriptions (410 Gone / 404 Not Found)
-    if (statusCode === 410 || statusCode === 404) {
-      await db.ref(`users/${userId}/pushSubscriptions/${subKey}`).remove().catch(() => {});
+  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      await webpush.sendNotification(subscription, JSON.stringify(payload));
+      await markSent(ref, { dedupeKey, attempt });
+      if (attempt > 1) {
+        console.log(`[push] Success on attempt ${attempt} for user=${userId}`);
+      }
+      return { ok: true };
+    } catch (err) {
+      const statusCode = err?.statusCode;
+      const message = err?.message || String(err);
+
+      // Check if this is a retryable error
+      if (RETRY_STATUS_CODES.includes(statusCode) && attempt < MAX_RETRIES) {
+        const delay = Math.min(1000 * Math.pow(2, attempt - 1), 10000); // Exponential backoff, max 10s
+        console.log(`[push] Retry ${attempt}/${MAX_RETRIES} in ${delay}ms for user=${userId} (status=${statusCode})`);
+        await sleep(delay);
+        continue;
+      }
+
+      // Non-retryable or max retries reached
+      await markFailed(ref, { statusCode: statusCode || null, message, dedupeKey, attempts: attempt });
+      console.warn(`[push] Failed user=${userId} sub=${subKey.slice(0, 8)}... status=${statusCode || 'unknown'} msg=${message.slice(0, 100)}`);
+
+      // Cleanup expired subscriptions (410 Gone / 404 Not Found)
+      if (statusCode === 410 || statusCode === 404) {
+        console.log(`[push] Removing expired subscription for user=${userId}`);
+        await db.ref(`users/${userId}/pushSubscriptions/${subKey}`).remove().catch(() => { });
+      }
+      return { ok: false, statusCode, message };
     }
-    return { ok: false, statusCode, message };
   }
 }
 
@@ -267,7 +289,7 @@ async function runCheck() {
     const owner = subject.owner;
     const members = subject.members || {};
     const allUsers = [owner, ...Object.keys(members)].filter(Boolean);
-    
+
     for (const [taskId, task] of Object.entries(subjectTasks)) {
       if (!task || task.completed) continue;
       const reminderMinutes = Number.parseInt(task.reminder || '0', 10) || 0;
@@ -276,12 +298,12 @@ async function runCheck() {
 
       const offset = formatReminderOffset(reminderMinutes);
       const dueStr = task.dueDate ? new Date(dueMs).toLocaleString() : '';
-      
+
       // Send to each user who has access to this shared subject
       for (const userId of allUsers) {
         const userEntry = users.find(u => u.userId === userId);
         if (!userEntry) continue;
-        
+
         const payload = {
           title: `Shared Task Reminder 📋`,
           body: `${task.title || 'Task'} is due in ${offset}${dueStr ? ` (due: ${dueStr})` : ''}`,
@@ -317,21 +339,51 @@ async function runCheck() {
   console.log(`[${new Date().toISOString()}] Result: Sent ${sent}, Skipped ${skipped}, Failed ${failed}`);
 }
 
+async function cleanupOldPushSent() {
+  // Clean up pushSent records older than 7 days to prevent database bloat
+  const CLEANUP_AGE_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+  const cutoffTs = Date.now() - CLEANUP_AGE_MS;
+
+  try {
+    const usersSnap = await db.ref('users').once('value');
+    const users = usersSnap.val() || {};
+    let cleaned = 0;
+
+    for (const [userId, userData] of Object.entries(users)) {
+      const pushSent = userData?.pushSent || {};
+      for (const [subKey, records] of Object.entries(pushSent)) {
+        for (const [recordKey, record] of Object.entries(records || {})) {
+          if (record?.ts && record.ts < cutoffTs) {
+            await db.ref(`users/${userId}/pushSent/${subKey}/${recordKey}`).remove().catch(() => { });
+            cleaned++;
+          }
+        }
+      }
+    }
+
+    if (cleaned > 0) {
+      console.log(`[cleanup] Removed ${cleaned} old pushSent records`);
+    }
+  } catch (e) {
+    console.warn('[cleanup] Error cleaning pushSent:', e.message);
+  }
+}
+
 async function main() {
   const loopSeconds = Number(LOOP_SECONDS) || 0;
-  
+
   if (loopSeconds > 0) {
     const start = Date.now();
     const end = start + (loopSeconds * 1000);
     console.log(`Starting loop for ${loopSeconds} seconds...`);
-    
+
     while (Date.now() < end) {
       try {
         await runCheck();
       } catch (e) {
         console.error('Error in runCheck:', e);
       }
-      
+
       if (Date.now() + 30000 < end) {
         await sleep(30000); // Wait 30s before next check
       } else {
@@ -342,13 +394,20 @@ async function main() {
     await runCheck();
   }
 
-  // Cleanup
+  // Cleanup old pushSent records (run occasionally to prevent DB bloat)
+  try {
+    await cleanupOldPushSent();
+  } catch (e) {
+    console.warn('Cleanup error:', e);
+  }
+
+  // Cleanup Firebase connection
   try {
     if (typeof db.goOffline === 'function') db.goOffline();
-  } catch {}
+  } catch { }
   try {
     await admin.app().delete();
-  } catch {}
+  } catch { }
 }
 
 main().catch(err => {
