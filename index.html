@@ -10284,6 +10284,83 @@
     </div>
   </div>
 
+  <!-- Guide/Help Modal -->
+  <div class="shortcuts-backdrop" id="guideModal" role="dialog" aria-modal="true" aria-labelledby="guideTitle">
+    <div class="shortcuts-card" style="max-width: 700px;">
+      <div class="shortcuts-hero">
+        <div>
+          <div class="shortcuts-eyebrow">❓ מדריך האפליקציה</div>
+          <div class="shortcuts-title" id="guideTitle">Guide & Quick Reference</div>
+          <div class="shortcuts-subtitle">? לפתיחה/סגירה</div>
+        </div>
+        <button class="shortcuts-close" id="guideClose" aria-label="Close guide">×</button>
+      </div>
+      <div class="shortcuts-body">
+        <div class="shortcuts-section">
+          <div class="shortcuts-section-title">🖱️ קליק ימני (Context Menu)</div>
+          <div class="shortcuts-grid">
+            <div class="shortcut-item">
+              <div class="shortcut-label">על משימה: עריכה, שכפול, מחיקה, עדיפות, העברה לנושא</div>
+              <div class="shortcut-keys"><span class="keycap wide">→ משימה</span></div>
+            </div>
+            <div class="shortcut-item">
+              <div class="shortcut-label">על אירוע: עריכה, שכפול, מחיקה, מועדף, נעיצה</div>
+              <div class="shortcut-keys"><span class="keycap wide">→ אירוע</span></div>
+            </div>
+            <div class="shortcut-item">
+              <div class="shortcut-label">על יום בלוח שנה: הוספת משימה/אירוע ליום</div>
+              <div class="shortcut-keys"><span class="keycap wide">→ יום</span></div>
+            </div>
+            <div class="shortcut-item">
+              <div class="shortcut-label">על אזור ריק: הוספה מהירה של משימה/אירוע</div>
+              <div class="shortcut-keys"><span class="keycap wide">→ ריק</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="shortcuts-section">
+          <div class="shortcuts-section-title">⌨️ קיצורי מקלדת עיקריים</div>
+          <div class="shortcuts-grid">
+            <div class="shortcut-item">
+              <div class="shortcut-label">פתח פלטת פקודות (חיפוש מהיר)</div>
+              <div class="shortcut-keys"><span class="keycap">⌘</span><span class="keycap">K</span></div>
+            </div>
+            <div class="shortcut-item">
+              <div class="shortcut-label">בטל פעולה אחרונה</div>
+              <div class="shortcut-keys"><span class="keycap">⌘</span><span class="keycap">Z</span></div>
+            </div>
+            <div class="shortcut-item">
+              <div class="shortcut-label">ניווט בין משימות (Vim)</div>
+              <div class="shortcut-keys"><span class="keycap">J</span>/<span class="keycap">K</span></div>
+            </div>
+            <div class="shortcut-item">
+              <div class="shortcut-label">סמן משימה כהושלמה</div>
+              <div class="shortcut-keys"><span class="keycap">X</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="shortcuts-section">
+          <div class="shortcuts-section-title">✨ פיצ׳רים חדשים</div>
+          <div class="shortcuts-grid">
+            <div class="shortcut-item">
+              <div class="shortcut-label">🎉 קונפטי בהשלמת משימה</div>
+              <div class="shortcut-keys"><span class="keycap wide">אוטומטי</span></div>
+            </div>
+            <div class="shortcut-item">
+              <div class="shortcut-label">🔄 חזרות מתקדמות: דו-שבועי, ימי חול, שנתי</div>
+              <div class="shortcut-keys"><span class="keycap wide">בעריכה</span></div>
+            </div>
+            <div class="shortcut-item">
+              <div class="shortcut-label">↩️ Undo/Redo עד 50 פעולות</div>
+              <div class="shortcut-keys"><span class="keycap">⌘</span><span class="keycap">Z</span>/<span
+                  class="keycap">⇧</span><span class="keycap">Z</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="shortcut-note">💡 לחצו H לקיצורי מקלדת מלאים | ? למדריך זה</div>
+      </div>
+    </div>
+  </div>
+
   <!-- Day Drawer -->
   <div class="day-drawer-backdrop" id="dayDrawer" role="dialog" aria-modal="true" aria-labelledby="dayDrawerTitle">
     <div class="day-drawer">
@@ -12686,6 +12763,46 @@
     };
 
     if (shortcutsClose) shortcutsClose.onclick = closeShortcuts;
+
+    // ============ GUIDE MODAL ============
+    const guideModal = $("guideModal");
+    const guideClose = $("guideClose");
+    let guideLastFocus = null;
+
+    const openGuide = () => {
+      if (!guideModal) return;
+      guideLastFocus = document.activeElement;
+      guideModal.classList.add('open');
+    };
+
+    const closeGuide = () => {
+      if (!guideModal) return;
+      guideModal.classList.remove('open');
+      if (guideLastFocus && typeof guideLastFocus.focus === 'function') {
+        guideLastFocus.focus();
+      }
+      guideLastFocus = null;
+    };
+
+    const toggleGuide = () => {
+      if (!guideModal) return;
+      guideModal.classList.contains('open') ? closeGuide() : openGuide();
+    };
+
+    if (guideClose) guideClose.onclick = closeGuide;
+    if (guideModal) {
+      guideModal.addEventListener('click', (e) => {
+        if (e.target === guideModal) closeGuide();
+      });
+    }
+
+    // ? key to toggle guide
+    document.addEventListener('keydown', (e) => {
+      if (e.key === '?' && !isEditableTarget(e.target)) {
+        e.preventDefault();
+        toggleGuide();
+      }
+    });
     if (shortcutsModal) {
       shortcutsModal.addEventListener('click', (e) => {
         if (e.target === shortcutsModal) closeShortcuts();
@@ -13186,36 +13303,14 @@
     });
 
     // ============ ENHANCED RIGHT-CLICK CONTEXT MENUS ============
-    // Add context menu to empty areas for quick add
-    document.addEventListener('contextmenu', (e) => {
-      // Check if click is on a task item or event row - those have their own context menus
-      if (e.target.closest('.task-item') || e.target.closest('.event-row')) return;
 
-      // Check if in task view or countdown view
-      const inTaskView = $("taskManagerOverlay")?.classList.contains('open');
-      const mainContent = e.target.closest('.main-content, .task-list-container, .event-list');
-
-      if (mainContent) {
-        e.preventDefault();
-        showQuickAddContextMenu(e.clientX, e.clientY, inTaskView);
-      }
-    });
-
-    function showQuickAddContextMenu(x, y, isTaskView) {
-      // Remove existing
-      document.querySelectorAll('.quick-add-context-menu').forEach(m => m.remove());
+    // Helper to create context menu
+    function createContextMenu(x, y, items, className = '') {
+      document.querySelectorAll('.dynamic-context-menu').forEach(m => m.remove());
 
       const menu = document.createElement('div');
-      menu.className = 'context-menu quick-add-context-menu';
+      menu.className = `context-menu dynamic-context-menu ${className}`;
       menu.style.cssText = `position: fixed; left: ${x}px; top: ${y}px; z-index: 15000;`;
-
-      const items = [
-        { icon: '✅', label: 'משימה חדשה', action: () => { if (typeof showView === 'function') showView('tasks'); setTimeout(() => newTaskTitle?.focus(), 100); } },
-        { icon: '📅', label: 'אירוע חדש', action: () => { if (typeof showView === 'function') showView('countdown'); setTimeout(() => eventName?.focus(), 100); } },
-        { divider: true },
-        { icon: '🍅', label: 'פתח פומודורו', action: openPomodoro },
-        { icon: '📅', label: 'עבור להיום', action: goToToday },
-      ];
 
       items.forEach(item => {
         if (item.divider) {
@@ -13224,28 +13319,239 @@
           menu.appendChild(div);
           return;
         }
+        if (item.header) {
+          const h = document.createElement('div');
+          h.className = 'context-menu-header';
+          h.style.cssText = 'padding: 8px 16px; font-size: 11px; color: var(--muted); font-weight: 600;';
+          h.textContent = item.header;
+          menu.appendChild(h);
+          return;
+        }
         const el = document.createElement('div');
         el.className = 'context-menu-item';
-        el.innerHTML = `<span class="context-menu-item-icon">${item.icon}</span>${item.label}`;
+        if (item.shortcut) {
+          el.innerHTML = `<span class="context-menu-item-icon">${item.icon}</span><span style="flex:1">${item.label}</span><span class="context-menu-item-shortcut">${item.shortcut}</span>`;
+        } else {
+          el.innerHTML = `<span class="context-menu-item-icon">${item.icon}</span>${item.label}`;
+        }
         el.onclick = () => { menu.remove(); item.action(); };
         menu.appendChild(el);
       });
 
       document.body.appendChild(menu);
 
-      // Close on click outside
+      // Ensure menu stays within viewport
+      const rect = menu.getBoundingClientRect();
+      if (rect.right > window.innerWidth) menu.style.left = (window.innerWidth - rect.width - 10) + 'px';
+      if (rect.bottom > window.innerHeight) menu.style.top = (window.innerHeight - rect.height - 10) + 'px';
+
       setTimeout(() => {
         const closeHandler = (e) => {
           if (!menu.contains(e.target)) {
             menu.remove();
             document.removeEventListener('click', closeHandler);
+            document.removeEventListener('contextmenu', closeHandler);
           }
         };
         document.addEventListener('click', closeHandler);
+        document.addEventListener('contextmenu', closeHandler);
       }, 0);
+
+      return menu;
     }
 
-    // ============ END NEW FEATURES ============
+    // Task Context Menu
+    function showTaskContextMenu(x, y, taskId) {
+      const task = tasks.find(t => t.id === taskId);
+      if (!task) return;
+
+      const priorityItems = [
+        { header: '⚡ עדיפות' },
+        { icon: '🔴', label: 'דחוף', action: () => updateTaskPriority(taskId, 'urgent') },
+        { icon: '🟠', label: 'גבוה', action: () => updateTaskPriority(taskId, 'high') },
+        { icon: '🟡', label: 'בינוני', action: () => updateTaskPriority(taskId, 'medium') },
+        { icon: '🟢', label: 'נמוך', action: () => updateTaskPriority(taskId, 'low') },
+        { icon: '⬜', label: 'ללא', action: () => updateTaskPriority(taskId, 'none') },
+      ];
+
+      const subjectItems = subjects.length > 0 ? [
+        { header: '📁 העבר לנושא' },
+        { icon: '📂', label: 'ללא נושא', action: () => moveTaskToSubject(taskId, null) },
+        ...subjects.slice(0, 5).map(s => ({
+          icon: '📁', label: s.name, action: () => moveTaskToSubject(taskId, s.id)
+        }))
+      ] : [];
+
+      const dateItems = [
+        { header: '📅 תאריך יעד' },
+        { icon: '📆', label: 'היום', action: () => setTaskDueDate(taskId, 0) },
+        { icon: '📆', label: 'מחר', action: () => setTaskDueDate(taskId, 1) },
+        { icon: '📆', label: 'בעוד שבוע', action: () => setTaskDueDate(taskId, 7) },
+        { icon: '🚫', label: 'הסר תאריך', action: () => setTaskDueDate(taskId, null) },
+      ];
+
+      const items = [
+        { icon: task.completed ? '⬜' : '✅', label: task.completed ? 'סמן כלא הושלם' : 'סמן כהושלם', shortcut: 'X', action: () => toggleTaskComplete(taskId) },
+        { icon: '✏️', label: 'עריכה', shortcut: 'Enter', action: () => openTaskEditModal(taskId) },
+        { icon: '📋', label: 'שכפל', action: () => duplicateTask(taskId) },
+        { icon: '🗑️', label: 'מחק', action: () => deleteTaskById(taskId) },
+        { divider: true },
+        ...priorityItems,
+        { divider: true },
+        ...dateItems,
+        ...(subjectItems.length > 0 ? [{ divider: true }, ...subjectItems] : []),
+      ];
+
+      createContextMenu(x, y, items, 'task-context-menu');
+    }
+
+    function updateTaskPriority(taskId, priority) {
+      const task = tasks.find(t => t.id === taskId);
+      if (!task) return;
+      const { id, isOwn, isShared, ...clean } = task;
+      saveTask(taskId, { ...clean, priority }, task.subject);
+    }
+
+    function moveTaskToSubject(taskId, subjectId) {
+      const task = tasks.find(t => t.id === taskId);
+      if (!task) return;
+      const { id, isOwn, isShared, ...clean } = task;
+      saveTask(taskId, { ...clean, subject: subjectId || '' }, subjectId || '');
+    }
+
+    function setTaskDueDate(taskId, daysFromNow) {
+      const task = tasks.find(t => t.id === taskId);
+      if (!task) return;
+      const { id, isOwn, isShared, ...clean } = task;
+      if (daysFromNow === null) {
+        saveTask(taskId, { ...clean, dueDate: null }, task.subject);
+      } else {
+        const date = new Date();
+        date.setDate(date.getDate() + daysFromNow);
+        date.setHours(23, 59, 59, 0);
+        saveTask(taskId, { ...clean, dueDate: date.toISOString() }, task.subject);
+      }
+    }
+
+    function toggleTaskComplete(taskId) {
+      const task = tasks.find(t => t.id === taskId);
+      if (!task) return;
+      const { id, isOwn, isShared, ...clean } = task;
+      saveTask(taskId, { ...clean, completed: !task.completed }, task.subject);
+    }
+
+    function duplicateTask(taskId) {
+      const task = tasks.find(t => t.id === taskId);
+      if (task) pushTaskClone(task);
+    }
+
+    function deleteTaskById(taskId) {
+      const task = tasks.find(t => t.id === taskId);
+      if (task) removeTask(task);
+    }
+
+    // Calendar Day Context Menu
+    function showCalendarDayContextMenu(x, y, dateStr) {
+      const items = [
+        { icon: '✅', label: 'הוסף משימה ליום זה', action: () => addTaskToDate(dateStr) },
+        { icon: '📅', label: 'הוסף אירוע ליום זה', action: () => addEventToDate(dateStr) },
+        { divider: true },
+        { icon: '📋', label: 'הצג פרטי יום', action: () => openDayDrawerForDate(dateStr) },
+      ];
+      createContextMenu(x, y, items, 'calendar-day-context-menu');
+    }
+
+    function addTaskToDate(dateStr) {
+      if (typeof showView === 'function') showView('tasks');
+      setTimeout(() => {
+        if (newTaskDueDate) {
+          newTaskDueDate.value = dateStr + 'T23:59';
+        }
+        newTaskTitle?.focus();
+      }, 100);
+    }
+
+    function addEventToDate(dateStr) {
+      if (typeof showView === 'function') showView('countdown');
+      setTimeout(() => {
+        if (eventDate) {
+          eventDate.value = dateStr + 'T12:00';
+        }
+        eventName?.focus();
+      }, 100);
+    }
+
+    function openDayDrawerForDate(dateStr) {
+      const date = new Date(dateStr);
+      if (typeof openDayDrawer === 'function') openDayDrawer(date);
+    }
+
+    // Header/Logo Context Menu
+    function showHeaderContextMenu(x, y) {
+      const items = [
+        { icon: '⌨️', label: 'קיצורי מקלדת', shortcut: 'H', action: openShortcuts },
+        { icon: '❓', label: 'מדריך', shortcut: '?', action: openGuide },
+        { divider: true },
+        { icon: '🌙', label: 'מצב כהה/בהיר', shortcut: 'D', action: toggleTheme },
+        { icon: '🔍', label: 'פלטת פקודות', shortcut: '⌘K', action: openCommandPalette },
+        { divider: true },
+        { icon: '📅', label: 'עבור להיום', shortcut: 'T', action: goToToday },
+        { icon: '🍅', label: 'פתח פומודורו', shortcut: 'P', action: openPomodoro },
+      ];
+      createContextMenu(x, y, items, 'header-context-menu');
+    }
+
+    // Attach task context menu to task items
+    document.addEventListener('contextmenu', (e) => {
+      const taskItem = e.target.closest('.task-item');
+      if (taskItem) {
+        e.preventDefault();
+        const taskId = taskItem.dataset.id;
+        if (taskId) showTaskContextMenu(e.clientX, e.clientY, taskId);
+        return;
+      }
+
+      // Calendar day context menu
+      const calendarDay = e.target.closest('.calendar-day');
+      if (calendarDay && calendarDay.dataset.date) {
+        e.preventDefault();
+        showCalendarDayContextMenu(e.clientX, e.clientY, calendarDay.dataset.date);
+        return;
+      }
+
+      // Header/logo context menu
+      const header = e.target.closest('.header, .app-title');
+      if (header) {
+        e.preventDefault();
+        showHeaderContextMenu(e.clientX, e.clientY);
+        return;
+      }
+
+      // Quick add for empty areas (existing)
+      if (e.target.closest('.event-row')) return;
+      const inTaskView = $("taskManagerOverlay")?.classList.contains('open');
+      const mainContent = e.target.closest('.main-content, .task-list-container, .event-list');
+      if (mainContent) {
+        e.preventDefault();
+        showQuickAddContextMenu(e.clientX, e.clientY, inTaskView);
+      }
+    });
+
+    function showQuickAddContextMenu(x, y, isTaskView) {
+      const items = [
+        { icon: '✅', label: 'משימה חדשה', shortcut: 'N', action: () => { if (typeof showView === 'function') showView('tasks'); setTimeout(() => newTaskTitle?.focus(), 100); } },
+        { icon: '📅', label: 'אירוע חדש', shortcut: 'G', action: () => { if (typeof showView === 'function') showView('countdown'); setTimeout(() => eventName?.focus(), 100); } },
+        { divider: true },
+        { icon: '🍅', label: 'פתח פומודורו', shortcut: 'P', action: openPomodoro },
+        { icon: '📅', label: 'עבור להיום', shortcut: 'T', action: goToToday },
+        { divider: true },
+        { icon: '⌨️', label: 'קיצורי מקלדת', shortcut: 'H', action: openShortcuts },
+        { icon: '❓', label: 'מדריך', shortcut: '?', action: openGuide },
+      ];
+      createContextMenu(x, y, items, 'quick-add-context-menu');
+    }
+
+    // ============ END ENHANCED CONTEXT MENUS ============
 
     eventList.onclick = e => {
       const row = e.target.closest(".event-row");
