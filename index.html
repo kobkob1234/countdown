@@ -8321,6 +8321,31 @@
         padding-bottom: calc(52px + env(safe-area-inset-bottom, 0px));
       }
     }
+
+    /* Quick Date Options */
+    .quick-date-options {
+      display: flex;
+      gap: 8px;
+      margin-top: 8px;
+      flex-wrap: wrap;
+    }
+
+    .quick-date-btn {
+      padding: 6px 12px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--bg-secondary);
+      color: var(--text);
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .quick-date-btn:hover {
+      background: var(--accent);
+      color: white;
+      border-color: var(--accent);
+    }
   </style>
 </head>
 
@@ -8718,9 +8743,14 @@
       <div class="task-edit-section">
         <div class="task-edit-section-title">Due Date</div>
         <input type="datetime-local" id="editTaskDue"
-          style="padding: 12px 14px; border: 2px solid var(--border); border-radius: 10px; font-size: 14px; background: var(--input-bg); color: var(--text); outline: none; width: 100%; max-width: 250px;" />
-        <button class="btn" id="clearDueBtn"
-          style="margin-left: 8px; padding: 10px 14px; background: var(--day-other); color: var(--muted);">Clear</button>
+          style="padding: 12px 14px; border: 2px solid var(--border); border-radius: 10px; font-size: 14px; background: var(--input-bg); color: var(--text); outline: none; width: 100%;" />
+        <div class="quick-date-options">
+          <button class="quick-date-btn" data-action="today">היום</button>
+          <button class="quick-date-btn" data-action="tomorrow">מחר</button>
+          <button class="quick-date-btn" data-action="nextWeek">שבוע הבא</button>
+          <button class="quick-date-btn" data-action="clear"
+            style="margin-right: auto; color: var(--danger); border-color: var(--danger);">נקה</button>
+        </div>
       </div>
 
       <div class="task-edit-section">
@@ -14520,10 +14550,47 @@
     });
 
     // Clear due date
-    clearDueBtn.onclick = () => {
-      editTaskDue.value = '';
-      if (editingTask) editingTask.dueDate = null;
-    };
+    // Quick Date Options Handler
+    const quickDateContainer = document.querySelector('.quick-date-options');
+    if (quickDateContainer) {
+      quickDateContainer.addEventListener('click', (e) => {
+        if (!e.target.classList.contains('quick-date-btn')) return;
+        const action = e.target.dataset.action;
+        const now = new Date();
+        let targetDate = new Date();
+
+        switch (action) {
+          case 'today':
+            // Today at 23:59
+            targetDate.setHours(23, 59, 0, 0);
+            break;
+          case 'tomorrow':
+            // Tomorrow at 09:00
+            targetDate.setDate(now.getDate() + 1);
+            targetDate.setHours(9, 0, 0, 0);
+            break;
+          case 'nextWeek':
+            // Next week (+7 days) at 09:00
+            targetDate.setDate(now.getDate() + 7);
+            targetDate.setHours(9, 0, 0, 0);
+            break;
+          case 'clear':
+            if (editTaskDue) editTaskDue.value = '';
+            return;
+        }
+
+        // Format to YYYY-MM-DDTHH:mm
+        const year = targetDate.getFullYear();
+        const month = String(targetDate.getMonth() + 1).padStart(2, '0');
+        const day = String(targetDate.getDate()).padStart(2, '0');
+        const hours = String(targetDate.getHours()).padStart(2, '0');
+        const minutes = String(targetDate.getMinutes()).padStart(2, '0');
+
+        if (editTaskDue) {
+          editTaskDue.value = `${year}-${month}-${day}T${hours}:${minutes}`;
+        }
+      });
+    }
 
     function renderEditChecklist() {
       if (!editingTask.checklist) editingTask.checklist = [];
