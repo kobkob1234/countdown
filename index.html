@@ -3040,14 +3040,16 @@
       display: none;
       align-items: center;
       gap: 16px;
-      z-index: 9999;
+      z-index: 100000;
       cursor: pointer;
       transition: all 0.3s;
       touch-action: none;
     }
 
     .pomodoro-mini.visible {
-      display: flex;
+      display: flex !important;
+      visibility: visible !important;
+      opacity: 1 !important;
     }
 
     .pomodoro-mini.dragging {
@@ -5184,6 +5186,7 @@
       display: flex;
       gap: 4px;
       flex-shrink: 0;
+      overflow: visible;
     }
 
     .task-action-btn {
@@ -14645,7 +14648,7 @@
       closeTaskEditModal();
     };
 
-    // Enter key support for task edit modal
+    // Enter key to save, Escape key to close for task edit modal
     [editTaskTitle, editTaskContent, editTaskDue].forEach(el => {
       if (el) {
         el.addEventListener('keydown', (e) => {
@@ -14653,7 +14656,36 @@
             e.preventDefault();
             saveTaskBtn.click();
           }
+          if (e.key === 'Escape') {
+            e.preventDefault();
+            closeTaskEditModal();
+          }
         });
+      }
+    });
+
+    // Global Escape key handler for modals
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        // Close task edit modal if open
+        if (taskEditModal && taskEditModal.style.display !== 'none' && taskEditModal.classList.contains('show')) {
+          closeTaskEditModal();
+          e.preventDefault();
+          return;
+        }
+        // Close event edit modal if open
+        if (eventModal && eventModal.style.display !== 'none') {
+          eventModal.style.display = 'none';
+          editingId = null;
+          e.preventDefault();
+          return;
+        }
+        // Close subject modal if open
+        if (subjectModal && subjectModal.style.display !== 'none') {
+          subjectModal.style.display = 'none';
+          e.preventDefault();
+          return;
+        }
       }
     });
 
