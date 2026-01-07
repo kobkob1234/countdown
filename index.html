@@ -13412,6 +13412,15 @@
         { icon: '🚫', label: 'הסר תאריך', action: () => setTaskDueDate(taskId, null) },
       ];
 
+      const reminderItems = [
+        { header: '⏰ תזכורת' },
+        { icon: '🔔', label: '10 דקות לפני', action: () => setTaskReminder(taskId, 10) },
+        { icon: '🔔', label: '30 דקות לפני', action: () => setTaskReminder(taskId, 30) },
+        { icon: '🔔', label: 'שעה לפני', action: () => setTaskReminder(taskId, 60) },
+        { icon: '🔔', label: 'יום לפני', action: () => setTaskReminder(taskId, 1440) },
+        { icon: '🔕', label: 'ללא תזכורת', action: () => setTaskReminder(taskId, 0) },
+      ];
+
       const items = [
         { icon: task.completed ? '⬜' : '✅', label: task.completed ? 'סמן כלא הושלם' : 'סמן כהושלם', shortcut: 'X', action: () => toggleTaskComplete(taskId) },
         { icon: '✏️', label: 'עריכה', shortcut: 'Enter', action: () => openTaskEditModal(taskId) },
@@ -13421,10 +13430,19 @@
         ...priorityItems,
         { divider: true },
         ...dateItems,
+        { divider: true },
+        ...reminderItems,
         ...(subjectItems.length > 0 ? [{ divider: true }, ...subjectItems] : []),
       ];
 
       createContextMenu(x, y, items, 'task-context-menu');
+    }
+
+    function setTaskReminder(taskId, minutes) {
+      const task = tasks.find(t => t.id === taskId);
+      if (!task) return;
+      const { id, isOwn, isShared, ...clean } = task;
+      saveTask(taskId, { ...clean, reminder: minutes || null }, task.subject);
     }
 
     function updateTaskPriority(taskId, priority) {
@@ -13532,12 +13550,72 @@
         { divider: true },
         { icon: '📅', label: 'עבור להיום', shortcut: 'T', action: goToToday },
         { icon: '🍅', label: 'פתח פומודורו', shortcut: 'P', action: openPomodoro },
+        { icon: '✅', label: 'פתח משימות', shortcut: 'M', action: () => showView('tasks') },
       ];
       createContextMenu(x, y, items, 'header-context-menu');
     }
 
-    // Attach task context menu to task items
+    // Countdown View Context Menu (for empty areas in countdown view)
+    function showCountdownContextMenu(x, y) {
+      const items = [
+        { icon: '📅', label: 'הוסף אירוע חדש', action: () => { eventName?.focus(); } },
+        { icon: '📅', label: 'אירוע למחר', action: () => addEventToDate(getTomorrowDateStr()) },
+        { icon: '📅', label: 'אירוע לשבוע הבא', action: () => addEventToDate(getNextWeekDateStr()) },
+        { divider: true },
+        { icon: '✅', label: 'פתח משימות', shortcut: 'M', action: () => showView('tasks') },
+        { icon: '🍅', label: 'פתח פומודורו', shortcut: 'P', action: openPomodoro },
+        { divider: true },
+        { icon: '⌨️', label: 'קיצורי מקלדת', shortcut: 'H', action: openShortcuts },
+        { icon: '❓', label: 'מדריך', shortcut: '?', action: openGuide },
+      ];
+      createContextMenu(x, y, items, 'countdown-context-menu');
+    }
+
+    // Sidebar Context Menu
+    function showSidebarContextMenu(x, y) {
+      const items = [
+        { icon: '📁', label: 'נושא חדש', action: () => { if (typeof openSubjectModal === 'function') openSubjectModal(); } },
+        { divider: true },
+        { icon: '📋', label: 'הכל', action: () => { currentSmartView = null; currentSubject = null; if (typeof renderTasks === 'function') renderTasks(); } },
+        { icon: '📅', label: 'היום', action: () => { currentSmartView = 'today'; currentSubject = null; if (typeof renderTasks === 'function') renderTasks(); } },
+        { icon: '📆', label: 'מחר', action: () => { currentSmartView = 'tomorrow'; currentSubject = null; if (typeof renderTasks === 'function') renderTasks(); } },
+        { icon: '📅', label: 'השבוע', action: () => { currentSmartView = 'week'; currentSubject = null; if (typeof renderTasks === 'function') renderTasks(); } },
+        { divider: true },
+        { icon: '✅', label: 'הושלמו', action: () => { currentSmartView = 'completed'; currentSubject = null; if (typeof renderTasks === 'function') renderTasks(); } },
+      ];
+      createContextMenu(x, y, items, 'sidebar-context-menu');
+    }
+
+    // Pomodoro Area Context Menu
+    function showPomodoroContextMenu(x, y) {
+      const items = [
+        { icon: '▶️', label: 'התחל/המשך', action: () => { if (typeof togglePomodoro === 'function') togglePomodoro(); } },
+        { icon: '🔄', label: 'אפס טיימר', action: () => { if (typeof resetPomodoro === 'function') resetPomodoro(); } },
+        { divider: true },
+        { icon: '✅', label: 'פתח משימות', action: () => showView('tasks') },
+        { icon: '📅', label: 'פתח אירועים', action: () => showView('countdown') },
+        { divider: true },
+        { icon: '❌', label: 'סגור פומודורו', action: closePomodoro },
+      ];
+      createContextMenu(x, y, items, 'pomodoro-context-menu');
+    }
+
+    // Helper functions for dates
+    function getTomorrowDateStr() {
+      const d = new Date();
+      d.setDate(d.getDate() + 1);
+      return d.toISOString().split('T')[0];
+    }
+
+    function getNextWeekDateStr() {
+      const d = new Date();
+      d.setDate(d.getDate() + 7);
+      return d.toISOString().split('T')[0];
+    }
+
+    // Attach context menus to various areas
     document.addEventListener('contextmenu', (e) => {
+      // Task items - full task menu
       const taskItem = e.target.closest('.task-item');
       if (taskItem) {
         e.preventDefault();
@@ -13562,15 +13640,42 @@
         return;
       }
 
-      // Skip event-row (handled by showEventContextMenu), event-list, and empty-state (handled by showAddEventContextMenu)
-      if (e.target.closest('.event-row') || e.target.closest('.event-list') || e.target.closest('.empty-state')) return;
-
-      // Quick add for empty areas in task manager only
-      const inTaskView = $("taskManagerOverlay")?.classList.contains('open');
-      const mainContent = e.target.closest('.main-content, .task-list-container');
-      if (mainContent && inTaskView) {
+      // Pomodoro overlay context menu
+      const pomodoroOverlay = e.target.closest('#pomodoroOverlay');
+      if (pomodoroOverlay && pomodoroOverlay.classList.contains('open')) {
         e.preventDefault();
-        showQuickAddContextMenu(e.clientX, e.clientY, inTaskView);
+        showPomodoroContextMenu(e.clientX, e.clientY);
+        return;
+      }
+
+      // Sidebar context menu (subjects list area)
+      const sidebar = e.target.closest('.subjects-sidebar, .task-sidebar');
+      if (sidebar && !e.target.closest('.subject-list-header') && !e.target.closest('.subject-child-item')) {
+        e.preventDefault();
+        showSidebarContextMenu(e.clientX, e.clientY);
+        return;
+      }
+
+      // Skip event-row (has own menu)
+      if (e.target.closest('.event-row')) return;
+
+      // Countdown view empty areas (not event-list which has its own menu)
+      const inTaskView = $("taskManagerOverlay")?.classList.contains('open');
+      if (!inTaskView) {
+        const mainContent = e.target.closest('.main-content');
+        if (mainContent && !e.target.closest('.event-list') && !e.target.closest('.empty-state')) {
+          e.preventDefault();
+          showCountdownContextMenu(e.clientX, e.clientY);
+          return;
+        }
+      }
+
+      // Task manager empty areas
+      const taskContent = e.target.closest('.task-list-container, .task-content');
+      if (taskContent && inTaskView) {
+        e.preventDefault();
+        showQuickAddContextMenu(e.clientX, e.clientY, true);
+        return;
       }
     });
 
