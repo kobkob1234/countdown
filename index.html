@@ -8409,6 +8409,11 @@
               <span class="view-name">היום</span>
               <span class="view-count" id="countToday">0</span>
             </div>
+            <div class="smart-view-item" data-view="tomorrow">
+              <span class="view-icon">🌅</span>
+              <span class="view-name">מחר</span>
+              <span class="view-count" id="countTomorrow">0</span>
+            </div>
             <div class="smart-view-item" data-view="week">
               <span class="view-icon">📆</span>
               <span class="view-name">7 ימים הבאים</span>
@@ -9375,7 +9380,8 @@
     <div class="reminder-card" style="max-width: 500px; border-top: 5px solid var(--accent);">
       <div style="font-size: 40px; margin-bottom: 10px;">📅</div>
       <h2 id="calendarSyncTitle">סנכרון לוח שנה / Calendar Sync</h2>
-      <p style="color: var(--muted); font-size: 14px; margin-bottom: 20px;">ייבוא אירועים מלוח השנה שלך (חד-כיווני)</p>
+      <p style="color: var(--muted); font-size: 14px; margin-bottom: 20px;">ייבוא אירועים מלוח השנה שלך (חד-כיווני)
+      </p>
 
       <details class="calendar-sync-settings" id="googleSettingsDetails">
         <summary>⚙️ Google Settings (API Key + Client ID)</summary>
@@ -9397,7 +9403,8 @@
           </div>
         </div>
         <div class="settings-hint">
-          Google Calendar sync requires serving this app via `http://localhost` or `https://` and adding that origin to
+          Google Calendar sync requires serving this app via `http://localhost` or `https://` and adding that origin
+          to
           your Google OAuth "Authorized JavaScript origins".
         </div>
       </details>
@@ -13605,6 +13612,17 @@
         filtered = filtered.filter(t => !t.completed);
       } else if (currentFilter === 'completed') {
         filtered = filtered.filter(t => t.completed);
+      } else if (currentFilter === 'tomorrow') {
+        const now = new Date();
+        const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+        const dayAfter = new Date(tomorrow);
+        dayAfter.setDate(dayAfter.getDate() + 1);
+
+        filtered = filtered.filter(t => {
+          if (!t.dueDate) return false;
+          const due = new Date(t.dueDate);
+          return due >= tomorrow && due < dayAfter;
+        });
       }
 
       // Apply date filter for calendar selection
@@ -14968,6 +14986,12 @@
         const due = new Date(t.dueDate);
         return due >= today && due < tomorrow;
       }).length;
+      const tomorrowCount = activeTasks.filter(t => {
+        if (!t.dueDate) return false;
+        const due = new Date(t.dueDate);
+        return due >= tomorrow && due < weekLater && due < new Date(tomorrow.getTime() + 86400000); // Only exactly tomorrow
+      }).length;
+
       const weekCount = activeTasks.filter(t => {
         if (!t.dueDate) return false;
         const due = new Date(t.dueDate);
@@ -14983,12 +15007,14 @@
       // Update counts
       const countAll = $('countAll');
       const countToday = $('countToday');
+      const countTomorrow = $('countTomorrow');
       const countWeek = $('countWeek');
       const countOverdue = $('countOverdue');
       const countNoDate = $('countNoDate');
 
       if (countAll) countAll.textContent = allCount;
       if (countToday) countToday.textContent = todayCount;
+      if (countTomorrow) countTomorrow.textContent = tomorrowCount;
       if (countWeek) countWeek.textContent = weekCount;
       if (countOverdue) countOverdue.textContent = overdueCount;
       if (countNoDate) countNoDate.textContent = noDateCount;
