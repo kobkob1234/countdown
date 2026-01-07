@@ -212,6 +212,13 @@
       font-size: 18px;
     }
 
+    /* Notification button enabled state */
+    #notifyBtn.notify-enabled {
+      background: rgba(34, 197, 94, 0.15);
+      border-color: rgba(34, 197, 94, 0.4);
+      box-shadow: 0 0 8px rgba(34, 197, 94, 0.3);
+    }
+
     .sync-badge {
       padding: 6px 10px;
       border-radius: 999px;
@@ -10825,6 +10832,7 @@
         notifyBtn.title = "Notifications are not supported in this browser";
         notifyBtn.disabled = true;
         notifyBtn.setAttribute('aria-disabled', 'true');
+        notifyBtn.classList.remove('notify-enabled');
         return;
       }
       if (!window.isSecureContext) {
@@ -10832,6 +10840,7 @@
         notifyBtn.title = "Notifications require HTTPS (or localhost)";
         notifyBtn.disabled = true;
         notifyBtn.setAttribute('aria-disabled', 'true');
+        notifyBtn.classList.remove('notify-enabled');
         return;
       }
       if (isIOS() && !isStandalone()) {
@@ -10840,6 +10849,7 @@
         notifyBtn.disabled = false;
         notifyBtn.removeAttribute('aria-disabled');
         notifyBtn.setAttribute('aria-pressed', 'false');
+        notifyBtn.classList.remove('notify-enabled');
         return;
       }
       notifyBtn.disabled = false;
@@ -10849,6 +10859,7 @@
       if (perm === 'denied') {
         notifyBtn.textContent = "🔕";
         notifyBtn.title = "Notifications blocked (enable in browser settings)";
+        notifyBtn.classList.remove('notify-enabled');
         return;
       }
 
@@ -10857,25 +10868,36 @@
           const reg = await getPushRegistration();
           const sub = reg ? await reg.pushManager.getSubscription() : null;
           if (sub && perm === 'granted') {
+            // PUSH ENABLED - show distinct active state
             notifyBtn.textContent = "🔔";
-            notifyBtn.title = `Push enabled for "${currentUser}" (works even when closed)`;
+            notifyBtn.title = `✅ Push enabled for "${currentUser}" (works when closed) - click to disable`;
             notifyBtn.setAttribute('aria-pressed', 'true');
+            notifyBtn.classList.add('notify-enabled');
             return;
           }
         } catch { }
-        notifyBtn.textContent = "🔔";
+        // Push supported but not subscribed
+        notifyBtn.textContent = "🔕";
         notifyBtn.title = perm === 'granted'
-          ? "Enable push (works when closed)"
-          : "Enable notifications";
+          ? "Click to enable push (works when closed)"
+          : "Click to enable notifications";
         notifyBtn.setAttribute('aria-pressed', 'false');
+        notifyBtn.classList.remove('notify-enabled');
         return;
       }
 
-      notifyBtn.textContent = "🔔";
-      notifyBtn.title = perm === 'granted'
-        ? "Notifications enabled (only while app is open)"
-        : "Enable notifications";
-      notifyBtn.setAttribute('aria-pressed', perm === 'granted' ? 'true' : 'false');
+      // No push support - basic notifications
+      if (perm === 'granted') {
+        notifyBtn.textContent = "🔔";
+        notifyBtn.title = "Notifications enabled (only while app is open)";
+        notifyBtn.setAttribute('aria-pressed', 'true');
+        notifyBtn.classList.add('notify-enabled');
+      } else {
+        notifyBtn.textContent = "🔕";
+        notifyBtn.title = "Click to enable notifications";
+        notifyBtn.setAttribute('aria-pressed', 'false');
+        notifyBtn.classList.remove('notify-enabled');
+      }
     }
 
     async function toggleNotificationsFromUser() {
