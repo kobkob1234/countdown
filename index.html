@@ -8615,6 +8615,7 @@
                   <div class="task-sort-option selected" data-sort="dueDate">📅 תאריך יעד (קרוב ראשון)</div>
                   <div class="task-sort-option" data-sort="priority">⚡ עדיפות (דחוף ראשון)</div>
                   <div class="task-sort-option" data-sort="created">🕐 נוצר (חדש ראשון)</div>
+                  <div class="task-sort-option" data-sort="createdOldest">📆 נוצר (ישן ראשון)</div>
                   <div class="task-sort-option" data-sort="title">🔤 שם (א-ת)</div>
                 </div>
               </div>
@@ -12211,7 +12212,8 @@
     const SORT_LABELS = {
       dueDate: '📅 תאריך',
       priority: '⚡ עדיפות',
-      created: '🕐 נוצר',
+      created: '🕐 חדש',
+      createdOldest: '📆 ישן',
       title: '🔤 שם'
     };
 
@@ -13624,6 +13626,10 @@
             case 'created':
               // Created date (newest first)
               return new Date(b.createdAt) - new Date(a.createdAt);
+
+            case 'createdOldest':
+              // Created date (oldest first)
+              return new Date(a.createdAt) - new Date(b.createdAt);
 
             case 'title':
               // Title (A-Z, Hebrew aware)
