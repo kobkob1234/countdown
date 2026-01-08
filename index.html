@@ -11065,6 +11065,20 @@
       }
       await syncExistingSubscriptionToCurrentUser();
       await refreshNotifyButton();
+
+      // Register periodic background sync for Android push reliability
+      if ('serviceWorker' in navigator && 'periodicSync' in (await navigator.serviceWorker.ready)) {
+        try {
+          const status = await navigator.permissions.query({ name: 'periodic-background-sync' });
+          if (status.state === 'granted') {
+            const reg = await navigator.serviceWorker.ready;
+            await reg.periodicSync.register('push-keepalive', { minInterval: 12 * 60 * 60 * 1000 });
+            console.log('[Push] Periodic sync registered for background reliability');
+          }
+        } catch (e) {
+          console.log('[Push] Periodic sync not available:', e.message);
+        }
+      }
     })();
 
     // Test notification function - can be called from browser console
