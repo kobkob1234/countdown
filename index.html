@@ -9817,6 +9817,73 @@
         transition-duration: 0.01ms !important;
       }
     }
+
+    /* Mobile polish + fixes (mobile/PWA only) */
+    @media screen and (max-width: 768px),
+    (display-mode: standalone) and (max-width: 1024px) {
+      .mobile-bottom-nav {
+        backdrop-filter: blur(14px);
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(255, 255, 255, 0.92));
+        border-top: 1px solid rgba(0, 0, 0, 0.06);
+      }
+
+      body.dark .mobile-bottom-nav {
+        background: linear-gradient(180deg, rgba(30, 41, 59, 0.98), rgba(30, 41, 59, 0.9));
+        border-top: 1px solid rgba(148, 163, 184, 0.2);
+      }
+
+      .mobile-nav-item.active .mobile-nav-icon {
+        transform: translateY(-1px) scale(1.05);
+      }
+
+      .event-actions,
+      .task-actions {
+        gap: 10px;
+      }
+
+      .event-actions button,
+      .task-action-btn {
+        border: 1px solid var(--border);
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+      }
+
+      .task-edit-modal,
+      .subject-modal,
+      .planner-add-modal,
+      .day-drawer-backdrop,
+      .reminder-modal,
+      .modal-backdrop,
+      .command-palette-backdrop,
+      .shortcuts-backdrop {
+        z-index: 12000;
+      }
+
+      .task-edit-modal.bottom-sheet .task-edit-card {
+        padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+      }
+
+      .undo-toast {
+        bottom: calc(var(--mobile-bottom-nav-height) + 16px + env(safe-area-inset-bottom, 0px));
+        right: 16px;
+        left: auto;
+      }
+
+      .undo-stack-toast {
+        bottom: calc(var(--mobile-bottom-nav-height) + 20px + env(safe-area-inset-bottom, 0px));
+      }
+
+      .subject-actions {
+        opacity: 1;
+        margin-right: 0;
+      }
+
+      .subject-action-btn {
+        opacity: 1;
+        width: 26px;
+        height: 26px;
+        font-size: 12px;
+      }
+    }
   </style>
 </head>
 
@@ -11512,6 +11579,14 @@
       TASKS_PREFIX: 'countdown-tasks-cache-v1:',
       SUBJECTS_PREFIX: 'countdown-subjects-cache-v1:'
     };
+    const NOTIFY_KEYS = {
+      EVENTS: 'countdown-notified-events-v1',
+      TASKS: 'countdown-notified-tasks-v1',
+      LAST_ACTIVE: 'countdown-last-active-v1'
+    };
+    const NOTIFY_TTL_MS = 1000 * 60 * 60 * 24 * 7; // 7 days
+    const REMINDER_CATCHUP_MAX_MS = 1000 * 60 * 60 * 12; // 12 hours
+    const REMINDER_CATCHUP_MAX_COUNT = 6;
 
     let editingId = null;
     let events = [];
@@ -11549,9 +11624,10 @@
     const pendingDeletes = new Map();
     let lastDeletedId = null;
     const DELETE_TIMEOUT_MS = 10000;
-    const notifiedEvents = new Map();
-    const notifiedTasks = new Map();
-    let pendingEventAlert = null;
+    let lastActiveTs = getLastActiveTimestamp();
+    const notifiedEvents = loadNotifiedMap(NOTIFY_KEYS.EVENTS);
+    const notifiedTasks = loadNotifiedMap(NOTIFY_KEYS.TASKS);
+    const pendingAlerts = [];
     const reminderAudio = new Audio('https://assets.mixkit.co/sfx/preview/mixkit-software-interface-start-2574.mp3');
     reminderAudio.preload = 'auto';
     reminderAudio.volume = 0.6;
@@ -11576,6 +11652,79 @@
         localStorage.setItem(key, JSON.stringify(payload));
       } catch (e) { }
     };
+
+    function pruneNotifiedMap(map) {
+      const now = Date.now();
+      for (const [id, entry] of map.entries()) {
+        if (!entry || !entry.ts || (now - entry.ts) > NOTIFY_TTL_MS) {
+          map.delete(id);
+        }
+      }
+      return map;
+    }
+
+    function loadNotifiedMap(key) {
+      try {
+        const raw = localStorage.getItem(key);
+        if (!raw) return new Map();
+        const parsed = JSON.parse(raw);
+        if (!parsed || !parsed.items || typeof parsed.items !== 'object') return new Map();
+        const map = new Map();
+        Object.entries(parsed.items).forEach(([id, entry]) => {
+          if (entry && entry.key) map.set(id, entry);
+        });
+        return pruneNotifiedMap(map);
+      } catch (e) {
+        return new Map();
+      }
+    }
+
+    function persistNotifiedMap(key, map) {
+      try {
+        const items = {};
+        map.forEach((value, id) => {
+          items[id] = value;
+        });
+        localStorage.setItem(key, JSON.stringify({ ts: Date.now(), items }));
+      } catch (e) { }
+    }
+
+    function wasNotified(map, id, reminderKey) {
+      const entry = map.get(id);
+      return entry && entry.key === reminderKey;
+    }
+
+    function markNotified(map, storageKey, id, reminderKey) {
+      map.set(id, { key: reminderKey, ts: Date.now() });
+      pruneNotifiedMap(map);
+      persistNotifiedMap(storageKey, map);
+    }
+
+    function syncNotifiedMapToIds(map, ids, storageKey) {
+      let changed = false;
+      map.forEach((_, id) => {
+        if (!ids.has(id)) {
+          map.delete(id);
+          changed = true;
+        }
+      });
+      if (changed) {
+        persistNotifiedMap(storageKey, map);
+      }
+    }
+
+    function getLastActiveTimestamp() {
+      const raw = localStorage.getItem(NOTIFY_KEYS.LAST_ACTIVE);
+      const parsed = raw ? Number(raw) : NaN;
+      return Number.isFinite(parsed) ? parsed : Date.now();
+    }
+
+    function setLastActiveTimestamp(ts = Date.now()) {
+      lastActiveTs = ts;
+      try {
+        localStorage.setItem(NOTIFY_KEYS.LAST_ACTIVE, String(ts));
+      } catch (e) { }
+    }
 
     // Web Push (works when closed) requires: HTTPS + Service Worker + a backend sender (VAPID private key).
     // 1) Generate VAPID keys on your backend, then paste the PUBLIC key here.
@@ -11616,6 +11765,9 @@
     const isStandalone = () =>
       (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) ||
       (typeof navigator.standalone === 'boolean' && navigator.standalone);
+    const isMobileViewport = () =>
+      window.innerWidth <= 768 ||
+      (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches && window.innerWidth <= 1024);
 
     const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -12054,15 +12206,30 @@
     }
 
     document.addEventListener('visibilitychange', () => {
-      if (!document.hidden && pendingEventAlert) {
-        showEventAlert(pendingEventAlert.title, pendingEventAlert.message, true);
-        pendingEventAlert = null;
-      }
-      // Force Firebase reconnect when app becomes visible (fixes mobile sync issues)
       if (!document.hidden) {
+        flushPendingAlerts();
+        runReminderCatchup();
+        tick();
+        checkTaskReminders();
+        // Force Firebase reconnect when app becomes visible (fixes mobile sync issues)
         goOffline(db);
         setTimeout(() => goOnline(db), 100);
+      } else {
+        setLastActiveTimestamp(Date.now());
       }
+    });
+
+    window.addEventListener('focus', () => {
+      if (!document.hidden) {
+        flushPendingAlerts();
+        runReminderCatchup();
+        tick();
+        checkTaskReminders();
+      }
+    });
+
+    window.addEventListener('beforeunload', () => {
+      setLastActiveTimestamp(Date.now());
     });
 
     undoToastUndo.onclick = () => {
@@ -12075,6 +12242,12 @@
       }
       hideUndoToast();
     };
+
+    if (typeof window !== 'undefined') {
+      window.undoLastEventDelete = () => {
+        if (undoToastUndo) undoToastUndo.click();
+      };
+    }
 
     function getEventColor(id) {
 
@@ -12578,6 +12751,7 @@
       events = cachedEvents;
       eventsById.clear();
       events.forEach(e => eventsById.set(e.id, e));
+      syncNotifiedMapToIds(notifiedEvents, new Set(events.map(e => e.id)), NOTIFY_KEYS.EVENTS);
       hasEventsCache = true;
       syncCacheUsed.events = true;
       eventsLoaded = true;
@@ -12587,6 +12761,7 @@
       render();
       scheduleCalendarRender();
       startTicker();
+      runReminderCatchup();
     } else {
       setEventsLoading(true);
     }
@@ -13045,6 +13220,7 @@
       } else {
         events = [];
       }
+      syncNotifiedMapToIds(notifiedEvents, new Set(events.map(e => e.id)), NOTIFY_KEYS.EVENTS);
       eventsLoaded = true;
       markSyncReady('events', 'firebase');
       writeCache(CACHE_KEYS.EVENTS, events, 300);
@@ -13053,6 +13229,7 @@
       // Defer heavy calendar render so list paints first
       scheduleCalendarRender();
       startTicker();
+      runReminderCatchup();
     }, (error) => {
       console.error('Events sync error:', error);
       clearSyncTimeouts('events');
@@ -13153,7 +13330,21 @@
       if (playSound) playReminderSound();
     }
 
-    async function triggerAlert(evt) {
+    function queuePendingAlert(title, message) {
+      if (!title || !message) return;
+      pendingAlerts.push({ title, message, ts: Date.now() });
+      if (pendingAlerts.length > 5) pendingAlerts.shift();
+    }
+
+    function flushPendingAlerts() {
+      if (!pendingAlerts.length) return;
+      const latest = pendingAlerts[pendingAlerts.length - 1];
+      pendingAlerts.length = 0;
+      showEventAlert(latest.title, latest.message, true);
+    }
+
+    async function triggerAlert(evt, options = {}) {
+      const { inApp = true, playSound = true } = options || {};
       const reminderMinutes = parseInt(evt.reminder, 10) || 0;
       const timeString = formatReminderOffset(reminderMinutes);
       const msg = `${evt.name} starts in ${timeString}!`;
@@ -13164,11 +13355,11 @@
         renotify: true
       }).catch(() => { });
 
-      // Show in-app alert if visible, or queue for later
+      if (!inApp) return;
       if (document.hidden) {
-        pendingEventAlert = { title: evt.name, message: `Starting in ${timeString}` };
+        queuePendingAlert(evt.name, `Starting in ${timeString}`);
       } else {
-        showEventAlert(evt.name, `Starting in ${timeString}`, true);
+        showEventAlert(evt.name, `Starting in ${timeString}`, playSound);
       }
     }
 
@@ -13563,14 +13754,14 @@
         const reminderMinutes = parseInt(evt.reminder, 10) || 0;
         if (!reminderMinutes) return;
         const reminderKey = `${evt.date || ''}|${reminderMinutes}`;
-        if (notifiedEvents.get(evt.id) === reminderKey) return;
+        if (wasNotified(notifiedEvents, evt.id, reminderKey)) return;
         const eventTime = new Date(evt.date).getTime();
         if (!Number.isFinite(eventTime)) return;
         const triggerTime = eventTime - (reminderMinutes * 60000);
         // Check within 2-minute window to avoid missing notifications
         if (nowMs >= triggerTime && nowMs < triggerTime + 120000) {
           triggerAlert(evt);
-          notifiedEvents.set(evt.id, reminderKey);
+          markNotified(notifiedEvents, NOTIFY_KEYS.EVENTS, evt.id, reminderKey);
         }
       });
     }
@@ -14177,6 +14368,12 @@
       } else if (action.type === 'deleteEvent' && action.eventId) {
         deleteFromCloud(action.eventId);
       }
+    }
+
+    if (typeof window !== 'undefined') {
+      window.performUndo = performUndo;
+      window.performRedo = performRedo;
+      window.undoLastAction = performUndo;
     }
 
     if (undoStackUndoBtn) undoStackUndoBtn.onclick = performUndo;
@@ -16043,6 +16240,7 @@
     if (cachedTasks && cachedTasks.length) {
       tasks = cachedTasks;
       hasTasksCache = true;
+      syncNotifiedMapToIds(notifiedTasks, new Set(tasks.map(t => t.id)), NOTIFY_KEYS.TASKS);
       syncCacheUsed.tasks = true;
       markSyncReady('tasks', 'cache');
       updateSyncBadge();
@@ -16051,6 +16249,7 @@
         renderTasks();
         renderSubjectsSidebar();
       }
+      runReminderCatchup();
     } else {
       showTasksLoading();
     }
@@ -16077,7 +16276,9 @@
       writeCache(cachedTasksKey, ownTasks, 500);
       resetTasksEmptyMessage();
       mergeTasks();
+      syncNotifiedMapToIds(notifiedTasks, new Set(tasks.map(t => t.id)), NOTIFY_KEYS.TASKS);
       Pomodoro.updateTasks(tasks);
+      runReminderCatchup();
       // Update task calendar if visible
       const trSidebar = $("taskRightSidebar");
       if (trSidebar && !trSidebar.classList.contains('hidden')) {
@@ -16449,7 +16650,7 @@
       const priorityBadge = `<span class="task-priority-badge ${priority === 'none' ? 'muted' : ''}" data-priority="${priority}">${priority === 'none' ? 'קבע עדיפות' : PRIORITY_LABELS[priority]}</span>`;
 
       return `
-      <div class="task-item priority-${priority} ${task.completed ? 'completed' : ''}" data-id="${task.id}" draggable="true"${taskStyle}>
+      <div class="task-item priority-${priority} ${task.completed ? 'completed' : ''}" data-id="${task.id}" draggable="${isMobileViewport() ? 'false' : 'true'}"${taskStyle}>
         <div class="task-checkbox" data-action="toggle">${task.completed ? '✓' : ''}</div>
         <div class="task-main">
           <div class="task-title-row">
@@ -16965,7 +17166,7 @@
 
         container.addEventListener('dragstart', (e) => {
           // Prevent drag on mobile to avoid click conflicts
-          if (isMobile()) {
+          if (isMobileViewport()) {
             e.preventDefault();
             return;
           }
@@ -17038,13 +17239,13 @@
         if (!reminderMinutes) return;
         if (!task.dueDate) return;
         const reminderKey = `${task.dueDate}|${reminderMinutes}`;
-        if (notifiedTasks.get(task.id) === reminderKey) return;
+        if (wasNotified(notifiedTasks, task.id, reminderKey)) return;
         const taskTime = new Date(task.dueDate).getTime();
         if (!Number.isFinite(taskTime)) return;
         const triggerTime = taskTime - (reminderMinutes * 60000);
         if (nowMs >= triggerTime && nowMs < triggerTime + 120000) {
           triggerTaskAlert(task);
-          notifiedTasks.set(task.id, reminderKey);
+          markNotified(notifiedTasks, NOTIFY_KEYS.TASKS, task.id, reminderKey);
         }
       });
     }
@@ -17055,17 +17256,15 @@
       taskReminderTickerHandle = setInterval(checkTaskReminders, 10000);
     }
 
-    async function triggerTaskAlert(task) {
+    async function triggerTaskAlert(task, options = {}) {
+      const { inApp = true, playSound = true } = options || {};
       const dueDate = new Date(task.dueDate);
       const dateStr = dueDate.toLocaleDateString('he-IL', { weekday: 'long', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
       const title = `📋 תזכורת משימה: ${task.title}`;
       const message = `מועד יעד: ${dateStr}`;
 
       // Play sound
-      if (reminderAudio) {
-        reminderAudio.currentTime = 0;
-        reminderAudio.play().catch(() => { });
-      }
+      if (playSound) playReminderSound();
 
       // Show browser notification if permitted - use Service Worker for mobile compatibility
       showSystemNotification(title, {
@@ -17074,8 +17273,73 @@
         renotify: true
       }).catch(() => { });
 
-      // Show in-app alert
-      showEventAlert(title, message, true);
+      if (!inApp) return;
+      if (document.hidden) {
+        queuePendingAlert(title, message);
+      } else {
+        showEventAlert(title, message, playSound);
+      }
+    }
+
+    function runReminderCatchup() {
+      if (!eventsLoaded && !tasksLoaded) return;
+
+      const nowMs = Date.now();
+      const safeLast = Number.isFinite(lastActiveTs) ? lastActiveTs : nowMs;
+      const windowStart = Math.max(Math.min(safeLast, nowMs), nowMs - REMINDER_CATCHUP_MAX_MS);
+      if (nowMs - windowStart < 60000) {
+        setLastActiveTimestamp(nowMs);
+        return;
+      }
+
+      const candidates = [];
+
+      // Events catch-up
+      getActiveEvents().forEach(evt => {
+        const reminderMinutes = parseInt(evt.reminder, 10) || 0;
+        if (!reminderMinutes) return;
+        const reminderKey = `${evt.date || ''}|${reminderMinutes}`;
+        if (wasNotified(notifiedEvents, evt.id, reminderKey)) return;
+        const eventTime = new Date(evt.date).getTime();
+        if (!Number.isFinite(eventTime)) return;
+        const triggerTime = eventTime - (reminderMinutes * 60000);
+        if (triggerTime >= windowStart && triggerTime <= nowMs) {
+          candidates.push({ type: 'event', triggerTime, reminderKey, evt });
+        }
+      });
+
+      // Tasks catch-up
+      tasks.forEach(task => {
+        if (task.completed) return;
+        const reminderMinutes = parseInt(task.reminder, 10) || 0;
+        if (!reminderMinutes) return;
+        if (!task.dueDate) return;
+        const reminderKey = `${task.dueDate}|${reminderMinutes}`;
+        if (wasNotified(notifiedTasks, task.id, reminderKey)) return;
+        const taskTime = new Date(task.dueDate).getTime();
+        if (!Number.isFinite(taskTime)) return;
+        const triggerTime = taskTime - (reminderMinutes * 60000);
+        if (triggerTime >= windowStart && triggerTime <= nowMs) {
+          candidates.push({ type: 'task', triggerTime, reminderKey, task });
+        }
+      });
+
+      candidates.sort((a, b) => a.triggerTime - b.triggerTime);
+
+      let fired = 0;
+      for (const candidate of candidates) {
+        if (fired >= REMINDER_CATCHUP_MAX_COUNT) break;
+        if (candidate.type === 'event') {
+          triggerAlert(candidate.evt, { inApp: false, playSound: false });
+          markNotified(notifiedEvents, NOTIFY_KEYS.EVENTS, candidate.evt.id, candidate.reminderKey);
+        } else {
+          triggerTaskAlert(candidate.task, { inApp: false, playSound: false });
+          markNotified(notifiedTasks, NOTIFY_KEYS.TASKS, candidate.task.id, candidate.reminderKey);
+        }
+        fired += 1;
+      }
+
+      setLastActiveTimestamp(nowMs);
     }
 
     function stopTaskTicker() {
@@ -17126,11 +17390,17 @@
       // Render checklist
       renderEditChecklist();
 
+      if (isMobileViewport()) {
+        taskEditModal.classList.add('bottom-sheet');
+      } else {
+        taskEditModal.classList.remove('bottom-sheet');
+      }
       taskEditModal.classList.add('open');
     }
 
     function closeTaskEditModal() {
       taskEditModal.classList.remove('open');
+      taskEditModal.classList.remove('bottom-sheet');
       editingTaskId = null;
       editingTask = null;
     }
@@ -17491,6 +17761,7 @@
 
     function mergeTasks() {
       tasks = [...ownTasks, ...sharedTasks];
+      syncNotifiedMapToIds(notifiedTasks, new Set(tasks.map(t => t.id)), NOTIFY_KEYS.TASKS);
       if (taskManagerOverlay.classList.contains('open')) {
         renderTasks();
       }
@@ -17999,9 +18270,7 @@
     }
     if (toggleTaskCalendar && taskRightSidebar) {
       toggleTaskCalendar.onclick = () => {
-        console.log('toggleTaskCalendar clicked');
         const wasHidden = taskRightSidebar.classList.contains("hidden") || getComputedStyle(taskRightSidebar).display === 'none';
-        console.log('taskRightSidebar wasHidden=', wasHidden);
         if (wasHidden) {
           taskRightSidebar.classList.remove('hidden');
           taskRightSidebar.style.display = '';
@@ -18017,9 +18286,8 @@
     const taskSidebar = $("taskSidebar");
     if (toggleTaskSidebarBtn && taskSidebar) {
       toggleTaskSidebarBtn.onclick = () => {
-        console.log('toggleTaskSidebar clicked');
+        if (isMobileViewport()) return;
         const wasHidden = taskSidebar.classList.contains('hidden') || getComputedStyle(taskSidebar).display === 'none';
-        console.log('taskSidebar wasHidden=', wasHidden);
         if (wasHidden) {
           taskSidebar.classList.remove('hidden');
           taskSidebar.style.display = '';
@@ -21188,11 +21456,20 @@
         const { id, isOwn, isShared, ...cleanTask } = task;
         saveTask(taskId, { ...cleanTask, completed: true }, task.subject);
 
-        if (typeof showToast === 'function') {
-          showToast(`Task "${task.title}" completed!`);
+        const toast = (typeof window !== 'undefined' && (window.mobileToast || window.showToast)) || null;
+        if (typeof toast === 'function') {
+          toast(`Task "${task.title}" completed!`);
         }
       }
     };
+
+    if (typeof window !== 'undefined') {
+      window.handleCompleteTask = handleCompleteTask;
+      window.handleDeleteTask = (taskId) => {
+        const task = tasks.find(t => t.id === taskId);
+        if (task) removeTask(task);
+      };
+    }
 
     const urlParams = new URLSearchParams(window.location.search);
     const completeTaskId = urlParams.get('completeTask');
@@ -21423,21 +21700,23 @@
       const toggleTaskSidebarBtn = document.getElementById('toggleTaskSidebar');
       const mobileSidebarBackdrop = document.getElementById('mobileSidebarBackdrop');
 
-      const toggleMobileTaskSidebar = () => {
-        if (!isMobile()) return;
+        const toggleMobileTaskSidebar = () => {
+          if (!isMobile()) return;
 
-        const isOpen = taskSidebar.classList.contains('open');
+          const isOpen = taskSidebar.classList.contains('open');
 
-        if (isOpen) {
-          taskSidebar.classList.remove('open');
-          mobileSidebarBackdrop.classList.remove('visible');
-          toggleTaskSidebarBtn?.classList.remove('active');
-        } else {
-          taskSidebar.classList.add('open');
-          mobileSidebarBackdrop.classList.add('visible');
-          toggleTaskSidebarBtn?.classList.add('active');
-        }
-      };
+          if (isOpen) {
+            taskSidebar.classList.remove('open');
+            mobileSidebarBackdrop.classList.remove('visible');
+            toggleTaskSidebarBtn?.classList.remove('active');
+          } else {
+            taskSidebar.classList.remove('hidden');
+            taskSidebar.style.display = '';
+            taskSidebar.classList.add('open');
+            mobileSidebarBackdrop.classList.add('visible');
+            toggleTaskSidebarBtn?.classList.add('active');
+          }
+        };
 
       toggleTaskSidebarBtn?.addEventListener('click', (e) => {
         if (isMobile()) {
@@ -21719,13 +21998,17 @@
           if (item.closest('.swipe-container')) return;
           item.classList.add('swipe-initialized');
 
+          const leftAction = type === 'event'
+            ? { icon: '✏️', label: 'Edit', className: 'edit-action' }
+            : { icon: '✓', label: 'Done', className: 'complete-action' };
+
           const container = document.createElement('div');
           container.className = 'swipe-container';
           container.innerHTML = `
             <div class="swipe-actions swipe-actions-left">
-              <button class="swipe-action-btn complete-action">
-                ✓
-                <span>Done</span>
+              <button class="swipe-action-btn ${leftAction.className}">
+                ${leftAction.icon}
+                <span>${leftAction.label}</span>
               </button>
             </div>
             <div class="swipe-actions swipe-actions-right">
@@ -21852,26 +22135,26 @@
               } else if (typeof window.handleCompleteTask === 'function' && taskId) {
                 window.handleCompleteTask(taskId);
               }
+              showToast('Task completed!', { icon: '✓' });
+            } else if (type === 'event') {
+              const editBtn = item.querySelector('.edit-btn');
+              if (editBtn) editBtn.click();
+              showToast('Edit event', { icon: '✏️', duration: 2000 });
             }
             container.classList.remove('completing');
-
-            showToast('Task completed!', { icon: '✓' });
           }, 300);
         }
 
         function triggerDelete(container, item, type) {
           haptic.error();
 
-          const deletedData = {
-            type,
-            html: container.outerHTML,
-            parent: container.parentNode,
-            nextSibling: container.nextSibling
-          };
-
           container.classList.add('deleting');
 
           setTimeout(() => {
+            const itemName = type === 'task'
+              ? item.querySelector('.task-title')?.textContent?.slice(0, 25)
+              : item.querySelector('.event-name')?.textContent?.slice(0, 25);
+
             if (type === 'task') {
               const taskId = item.dataset.taskId || item.dataset.id;
               const deleteBtn = item.querySelector('.task-action-btn.delete, [aria-label*="Delete"]');
@@ -21886,16 +22169,21 @@
                 deleteBtn.click();
               }
             }
+            const undoAction = () => {
+              if (type === 'task' && typeof window.undoLastAction === 'function') {
+                window.undoLastAction();
+              } else if (type === 'event' && typeof window.undoLastEventDelete === 'function') {
+                window.undoLastEventDelete();
+              }
+            };
+
+            showToast(`Deleted: ${itemName || type}`, {
+              icon: '🗑️',
+              duration: 5000,
+              action: undoAction,
+              actionText: 'Undo'
+            });
           }, 350);
-
-          const itemName = type === 'task'
-            ? item.querySelector('.task-title')?.textContent?.slice(0, 25)
-            : item.querySelector('.event-name')?.textContent?.slice(0, 25);
-
-          showToast(`Deleted: ${itemName || type}`, {
-            icon: '🗑️',
-            duration: 5000
-          });
         }
 
         // Initialize swipe gestures
