@@ -11507,13 +11507,24 @@
 
     // 4. LOGOUT / SWITCH USER FUNCTION
     if (userBtn) {
-      userBtn.onclick = () => {
-        const switchUser = confirm(`You are logged in as "${currentUser}".\n\nDo you want to switch users?`);
-        if (switchUser) {
-          localStorage.removeItem('countdown_username');
-          location.reload(); // Reload page to reset references
+      console.log('[User] userBtn found, attaching click handler');
+      userBtn.onclick = (e) => {
+        console.log('[User] userBtn clicked');
+        try {
+          e.stopPropagation();
+          const switchUser = confirm(`You are logged in as "${currentUser}".\n\nDo you want to switch users?`);
+          console.log('[User] Switch user dialog result:', switchUser);
+          if (switchUser) {
+            localStorage.removeItem('countdown_username');
+            location.reload(); // Reload page to reset references
+          }
+        } catch (err) {
+          console.error('[User] Error in userBtn click handler:', err);
+          alert('Error switching users. Please try refreshing the page.');
         }
       };
+    } else {
+      console.warn('[User] userBtn element not found!');
     }
 
     const COLORS = ['#667eea', '#f59e0b', '#10b981', '#ec4899', '#8b5cf6', '#06b6d4', '#ef4444', '#84cc16'];
@@ -13709,7 +13720,9 @@
 
         // Right-click context menu for events
         row.addEventListener('contextmenu', (e) => {
+          console.log('[ContextMenu] Event row right-clicked, eventId:', evt.id);
           e.preventDefault();
+          e.stopPropagation();
           showEventContextMenu(e.clientX, e.clientY, evt.id);
         });
 
@@ -18670,6 +18683,13 @@
 
     // ============ EVENT CONTEXT MENU ============
     function showEventContextMenu(x, y, eventId) {
+      console.log('[ContextMenu] showEventContextMenu called:', { x, y, eventId });
+
+      if (!eventContextMenu) {
+        console.error('[ContextMenu] eventContextMenu element not found!');
+        return;
+      }
+
       eventContextMenuTarget = eventId;
       const evt = events.find(e => e.id === eventId);
 
@@ -18689,6 +18709,7 @@
       eventContextMenu.style.left = x + 'px';
       eventContextMenu.style.top = y + 'px';
       eventContextMenu.classList.add('open');
+      console.log('[ContextMenu] Event context menu opened at:', { x, y });
     }
 
     function hideEventContextMenu() {
