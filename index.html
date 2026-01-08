@@ -8022,14 +8022,14 @@
 
       /* ===== MOBILE EVENT CARDS REDESIGN ===== */
       .event-list {
-        gap: var(--mobile-spacing-md);
+        gap: var(--mobile-spacing-sm);
       }
 
       .event-row {
-        padding: var(--mobile-spacing-md);
+        padding: var(--mobile-spacing-md) var(--mobile-spacing-md) var(--mobile-spacing-sm);
         border-radius: var(--mobile-radius);
         flex-direction: column;
-        gap: var(--mobile-spacing-md);
+        gap: var(--mobile-spacing-sm);
         box-shadow: var(--mobile-card-shadow);
         border: none;
         background: var(--card);
@@ -8044,7 +8044,7 @@
         top: 0;
         left: 0;
         right: 0;
-        height: 4px;
+        height: 3px;
         background: var(--event-color, var(--accent));
         opacity: 1;
       }
@@ -8056,56 +8056,62 @@
       .event-row .event-info {
         width: 100%;
         text-align: center;
-        padding-bottom: var(--mobile-spacing-sm);
-        border-bottom: 1px solid var(--border);
+        padding-bottom: var(--mobile-spacing-xs);
+        border-bottom: none;
       }
 
       .event-row .event-name {
-        font-size: 18px;
+        font-size: 17px;
         font-weight: 700;
-        margin-bottom: var(--mobile-spacing-xs);
+        margin-bottom: 2px;
+        line-height: 1.3;
       }
 
       .event-row .event-date {
-        font-size: 13px;
+        font-size: 12px;
         color: var(--muted);
       }
 
-      /* Mobile Timer Display - Big & Touch Friendly */
+      /* Mobile Timer Display - Compact & Touch Friendly */
       .event-row .timer {
         width: 100%;
         justify-content: center;
-        gap: var(--mobile-spacing-sm);
+        gap: 6px;
+        padding: var(--mobile-spacing-xs) 0;
       }
 
       .event-row .time-unit {
         flex: 1;
-        max-width: 80px;
-        min-width: 60px;
-        padding: var(--mobile-spacing-sm) var(--mobile-spacing-xs);
-        border-radius: 12px;
-        background: linear-gradient(145deg, var(--day-other), var(--day-hover));
+        max-width: 70px;
+        min-width: 52px;
+        padding: 8px 4px;
+        border-radius: 10px;
+        background: var(--day-other);
+        text-align: center;
       }
 
       .event-row .time-val {
-        font-size: 26px;
+        font-size: 24px;
         font-weight: 800;
         color: var(--text);
+        line-height: 1.1;
       }
 
       .event-row .time-label {
-        font-size: 9px;
+        font-size: 8px;
         font-weight: 600;
-        letter-spacing: 0.3px;
-        margin-top: 4px;
+        letter-spacing: 0.2px;
+        margin-top: 2px;
+        text-transform: uppercase;
+        color: var(--muted);
       }
 
       /* Mobile Badge */
       .event-row .badge {
         align-self: center;
-        font-size: 12px;
-        padding: var(--mobile-spacing-xs) var(--mobile-spacing-md);
-        border-radius: 20px;
+        font-size: 11px;
+        padding: 4px 12px;
+        border-radius: 16px;
       }
 
       /* Mobile Event Actions - Swipe-like buttons */
