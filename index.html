@@ -9530,6 +9530,104 @@
           background-position: -200% 0;
         }
       }
+
+      /* ===== PWA INSTALL BANNER ===== */
+      .pwa-install-banner {
+        position: fixed;
+        bottom: calc(var(--mobile-bottom-nav-height) + env(safe-area-inset-bottom, 0px));
+        left: var(--mobile-spacing-md);
+        right: var(--mobile-spacing-md);
+        background: linear-gradient(135deg, var(--accent), var(--accent2));
+        border-radius: var(--mobile-radius);
+        padding: var(--mobile-spacing-md);
+        display: none;
+        align-items: center;
+        gap: var(--mobile-spacing-md);
+        box-shadow: 0 8px 32px rgba(102, 126, 234, 0.4);
+        z-index: 10005;
+        animation: install-banner-slide-up 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+
+      .pwa-install-banner.visible {
+        display: flex;
+      }
+
+      @keyframes install-banner-slide-up {
+        0% {
+          opacity: 0;
+          transform: translateY(100%);
+        }
+
+        100% {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .pwa-install-icon {
+        width: 48px;
+        height: 48px;
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+        flex-shrink: 0;
+      }
+
+      .pwa-install-content {
+        flex: 1;
+        min-width: 0;
+      }
+
+      .pwa-install-title {
+        font-size: 15px;
+        font-weight: 700;
+        color: white;
+        margin-bottom: 2px;
+      }
+
+      .pwa-install-subtitle {
+        font-size: 12px;
+        color: rgba(255, 255, 255, 0.8);
+      }
+
+      .pwa-install-btn {
+        padding: var(--mobile-spacing-sm) var(--mobile-spacing-lg);
+        background: white;
+        color: var(--accent);
+        border: none;
+        border-radius: 20px;
+        font-size: 14px;
+        font-weight: 700;
+        cursor: pointer;
+        white-space: nowrap;
+        transition: transform 0.15s, box-shadow 0.15s;
+      }
+
+      .pwa-install-btn:active {
+        transform: scale(0.95);
+      }
+
+      .pwa-install-close {
+        width: 28px;
+        height: 28px;
+        background: rgba(255, 255, 255, 0.2);
+        border: none;
+        border-radius: 50%;
+        color: white;
+        font-size: 16px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+
+      .pwa-install-close:active {
+        background: rgba(255, 255, 255, 0.3);
+      }
     }
 
     /* Reduce motion for users who prefer it */
@@ -20885,6 +20983,100 @@
       <span class="mobile-nav-label">לוח</span>
     </button>
   </nav>
+
+  <!-- PWA Install Banner -->
+  <div class="pwa-install-banner" id="pwaInstallBanner">
+    <div class="pwa-install-icon">📱</div>
+    <div class="pwa-install-content">
+      <div class="pwa-install-title">התקן את האפליקציה</div>
+      <div class="pwa-install-subtitle">גישה מהירה מהמסך הראשי</div>
+    </div>
+    <button class="pwa-install-btn" id="pwaInstallBtn">התקן</button>
+    <button class="pwa-install-close" id="pwaInstallClose">×</button>
+  </div>
+
+  <script>
+    // PWA Install Prompt Handler
+    (function () {
+      let deferredPrompt = null;
+      const banner = document.getElementById('pwaInstallBanner');
+      const installBtn = document.getElementById('pwaInstallBtn');
+      const closeBtn = document.getElementById('pwaInstallClose');
+
+      // Check if already installed or dismissed
+      const isInstalled = () => window.matchMedia('(display-mode: standalone)').matches
+        || window.navigator.standalone === true;
+
+      const wasDismissed = () => {
+        const dismissed = localStorage.getItem('pwaInstallDismissed');
+        if (!dismissed) return false;
+        // Re-show after 7 days
+        const dismissedDate = new Date(parseInt(dismissed));
+        const now = new Date();
+        const daysDiff = (now - dismissedDate) / (1000 * 60 * 60 * 24);
+        return daysDiff < 7;
+      };
+
+      const showBanner = () => {
+        if (banner && deferredPrompt && !isInstalled() && !wasDismissed()) {
+          banner.classList.add('visible');
+          console.log('[PWA] Install banner shown');
+        }
+      };
+
+      const hideBanner = () => {
+        banner?.classList.remove('visible');
+      };
+
+      // Capture the install prompt event
+      window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+        console.log('[PWA] beforeinstallprompt captured');
+
+        // Show banner after a short delay
+        setTimeout(showBanner, 2000);
+      });
+
+      // Handle install button click
+      installBtn?.addEventListener('click', async () => {
+        if (!deferredPrompt) return;
+
+        hideBanner();
+
+        // Show the install prompt
+        deferredPrompt.prompt();
+
+        const { outcome } = await deferredPrompt.userChoice;
+        console.log('[PWA] Install outcome:', outcome);
+
+        if (outcome === 'accepted') {
+          if (window.mobileToast) {
+            window.mobileToast('האפליקציה הותקנה!', { icon: '✅' });
+          }
+        }
+
+        deferredPrompt = null;
+      });
+
+      // Handle close button
+      closeBtn?.addEventListener('click', () => {
+        hideBanner();
+        localStorage.setItem('pwaInstallDismissed', Date.now().toString());
+        console.log('[PWA] Install banner dismissed');
+      });
+
+      // Listen for successful install
+      window.addEventListener('appinstalled', () => {
+        hideBanner();
+        deferredPrompt = null;
+        console.log('[PWA] App installed successfully');
+        if (window.mobileToast) {
+          window.mobileToast('האפליקציה הותקנה בהצלחה!', { icon: '🎉' });
+        }
+      });
+    })();
+  </script>
 
   <script>
     // Mobile Bottom Navigation Handler
