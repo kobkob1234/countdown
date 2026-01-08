@@ -9009,6 +9009,543 @@
       color: white;
       border-color: var(--accent);
     }
+
+    /* ==========================================================================
+       ENHANCED MOBILE GESTURES & INTERACTIONS
+       Swipe actions, touch ripples, haptic feedback, smooth transitions
+       ========================================================================== */
+
+    /* Mobile only - swipe and gesture enhancements */
+    @media screen and (max-width: 768px),
+    (display-mode: standalone) and (max-width: 1024px) {
+
+      /* ===== SWIPE CONTAINER SYSTEM ===== */
+      .swipe-container {
+        position: relative;
+        overflow: hidden;
+        border-radius: var(--mobile-radius);
+        margin-bottom: var(--mobile-spacing-xs);
+      }
+
+      .swipe-container .task-item,
+      .swipe-container .event-row {
+        position: relative;
+        z-index: 2;
+        transition: transform 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        background: var(--card);
+        margin-bottom: 0;
+        border-radius: var(--mobile-radius);
+      }
+
+      .swipe-container.swiping .task-item,
+      .swipe-container.swiping .event-row {
+        transition: none;
+      }
+
+      /* Swipe action buttons revealed on swipe */
+      .swipe-actions {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        width: 100px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1;
+      }
+
+      .swipe-actions-left {
+        left: 0;
+        background: linear-gradient(135deg, #22c55e, #16a34a);
+      }
+
+      .swipe-actions-right {
+        right: 0;
+        background: linear-gradient(135deg, #ef4444, #dc2626);
+      }
+
+      .swipe-action-btn {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        color: white;
+        font-size: 24px;
+        background: none;
+        border: none;
+        width: 100%;
+        height: 100%;
+        cursor: pointer;
+        padding: 0;
+      }
+
+      .swipe-action-btn span {
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+      }
+
+      /* Swipe threshold indicator */
+      .swipe-container::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        width: 4px;
+        background: transparent;
+        z-index: 10;
+        pointer-events: none;
+        transition: background 0.15s;
+      }
+
+      .swipe-container.threshold-left::before {
+        left: 0;
+        background: #22c55e;
+        box-shadow: 0 0 12px rgba(34, 197, 94, 0.5);
+      }
+
+      .swipe-container.threshold-right::before {
+        right: 0;
+        left: auto;
+        background: #ef4444;
+        box-shadow: 0 0 12px rgba(239, 68, 68, 0.5);
+      }
+
+      /* ===== TOUCH RIPPLE EFFECT ===== */
+      .ripple-container {
+        position: relative;
+        overflow: hidden;
+      }
+
+      .ripple {
+        position: absolute;
+        border-radius: 50%;
+        background: rgba(102, 126, 234, 0.3);
+        transform: scale(0);
+        animation: ripple-effect 0.6s ease-out forwards;
+        pointer-events: none;
+      }
+
+      @keyframes ripple-effect {
+        0% {
+          transform: scale(0);
+          opacity: 1;
+        }
+
+        100% {
+          transform: scale(4);
+          opacity: 0;
+        }
+      }
+
+      body.dark .ripple {
+        background: rgba(102, 126, 234, 0.4);
+      }
+
+      /* ===== ENHANCED PULL TO REFRESH ===== */
+      .pull-to-refresh-container {
+        position: fixed;
+        top: var(--mobile-header-height);
+        left: 0;
+        right: 0;
+        height: 80px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 99;
+        pointer-events: none;
+        transform: translateY(-100%);
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+
+      .pull-to-refresh-container.visible {
+        transform: translateY(0);
+      }
+
+      .pull-to-refresh-spinner {
+        width: 40px;
+        height: 40px;
+        background: var(--card);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+        font-size: 20px;
+      }
+
+      .pull-to-refresh-spinner.refreshing {
+        animation: ptr-spin 0.8s linear infinite;
+      }
+
+      @keyframes ptr-spin {
+        0% {
+          transform: rotate(0deg);
+        }
+
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+
+      /* ===== SMOOTH PAGE TRANSITIONS ===== */
+      .view-container {
+        animation: view-enter 0.3s ease-out;
+      }
+
+      @keyframes view-enter {
+        0% {
+          opacity: 0;
+          transform: translateY(16px);
+        }
+
+        100% {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      /* Staggered card animations */
+      .task-item,
+      .event-row {
+        animation: card-stagger-in 0.35s ease-out backwards;
+      }
+
+      .task-item:nth-child(1),
+      .event-row:nth-child(1) {
+        animation-delay: 0.03s;
+      }
+
+      .task-item:nth-child(2),
+      .event-row:nth-child(2) {
+        animation-delay: 0.06s;
+      }
+
+      .task-item:nth-child(3),
+      .event-row:nth-child(3) {
+        animation-delay: 0.09s;
+      }
+
+      .task-item:nth-child(4),
+      .event-row:nth-child(4) {
+        animation-delay: 0.12s;
+      }
+
+      .task-item:nth-child(5),
+      .event-row:nth-child(5) {
+        animation-delay: 0.15s;
+      }
+
+      @keyframes card-stagger-in {
+        0% {
+          opacity: 0;
+          transform: translateY(12px) scale(0.97);
+        }
+
+        100% {
+          opacity: 1;
+          transform: translateY(0) scale(1);
+        }
+      }
+
+      /* ===== ENHANCED BOTTOM SHEET MODAL ===== */
+      .mobile-bottom-sheet {
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: var(--card);
+        border-radius: var(--mobile-radius-lg) var(--mobile-radius-lg) 0 0;
+        z-index: 10003;
+        transform: translateY(100%);
+        transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+        max-height: 90vh;
+        overflow: hidden;
+        box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.2);
+      }
+
+      .mobile-bottom-sheet.open {
+        transform: translateY(0);
+      }
+
+      .mobile-bottom-sheet-drag-handle {
+        width: 40px;
+        height: 5px;
+        background: var(--border);
+        border-radius: 3px;
+        margin: 12px auto 8px;
+        cursor: grab;
+      }
+
+      .mobile-bottom-sheet-drag-handle:active {
+        cursor: grabbing;
+        background: var(--muted);
+      }
+
+      .mobile-bottom-sheet-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.6);
+        z-index: 10002;
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.3s, visibility 0.3s;
+      }
+
+      .mobile-bottom-sheet-backdrop.visible {
+        opacity: 1;
+        visibility: visible;
+      }
+
+      /* ===== HAPTIC FEEDBACK VISUAL CUE ===== */
+      .haptic-flash {
+        animation: haptic-pulse 0.15s ease-out;
+      }
+
+      @keyframes haptic-pulse {
+        0% {
+          transform: scale(1);
+        }
+
+        50% {
+          transform: scale(0.97);
+        }
+
+        100% {
+          transform: scale(1);
+        }
+      }
+
+      /* ===== TASK COMPLETION CELEBRATION ===== */
+      .task-item.completing {
+        animation: task-complete-celebration 0.5s ease-out;
+      }
+
+      @keyframes task-complete-celebration {
+        0% {
+          transform: scale(1);
+          background: var(--card);
+        }
+
+        30% {
+          transform: scale(1.02);
+          background: rgba(34, 197, 94, 0.15);
+          box-shadow: 0 0 20px rgba(34, 197, 94, 0.3);
+        }
+
+        100% {
+          transform: scale(1);
+          background: var(--card);
+        }
+      }
+
+      /* ===== LONG PRESS CONTEXT INDICATOR ===== */
+      .long-press-indicator {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 60px;
+        height: 60px;
+        margin: -30px;
+        border-radius: 50%;
+        border: 3px solid var(--accent);
+        border-top-color: transparent;
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      .long-press-indicator.active {
+        opacity: 1;
+        animation: long-press-ring 0.5s ease-out forwards;
+      }
+
+      @keyframes long-press-ring {
+        0% {
+          transform: scale(0.8) rotate(0deg);
+          opacity: 0;
+        }
+
+        50% {
+          opacity: 1;
+        }
+
+        100% {
+          transform: scale(1.2) rotate(180deg);
+          opacity: 0;
+        }
+      }
+
+      /* ===== MOBILE NAV ENHANCED TRANSITIONS ===== */
+      .mobile-nav-item {
+        transition: all 0.2s ease;
+        -webkit-tap-highlight-color: transparent;
+      }
+
+      .mobile-nav-item:active {
+        transform: scale(0.9);
+      }
+
+      .mobile-nav-item.active .mobile-nav-icon {
+        animation: nav-bounce 0.4s ease-out;
+      }
+
+      @keyframes nav-bounce {
+        0% {
+          transform: scale(1);
+        }
+
+        40% {
+          transform: scale(1.15);
+        }
+
+        70% {
+          transform: scale(0.95);
+        }
+
+        100% {
+          transform: scale(1);
+        }
+      }
+
+      /* ===== DELETE SWIPE ANIMATION ===== */
+      .swipe-container.deleting {
+        animation: swipe-delete 0.35s ease-out forwards;
+        overflow: hidden;
+      }
+
+      @keyframes swipe-delete {
+        0% {
+          opacity: 1;
+          max-height: 200px;
+          margin-bottom: var(--mobile-spacing-xs);
+        }
+
+        50% {
+          opacity: 0;
+          transform: translateX(-100%);
+        }
+
+        100% {
+          opacity: 0;
+          max-height: 0;
+          margin-bottom: 0;
+          padding: 0;
+        }
+      }
+
+      /* ===== COMPLETE SWIPE ANIMATION ===== */
+      .swipe-container.completing {
+        animation: swipe-complete 0.4s ease-out forwards;
+      }
+
+      @keyframes swipe-complete {
+        0% {
+          transform: translateX(0);
+          background: transparent;
+        }
+
+        40% {
+          transform: translateX(15px);
+          background: rgba(34, 197, 94, 0.1);
+        }
+
+        100% {
+          transform: translateX(0);
+          background: transparent;
+        }
+      }
+
+      /* ===== MOBILE TOAST NOTIFICATIONS ===== */
+      .mobile-toast {
+        position: fixed;
+        bottom: calc(var(--mobile-bottom-nav-height) + var(--mobile-spacing-lg) + env(safe-area-inset-bottom, 0px));
+        left: 50%;
+        transform: translateX(-50%) translateY(100px);
+        background: var(--text);
+        color: var(--bg);
+        padding: var(--mobile-spacing-md) var(--mobile-spacing-lg);
+        border-radius: var(--mobile-radius);
+        font-size: 14px;
+        font-weight: 500;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+        z-index: 20000;
+        opacity: 0;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        display: flex;
+        align-items: center;
+        gap: var(--mobile-spacing-sm);
+        max-width: calc(100vw - 32px);
+      }
+
+      .mobile-toast.visible {
+        transform: translateX(-50%) translateY(0);
+        opacity: 1;
+      }
+
+      .mobile-toast-icon {
+        font-size: 18px;
+      }
+
+      .mobile-toast-action {
+        margin-left: auto;
+        padding: 6px 12px;
+        background: rgba(255, 255, 255, 0.2);
+        border: none;
+        border-radius: 8px;
+        color: inherit;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+      }
+
+      .mobile-toast-action:active {
+        background: rgba(255, 255, 255, 0.3);
+      }
+
+      /* ===== SCROLL PERFORMANCE ===== */
+      .app-layout,
+      .task-list,
+      .event-list,
+      .task-manager-body {
+        will-change: scroll-position;
+        -webkit-overflow-scrolling: touch;
+      }
+
+      /* ===== IMPROVED LOADING STATES ===== */
+      .mobile-skeleton {
+        background: linear-gradient(90deg, var(--day-other) 25%, var(--day-hover) 50%, var(--day-other) 75%);
+        background-size: 200% 100%;
+        animation: mobile-skeleton-shimmer 1.5s ease-in-out infinite;
+        border-radius: var(--mobile-radius);
+      }
+
+      @keyframes mobile-skeleton-shimmer {
+        0% {
+          background-position: 200% 0;
+        }
+
+        100% {
+          background-position: -200% 0;
+        }
+      }
+    }
+
+    /* Reduce motion for users who prefer it */
+    @media (prefers-reduced-motion: reduce) {
+
+      .swipe-container .task-item,
+      .swipe-container .event-row,
+      .task-item,
+      .event-row,
+      .mobile-bottom-sheet,
+      .mobile-toast,
+      .view-container {
+        animation: none !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
   </style>
 </head>
 
@@ -20530,6 +21067,450 @@
             break;
         }
       });
+    })();
+  </script>
+
+  <!-- Mobile Enhancements: Swipe Gestures, Haptic Feedback, Toast Notifications -->
+  <script>
+    (function MobileEnhancements() {
+      'use strict';
+
+      // ===== Mobile Detection =====
+      const isMobile = () => window.innerWidth <= 768 ||
+        (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches && window.innerWidth <= 1024);
+
+      // Don't initialize on desktop
+      if (!isMobile()) {
+        // Re-check on resize
+        window.addEventListener('resize', () => {
+          if (isMobile()) initMobileEnhancements();
+        }, { once: true });
+        return;
+      }
+
+      initMobileEnhancements();
+
+      function initMobileEnhancements() {
+        console.log('[Mobile] Initializing enhanced mobile experience');
+
+        // ===== Haptic Feedback =====
+        const haptic = {
+          light: () => navigator.vibrate?.(10),
+          medium: () => navigator.vibrate?.(25),
+          heavy: () => navigator.vibrate?.(50),
+          success: () => navigator.vibrate?.([15, 50, 15]),
+          error: () => navigator.vibrate?.([50, 30, 50]),
+          selection: () => navigator.vibrate?.(5)
+        };
+
+        // ===== Touch Ripple Effect =====
+        function createRipple(event, element) {
+          const ripple = document.createElement('span');
+          ripple.className = 'ripple';
+
+          const rect = element.getBoundingClientRect();
+          const size = Math.max(rect.width, rect.height);
+          const x = (event.touches?.[0]?.clientX || event.clientX) - rect.left - size / 2;
+          const y = (event.touches?.[0]?.clientY || event.clientY) - rect.top - size / 2;
+
+          ripple.style.width = ripple.style.height = `${size}px`;
+          ripple.style.left = `${x}px`;
+          ripple.style.top = `${y}px`;
+
+          element.classList.add('ripple-container');
+          element.appendChild(ripple);
+
+          ripple.addEventListener('animationend', () => ripple.remove());
+        }
+
+        // Add ripple to buttons
+        document.addEventListener('touchstart', (e) => {
+          const btn = e.target.closest('button, .btn, .mobile-nav-item, .filter-pill, .task-checkbox');
+          if (btn && isMobile()) {
+            createRipple(e, btn);
+            haptic.selection();
+          }
+        }, { passive: true });
+
+        // ===== Toast Notification System =====
+        let toastContainer = document.getElementById('mobileToast');
+        if (!toastContainer) {
+          toastContainer = document.createElement('div');
+          toastContainer.id = 'mobileToast';
+          toastContainer.className = 'mobile-toast';
+          toastContainer.innerHTML = `
+            <span class="mobile-toast-icon"></span>
+            <span class="mobile-toast-message"></span>
+            <button class="mobile-toast-action" style="display:none;"></button>
+          `;
+          document.body.appendChild(toastContainer);
+        }
+
+        let toastTimeout = null;
+        function showToast(message, { icon = '✓', duration = 3000, action = null, actionText = 'Undo' } = {}) {
+          clearTimeout(toastTimeout);
+
+          toastContainer.querySelector('.mobile-toast-icon').textContent = icon;
+          toastContainer.querySelector('.mobile-toast-message').textContent = message;
+
+          const actionBtn = toastContainer.querySelector('.mobile-toast-action');
+          if (action) {
+            actionBtn.textContent = actionText;
+            actionBtn.style.display = 'block';
+            actionBtn.onclick = () => {
+              action();
+              hideToast();
+            };
+          } else {
+            actionBtn.style.display = 'none';
+          }
+
+          toastContainer.classList.add('visible');
+
+          toastTimeout = setTimeout(hideToast, duration);
+        }
+
+        function hideToast() {
+          toastContainer.classList.remove('visible');
+        }
+
+        // Expose toast globally
+        window.mobileToast = showToast;
+
+        // ===== Swipe Gesture System =====
+        const SWIPE_THRESHOLD = 80;
+        const SWIPE_VELOCITY_THRESHOLD = 0.3;
+
+        function initSwipeGestures() {
+          setupSwipeContainers();
+
+          // Re-setup when tasks are rendered
+          const observer = new MutationObserver((mutations) => {
+            for (const mutation of mutations) {
+              if (mutation.addedNodes.length > 0) {
+                setupSwipeContainers();
+              }
+            }
+          });
+
+          const taskList = document.querySelector('.task-list');
+          const eventList = document.querySelector('.event-list');
+
+          if (taskList) observer.observe(taskList, { childList: true, subtree: true });
+          if (eventList) observer.observe(eventList, { childList: true, subtree: true });
+        }
+
+        function setupSwipeContainers() {
+          // Wrap task items in swipe containers
+          document.querySelectorAll('.task-item:not(.swipe-initialized)').forEach(item => {
+            wrapInSwipeContainer(item, 'task');
+          });
+
+          // Wrap event rows in swipe containers
+          document.querySelectorAll('.event-row:not(.swipe-initialized)').forEach(item => {
+            wrapInSwipeContainer(item, 'event');
+          });
+        }
+
+        function wrapInSwipeContainer(item, type) {
+          // Skip if already wrapped
+          if (item.closest('.swipe-container')) return;
+          item.classList.add('swipe-initialized');
+
+          const container = document.createElement('div');
+          container.className = 'swipe-container';
+          container.innerHTML = `
+            <div class="swipe-actions swipe-actions-left">
+              <button class="swipe-action-btn complete-action">
+                ✓
+                <span>Done</span>
+              </button>
+            </div>
+            <div class="swipe-actions swipe-actions-right">
+              <button class="swipe-action-btn delete-action">
+                🗑️
+                <span>Delete</span>
+              </button>
+            </div>
+          `;
+
+          item.parentNode.insertBefore(container, item);
+          container.appendChild(item);
+
+          initSwipeHandlers(container, item, type);
+        }
+
+        function initSwipeHandlers(container, item, type) {
+          let startX = 0;
+          let startY = 0;
+          let currentX = 0;
+          let startTime = 0;
+          let isSwiping = false;
+          let isVerticalScroll = false;
+
+          const onTouchStart = (e) => {
+            if (e.target.closest('button, .task-checkbox, input')) return;
+
+            startX = e.touches[0].clientX;
+            startY = e.touches[0].clientY;
+            currentX = 0;
+            startTime = Date.now();
+            isSwiping = false;
+            isVerticalScroll = false;
+          };
+
+          const onTouchMove = (e) => {
+            if (isVerticalScroll) return;
+
+            const touchX = e.touches[0].clientX;
+            const touchY = e.touches[0].clientY;
+            const diffX = touchX - startX;
+            const diffY = touchY - startY;
+
+            // Determine if it's a vertical scroll
+            if (!isSwiping && Math.abs(diffY) > Math.abs(diffX) && Math.abs(diffY) > 10) {
+              isVerticalScroll = true;
+              return;
+            }
+
+            // Start swiping if horizontal movement is significant
+            if (Math.abs(diffX) > 15) {
+              isSwiping = true;
+              container.classList.add('swiping');
+              e.preventDefault();
+            }
+
+            if (isSwiping) {
+              currentX = diffX;
+              // Add resistance at edges
+              const resistance = 0.5;
+              const resistedX = currentX > 0
+                ? Math.sign(currentX) * Math.min(Math.abs(currentX), 120) * resistance
+                : Math.sign(currentX) * Math.min(Math.abs(currentX), 120) * resistance;
+
+              item.style.transform = `translateX(${resistedX}px)`;
+
+              // Threshold indicators
+              container.classList.toggle('threshold-left', currentX > SWIPE_THRESHOLD);
+              container.classList.toggle('threshold-right', currentX < -SWIPE_THRESHOLD);
+
+              // Haptic at threshold
+              if (Math.abs(currentX) > SWIPE_THRESHOLD && !container.dataset.thresholdReached) {
+                haptic.medium();
+                container.dataset.thresholdReached = 'true';
+              }
+            }
+          };
+
+          const onTouchEnd = () => {
+            container.classList.remove('swiping', 'threshold-left', 'threshold-right');
+            delete container.dataset.thresholdReached;
+
+            if (!isSwiping) {
+              item.style.transform = '';
+              return;
+            }
+
+            const velocity = Math.abs(currentX) / (Date.now() - startTime);
+            const shouldTrigger = Math.abs(currentX) > SWIPE_THRESHOLD || velocity > SWIPE_VELOCITY_THRESHOLD;
+
+            if (shouldTrigger) {
+              if (currentX > SWIPE_THRESHOLD) {
+                // Swipe right = Complete
+                triggerComplete(container, item, type);
+              } else if (currentX < -SWIPE_THRESHOLD) {
+                // Swipe left = Delete
+                triggerDelete(container, item, type);
+              }
+            } else {
+              // Snap back
+              item.style.transform = '';
+            }
+
+            isSwiping = false;
+          };
+
+          container.addEventListener('touchstart', onTouchStart, { passive: true });
+          container.addEventListener('touchmove', onTouchMove, { passive: false });
+          container.addEventListener('touchend', onTouchEnd, { passive: true });
+        }
+
+        function triggerComplete(container, item, type) {
+          haptic.success();
+
+          container.classList.add('completing');
+          item.style.transform = '';
+
+          setTimeout(() => {
+            if (type === 'task') {
+              const taskId = item.dataset.taskId || item.dataset.id;
+              const checkbox = item.querySelector('.task-checkbox');
+              if (checkbox) {
+                checkbox.click();
+              } else if (typeof window.handleCompleteTask === 'function' && taskId) {
+                window.handleCompleteTask(taskId);
+              }
+            }
+            container.classList.remove('completing');
+
+            showToast('Task completed!', { icon: '✓' });
+          }, 300);
+        }
+
+        function triggerDelete(container, item, type) {
+          haptic.error();
+
+          const deletedData = {
+            type,
+            html: container.outerHTML,
+            parent: container.parentNode,
+            nextSibling: container.nextSibling
+          };
+
+          container.classList.add('deleting');
+
+          setTimeout(() => {
+            if (type === 'task') {
+              const taskId = item.dataset.taskId || item.dataset.id;
+              const deleteBtn = item.querySelector('.task-action-btn.delete, [aria-label*="Delete"]');
+              if (deleteBtn) {
+                deleteBtn.click();
+              } else if (typeof window.handleDeleteTask === 'function' && taskId) {
+                window.handleDeleteTask(taskId);
+              }
+            } else if (type === 'event') {
+              const deleteBtn = item.querySelector('.delete-btn');
+              if (deleteBtn) {
+                deleteBtn.click();
+              }
+            }
+          }, 350);
+
+          const itemName = type === 'task'
+            ? item.querySelector('.task-title')?.textContent?.slice(0, 25)
+            : item.querySelector('.event-name')?.textContent?.slice(0, 25);
+
+          showToast(`Deleted: ${itemName || type}`, {
+            icon: '🗑️',
+            duration: 5000
+          });
+        }
+
+        // Initialize swipe gestures
+        initSwipeGestures();
+
+        // ===== Pull to Refresh =====
+        let pullContainer = document.getElementById('pullToRefreshContainer');
+        if (!pullContainer) {
+          pullContainer = document.createElement('div');
+          pullContainer.id = 'pullToRefreshContainer';
+          pullContainer.className = 'pull-to-refresh-container';
+          pullContainer.innerHTML = '<div class="pull-to-refresh-spinner">↻</div>';
+          document.body.appendChild(pullContainer);
+        }
+
+        let pullStartY = 0;
+        let isPulling = false;
+        const mainContent = document.querySelector('.main-content') || document.querySelector('.app-layout');
+
+        function initPullToRefresh() {
+          if (!mainContent) return;
+
+          document.addEventListener('touchstart', (e) => {
+            // Only at top of page
+            if (window.scrollY <= 0 && !document.querySelector('.task-manager-overlay.open, .pomodoro-overlay.open, .planner-overlay.open')) {
+              pullStartY = e.touches[0].clientY;
+              isPulling = true;
+            }
+          }, { passive: true });
+
+          document.addEventListener('touchmove', (e) => {
+            if (!isPulling || window.scrollY > 0) return;
+
+            const currentY = e.touches[0].clientY;
+            const pullDistance = currentY - pullStartY;
+
+            if (pullDistance > 60) {
+              pullContainer.classList.add('visible');
+
+              if (pullDistance > 100) {
+                haptic.light();
+              }
+            }
+          }, { passive: true });
+
+          document.addEventListener('touchend', () => {
+            if (pullContainer.classList.contains('visible')) {
+              const spinner = pullContainer.querySelector('.pull-to-refresh-spinner');
+              spinner.classList.add('refreshing');
+              haptic.medium();
+
+              // Simulate refresh
+              setTimeout(() => {
+                spinner.classList.remove('refreshing');
+                pullContainer.classList.remove('visible');
+                showToast('Refreshed!', { icon: '↻' });
+
+                // Trigger data reload if available
+                if (typeof window.refreshTasks === 'function') window.refreshTasks();
+                if (typeof window.loadEvents === 'function') window.loadEvents();
+              }, 800);
+            }
+
+            isPulling = false;
+            pullStartY = 0;
+          }, { passive: true });
+        }
+
+        initPullToRefresh();
+
+        // ===== Enhanced View Transitions =====
+        const navItems = document.querySelectorAll('.mobile-nav-item');
+        navItems.forEach(item => {
+          item.addEventListener('click', () => {
+            haptic.selection();
+
+            // Add view transition class
+            const mainContent = document.querySelector('.main-content, .task-manager-body');
+            if (mainContent) {
+              mainContent.classList.remove('view-container');
+              void mainContent.offsetWidth; // Force reflow
+              mainContent.classList.add('view-container');
+            }
+          });
+        });
+
+        // ===== Long Press Detection for Context Menu =====
+        let longPressTimer = null;
+
+        document.addEventListener('touchstart', (e) => {
+          const target = e.target.closest('.task-item, .event-row');
+          if (!target) return;
+
+          longPressTimer = setTimeout(() => {
+            haptic.heavy();
+
+            // Show context actions
+            const actions = target.querySelector('.task-actions, .event-actions');
+            if (actions) {
+              actions.style.opacity = '1';
+              actions.style.visibility = 'visible';
+            }
+
+            showToast('Long press detected', { icon: '👆', duration: 1500 });
+          }, 500);
+        }, { passive: true });
+
+        document.addEventListener('touchend', () => {
+          clearTimeout(longPressTimer);
+        });
+
+        document.addEventListener('touchmove', () => {
+          clearTimeout(longPressTimer);
+        });
+
+        console.log('[Mobile] Enhanced mobile experience initialized');
+      }
     })();
   </script>
 
