@@ -6,9 +6,7 @@ on:
     - cron: '*/10 * * * *'
   workflow_dispatch: # Allow manual trigger
 
-concurrency:
-  group: send-push-reminders
-  cancel-in-progress: false
+
 
 permissions:
   contents: read
