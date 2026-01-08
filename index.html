@@ -12075,7 +12075,44 @@
     const syncCacheUsed = { events: false, tasks: false, subjects: false };
     const SYNC_TIMEOUT_MS = 15000;
     const SUBJECTS_NO_CACHE_TIMEOUT_MS = 8000;
+    const SYNC_MAX_WAIT_MS = 20000; // Master fallback: hide badge after 20s max
     const syncTimeouts = { events: null, tasks: null, subjects: null, subjectsNoCache: null };
+    let syncMasterTimeout = null;
+
+    // Force all sync states to ready and hide badge - prevents indefinite stuck state
+    const forceAllSyncReady = (reason = 'master-timeout') => {
+      Object.keys(syncState).forEach(key => {
+        if (!syncState[key]) {
+          syncState[key] = true;
+          console.debug(`[sync] ${key} force-ready (${reason})`);
+        }
+      });
+      // Clear all pending timeouts
+      Object.keys(syncTimeouts).forEach(key => {
+        if (syncTimeouts[key]) {
+          clearTimeout(syncTimeouts[key]);
+          syncTimeouts[key] = null;
+        }
+      });
+      if (syncMasterTimeout) {
+        clearTimeout(syncMasterTimeout);
+        syncMasterTimeout = null;
+      }
+      updateSyncBadge();
+    };
+
+    // Start master timeout when first cache is used
+    const startMasterSyncTimeout = () => {
+      if (syncMasterTimeout) return; // Already started
+      syncMasterTimeout = setTimeout(() => {
+        syncMasterTimeout = null;
+        const ready = syncState.events && syncState.tasks && syncState.subjects;
+        if (!ready) {
+          console.debug(`[sync] Master timeout after ${SYNC_MAX_WAIT_MS}ms - forcing all ready`);
+          forceAllSyncReady('master-timeout');
+        }
+      }, SYNC_MAX_WAIT_MS);
+    };
     const clearSyncTimeouts = (key) => {
       const keys = key === 'subjects' ? ['subjects', 'subjectsNoCache'] : [key];
       keys.forEach((timeoutKey) => {
@@ -12105,6 +12142,11 @@
       const syncText = syncBadge.querySelector('.sync-text');
       if (syncText) syncText.textContent = ready ? 'Synced' : `Syncing ${percent}%`;
       syncBadge.classList.toggle('hidden', !hasCache || ready);
+      // Clear master timeout when all syncs complete
+      if (ready && syncMasterTimeout) {
+        clearTimeout(syncMasterTimeout);
+        syncMasterTimeout = null;
+      }
     };
     const markSyncReady = (key, source = 'unknown') => {
       if (syncState[key]) {
@@ -12754,6 +12796,7 @@
       syncNotifiedMapToIds(notifiedEvents, new Set(events.map(e => e.id)), NOTIFY_KEYS.EVENTS);
       hasEventsCache = true;
       syncCacheUsed.events = true;
+      startMasterSyncTimeout();
       eventsLoaded = true;
       markSyncReady('events', 'cache');
       setEventsLoading(false);
@@ -16242,6 +16285,7 @@
       hasTasksCache = true;
       syncNotifiedMapToIds(notifiedTasks, new Set(tasks.map(t => t.id)), NOTIFY_KEYS.TASKS);
       syncCacheUsed.tasks = true;
+      startMasterSyncTimeout();
       markSyncReady('tasks', 'cache');
       updateSyncBadge();
       Pomodoro.updateTasks(tasks);
@@ -17646,6 +17690,7 @@
     if (cachedSubjects && cachedSubjects.length) {
       subjects = cachedSubjects;
       syncCacheUsed.subjects = true;
+      startMasterSyncTimeout();
       markSyncReady('subjects', 'cache');
       updateSyncBadge();
       renderSubjectsSidebar();
@@ -21700,23 +21745,23 @@
       const toggleTaskSidebarBtn = document.getElementById('toggleTaskSidebar');
       const mobileSidebarBackdrop = document.getElementById('mobileSidebarBackdrop');
 
-        const toggleMobileTaskSidebar = () => {
-          if (!isMobile()) return;
+      const toggleMobileTaskSidebar = () => {
+        if (!isMobile()) return;
 
-          const isOpen = taskSidebar.classList.contains('open');
+        const isOpen = taskSidebar.classList.contains('open');
 
-          if (isOpen) {
-            taskSidebar.classList.remove('open');
-            mobileSidebarBackdrop.classList.remove('visible');
-            toggleTaskSidebarBtn?.classList.remove('active');
-          } else {
-            taskSidebar.classList.remove('hidden');
-            taskSidebar.style.display = '';
-            taskSidebar.classList.add('open');
-            mobileSidebarBackdrop.classList.add('visible');
-            toggleTaskSidebarBtn?.classList.add('active');
-          }
-        };
+        if (isOpen) {
+          taskSidebar.classList.remove('open');
+          mobileSidebarBackdrop.classList.remove('visible');
+          toggleTaskSidebarBtn?.classList.remove('active');
+        } else {
+          taskSidebar.classList.remove('hidden');
+          taskSidebar.style.display = '';
+          taskSidebar.classList.add('open');
+          mobileSidebarBackdrop.classList.add('visible');
+          toggleTaskSidebarBtn?.classList.add('active');
+        }
+      };
 
       toggleTaskSidebarBtn?.addEventListener('click', (e) => {
         if (isMobile()) {
