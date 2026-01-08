@@ -385,7 +385,7 @@ async function main() {
       }
 
       if (Date.now() + 30000 < end) {
-        await sleep(30000); // Wait 30s before next check
+        await sleep(15000); // Wait 15s before next check for better precision
       } else {
         break;
       }

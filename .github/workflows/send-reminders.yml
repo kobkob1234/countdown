@@ -2,8 +2,8 @@ name: Send Push Reminders
 
 on:
   schedule:
-    # Run every 15 minutes - the job loops internally for better precision
-    - cron: '*/15 * * * *'
+    # Run every 10 minutes - overlapping with 14-min loops ensures no gaps
+    - cron: '*/10 * * * *'
   workflow_dispatch: # Allow manual trigger
 
 concurrency:
@@ -110,10 +110,10 @@ jobs:
           VAPID_PUBLIC_KEY: ${{ secrets.VAPID_PUBLIC_KEY }}
           VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
           PUSH_APP_URL: ${{ secrets.PUSH_APP_URL }}
-          # Loop for 14 minutes, checking every 30 seconds for near-real-time notifications
+          # Loop for 14 minutes, checking every 15 seconds for near-real-time notifications
           LOOP_SECONDS: "840"
-          # 5 minute window - enough buffer for the 30-second check interval
-          TRIGGER_WINDOW_MS: "300000"
+          # 2 minute window - tight since we check every 15 seconds with overlapping workflows
+          TRIGGER_WINDOW_MS: "120000"
         run: node send-reminders.mjs
 
       - name: Cleanup credentials
