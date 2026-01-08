@@ -9053,7 +9053,7 @@
         transition: none;
       }
 
-      /* Swipe action buttons revealed on swipe */
+      /* Swipe action buttons revealed on swipe - HIDDEN by default */
       .swipe-actions {
         position: absolute;
         top: 0;
@@ -9063,6 +9063,15 @@
         align-items: center;
         justify-content: center;
         z-index: 1;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.15s ease;
+      }
+
+      /* Only show swipe actions when actively swiping */
+      .swipe-container.swiping .swipe-actions {
+        opacity: 1;
+        pointer-events: auto;
       }
 
       .swipe-actions-left {
@@ -13098,6 +13107,8 @@
         const row = document.createElement("div");
         row.className = `event-row ${evt.highlighted ? 'highlighted' : ''}`;
         row.dataset.id = evt.id;
+        // Set event color for mobile accent bar
+        row.style.setProperty('--event-color', color);
 
         if (evt.highlighted) {
           row.style.background = color + '12';
