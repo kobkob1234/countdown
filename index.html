@@ -9137,6 +9137,13 @@
         pointer-events: auto;
       }
 
+      /* Mobile z-index fix for actions */
+      .task-action-btn {
+        pointer-events: auto;
+        position: relative;
+        z-index: 10;
+      }
+
       .swipe-actions-left {
         left: 0;
         background: linear-gradient(135deg, #22c55e, #16a34a);
@@ -16526,6 +16533,98 @@
       }, 0);
     }
 
+    let activeReminderPopover = null;
+
+    function closeReminderPopover() {
+      if (activeReminderPopover) {
+        activeReminderPopover.remove();
+        activeReminderPopover = null;
+      }
+    }
+
+    function openTaskReminderPopover(btnElement, task) {
+      closeReminderPopover();
+      closePriorityPopover(); // Close others
+
+      const pop = document.createElement('div');
+      pop.className = 'task-reminder-dropdown open global-popover'; // Reuse class styles but add global tag
+
+      // Copy styles for standalone positioning
+      pop.style.position = 'fixed';
+      pop.style.zIndex = '10005';
+      pop.style.width = '200px';
+      pop.style.background = 'var(--card)';
+      pop.style.border = '1px solid var(--border)';
+      pop.style.borderRadius = 'var(--radius-md)';
+      pop.style.boxShadow = 'var(--shadow-lg)';
+      pop.style.padding = '4px';
+
+      const setReminder = (minutes) => {
+        const { id, isOwn, isShared, ...cleanTask } = task;
+        saveTask(task.id, { ...cleanTask, reminder: minutes || null }, task.subject);
+        closeReminderPopover();
+      };
+
+      const options = [
+        { label: 'דקה אחת', val: 1 },
+        { label: '5 דקות', val: 5 },
+        { label: '15 דקות', val: 15 },
+        { label: 'שעה', val: 60 },
+        { label: 'יום', val: 1440 }
+      ];
+
+      options.forEach(opt => {
+        const div = document.createElement('div');
+        div.className = 'task-reminder-option';
+        div.textContent = opt.label;
+        div.onclick = (e) => { e.stopPropagation(); setReminder(opt.val); };
+        pop.appendChild(div);
+      });
+
+      if (task.reminder) {
+        const removeDiv = document.createElement('div');
+        removeDiv.className = 'task-reminder-option remove';
+        removeDiv.textContent = 'הסר תזכורת';
+        removeDiv.onclick = (e) => { e.stopPropagation(); setReminder(0); };
+        pop.appendChild(removeDiv);
+      }
+
+      document.body.appendChild(pop);
+      activeReminderPopover = pop;
+
+      // Position logic
+      const rect = btnElement.getBoundingClientRect();
+      const popRect = pop.getBoundingClientRect();
+
+      let top = rect.bottom + 5;
+      let left = rect.left;
+
+      // Flip if close to bottom
+      if (top + popRect.height > window.innerHeight) {
+        top = rect.top - popRect.height - 5;
+      }
+
+      // Flip if close to right edge (RTL) or left edge
+      if (left + popRect.width > window.innerWidth) {
+        left = window.innerWidth - popRect.width - 10;
+      }
+      if (left < 0) left = 10;
+
+      pop.style.top = `${top}px`;
+      pop.style.left = `${left}px`;
+
+      // Close on outside click
+      setTimeout(() => {
+        const outsideHandler = (ev) => {
+          if (!pop.contains(ev.target)) {
+            closeReminderPopover();
+            document.removeEventListener('click', outsideHandler);
+          }
+        };
+        document.addEventListener('click', outsideHandler);
+      }, 0);
+    }
+
     // ============ EVENT DELEGATION FOR TASK LIST ============
     // Single click handler for all task interactions - much more efficient than per-item listeners
     function setupTaskEventDelegation() {
@@ -16563,28 +16662,11 @@
             return;
           }
 
-          // Reminder button and dropdown
+          // Reminder button
           const reminderBtn = e.target.closest('.task-reminder-btn');
-          const reminderOption = e.target.closest('.task-reminder-option');
-
           if (reminderBtn) {
             e.stopPropagation();
-            const dropdown = reminderBtn.nextElementSibling;
-            // Close other dropdowns
-            document.querySelectorAll('.task-reminder-dropdown.open').forEach(d => {
-              if (d !== dropdown) d.classList.remove('open');
-            });
-            dropdown.classList.toggle('open');
-            return;
-          }
-
-          if (reminderOption) {
-            e.stopPropagation();
-            const minutes = parseInt(reminderOption.dataset.minutes, 10);
-            const { id, isOwn, isShared, ...cleanTask } = task;
-            saveTask(taskId, { ...cleanTask, reminder: minutes || null }, task.subject);
-            // Close dropdown
-            e.target.closest('.task-reminder-dropdown').classList.remove('open');
+            openTaskReminderPopover(reminderBtn, task);
             return;
           }
 
@@ -16793,6 +16875,11 @@
         if (!container) return;
 
         container.addEventListener('dragstart', (e) => {
+          // Prevent drag on mobile to avoid click conflicts
+          if (isMobile()) {
+            e.preventDefault();
+            return;
+          }
           const item = e.target.closest('.task-item');
           if (!item) return;
           if (e.target.closest('input, textarea, select, button, a')) {
