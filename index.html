@@ -18862,11 +18862,18 @@
     });
 
     document.addEventListener('contextmenu', (e) => {
+      console.log('[ContextMenu] Document contextmenu handler, target:', e.target.className, 'closest event-row:', !!e.target.closest('.event-row'));
+
       // Hide menus when right-clicking elsewhere
       if (!e.target.closest('.subject-list-header') && !e.target.closest('.subject-child-item')) {
         hideContextMenu();
       }
-      if (!e.target.closest('.event-row') && !e.target.closest('.event-list') && !e.target.closest('.empty-state')) {
+
+      // Only hide event context menu if NOT clicking on event-row area
+      const isEventRowArea = e.target.closest('.event-row') || e.target.closest('.event-list') || e.target.closest('.empty-state');
+      console.log('[ContextMenu] isEventRowArea:', isEventRowArea);
+
+      if (!isEventRowArea) {
         hideEventContextMenu();
         hideAddEventContextMenu();
       }
