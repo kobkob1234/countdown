@@ -8048,18 +8048,17 @@
         font-size: 14px;
       }
 
-      /* ===== MOBILE EVENT CARDS - PREMIUM DESIGN ===== */
+      /* ===== MOBILE EVENT CARDS - PREMIUM COMPACT DESIGN ===== */
       .event-list {
-        gap: 14px;
-        padding: 0 6px;
+        gap: 10px;
+        padding: 0 8px;
       }
 
       .event-row {
-        padding: 14px 16px 12px;
-        border-radius: var(--mobile-radius);
+        padding: 10px 12px 8px;
+        border-radius: 14px;
         flex-direction: column;
-        gap: 8px;
-        /* Phase 1: Enhanced layered shadows */
+        gap: 4px;
         box-shadow: var(--mobile-shadow-md);
         border: 1px solid var(--mobile-border-subtle);
         background: var(--card);
@@ -8081,8 +8080,8 @@
         top: 0;
         left: 0;
         right: 0;
-        height: 4px;
-        border-radius: var(--mobile-radius) var(--mobile-radius) 0 0;
+        height: 3px;
+        border-radius: 14px 14px 0 0;
         background: linear-gradient(90deg, var(--event-color, var(--accent)), var(--accent2));
         opacity: 1;
       }
@@ -8094,10 +8093,10 @@
         top: 0;
         left: 50%;
         transform: translateX(-50%);
-        width: 70%;
-        height: 40px;
+        width: 60%;
+        height: 30px;
         background: var(--event-color, var(--accent));
-        opacity: 0.06;
+        opacity: 0.05;
         border-radius: 0 0 50% 50%;
         pointer-events: none;
       }
@@ -8106,12 +8105,12 @@
       .event-row.highlighted {
         border: 2px solid var(--event-color, var(--accent));
         box-shadow: var(--mobile-shadow-lg), var(--mobile-shadow-glow);
-        padding: 13px 15px 11px;
+        padding: 9px 11px 7px;
       }
 
       .event-row.highlighted::after {
-        opacity: 0.12;
-        height: 60px;
+        opacity: 0.1;
+        height: 40px;
       }
 
       .event-row .color-dot {
@@ -8121,43 +8120,43 @@
       .event-row .event-info {
         width: 100%;
         text-align: center;
-        padding-bottom: 8px;
+        padding-bottom: 4px;
       }
 
-      /* Phase 1: Enhanced typography for event names */
+      /* Compact typography for event names */
       .event-row .event-name {
-        font-size: var(--mobile-font-lg);
+        font-size: 15px;
         font-weight: 700;
-        margin-bottom: 3px;
-        line-height: 1.35;
+        margin-bottom: 1px;
+        line-height: 1.3;
         color: var(--mobile-text-primary, var(--text));
         letter-spacing: -0.01em;
       }
 
       .event-row .event-date {
-        font-size: var(--mobile-font-sm);
+        font-size: 11px;
         color: var(--mobile-text-tertiary, var(--muted));
         font-weight: 500;
         letter-spacing: 0.01em;
       }
 
-      /* Mobile Timer Display - Premium with colored accents */
+      /* Mobile Timer Display - Compact with colored accents */
       .event-row .timer {
         width: 100%;
         justify-content: center;
-        gap: 10px;
-        padding: 8px 0;
+        gap: 6px;
+        padding: 4px 0;
       }
 
       .event-row .time-unit {
         flex: 1;
-        max-width: 72px;
-        min-width: 54px;
-        padding: 12px 8px 10px;
-        border-radius: 14px;
+        max-width: 60px;
+        min-width: 48px;
+        padding: 8px 4px 6px;
+        border-radius: 10px;
         background: linear-gradient(145deg, var(--day-other), var(--day-hover));
         text-align: center;
-        box-shadow: var(--mobile-shadow-sm), inset 0 1px 0 rgba(255, 255, 255, 0.6);
+        box-shadow: var(--mobile-shadow-sm), inset 0 1px 0 rgba(255, 255, 255, 0.5);
         position: relative;
         overflow: hidden;
       }
@@ -8169,15 +8168,15 @@
         bottom: 0;
         left: 0;
         right: 0;
-        height: 3px;
+        height: 2px;
         background: var(--event-color, var(--accent));
         opacity: 0.5;
-        border-radius: 0 0 14px 14px;
+        border-radius: 0 0 10px 10px;
       }
 
-      /* Phase 1: Enhanced typography for time values */
+      /* Compact typography for time values */
       .event-row .time-val {
-        font-size: var(--mobile-font-xl);
+        font-size: 20px;
         font-weight: 800;
         color: var(--mobile-text-primary, var(--text));
         line-height: 1;
@@ -8186,10 +8185,10 @@
       }
 
       .event-row .time-label {
-        font-size: var(--mobile-font-xs);
+        font-size: 8px;
         font-weight: 700;
-        letter-spacing: 0.08em;
-        margin-top: 5px;
+        letter-spacing: 0.05em;
+        margin-top: 3px;
         text-transform: uppercase;
         color: var(--mobile-text-tertiary, var(--muted));
       }
