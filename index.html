@@ -8037,7 +8037,7 @@
         overflow: hidden;
       }
 
-      /* Event color accent bar */
+      /* Event color accent bar - uses custom property from inline style */
       .event-row::before {
         content: '';
         position: absolute;
@@ -8045,8 +8045,8 @@
         left: 0;
         right: 0;
         height: 4px;
-        background: inherit;
-        opacity: 0.8;
+        background: var(--event-color, var(--accent));
+        opacity: 1;
       }
 
       .event-row .color-dot {
@@ -8090,10 +8090,7 @@
       .event-row .time-val {
         font-size: 26px;
         font-weight: 800;
-        background: linear-gradient(135deg, var(--text), var(--muted));
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
+        color: var(--text);
       }
 
       .event-row .time-label {
@@ -9025,6 +9022,7 @@
         overflow: hidden;
         border-radius: var(--mobile-radius);
         margin-bottom: var(--mobile-spacing-xs);
+        background: var(--card);
       }
 
       .swipe-container .task-item,
@@ -9035,6 +9033,13 @@
         background: var(--card);
         margin-bottom: 0;
         border-radius: var(--mobile-radius);
+        /* Ensure color bar is visible */
+        overflow: visible;
+      }
+
+      /* Reset padding on wrapped items to avoid double padding */
+      .swipe-container .event-row {
+        box-shadow: none;
       }
 
       .swipe-container.swiping .task-item,
@@ -9207,9 +9212,9 @@
         }
       }
 
-      /* Staggered card animations */
-      .task-item,
-      .event-row {
+      /* Staggered card animations - only when not in swipe container */
+      .task-item:not(.swipe-initialized),
+      .event-row:not(.swipe-initialized) {
         animation: card-stagger-in 0.35s ease-out backwards;
       }
 
