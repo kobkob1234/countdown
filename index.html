@@ -8027,10 +8027,12 @@
       }
 
       .event-row {
-        padding: 14px 14px 12px;
+        padding: 12px 14px 10px;
+        /* Compact padding */
         border-radius: 16px;
         flex-direction: column;
-        gap: 10px;
+        gap: 6px;
+        /* Tighter gap */
         box-shadow:
           0 2px 8px rgba(0, 0, 0, 0.08),
           0 1px 2px rgba(0, 0, 0, 0.04);
@@ -8038,6 +8040,7 @@
         background: var(--card);
         position: relative;
         overflow: hidden;
+        /* Default hidden, swipe container will toggle if needed */
         transition: transform 0.2s ease, box-shadow 0.2s ease;
       }
 
@@ -8054,6 +8057,8 @@
         left: 0;
         right: 0;
         height: 4px;
+        /* Match parent border-radius to prevent bleeding when overflow is visible */
+        border-radius: 16px 16px 0 0;
         background: linear-gradient(90deg, var(--event-color, var(--accent)), var(--accent2));
         opacity: 1;
       }
@@ -8447,9 +8452,11 @@
 
       /* Mobile Task Items */
       .task-item {
-        padding: var(--mobile-spacing-md);
+        padding: 12px 14px;
+        /* Compact padding */
         border-radius: var(--mobile-radius);
-        gap: var(--mobile-spacing-sm);
+        gap: 8px;
+        /* Tighter gap */
         flex-wrap: wrap;
         border-left-width: 4px;
         box-shadow: var(--mobile-card-shadow);
