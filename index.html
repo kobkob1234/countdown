@@ -14485,7 +14485,10 @@
           if (lastDeletedId === id) hideUndoToast();
         }, DELETE_TIMEOUT_MS);
         pendingDeletes.set(id, { timer });
+        // Preserve scroll position during re-render
+        const scrollPos = window.scrollY;
         render();
+        requestAnimationFrame(() => window.scrollTo(0, scrollPos));
         showUndoToast(evt ? evt.name : 'Event', id);
       } else if (e.target.classList.contains("edit-btn")) {
         startEdit(id);
