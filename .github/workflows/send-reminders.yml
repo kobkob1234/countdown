@@ -2,8 +2,8 @@ name: Send Push Reminders
 
 on:
   schedule:
-    # Run every 5 minutes
-    - cron: '*/5 * * * *'
+    # Run every 15 minutes - the job loops internally for better precision
+    - cron: '*/15 * * * *'
   workflow_dispatch: # Allow manual trigger
 
 concurrency:
@@ -110,7 +110,10 @@ jobs:
           VAPID_PUBLIC_KEY: ${{ secrets.VAPID_PUBLIC_KEY }}
           VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
           PUSH_APP_URL: ${{ secrets.PUSH_APP_URL }}
-          TRIGGER_WINDOW_MS: "3600000"  # 1 hour window (GitHub cron can be delayed)
+          # Loop for 14 minutes, checking every 30 seconds for near-real-time notifications
+          LOOP_SECONDS: "840"
+          # 5 minute window - enough buffer for the 30-second check interval
+          TRIGGER_WINDOW_MS: "300000"
         run: node send-reminders.mjs
 
       - name: Cleanup credentials
