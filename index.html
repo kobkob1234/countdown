@@ -9092,6 +9092,82 @@
     @media screen and (max-width: 768px),
     (display-mode: standalone) and (max-width: 1024px) {
 
+      /* Mobile Animations & States */
+      @keyframes fadeInUp {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .fade-in-up {
+        animation: fadeInUp 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+      }
+
+      .mobile-toast {
+        position: fixed;
+        bottom: 80px;
+        left: 50%;
+        transform: translateX(-50%) translateY(20px);
+        background: #333;
+        color: white;
+        padding: 12px 24px;
+        border-radius: 50px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        font-size: 14px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        z-index: 10002;
+        opacity: 0;
+        pointer-events: none;
+        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        width: max-content;
+        max-width: 90vw;
+      }
+
+      .mobile-toast.visible {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+        pointer-events: auto;
+      }
+
+      .offline-toast {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        background: #ef4444;
+        color: white;
+        padding: 8px;
+        text-align: center;
+        font-size: 12px;
+        font-weight: 500;
+        z-index: 20000;
+        transform: translateY(-100%);
+        transition: transform 0.3s;
+      }
+
+      .offline-toast.visible {
+        transform: translateY(0);
+      }
+
+      .mobile-toast-action {
+        background: rgba(255, 255, 255, 0.2);
+        border: none;
+        color: white;
+        padding: 4px 10px;
+        border-radius: 4px;
+        font-size: 12px;
+        margin-left: 8px;
+        cursor: pointer;
+      }
+
       /* ===== SWIPE CONTAINER SYSTEM ===== */
       .swipe-container {
         position: relative;
@@ -16254,6 +16330,12 @@
 
       Pomodoro.updateTasks(tasks);
 
+      // Trigger staggered animation for mobile
+      if (typeof window.animateListItems === 'function') {
+        // Small timeout to allow DOM paint
+        requestAnimationFrame(() => window.animateListItems());
+      }
+
       // Event delegation is set up once below, no need to call attachTaskEventHandlers
     }
 
@@ -21551,6 +21633,51 @@
 
         // Expose toast globally
         window.mobileToast = showToast;
+
+        // Initialize offline detection
+        initOfflineDetection();
+
+        // ===== Offline Detection =====
+        function initOfflineDetection() {
+          let banner = document.getElementById('offlineBanner');
+          if (!banner) {
+            banner = document.createElement('div');
+            banner.id = 'offlineBanner';
+            banner.className = 'offline-toast';
+            banner.textContent = '🛜 אין חיבור אינטרנט. נתונים יישמרו מקומית.';
+            document.body.appendChild(banner);
+          }
+
+          const updateStatus = () => {
+            if (navigator.onLine) {
+              banner.classList.remove('visible');
+              if (banner.dataset.wasOffline === 'true') {
+                showToast('חיבור חזר ✅', { duration: 2000 });
+                banner.dataset.wasOffline = 'false';
+              }
+            } else {
+              banner.classList.add('visible');
+              banner.dataset.wasOffline = 'true';
+            }
+          };
+
+          window.addEventListener('online', updateStatus);
+          window.addEventListener('offline', updateStatus);
+          // Initial check
+          if (!navigator.onLine) updateStatus();
+        }
+
+        // ===== Staggered List Animation =====
+        window.animateListItems = () => {
+          if (!isMobile()) return;
+          const items = document.querySelectorAll('.task-item:not(.swipe-initialized), .event-row:not(.swipe-initialized)');
+          items.forEach((item, index) => {
+            if (index < 10) {
+              item.style.animationDelay = `${index * 50}ms`;
+              item.classList.add('fade-in-up');
+            }
+          });
+        };
 
         // ===== Swipe Gesture System =====
         const SWIPE_THRESHOLD = 70; // Reduced for easier activation
