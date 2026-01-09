@@ -26,9 +26,209 @@
   <link rel="icon" type="image/png" sizes="512x512" href="icon-512.png" />
   <link rel="icon" type="image/svg+xml"
     href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%23667eea'/%3E%3Cstop offset='100%25' stop-color='%23764ba2'/%3E%3C/linearGradient%3E%3C/defs%3E%3Ccircle cx='16' cy='16' r='14' fill='url(%23g)'/%3E%3Cpath d='M16 8v8l5 3' stroke='white' stroke-width='2.5' stroke-linecap='round' fill='none'/%3E%3C/svg%3E" />
-  
+
   <!-- External CSS -->
   <link rel="stylesheet" href="css/styles.css">
+</head>
+
+<body>
+  <!-- Fixed Header Bar -->
+  <div class="fixed-header-bar">
+    <button class="header-btn active" id="toggleCountdown">⏱️ ספירה לאחור</button>
+    <button class="header-btn" id="toggleTasks">📝 משימות</button>
+    <button class="header-btn" id="togglePomodoro">🍅 פומודורו</button>
+    <button class="header-btn" id="togglePlanner">📅 מתכנן יומי</button>
+    <div class="header-spacer"></div>
+    <button class="header-btn" id="toggleSidebar">📅 לוח</button>
+    <span class="sync-badge hidden" id="syncBadge"><span class="sync-dot"></span><span
+        class="sync-text">Syncing…</span></span>
+    <button class="header-btn icon-only" id="calendarSyncBtn" aria-label="Sync with Calendar"
+      title="סנכרון עם לוח השנה">🔄</button>
+    <button class="header-btn icon-only" id="notifyBtn" aria-label="Enable notifications"
+      title="Enable notifications">🔔</button>
+    <button class="header-btn icon-only" id="helpShortcuts" aria-label="Keyboard shortcuts"
+      title="קיצורים (H)">?</button>
+    <button class="header-btn icon-only" id="themeToggle" aria-label="Toggle dark mode">🌙</button>
+    <button class="header-btn" id="userBtn"
+      style="margin-left:8px; border:1px solid var(--accent); color:var(--accent);">👤 Guest</button>
+  </div>
+
+  <!-- Task Manager Fullscreen -->
+  <div class="task-manager-overlay" id="taskManagerOverlay">
+    <div class="task-manager-header">
+      <div class="task-manager-title">📝 Task Manager</div>
+      <button class="header-btn" id="toggleTaskSidebar" style="margin-right: 12px;">📚 נושאים</button>
+      <button class="task-manager-close" id="closeTaskManager" aria-label="Close task manager">×</button>
+      <div class="task-search-bar">
+        <input type="text" id="taskSearch" placeholder="חיפוש משימות... / Search tasks..." />
+      </div>
+      <div class="task-filters">
+        <button class="filter-pill active" data-filter="all">הכל</button>
+        <button class="filter-pill" data-filter="active">פעיל</button>
+        <button class="filter-pill" data-filter="completed">הושלם</button>
+        <button class="header-btn" id="toggleTaskCalendar">📅 לוח</button>
+      </div>
+    </div>
+
+    <!-- Task Manager Layout with Sidebar -->
+    <div class="task-manager-layout" style="display: flex; height: 100%; overflow: hidden; position: relative;">
+      <!-- Sidebar -->
+      <div class="task-manager-sidebar" id="taskSidebar" style="transition: margin-right 0.2s;">
+        <div class="task-manager-sidebar-header">
+          <h3>📚 נושאים</h3>
+          <button class="add-subject-btn" id="addSubjectBtn" title="הוסף נושא">+</button>
+        </div>
+        <div class="task-manager-sidebar-content">
+          <!-- Smart Views -->
+          <div class="smart-views-list" id="smartViewsList">
+            <div class="smart-view-item" data-view="all">
+              <span class="view-icon">📋</span>
+              <span class="view-name">כל המשימות</span>
+              <span class="view-count" id="countAll">0</span>
+            </div>
+            <div class="smart-view-item" data-view="today">
+              <span class="view-icon">📅</span>
+              <span class="view-name">היום</span>
+              <span class="view-count" id="countToday">0</span>
+            </div>
+            <div class="smart-view-item" data-view="tomorrow">
+              <span class="view-icon">🌅</span>
+              <span class="view-name">מחר</span>
+              <span class="view-count" id="countTomorrow">0</span>
+            </div>
+            <div class="smart-view-item" data-view="week">
+              <span class="view-icon">📆</span>
+              <span class="view-name">7 ימים הבאים</span>
+              <span class="view-count" id="countWeek">0</span>
+            </div>
+            <div class="smart-view-item" data-view="overdue">
+              <span class="view-icon">⚠️</span>
+              <span class="view-name">באיחור</span>
+              <span class="view-count" id="countOverdue">0</span>
+            </div>
+            <div class="smart-view-item" data-view="nodate">
+              <span class="view-icon">📭</span>
+              <span class="view-name">ללא תאריך</span>
+              <span class="view-count" id="countNoDate">0</span>
+            </div>
+          </div>
+
+          <!-- Subjects List -->
+          <div class="subjects-list-title">נושאים</div>
+          <div class="subjects-list" id="subjectsList"></div>
+          <button class="add-subject-sidebar-btn" id="addSubjectSidebarBtn">
+            <span>+</span>
+            <span>הוסף נושא</span>
+          </button>
+
+
+        </div>
+      </div>
+
+      <!-- Main Content -->
+      <div class="task-manager-body">
+        <div class="quick-add-task" id="quickAddTask">
+          <input type="text" id="newTaskTitle" placeholder="הוסף משימה... (לדוגמה: להגיש תרגיל מחר 23:00 #מתמטיקה דחוף)"
+            dir="auto" />
+          <div class="nl-hint">
+            💡 <strong>קצרת דרך:</strong> כתוב בשפה טבעית ולחץ Enter!
+            <span class="nl-hint-toggle"
+              onclick="document.getElementById('nlExamples').classList.toggle('show')">דוגמאות ▼</span>
+            <div class="nl-hint-examples" id="nlExamples">
+              <div style="border-bottom: 2px solid var(--accent); padding-bottom: 12px; margin-bottom: 12px;">
+                <strong style="color: var(--accent); font-size: 13px;">📅 תאריכים ושעות:</strong>
+              </div>
+              <div>
+                <div class="example-input">להגיש תרגיל מחר 23:59 #מתמטיקה דחוף</div>
+                <div class="example-result">→ מחר ב-23:59, נושא: מתמטיקה, עדיפות: דחוף</div>
+              </div>
+              <div>
+                <div class="example-input">פגישה עם יועץ ביום שלישי 14:30</div>
+                <div class="example-result">→ יום שלישי הקרוב ב-14:30</div>
+              </div>
+              <div>
+                <div class="example-input">מבחן היום 16:00 גבוה</div>
+                <div class="example-result">→ היום ב-16:00, עדיפות: גבוה</div>
+              </div>
+              <div>
+                <div class="example-input">רופא ב-25/12 בשעה 10:30</div>
+                <div class="example-result">→ 25 בדצמבר ב-10:30</div>
+              </div>
+
+              <div
+                style="border-bottom: 2px solid var(--accent); padding-bottom: 12px; margin-bottom: 12px; margin-top: 16px;">
+                <strong style="color: var(--accent); font-size: 13px;">📚 נושאים (כולל תת-נושאים):</strong>
+              </div>
+              <div>
+                <div class="example-input">לקרוא פרק 5 #מתמטיקה/אלגברה</div>
+                <div class="example-result">→ נושא: מתמטיקה → אלגברה (תת-נושא)</div>
+              </div>
+              <div>
+                <div class="example-input">סיכום שיעור #"היסטוריה מודרנית"</div>
+                <div class="example-result">→ נושא עם רווחים (בגרשיים)</div>
+              </div>
+              <div>
+                <div class="example-input">פרוייקט גמר #עבודה/פיתוח/frontend</div>
+                <div class="example-result">→ עבודה → פיתוח → frontend (3 רמות!)</div>
+              </div>
+              <div>
+                <div class="example-input">תרגיל בית #מדעי_המחשב</div>
+                <div class="example-result">→ נושא עם קו תחתון במקום רווח</div>
+              </div>
+              <div>
+                <div class="example-input">תרגיל #אלגברה</div>
+                <div class="example-result">→ ישירות לתת-נושא אלגברה (בלי הורה!)</div>
+              </div>
+              <div>
+                <div class="example-input">פגישה #frontend</div>
+                <div class="example-result">→ ישירות לתת-נושא frontend</div>
+              </div>
+              <div>
+                <div class="example-input">קניות לשבת פיזיקה</div>
+                <div class="example-result">→ זיהוי אוטומטי של נושא בלי # (אם קיים)</div>
+              </div>
+
+              <div
+                style="border-bottom: 2px solid var(--accent); padding-bottom: 12px; margin-bottom: 12px; margin-top: 16px;">
+                <strong style="color: var(--accent); font-size: 13px;">🚨 עדיפויות:</strong>
+              </div>
+              <div>
+                <div class="example-input">להגיש עבודה דחוף !!!</div>
+                <div class="example-result">→ עדיפות: דחוף (!!!, דחוף, מיידי, urgent, asap)</div>
+              </div>
+              <div>
+                <div class="example-input">מבחן חשוב מחר !</div>
+                <div class="example-result">→ עדיפות: גבוה (!, גבוה, חשוב, high, important)</div>
+              </div>
+              <div>
+                <div class="example-input">לקרוא מאמר נמוך</div>
+                <div class="example-result">→ עדיפות: נמוך (נמוך, לא דחוף, low)</div>
+              </div>
+
+              <div
+                style="border-bottom: none; padding-top: 16px; color: var(--text); background: var(--day-other); padding: 12px; border-radius: 8px; margin-top: 12px;">
+                <strong style="display: block; margin-bottom: 8px; color: var(--accent);">📖 מילות מפתח:</strong>
+                <div style="line-height: 1.8; font-size: 11px;">
+                  <div><strong>📅 תאריכים:</strong> היום, מחר, מחרתיים, בעוד X ימים, השבוע, בשבוע הבא, ביום
+                    ראשון/שני/..., DD/MM</div>
+                  <div><strong>⏰ שעות:</strong> 14:30, בשעה 9:00, ב-23:59, 2:30 PM</div>
+                  <div><strong>🏷️ נושאים:</strong> #נושא, #נושא_עם_קו_תחתון, #"נושא עם רווחים", #הורה/ילד,
+                    #הורה/ילד/נכד</div>
+                  <div><strong>🚨 עדיפות:</strong> דחוף (!!!), גבוה (!), בינוני, נמוך</div>
+                </div>
+              </div>
+
+              <div style="padding-top: 12px; color: var(--muted); font-size: 11px; text-align: center;">
+                <strong>💡 טיפ:</strong> אפשר לשלב הכל! לדוגמה: "להגיש פרויקט מחר 23:59 #עבודה/פיתוח דחוף !!"
+              </div>
+            </div>
+          </div>
+          <div class="quick-add-row" id="quickAddRow" style="display: none;">
+            <div class="priority-selector" id="taskPriorityPicker">
+              <div class="priority-option" data-priority="urgent">🔴 דחוף</div>
+              <div class="priority-option" data-priority="high">🟠 גבוה</div>
+              <div class="priority-option selected" data-priority="medium">🟡 בינוני</div>
+              <div class="priority-option" data-priority="low">🟢 נמוך</div>
               <div class="priority-option" data-priority="none">⚪ ללא</div>
             </div>
             <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap; width: 100%;">
