@@ -2795,31 +2795,19 @@
         const starBtn = document.createElement("button");
         starBtn.className = `star-btn ${evt.highlighted ? 'active' : ''}`;
         starBtn.setAttribute("aria-label", "Highlight event");
-        const starIcon = document.createElement("span");
-        starIcon.className = "icon";
-        starIcon.textContent = "star";
-        starIcon.setAttribute("aria-hidden", "true");
-        starBtn.appendChild(starIcon);
+        starBtn.textContent = "☆";
 
         const pinBtn = document.createElement("button");
         pinBtn.className = `pin-btn ${evt.pinned ? 'pinned' : ''}`;
         pinBtn.setAttribute("aria-label", evt.pinned ? "Unpin event" : "Pin event");
         pinBtn.title = evt.pinned ? "Unpin" : "Pin to top";
-        const pinIcon = document.createElement("span");
-        pinIcon.className = "icon";
-        pinIcon.textContent = "push_pin";
-        pinIcon.setAttribute("aria-hidden", "true");
-        pinBtn.appendChild(pinIcon);
+        pinBtn.textContent = "📌";
 
         const editBtn = document.createElement("button");
         editBtn.className = "edit-btn";
         editBtn.setAttribute("aria-label", "Edit event");
         editBtn.title = "Edit";
-        const editIcon = document.createElement("span");
-        editIcon.className = "icon";
-        editIcon.textContent = "edit";
-        editIcon.setAttribute("aria-hidden", "true");
-        editBtn.appendChild(editIcon);
+        editBtn.textContent = "✎";
 
         // Reminder button with dropdown
         const reminderWrap = document.createElement("div");
@@ -2829,11 +2817,7 @@
         reminderBtn.className = `reminder-btn ${evt.reminder ? 'has-reminder' : ''}`;
         reminderBtn.setAttribute("aria-label", "Set reminder");
         reminderBtn.title = evt.reminder ? `תזכורת ${evt.reminder} דקות לפני` : "הגדר תזכורת";
-        const reminderIcon = document.createElement("span");
-        reminderIcon.className = "icon";
-        reminderIcon.textContent = "notifications";
-        reminderIcon.setAttribute("aria-hidden", "true");
-        reminderBtn.appendChild(reminderIcon);
+        reminderBtn.textContent = "🔔";
 
         const reminderDropdown = document.createElement("div");
         reminderDropdown.className = "event-reminder-dropdown";
@@ -2873,11 +2857,7 @@
         const deleteBtn = document.createElement("button");
         deleteBtn.className = "delete-btn";
         deleteBtn.setAttribute("aria-label", "Delete event");
-        const deleteIcon = document.createElement("span");
-        deleteIcon.className = "icon";
-        deleteIcon.textContent = "close";
-        deleteIcon.setAttribute("aria-hidden", "true");
-        deleteBtn.appendChild(deleteIcon);
+        deleteBtn.textContent = "×";
 
         const actions = document.createElement("div");
         actions.className = "event-actions";
