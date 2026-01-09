@@ -1601,12 +1601,17 @@
 
     // 4. LOGOUT / SWITCH USER FUNCTION
     if (userBtn) {
-      userBtn.onclick = () => {
-        const switchUser = confirm(`You are logged in as "${currentUser}".\n\nDo you want to switch users?`);
-        if (switchUser) {
-          localStorage.removeItem('countdown_username');
-          location.reload(); // Reload page to reset references
-        }
+      userBtn.onclick = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        // Use timeout to prevent instant dismissal issues
+        setTimeout(() => {
+          const switchUser = confirm(`You are logged in as "${currentUser}".\n\nDo you want to switch users?`);
+          if (switchUser) {
+            localStorage.removeItem('countdown_username');
+            location.reload(); // Reload page to reset references
+          }
+        }, 50);
       };
     }
 
@@ -4742,6 +4747,9 @@
 
     // Attach context menus to various areas
     document.addEventListener('contextmenu', (e) => {
+      // Allow native context menu if Shift is held
+      if (e.shiftKey) return;
+
       // Task items - full task menu
       const taskItem = e.target.closest('.task-item');
       if (taskItem) {
@@ -4790,6 +4798,9 @@
       const inTaskView = $("taskManagerOverlay")?.classList.contains('open');
       if (!inTaskView) {
         const mainContent = e.target.closest('.main-content');
+        // Don't block system context menu for interactive elements
+        if (['INPUT', 'TEXTAREA', 'BUTTON', 'A', 'SELECT', 'LABEL'].includes(e.target.tagName)) return;
+
         if (mainContent && !e.target.closest('.event-list') && !e.target.closest('.empty-state')) {
           e.preventDefault();
           showCountdownContextMenu(e.clientX, e.clientY);
