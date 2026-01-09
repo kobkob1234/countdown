@@ -1,4 +1,4 @@
-const CACHE_NAME = 'countdown-push-v3';
+const CACHE_NAME = 'countdown-push-v4';
 const CACHE_URLS = [
   './',
   './icon-192.png',
