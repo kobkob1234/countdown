@@ -1594,8 +1594,8 @@
     }
 
     .event-row.highlighted {
-      border: 1px solid var(--accent);
-      box-shadow: 0 0 0 2px var(--accent-soft);
+      border: 1px solid var(--event-color, var(--accent));
+      box-shadow: 0 0 0 2px var(--event-color-soft, var(--accent-soft));
     }
 
     .color-dot {

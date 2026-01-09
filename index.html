@@ -2714,6 +2714,7 @@
         row.dataset.id = evt.id;
         // Set event color for mobile accent bar
         row.style.setProperty('--event-color', color);
+        row.style.setProperty('--event-color-soft', `${color}1a`);
 
         const dot = document.createElement("span");
         dot.className = "color-dot";
@@ -2775,7 +2776,7 @@
 
           const val = document.createElement("span");
           val.className = `time-val time-${key}`;
-          val.style.color = t.ended ? "var(--muted)" : "var(--text)";
+          val.style.color = color;
           val.textContent = key === 'd' ? t[key] : String(t[key]).padStart(2, '0');
 
           const lbl = document.createElement("div");

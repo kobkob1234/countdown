@@ -1,4 +1,4 @@
-    @media (max-width: 640px) {
+    @media (max-width: 640px) and (pointer: coarse) {
       .shortcuts-grid {
         grid-template-columns: 1fr;
       }
@@ -13,7 +13,7 @@
       }
     }
 
-    @media (max-width: 640px) {
+    @media (max-width: 640px) and (pointer: coarse) {
       .main-content {
         padding: 12px;
         padding-top: 70px;
@@ -305,8 +305,8 @@
         width: 100%;
       }
     }
-    @media screen and (max-width: 768px),
-    (display-mode: standalone) and (max-width: 1024px) {
+    @media screen and (max-width: 768px) and (pointer: coarse),
+    (display-mode: standalone) and (max-width: 1024px) and (pointer: coarse) {
 
       /* ===== ROOT MOBILE VARIABLES ===== */
       :root {
@@ -533,9 +533,9 @@
         top: 0;
         left: 0;
         right: 0;
-        height: 0;
-        background: transparent;
-        opacity: 0;
+        height: 4px;
+        background: linear-gradient(90deg, var(--event-color, var(--accent)), var(--accent2));
+        opacity: 0.9;
       }
 
       /* Subtle glow effect using event color */
@@ -547,22 +547,22 @@
         transform: translateX(-50%);
         width: 70%;
         height: 40px;
-        background: transparent;
-        opacity: 0;
+        background: var(--event-color, var(--accent));
+        opacity: 0.06;
         border-radius: 0 0 50% 50%;
         pointer-events: none;
       }
 
       /* Highlighted event - premium glow */
       .event-row.highlighted {
-        border: 1px solid var(--accent);
-        box-shadow: 0 0 0 2px var(--accent-soft);
+        border: 1px solid var(--event-color, var(--accent));
+        box-shadow: 0 0 0 2px var(--event-color-soft, var(--accent-soft));
         padding: var(--mobile-spacing-md);
       }
 
       .event-row.highlighted::after {
-        opacity: 0;
-        height: 0;
+        opacity: 0.1;
+        height: 60px;
       }
 
       .event-row .color-dot {
@@ -622,9 +622,9 @@
         bottom: 0;
         left: 0;
         right: 0;
-        height: 0;
-        background: transparent;
-        opacity: 0;
+        height: 2px;
+        background: var(--event-color, var(--accent));
+        opacity: 0.4;
       }
 
       .event-row .time-val {
@@ -1504,7 +1504,7 @@
     }
 
     /* ===== DARK MODE MOBILE ADJUSTMENTS ===== */
-    @media screen and (max-width: 768px) {
+    @media screen and (max-width: 768px) and (pointer: coarse) {
 
       body.dark .event-row,
       body.dark .task-item,
@@ -1551,8 +1551,8 @@
         padding-bottom: calc(52px + env(safe-area-inset-bottom, 0px));
       }
     }
-    @media screen and (max-width: 768px),
-    (display-mode: standalone) and (max-width: 1024px) {
+    @media screen and (max-width: 768px) and (pointer: coarse),
+    (display-mode: standalone) and (max-width: 1024px) and (pointer: coarse) {
 
       /* ===== SWIPE CONTAINER SYSTEM ===== */
       .swipe-container {
