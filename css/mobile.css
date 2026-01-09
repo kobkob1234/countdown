@@ -1,0 +1,2190 @@
+    @media (max-width: 640px) {
+      .shortcuts-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .shortcuts-hero {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .shortcuts-close {
+        align-self: flex-end;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .main-content {
+        padding: 12px;
+        padding-top: 70px;
+      }
+
+      .header {
+        margin-bottom: 20px;
+      }
+
+      .header h1 {
+        font-size: 22px;
+      }
+
+      .header p {
+        font-size: 13px;
+      }
+
+      .fixed-header-bar {
+        height: 50px;
+        padding: 0 12px;
+        gap: 8px;
+      }
+
+      .header-btn {
+        padding: 8px 12px;
+        font-size: 12px;
+      }
+
+      .header-btn.icon-only {
+        width: 36px;
+        height: 36px;
+      }
+
+      body {
+        padding-top: 50px;
+      }
+
+      .app-layout {
+        height: calc(100vh - 50px);
+      }
+
+      .task-manager-header {
+        padding: 12px 16px;
+      }
+
+      .task-manager-title {
+        font-size: 18px;
+      }
+
+      .task-search-bar {
+        order: 10;
+        max-width: 100%;
+        flex-basis: 100%;
+      }
+
+      .quick-add-task {
+        margin: 0 0 24px 0;
+      }
+
+      .task-item {
+        flex-wrap: wrap;
+      }
+
+      .task-main {
+        width: 100%;
+        order: 2;
+      }
+
+      .task-actions {
+        order: 3;
+        width: 100%;
+        justify-content: center;
+        padding-top: 12px;
+        border-top: 1px solid var(--border);
+        margin-top: 12px;
+      }
+
+      .input-panel {
+        padding: 14px;
+      }
+
+      .input-row {
+        flex-direction: column;
+        gap: 10px;
+        align-items: stretch;
+      }
+
+      .input-row input {
+        width: 100%;
+        padding: 12px 14px;
+        font-size: 16px;
+      }
+
+      .input-row .reminder-select {
+        width: 100%;
+        padding: 12px 14px;
+        font-size: 16px;
+      }
+
+      .reminder-custom {
+        width: 100%;
+        flex-direction: row;
+        gap: 10px;
+      }
+
+      .reminder-custom input,
+      .reminder-custom select {
+        width: 100%;
+        padding: 12px 14px;
+        font-size: 16px;
+        flex: 1;
+        min-width: 0;
+      }
+
+      .input-row .btn {
+        width: 100%;
+        padding: 12px;
+      }
+
+      .input-row-notes textarea {
+        font-size: 15px;
+        min-height: 90px;
+      }
+
+      .event-row {
+        flex-direction: column;
+        align-items: stretch;
+        padding: 14px;
+        gap: 12px;
+      }
+
+      .color-dot {
+        display: none;
+      }
+
+      .event-info {
+        order: 1;
+        text-align: center;
+      }
+
+      .event-name {
+        font-size: 16px;
+      }
+
+      .timer {
+        order: 2;
+        width: 100%;
+        justify-content: center;
+        gap: 6px;
+      }
+
+      .time-unit {
+        min-width: 50px;
+        padding: 8px 6px;
+        flex: 1;
+      }
+
+      .time-val {
+        font-size: 18px;
+      }
+
+      .time-label {
+        font-size: 9px;
+      }
+
+      .badge {
+        order: 3;
+        align-self: center;
+      }
+
+      .event-actions {
+        order: 4;
+        display: flex;
+        justify-content: center;
+        gap: 16px;
+        padding-top: 8px;
+        border-top: 1px solid var(--border);
+        width: 100%;
+      }
+
+      .star-btn,
+      .edit-btn,
+      .delete-btn {
+        width: 40px;
+        height: 40px;
+        font-size: 20px;
+      }
+
+      .sidebar {
+        width: 100%;
+      }
+
+      /* Task manager sidebar on mobile */
+      .task-manager-layout {
+        flex-direction: column;
+      }
+
+      .task-manager-sidebar {
+        width: 100%;
+        max-height: 200px;
+        border-left: none;
+        border-bottom: 1px solid var(--border);
+      }
+
+      .task-manager-sidebar-content {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        padding: 8px;
+      }
+
+      .smart-views-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+        border-bottom: none;
+        margin-bottom: 0;
+        padding-bottom: 0;
+      }
+
+      .smart-view-item {
+        padding: 6px 10px;
+        font-size: 12px;
+      }
+
+      .subjects-list-title {
+        display: none;
+      }
+
+      .subjects-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+      }
+
+      .subject-list-item {
+        margin-bottom: 0;
+      }
+
+      .subject-list-header {
+        padding: 6px 10px;
+      }
+
+      .subject-list-children {
+        position: absolute;
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        box-shadow: var(--shadow);
+        padding: 8px;
+        z-index: 100;
+        padding-right: 0;
+        margin-top: 0;
+      }
+
+      .add-subject-sidebar-btn {
+        padding: 6px 10px;
+        font-size: 12px;
+        margin-top: 0;
+      }
+
+      .calendar-day {
+        min-height: 48px;
+        padding: 6px;
+      }
+
+      .calendar-day-number {
+        font-size: 12px;
+      }
+
+      .calendar-event-chip {
+        font-size: 9px;
+        padding: 2px 4px;
+      }
+
+      .calendar-grid {
+        gap: 4px;
+      }
+
+      .modal-card {
+        padding: 16px;
+      }
+
+      .modal-actions {
+        flex-direction: column;
+      }
+
+      .modal-actions .btn {
+        width: 100%;
+      }
+    }
+    @media screen and (max-width: 768px),
+    (display-mode: standalone) and (max-width: 1024px) {
+
+      /* ===== ROOT MOBILE VARIABLES ===== */
+      :root {
+        --mobile-touch-target: 48px;
+        --mobile-spacing-xs: 6px;
+        --mobile-spacing-sm: 10px;
+        --mobile-spacing-md: 16px;
+        --mobile-spacing-lg: 24px;
+        --mobile-radius: 16px;
+        --mobile-radius-lg: 24px;
+        --mobile-card-shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
+        --mobile-header-height: 60px;
+        --mobile-bottom-nav-height: 64px;
+      }
+
+      /* ===== BODY & LAYOUT OPTIMIZATIONS ===== */
+      body {
+        padding-top: var(--mobile-header-height);
+        padding-bottom: calc(var(--mobile-bottom-nav-height) + env(safe-area-inset-bottom, 0px));
+        font-size: 16px;
+        /* Prevent zoom on input focus */
+        -webkit-text-size-adjust: 100%;
+      }
+
+      /* Hide scrollbar but keep scroll functionality */
+      body::-webkit-scrollbar,
+      .app-layout::-webkit-scrollbar,
+      .task-list::-webkit-scrollbar,
+      .event-list::-webkit-scrollbar {
+        display: none;
+      }
+
+      body,
+      .app-layout,
+      .task-list,
+      .event-list {
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+      }
+
+      .app-layout {
+        flex-direction: column;
+        height: auto;
+        min-height: calc(100dvh - var(--mobile-header-height) - var(--mobile-bottom-nav-height));
+        padding-bottom: var(--mobile-bottom-nav-height);
+      }
+
+      /* ===== MOBILE HEADER BAR REDESIGN ===== */
+      .fixed-header-bar {
+        height: var(--mobile-header-height);
+        padding: 0 var(--mobile-spacing-md);
+        gap: var(--mobile-spacing-sm);
+        background: var(--header-bg);
+        border-bottom: 1px solid var(--border);
+        box-shadow: var(--shadow);
+      }
+
+      /* Hide main nav buttons in header - they move to bottom nav */
+      .fixed-header-bar #toggleCountdown,
+      .fixed-header-bar #toggleTasks,
+      .fixed-header-bar #togglePomodoro,
+      .fixed-header-bar #togglePlanner,
+      .fixed-header-bar #toggleSidebar {
+        display: none;
+      }
+
+      .fixed-header-bar .header-spacer {
+        display: none;
+      }
+
+      /* Keep utility buttons visible */
+      .fixed-header-bar .header-btn.icon-only {
+        width: var(--mobile-touch-target);
+        height: var(--mobile-touch-target);
+        border-radius: 12px;
+        background: var(--day-other);
+      }
+
+      .fixed-header-bar .header-btn.icon-only .icon {
+        font-size: 20px;
+      }
+
+      .fixed-header-bar #userBtn {
+        padding: var(--mobile-spacing-sm) var(--mobile-spacing-md);
+        border-radius: var(--mobile-radius);
+        font-size: 14px;
+        max-width: 40vw;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .sync-badge {
+        display: none;
+      }
+
+      /* ===== MOBILE BOTTOM NAVIGATION BAR ===== */
+      .mobile-bottom-nav {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: var(--mobile-bottom-nav-height);
+        padding-bottom: env(safe-area-inset-bottom, 0px);
+        background: var(--card);
+        border-top: 1px solid var(--border);
+        display: flex !important;
+        justify-content: space-around;
+        align-items: stretch;
+        z-index: 10001;
+        box-shadow: 0 -6px 16px rgba(15, 23, 42, 0.08);
+      }
+
+      .mobile-nav-item {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        background: transparent;
+        border: none;
+        color: var(--muted);
+        font-size: 11px;
+        font-weight: 500;
+        padding: 8px 4px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        position: relative;
+      }
+
+      .mobile-nav-item::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 0;
+        height: 3px;
+        background: linear-gradient(135deg, var(--accent), var(--accent2));
+        border-radius: 0 0 3px 3px;
+        transition: width 0.2s ease;
+      }
+
+      .mobile-nav-item.active {
+        color: var(--accent);
+      }
+
+      .mobile-nav-item.active::before {
+        width: 24px;
+      }
+
+      .mobile-nav-icon {
+        font-size: 22px;
+        line-height: 1;
+      }
+
+      .mobile-nav-label {
+        font-size: 10px;
+        white-space: nowrap;
+      }
+
+      .mobile-nav-item.active .icon {
+        --icon-fill: 1;
+      }
+
+      /* ===== MAIN CONTENT AREA ===== */
+      .main-content {
+        padding: var(--mobile-spacing-md);
+        padding-top: calc(var(--mobile-spacing-md) + 8px);
+      }
+
+      .container {
+        max-width: 100%;
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        gap: var(--mobile-spacing-md);
+      }
+
+      .header {
+        margin-bottom: 0;
+        text-align: right;
+      }
+
+      .header h1 {
+        font-size: 24px;
+        margin-bottom: var(--mobile-spacing-xs);
+      }
+
+      .header p {
+        font-size: 14px;
+      }
+
+      /* ===== MOBILE EVENT CARDS - PREMIUM DESIGN ===== */
+      .event-list {
+        gap: var(--mobile-spacing-md);
+        padding: 0;
+      }
+
+      .event-row {
+        padding: var(--mobile-spacing-md);
+        border-radius: 16px;
+        flex-direction: column;
+        gap: var(--mobile-spacing-sm);
+        box-shadow: var(--shadow);
+        border: 1px solid var(--border);
+        background: var(--card);
+        position: relative;
+        overflow: hidden;
+        transition: box-shadow 0.2s ease;
+      }
+
+      .event-row:active {
+        transform: none;
+        box-shadow: var(--shadow);
+      }
+
+      /* Event color accent - gradient bar at top */
+      .event-row::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 0;
+        background: transparent;
+        opacity: 0;
+      }
+
+      /* Subtle glow effect using event color */
+      .event-row::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 70%;
+        height: 40px;
+        background: transparent;
+        opacity: 0;
+        border-radius: 0 0 50% 50%;
+        pointer-events: none;
+      }
+
+      /* Highlighted event - premium glow */
+      .event-row.highlighted {
+        border: 1px solid var(--accent);
+        box-shadow: 0 0 0 2px var(--accent-soft);
+        padding: var(--mobile-spacing-md);
+      }
+
+      .event-row.highlighted::after {
+        opacity: 0;
+        height: 0;
+      }
+
+      .event-row .color-dot {
+        display: none;
+      }
+
+      .event-row .event-info {
+        width: 100%;
+        text-align: right;
+        padding-bottom: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+
+      .event-row .event-name {
+        font-size: 16px;
+        font-weight: 700;
+        margin-bottom: 0;
+        line-height: 1.3;
+        color: var(--text);
+      }
+
+      .event-row .event-date {
+        font-size: 12px;
+        color: var(--muted);
+        font-weight: 500;
+        margin-top: 0;
+      }
+
+      /* Mobile Timer Display - Premium with colored accents */
+      .event-row .timer {
+        width: 100%;
+        justify-content: center;
+        gap: var(--mobile-spacing-sm);
+        padding: var(--mobile-spacing-xs) 0;
+      }
+
+      .event-row .time-unit {
+        flex: 1;
+        max-width: 68px;
+        min-width: 52px;
+        padding: 10px 6px 8px;
+        border-radius: 12px;
+        background: var(--day-other);
+        border: 1px solid rgba(102, 126, 234, 0.12);
+        text-align: center;
+        box-shadow: none;
+        position: relative;
+        overflow: hidden;
+      }
+
+      /* Colored accent on time units */
+      .event-row .time-unit::before {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 0;
+        background: transparent;
+        opacity: 0;
+      }
+
+      .event-row .time-val {
+        font-size: 22px;
+        font-weight: 800;
+        color: var(--text);
+        line-height: 1;
+        letter-spacing: -0.5px;
+      }
+
+      .event-row .time-label {
+        font-size: 8px;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+        margin-top: 4px;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+
+      /* Mobile Badge - Premium pill style */
+      .event-row .badge {
+        align-self: center;
+        font-size: 11px;
+        font-weight: 600;
+        padding: 5px 14px;
+        border-radius: 20px;
+        background: var(--accent-soft);
+        color: var(--accent);
+        box-shadow: none;
+        text-shadow: none;
+      }
+
+      /* Mobile Event Actions - Refined buttons */
+      .event-row .event-actions {
+        width: 100%;
+        justify-content: center;
+        gap: var(--mobile-spacing-sm);
+        padding-top: var(--mobile-spacing-sm);
+        border-top: 1px solid var(--border);
+        margin-top: 0;
+      }
+
+      .event-row .star-btn,
+      .event-row .pin-btn,
+      .event-row .reminder-btn,
+      .event-row .edit-btn,
+      .event-row .delete-btn {
+        width: 40px;
+        height: 40px;
+        border-radius: 12px;
+        background: var(--day-other);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: background 0.15s ease, border-color 0.15s ease;
+        border: 1px solid var(--border);
+      }
+
+      .event-row .star-btn:active,
+      .event-row .pin-btn:active,
+      .event-row .reminder-btn:active,
+      .event-row .edit-btn:active,
+      .event-row .delete-btn:active {
+        background: var(--day-hover);
+      }
+
+      /* ===== MOBILE INPUT PANEL ===== */
+      .input-panel {
+        padding: var(--mobile-spacing-md);
+        border-radius: var(--mobile-radius);
+        margin-bottom: 0;
+        box-shadow: var(--mobile-card-shadow);
+        border: none;
+      }
+
+      .input-row {
+        flex-direction: column;
+        gap: var(--mobile-spacing-sm);
+        align-items: stretch;
+      }
+
+      .input-row input,
+      .input-row .reminder-select,
+      .reminder-custom input,
+      .reminder-custom select {
+        width: 100%;
+        padding: var(--mobile-spacing-md);
+        font-size: 16px;
+        /* Prevents zoom on iOS */
+        border-radius: var(--mobile-radius);
+        min-height: var(--mobile-touch-target);
+      }
+
+      .input-row .btn,
+      .input-panel .btn {
+        width: 100%;
+        padding: var(--mobile-spacing-md);
+        min-height: var(--mobile-touch-target);
+        font-size: 16px;
+        font-weight: 600;
+        border-radius: var(--mobile-radius);
+      }
+
+      .reminder-custom {
+        flex-direction: row;
+        gap: var(--mobile-spacing-sm);
+      }
+
+      .reminder-custom input,
+      .reminder-custom select {
+        flex: 1;
+        min-width: 0;
+      }
+
+      .input-row-notes {
+        margin-top: var(--mobile-spacing-sm);
+      }
+
+      .input-row-notes textarea {
+        font-size: 15px;
+        min-height: 90px;
+      }
+
+      /* ===== MOBILE TASK MANAGER REDESIGN ===== */
+      .task-manager-overlay {
+        top: 0;
+        z-index: 10002;
+      }
+
+      .task-manager-header {
+        padding: var(--mobile-spacing-md);
+        gap: var(--mobile-spacing-sm);
+        flex-wrap: wrap;
+        position: relative;
+      }
+
+      .task-manager-title {
+        font-size: 20px;
+        flex: 1;
+        order: 1;
+      }
+
+      #toggleTaskSidebar {
+        display: inline-flex !important;
+        order: 2;
+        padding: var(--mobile-spacing-sm) var(--mobile-spacing-md);
+        border-radius: var(--mobile-radius);
+        font-size: 14px;
+        height: 40px;
+        background: var(--day-other);
+        border: 1px solid var(--border);
+        align-items: center;
+        gap: 6px;
+        font-weight: 500;
+        transition: all 0.2s;
+      }
+
+      #toggleTaskSidebar:active {
+        transform: scale(0.95);
+      }
+
+      #toggleTaskSidebar.active {
+        background: var(--accent);
+        color: white;
+        border-color: var(--accent);
+        box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+      }
+
+      .task-manager-close {
+        width: var(--mobile-touch-target);
+        height: var(--mobile-touch-target);
+        font-size: 28px;
+        order: 3;
+      }
+
+      .task-search-bar {
+        width: 100%;
+        order: 10;
+        margin-top: var(--mobile-spacing-sm);
+      }
+
+      .task-search-bar input {
+        padding: var(--mobile-spacing-md);
+        font-size: 16px;
+        border-radius: var(--mobile-radius);
+        border: 2px solid var(--border);
+      }
+
+      .task-search-bar input:focus {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
+      }
+
+      .task-filters {
+        width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        padding: var(--mobile-spacing-xs) 0;
+        gap: var(--mobile-spacing-xs);
+        scrollbar-width: none;
+      }
+
+      .task-filters::-webkit-scrollbar {
+        display: none;
+      }
+
+      .filter-pill {
+        padding: var(--mobile-spacing-sm) var(--mobile-spacing-md);
+        font-size: 14px;
+        min-height: 40px;
+        white-space: nowrap;
+        border-radius: 20px;
+        font-weight: 500;
+      }
+
+      /* Task Manager Body */
+      .task-manager-body {
+        padding: var(--mobile-spacing-md);
+        padding-top: var(--mobile-spacing-sm);
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+      }
+
+      .task-list {
+        display: flex;
+        flex-direction: column;
+        gap: var(--mobile-spacing-sm);
+        padding-bottom: var(--mobile-spacing-lg);
+      }
+
+      .task-group-header {
+        font-size: 14px;
+        padding: var(--mobile-spacing-sm) var(--mobile-spacing-xs);
+        margin-top: var(--mobile-spacing-md);
+        font-weight: 600;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      /* Mobile Task Sidebar - Slide-in Panel */
+      .task-manager-sidebar {
+        position: fixed;
+        left: 0;
+        top: var(--mobile-header-height);
+        bottom: var(--mobile-bottom-nav-height);
+        width: 280px !important;
+        max-width: 85vw !important;
+        z-index: 600;
+        transform: translateX(-100%);
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        border-right: 1px solid var(--border);
+        border-left: none;
+        box-shadow: 2px 0 12px rgba(0, 0, 0, 0.15);
+        background: var(--card);
+      }
+
+      .task-manager-sidebar.open {
+        transform: translateX(0);
+      }
+
+      .task-manager-sidebar-header {
+        padding: var(--mobile-spacing-md);
+        border-bottom: 2px solid var(--border);
+      }
+
+      .task-manager-sidebar-header h3 {
+        font-size: 16px;
+      }
+
+      .smart-views-list {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        padding: var(--mobile-spacing-sm);
+      }
+
+      .smart-view-item {
+        padding: 12px var(--mobile-spacing-md);
+        font-size: 14px;
+        border-radius: 10px;
+        min-height: 44px;
+        display: flex;
+        align-items: center;
+      }
+
+      .subjects-list {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        padding: var(--mobile-spacing-sm);
+      }
+
+      .subjects-list-title {
+        display: block !important;
+        padding: var(--mobile-spacing-md);
+        font-size: 12px;
+        text-transform: uppercase;
+        font-weight: 600;
+        color: var(--muted);
+      }
+
+      .subject-list-item {
+        margin-bottom: 4px;
+      }
+
+      .subject-list-header {
+        padding: 12px var(--mobile-spacing-md);
+        font-size: 14px;
+        border-radius: 10px;
+        min-height: 44px;
+      }
+
+      .add-subject-sidebar-btn {
+        margin: var(--mobile-spacing-sm);
+        padding: 12px var(--mobile-spacing-md);
+        font-size: 14px;
+        border-radius: 10px;
+        min-height: 44px;
+      }
+
+      /* Mobile Task Items */
+      .task-item {
+        padding: var(--mobile-spacing-md);
+        border-radius: var(--mobile-radius);
+        gap: var(--mobile-spacing-sm);
+        flex-wrap: wrap;
+        border-left-width: 4px;
+        box-shadow: var(--mobile-card-shadow);
+        border: none;
+        border-left: 4px solid var(--task-color, var(--priority-color, var(--border)));
+        background: var(--card);
+        margin-bottom: 0;
+        position: relative;
+        overflow: hidden;
+      }
+
+      /* Task item accent gradient */
+      .task-item::before {
+        opacity: 0.06;
+      }
+
+      .task-item:active {
+        transform: scale(0.98);
+        transition: transform 0.1s;
+      }
+
+      .task-item.completed {
+        opacity: 0.65;
+      }
+
+      .task-item.dragging {
+        opacity: 0.5;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+      }
+
+      .task-checkbox {
+        width: 28px;
+        height: 28px;
+        flex-shrink: 0;
+        border-width: 2.5px;
+      }
+
+      .task-checkbox:active {
+        transform: scale(0.9);
+      }
+
+      .task-main {
+        flex: 1;
+        min-width: 0;
+        width: 100%;
+      }
+
+      .task-title {
+        font-size: 16px;
+        line-height: 1.5;
+        font-weight: 600;
+        margin-bottom: 6px;
+      }
+
+      .task-title-row {
+        display: flex;
+        align-items: flex-start;
+        gap: var(--mobile-spacing-xs);
+        flex-wrap: wrap;
+      }
+
+      .task-color-dot {
+        width: 14px;
+        height: 14px;
+        margin-top: 3px;
+      }
+
+      .task-priority-badge {
+        font-size: 10px;
+        padding: 4px 8px;
+        border-radius: 12px;
+      }
+
+      .task-meta {
+        gap: var(--mobile-spacing-xs);
+        margin-top: var(--mobile-spacing-xs);
+        flex-wrap: wrap;
+      }
+
+      .task-due,
+      .task-countdown,
+      .task-recurrence,
+      .task-reminder {
+        font-size: 12px;
+        padding: 6px 10px;
+        border-radius: 8px;
+        font-weight: 500;
+      }
+
+      .task-subtasks {
+        margin-top: var(--mobile-spacing-sm);
+        padding-top: var(--mobile-spacing-sm);
+      }
+
+      .task-subtask {
+        padding: var(--mobile-spacing-xs) 0;
+        font-size: 14px;
+      }
+
+      .task-actions {
+        width: 100%;
+        justify-content: flex-end;
+        gap: var(--mobile-spacing-sm);
+        padding-top: var(--mobile-spacing-sm);
+        border-top: 1px solid var(--border);
+        margin-top: var(--mobile-spacing-sm);
+      }
+
+      .task-action-btn {
+        width: 44px;
+        height: 44px;
+        font-size: 20px;
+        border-radius: 12px;
+        background: var(--day-other);
+      }
+
+      .task-action-btn:active {
+        transform: scale(0.92);
+        background: var(--day-hover);
+      }
+
+      /* Quick Add Task - Mobile Optimized */
+      .quick-add-task {
+        margin: 0 0 var(--mobile-spacing-lg);
+        padding: var(--mobile-spacing-md);
+        background: var(--card);
+        border-radius: var(--mobile-radius);
+        box-shadow: var(--mobile-card-shadow);
+        border: 2px solid var(--border);
+      }
+
+      .quick-add-task input {
+        padding: var(--mobile-spacing-md);
+        font-size: 16px;
+        border-radius: var(--mobile-radius);
+        min-height: var(--mobile-touch-target);
+        border: 2px solid var(--border);
+      }
+
+      .quick-add-task input:focus {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
+      }
+
+      .nl-hint {
+        font-size: 12px;
+        padding: var(--mobile-spacing-sm);
+        margin-top: var(--mobile-spacing-sm);
+        background: linear-gradient(135deg, rgba(102, 126, 234, 0.05), rgba(118, 75, 162, 0.05));
+        border-radius: 10px;
+        border: 1px solid rgba(102, 126, 234, 0.2);
+      }
+
+      .nl-hint-examples {
+        margin-top: var(--mobile-spacing-sm);
+        font-size: 11px;
+      }
+
+      /* ===== MOBILE SIDEBAR (CALENDAR) ===== */
+      .sidebar {
+        position: fixed;
+        top: var(--mobile-header-height);
+        left: 0;
+        right: 0;
+        bottom: var(--mobile-bottom-nav-height);
+        width: 100% !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
+        z-index: 500;
+        border: none;
+        border-radius: 0;
+        transform: translateX(100%);
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+      }
+
+      .sidebar:not(.hidden) {
+        transform: translateX(0);
+      }
+
+      /* Task Right Sidebar (Calendar in Task Manager) */
+      #taskRightSidebar {
+        position: fixed;
+        top: var(--mobile-header-height);
+        right: 0;
+        bottom: var(--mobile-bottom-nav-height);
+        width: 90% !important;
+        max-width: 340px !important;
+        min-width: 0 !important;
+        z-index: 601;
+        transform: translateX(100%);
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: -2px 0 12px rgba(0, 0, 0, 0.15);
+        border-left: 1px solid var(--border);
+      }
+
+      #taskRightSidebar:not(.hidden) {
+        transform: translateX(0);
+      }
+
+      .calendar-container {
+        border-radius: var(--mobile-radius);
+        padding: var(--mobile-spacing-md);
+        margin-bottom: var(--mobile-spacing-md);
+      }
+
+      .calendar-day {
+        min-height: 50px;
+        padding: var(--mobile-spacing-xs);
+        border-radius: 10px;
+      }
+
+      .calendar-day-number {
+        font-size: 13px;
+        font-weight: 700;
+      }
+
+      .calendar-event-chip {
+        font-size: 10px;
+        padding: 3px 6px;
+        border-radius: 6px;
+      }
+
+      /* ===== MOBILE POMODORO REDESIGN ===== */
+      .pomodoro-overlay {
+        top: 0;
+        z-index: 10002;
+      }
+
+      .pomodoro-header-bar {
+        padding: var(--mobile-spacing-md);
+        height: auto;
+        min-height: var(--mobile-header-height);
+      }
+
+      .pomodoro-header-title {
+        font-size: 18px;
+      }
+
+      .pomodoro-content {
+        padding: var(--mobile-spacing-md);
+        padding-bottom: calc(var(--mobile-bottom-nav-height) + var(--mobile-spacing-lg));
+      }
+
+      .pomodoro-card {
+        padding: var(--mobile-spacing-lg);
+        border-radius: var(--mobile-radius-lg);
+        gap: var(--mobile-spacing-lg);
+      }
+
+      .pomodoro-timer-wrap {
+        width: 220px;
+        height: 220px;
+      }
+
+      .pomodoro-time {
+        font-size: 48px;
+      }
+
+      .pomodoro-controls {
+        gap: var(--mobile-spacing-md);
+      }
+
+      .pomodoro-btn {
+        width: var(--mobile-touch-target);
+        height: var(--mobile-touch-target);
+        font-size: 20px;
+      }
+
+      .pomodoro-btn.primary {
+        width: 64px;
+        height: 64px;
+        font-size: 28px;
+      }
+
+      .pomodoro-presets {
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: var(--mobile-spacing-sm);
+      }
+
+      .pomodoro-preset {
+        padding: var(--mobile-spacing-sm) var(--mobile-spacing-md);
+        font-size: 13px;
+        min-height: 40px;
+      }
+
+      /* ===== MOBILE DAILY PLANNER ===== */
+      .planner-overlay {
+        top: 0;
+        z-index: 10002;
+      }
+
+      .planner-header-bar {
+        padding: var(--mobile-spacing-md);
+        flex-wrap: wrap;
+        gap: var(--mobile-spacing-sm);
+      }
+
+      .planner-sidebar {
+        display: none;
+      }
+
+      .planner-content {
+        padding: var(--mobile-spacing-md);
+      }
+
+      .planner-day-column {
+        min-width: 280px;
+      }
+
+      .planner-task-card {
+        padding: var(--mobile-spacing-sm) var(--mobile-spacing-md);
+        border-radius: 10px;
+        min-height: 44px;
+      }
+
+      /* ===== MOBILE MODALS & DRAWERS ===== */
+      .modal-backdrop {
+        padding: var(--mobile-spacing-md);
+        align-items: flex-end;
+      }
+
+      .modal-card {
+        border-radius: var(--mobile-radius-lg) var(--mobile-radius-lg) 0 0;
+        max-height: 90vh;
+        width: 100%;
+        max-width: 100%;
+        margin: 0;
+      }
+
+      .modal-header {
+        padding: var(--mobile-spacing-lg) var(--mobile-spacing-md);
+      }
+
+      .modal-body {
+        padding: var(--mobile-spacing-md);
+      }
+
+      .modal-actions {
+        padding: var(--mobile-spacing-md);
+        flex-direction: column;
+        gap: var(--mobile-spacing-sm);
+      }
+
+      .modal-actions .btn {
+        width: 100%;
+        min-height: var(--mobile-touch-target);
+      }
+
+      /* Day Drawer - Mobile Sheet Style */
+      .day-drawer-backdrop {
+        padding: 0;
+        align-items: flex-end;
+      }
+
+      .day-drawer {
+        max-width: 100%;
+        width: 100%;
+        border-radius: var(--mobile-radius-lg) var(--mobile-radius-lg) 0 0;
+        max-height: 85vh;
+      }
+
+      .day-drawer-header {
+        padding: var(--mobile-spacing-lg) var(--mobile-spacing-md);
+      }
+
+      .day-drawer-content {
+        padding: var(--mobile-spacing-md);
+      }
+
+      /* ===== MOBILE SIDEBAR BACKDROP ===== */
+      .mobile-sidebar-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 599;
+        display: none;
+        backdrop-filter: blur(2px);
+      }
+
+      .mobile-sidebar-backdrop.visible {
+        display: block;
+      }
+
+      /* ===== MOBILE KEYBOARD SHORTCUTS - HIDE ===== */
+      .shortcuts-overlay {
+        display: none !important;
+      }
+
+      #helpShortcuts {
+        display: none;
+      }
+
+      /* ===== MOBILE TOUCH FEEDBACK ===== */
+      @media (hover: none) and (pointer: coarse) {
+
+        .event-row:hover,
+        .task-item:hover,
+        .calendar-day:hover,
+        .time-unit:hover {
+          transform: none;
+          box-shadow: var(--mobile-card-shadow);
+        }
+
+        .event-row:active,
+        .task-item:active {
+          transform: scale(0.98);
+          transition: transform 0.1s;
+        }
+
+        button:active,
+        .btn:active,
+        .header-btn:active,
+        .mobile-nav-item:active {
+          transform: scale(0.95);
+          opacity: 0.8;
+        }
+      }
+
+      /* ===== FLOATING ACTION BUTTON ===== */
+      .mobile-fab {
+        position: fixed;
+        bottom: calc(var(--mobile-bottom-nav-height) + var(--mobile-spacing-md) + env(safe-area-inset-bottom, 0px));
+        right: var(--mobile-spacing-md);
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--accent), var(--accent2));
+        color: white;
+        border: none;
+        font-size: 28px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 4px 20px rgba(102, 126, 234, 0.4);
+        z-index: 1000;
+        cursor: pointer;
+        transition: transform 0.2s, box-shadow 0.2s;
+      }
+
+      .mobile-fab:active {
+        transform: scale(0.9);
+      }
+
+      /* ===== MOBILE SWIPE HINTS ===== */
+      .swipe-indicator {
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 40px;
+        height: 4px;
+        background: var(--border);
+        border-radius: 2px;
+        opacity: 0.5;
+      }
+
+      /* ===== PULL TO REFRESH INDICATOR ===== */
+      .pull-refresh-indicator {
+        position: fixed;
+        top: var(--mobile-header-height);
+        left: 50%;
+        transform: translateX(-50%) translateY(-100%);
+        background: var(--card);
+        padding: 12px 20px;
+        border-radius: 20px;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 14px;
+        color: var(--muted);
+        z-index: 100;
+        transition: transform 0.3s;
+      }
+
+      .pull-refresh-indicator.visible {
+        transform: translateX(-50%) translateY(12px);
+      }
+
+      /* ===== EMPTY STATES - MOBILE ===== */
+      .empty-state {
+        padding: var(--mobile-spacing-lg);
+        border-radius: var(--mobile-radius);
+        margin: var(--mobile-spacing-md);
+      }
+
+      .empty-state svg {
+        width: 64px;
+        height: 64px;
+        margin-bottom: var(--mobile-spacing-md);
+      }
+
+      .empty-state p {
+        font-size: 16px;
+        line-height: 1.5;
+      }
+
+      /* No tasks message */
+      .no-tasks-msg {
+        text-align: center;
+        padding: var(--mobile-spacing-lg);
+        color: var(--muted);
+        font-size: 15px;
+        background: var(--day-other);
+        border-radius: var(--mobile-radius);
+        margin: var(--mobile-spacing-md);
+        border: 2px dashed var(--border);
+      }
+
+      /* Task skeleton loading */
+      .task-skeleton {
+        padding: var(--mobile-spacing-md);
+        border-radius: var(--mobile-radius);
+        background: var(--day-other);
+        margin-bottom: var(--mobile-spacing-sm);
+        height: 100px;
+        animation: shimmer 1.5s ease-in-out infinite;
+      }
+    }
+
+    /* ===== EXTRA SMALL PHONES (320px-375px) ===== */
+    @media screen and (max-width: 375px) {
+      .event-row .time-unit {
+        max-width: 65px;
+        min-width: 50px;
+        padding: 8px 4px;
+      }
+
+      .event-row .time-val {
+        font-size: 22px;
+      }
+
+      .event-row .time-label {
+        font-size: 8px;
+      }
+
+      .task-title {
+        font-size: 15px;
+      }
+
+      .pomodoro-timer-wrap {
+        width: 180px;
+        height: 180px;
+      }
+
+      .pomodoro-time {
+        font-size: 40px;
+      }
+    }
+
+    /* ===== DARK MODE MOBILE ADJUSTMENTS ===== */
+    @media screen and (max-width: 768px) {
+
+      body.dark .event-row,
+      body.dark .task-item,
+      body.dark .input-panel,
+      body.dark .calendar-container {
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
+        border: 1px solid var(--border);
+      }
+
+      body.dark .mobile-bottom-nav {
+        background: var(--card);
+        box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.3);
+      }
+
+      body.dark .mobile-fab {
+        box-shadow: 0 4px 20px rgba(102, 126, 234, 0.5);
+      }
+    }
+
+    /* ===== LANDSCAPE MOBILE ===== */
+    @media screen and (max-width: 896px) and (orientation: landscape) {
+      .mobile-bottom-nav {
+        height: 52px;
+      }
+
+      .mobile-nav-label {
+        display: none;
+      }
+
+      .mobile-nav-icon {
+        font-size: 22px;
+      }
+
+      .pomodoro-timer-wrap {
+        width: 160px;
+        height: 160px;
+      }
+
+      .pomodoro-time {
+        font-size: 36px;
+      }
+
+      body {
+        padding-bottom: calc(52px + env(safe-area-inset-bottom, 0px));
+      }
+    }
+    @media screen and (max-width: 768px),
+    (display-mode: standalone) and (max-width: 1024px) {
+
+      /* ===== SWIPE CONTAINER SYSTEM ===== */
+      .swipe-container {
+        position: relative;
+        overflow: hidden;
+        border-radius: var(--mobile-radius);
+        margin-bottom: 0;
+        background: var(--card);
+      }
+
+      .swipe-container .task-item,
+      .swipe-container .event-row {
+        position: relative;
+        z-index: 2;
+        transition: transform 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        background: var(--card);
+        margin-bottom: 0;
+        border-radius: var(--mobile-radius);
+        /* Ensure color bar is visible */
+        overflow: visible;
+      }
+
+      /* Reset padding on wrapped items to avoid double padding */
+      .swipe-container .event-row {
+        box-shadow: none;
+      }
+
+      .swipe-container.swiping .task-item,
+      .swipe-container.swiping .event-row {
+        transition: none;
+      }
+
+      /* Swipe action buttons revealed on swipe - HIDDEN by default */
+      .swipe-actions {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        width: 100px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.15s ease;
+      }
+
+      /* Only show swipe actions when actively swiping */
+      .swipe-container.swiping .swipe-actions {
+        opacity: 1;
+        pointer-events: auto;
+      }
+
+      /* Mobile z-index fix for actions */
+      .task-action-btn {
+        pointer-events: auto;
+        position: relative;
+        z-index: 10;
+      }
+
+      .swipe-actions-left {
+        left: 0;
+        background: linear-gradient(135deg, #22c55e, #16a34a);
+      }
+
+      .swipe-actions-right {
+        right: 0;
+        background: linear-gradient(135deg, #ef4444, #dc2626);
+      }
+
+      .swipe-action-btn {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        color: white;
+        font-size: 24px;
+        background: none;
+        border: none;
+        width: 100%;
+        height: 100%;
+        cursor: pointer;
+        padding: 0;
+      }
+
+      .swipe-action-btn span {
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+      }
+
+      /* Swipe threshold indicator */
+      .swipe-container::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        width: 4px;
+        background: transparent;
+        z-index: 10;
+        pointer-events: none;
+        transition: background 0.15s;
+      }
+
+      .swipe-container.threshold-left::before {
+        left: 0;
+        background: #22c55e;
+        box-shadow: 0 0 12px rgba(34, 197, 94, 0.5);
+      }
+
+      .swipe-container.threshold-right::before {
+        right: 0;
+        left: auto;
+        background: #ef4444;
+        box-shadow: 0 0 12px rgba(239, 68, 68, 0.5);
+      }
+
+      /* ===== TOUCH RIPPLE EFFECT ===== */
+      .ripple-container {
+        position: relative;
+        overflow: hidden;
+      }
+
+      .ripple {
+        position: absolute;
+        border-radius: 50%;
+        background: rgba(102, 126, 234, 0.3);
+        transform: scale(0);
+        animation: ripple-effect 0.6s ease-out forwards;
+        pointer-events: none;
+      }
+
+      @keyframes ripple-effect {
+        0% {
+          transform: scale(0);
+          opacity: 1;
+        }
+
+        100% {
+          transform: scale(4);
+          opacity: 0;
+        }
+      }
+
+      body.dark .ripple {
+        background: rgba(102, 126, 234, 0.4);
+      }
+
+      /* ===== ENHANCED PULL TO REFRESH ===== */
+      .pull-to-refresh-container {
+        position: fixed;
+        top: var(--mobile-header-height);
+        left: 0;
+        right: 0;
+        height: 80px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 99;
+        pointer-events: none;
+        transform: translateY(-100%);
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+
+      .pull-to-refresh-container.visible {
+        transform: translateY(0);
+      }
+
+      .pull-to-refresh-spinner {
+        width: 40px;
+        height: 40px;
+        background: var(--card);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+        font-size: 20px;
+      }
+
+      .pull-to-refresh-spinner.refreshing {
+        animation: ptr-spin 0.8s linear infinite;
+      }
+
+      @keyframes ptr-spin {
+        0% {
+          transform: rotate(0deg);
+        }
+
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+
+      /* ===== SMOOTH PAGE TRANSITIONS ===== */
+      .view-container {
+        animation: view-enter 0.3s ease-out;
+      }
+
+      @keyframes view-enter {
+        0% {
+          opacity: 0;
+          transform: translateY(16px);
+        }
+
+        100% {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      /* Staggered card animations - only when not in swipe container */
+      .task-item:not(.swipe-initialized),
+      .event-row:not(.swipe-initialized) {
+        animation: card-stagger-in 0.35s ease-out backwards;
+      }
+
+      .task-item:nth-child(1),
+      .event-row:nth-child(1) {
+        animation-delay: 0.03s;
+      }
+
+      .task-item:nth-child(2),
+      .event-row:nth-child(2) {
+        animation-delay: 0.06s;
+      }
+
+      .task-item:nth-child(3),
+      .event-row:nth-child(3) {
+        animation-delay: 0.09s;
+      }
+
+      .task-item:nth-child(4),
+      .event-row:nth-child(4) {
+        animation-delay: 0.12s;
+      }
+
+      .task-item:nth-child(5),
+      .event-row:nth-child(5) {
+        animation-delay: 0.15s;
+      }
+
+      @keyframes card-stagger-in {
+        0% {
+          opacity: 0;
+          transform: translateY(12px) scale(0.97);
+        }
+
+        100% {
+          opacity: 1;
+          transform: translateY(0) scale(1);
+        }
+      }
+
+      /* ===== ENHANCED BOTTOM SHEET MODAL ===== */
+      .mobile-bottom-sheet {
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: var(--card);
+        border-radius: var(--mobile-radius-lg) var(--mobile-radius-lg) 0 0;
+        z-index: 10003;
+        transform: translateY(100%);
+        transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+        max-height: 90vh;
+        overflow: hidden;
+        box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.2);
+      }
+
+      .mobile-bottom-sheet.open {
+        transform: translateY(0);
+      }
+
+      .mobile-bottom-sheet-drag-handle {
+        width: 40px;
+        height: 5px;
+        background: var(--border);
+        border-radius: 3px;
+        margin: 12px auto 8px;
+        cursor: grab;
+      }
+
+      .mobile-bottom-sheet-drag-handle:active {
+        cursor: grabbing;
+        background: var(--muted);
+      }
+
+      .mobile-bottom-sheet-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.6);
+        z-index: 10002;
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.3s, visibility 0.3s;
+      }
+
+      .mobile-bottom-sheet-backdrop.visible {
+        opacity: 1;
+        visibility: visible;
+      }
+
+      /* ===== HAPTIC FEEDBACK VISUAL CUE ===== */
+      .haptic-flash {
+        animation: haptic-pulse 0.15s ease-out;
+      }
+
+      @keyframes haptic-pulse {
+        0% {
+          transform: scale(1);
+        }
+
+        50% {
+          transform: scale(0.97);
+        }
+
+        100% {
+          transform: scale(1);
+        }
+      }
+
+      /* ===== TASK COMPLETION CELEBRATION ===== */
+      .task-item.completing {
+        animation: task-complete-celebration 0.5s ease-out;
+      }
+
+      @keyframes task-complete-celebration {
+        0% {
+          transform: scale(1);
+          background: var(--card);
+        }
+
+        30% {
+          transform: scale(1.02);
+          background: rgba(34, 197, 94, 0.15);
+          box-shadow: 0 0 20px rgba(34, 197, 94, 0.3);
+        }
+
+        100% {
+          transform: scale(1);
+          background: var(--card);
+        }
+      }
+
+      /* ===== LONG PRESS CONTEXT INDICATOR ===== */
+      .long-press-indicator {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 60px;
+        height: 60px;
+        margin: -30px;
+        border-radius: 50%;
+        border: 3px solid var(--accent);
+        border-top-color: transparent;
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      .long-press-indicator.active {
+        opacity: 1;
+        animation: long-press-ring 0.5s ease-out forwards;
+      }
+
+      @keyframes long-press-ring {
+        0% {
+          transform: scale(0.8) rotate(0deg);
+          opacity: 0;
+        }
+
+        50% {
+          opacity: 1;
+        }
+
+        100% {
+          transform: scale(1.2) rotate(180deg);
+          opacity: 0;
+        }
+      }
+
+      /* ===== MOBILE NAV ENHANCED TRANSITIONS ===== */
+      .mobile-nav-item {
+        transition: all 0.2s ease;
+        -webkit-tap-highlight-color: transparent;
+      }
+
+      .mobile-nav-item:active {
+        transform: scale(0.9);
+      }
+
+      .mobile-nav-item.active .mobile-nav-icon {
+        animation: nav-bounce 0.4s ease-out;
+      }
+
+      @keyframes nav-bounce {
+        0% {
+          transform: scale(1);
+        }
+
+        40% {
+          transform: scale(1.15);
+        }
+
+        70% {
+          transform: scale(0.95);
+        }
+
+        100% {
+          transform: scale(1);
+        }
+      }
+
+      /* ===== DELETE SWIPE ANIMATION ===== */
+      .swipe-container.deleting {
+        animation: swipe-delete 0.35s ease-out forwards;
+        overflow: hidden;
+      }
+
+      @keyframes swipe-delete {
+        0% {
+          opacity: 1;
+          max-height: 200px;
+          margin-bottom: 0;
+        }
+
+        50% {
+          opacity: 0;
+          transform: translateX(-100%);
+        }
+
+        100% {
+          opacity: 0;
+          max-height: 0;
+          margin-bottom: 0;
+          padding: 0;
+        }
+      }
+
+      /* ===== COMPLETE SWIPE ANIMATION ===== */
+      .swipe-container.completing {
+        animation: swipe-complete 0.4s ease-out forwards;
+      }
+
+      @keyframes swipe-complete {
+        0% {
+          transform: translateX(0);
+          background: transparent;
+        }
+
+        40% {
+          transform: translateX(15px);
+          background: rgba(34, 197, 94, 0.1);
+        }
+
+        100% {
+          transform: translateX(0);
+          background: transparent;
+        }
+      }
+
+      /* ===== MOBILE TOAST NOTIFICATIONS ===== */
+      .mobile-toast {
+        position: fixed;
+        bottom: calc(var(--mobile-bottom-nav-height) + var(--mobile-spacing-lg) + env(safe-area-inset-bottom, 0px));
+        left: 50%;
+        transform: translateX(-50%) translateY(100px);
+        background: var(--text);
+        color: var(--bg);
+        padding: var(--mobile-spacing-md) var(--mobile-spacing-lg);
+        border-radius: var(--mobile-radius);
+        font-size: 14px;
+        font-weight: 500;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+        z-index: 20000;
+        opacity: 0;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        display: flex;
+        align-items: center;
+        gap: var(--mobile-spacing-sm);
+        max-width: calc(100vw - 32px);
+      }
+
+      .mobile-toast.visible {
+        transform: translateX(-50%) translateY(0);
+        opacity: 1;
+      }
+
+      .mobile-toast-icon {
+        font-size: 18px;
+      }
+
+      .mobile-toast-action {
+        margin-left: auto;
+        padding: 6px 12px;
+        background: rgba(255, 255, 255, 0.2);
+        border: none;
+        border-radius: 8px;
+        color: inherit;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+      }
+
+      .mobile-toast-action:active {
+        background: rgba(255, 255, 255, 0.3);
+      }
+
+      /* ===== SCROLL PERFORMANCE ===== */
+      .app-layout,
+      .task-list,
+      .event-list,
+      .task-manager-body {
+        will-change: scroll-position;
+        -webkit-overflow-scrolling: touch;
+      }
+
+      /* ===== IMPROVED LOADING STATES ===== */
+      .mobile-skeleton {
+        background: linear-gradient(90deg, var(--day-other) 25%, var(--day-hover) 50%, var(--day-other) 75%);
+        background-size: 200% 100%;
+        animation: mobile-skeleton-shimmer 1.5s ease-in-out infinite;
+        border-radius: var(--mobile-radius);
+      }
+
+      @keyframes mobile-skeleton-shimmer {
+        0% {
+          background-position: 200% 0;
+        }
+
+        100% {
+          background-position: -200% 0;
+        }
+      }
+
+      /* ===== PWA INSTALL BANNER ===== */
+      .pwa-install-banner {
+        position: fixed;
+        bottom: calc(var(--mobile-bottom-nav-height) + env(safe-area-inset-bottom, 0px));
+        left: var(--mobile-spacing-md);
+        right: var(--mobile-spacing-md);
+        background: linear-gradient(135deg, var(--accent), var(--accent2));
+        border-radius: var(--mobile-radius);
+        padding: var(--mobile-spacing-md);
+        display: none;
+        align-items: center;
+        gap: var(--mobile-spacing-md);
+        box-shadow: 0 8px 32px rgba(102, 126, 234, 0.4);
+        z-index: 10005;
+        animation: install-banner-slide-up 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+
+      .pwa-install-banner.visible {
+        display: flex;
+      }
+
+      @keyframes install-banner-slide-up {
+        0% {
+          opacity: 0;
+          transform: translateY(100%);
+        }
+
+        100% {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .pwa-install-icon {
+        width: 48px;
+        height: 48px;
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+        flex-shrink: 0;
+      }
+
+      .pwa-install-content {
+        flex: 1;
+        min-width: 0;
+      }
+
+      .pwa-install-title {
+        font-size: 15px;
+        font-weight: 700;
+        color: white;
+        margin-bottom: 2px;
+      }
+
+      .pwa-install-subtitle {
+        font-size: 12px;
+        color: rgba(255, 255, 255, 0.8);
+      }
+
+      .pwa-install-btn {
+        padding: var(--mobile-spacing-sm) var(--mobile-spacing-lg);
+        background: white;
+        color: var(--accent);
+        border: none;
+        border-radius: 20px;
+        font-size: 14px;
+        font-weight: 700;
+        cursor: pointer;
+        white-space: nowrap;
+        transition: transform 0.15s, box-shadow 0.15s;
+      }
+
+      .pwa-install-btn:active {
+        transform: scale(0.95);
+      }
+
+      .pwa-install-close {
+        width: 28px;
+        height: 28px;
+        background: rgba(255, 255, 255, 0.2);
+        border: none;
+        border-radius: 50%;
+        color: white;
+        font-size: 16px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+
+      .pwa-install-close:active {
+        background: rgba(255, 255, 255, 0.3);
+      }
+    }

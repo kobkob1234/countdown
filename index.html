@@ -4433,11 +4433,24 @@
 
       // Apply search filter
       const searchTerm = taskSearch.value.trim().toLowerCase();
-      if (searchTerm) {
-        filtered = filtered.filter(t =>
-          t.title.toLowerCase().includes(searchTerm) ||
-          (t.content && t.content.toLowerCase().includes(searchTerm))
-        );
+      const normalizedSearch = searchTerm.replace(/^#/, '');
+      if (normalizedSearch) {
+        filtered = filtered.filter(t => {
+          const subject = subjects.find(s => s.id === t.subject);
+          const subjectName = subject?.name?.toLowerCase() || '';
+          const parentName = subject?.parentId
+            ? (subjects.find(s => s.id === subject.parentId)?.name?.toLowerCase() || '')
+            : '';
+          const subjectLabel = parentName ? `${parentName} ${subjectName}` : subjectName;
+
+          return (
+            t.title.toLowerCase().includes(normalizedSearch) ||
+            (t.content && t.content.toLowerCase().includes(normalizedSearch)) ||
+            subjectName.includes(normalizedSearch) ||
+            parentName.includes(normalizedSearch) ||
+            subjectLabel.includes(normalizedSearch)
+          );
+        });
       }
 
       // Apply status filter
