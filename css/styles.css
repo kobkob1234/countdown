@@ -31,39 +31,49 @@
       --radius-xl: 18px;
 
       /* Colors */
-      --bg: #ffffff;
+      --bg: #f7f8fc;
+      --bg-gradient: radial-gradient(1200px 520px at 50% -240px, rgba(102, 126, 234, 0.16), rgba(247, 248, 252, 0) 65%),
+        linear-gradient(180deg, #fdfdff 0%, #f7f8fc 100%);
       --card: #ffffff;
       --text: #1a1a2e;
       --muted: #6b7280;
       --accent: #667eea;
-      --accent2: #764ba2;
+      --accent2: #6d5ce7;
+      --accent-soft: rgba(102, 126, 234, 0.12);
+      --accent-soft-strong: rgba(102, 126, 234, 0.18);
       --danger: #ef4444;
       --success: #10b981;
-      --shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-      --shadow-hover: 0 4px 16px rgba(0, 0, 0, 0.12);
-      --border: #e5e7eb;
+      --shadow: 0 2px 6px rgba(15, 23, 42, 0.08);
+      --shadow-hover: 0 10px 24px rgba(15, 23, 42, 0.12);
+      --border: #e6e8f0;
+      --header-bg: rgba(255, 255, 255, 0.86);
       --font: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       --input-bg: #ffffff;
-      --day-other: #fafafa;
-      --day-hover: #f9fafb;
-      --btn-secondary-bg: #f3f4f6;
-      --btn-secondary-hover: #e5e7eb;
+      --day-other: #f1f3f8;
+      --day-hover: #eceff6;
+      --btn-secondary-bg: #eef1f6;
+      --btn-secondary-hover: #e2e6ef;
       --focus-ring: 0 0 0 3px rgba(102, 126, 234, 0.4);
     }
 
     body.dark {
       --bg: #0f172a;
+      --bg-gradient: radial-gradient(1000px 480px at 50% -220px, rgba(99, 102, 241, 0.18), rgba(15, 23, 42, 0) 65%),
+        linear-gradient(180deg, #0b1222 0%, #0f172a 100%);
       --card: #1e293b;
       --text: #f1f5f9;
       --muted: #94a3b8;
       --border: #334155;
-      --shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-      --shadow-hover: 0 4px 16px rgba(0, 0, 0, 0.4);
+      --accent-soft: rgba(129, 140, 248, 0.18);
+      --accent-soft-strong: rgba(129, 140, 248, 0.28);
+      --shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
+      --shadow-hover: 0 12px 28px rgba(0, 0, 0, 0.5);
       --input-bg: #1e293b;
       --day-other: #1a2535;
-      --day-hover: #273548;
-      --btn-secondary-bg: #334155;
-      --btn-secondary-hover: #475569;
+      --day-hover: #243146;
+      --btn-secondary-bg: #2b394f;
+      --btn-secondary-hover: #3a4b66;
+      --header-bg: rgba(15, 23, 42, 0.82);
       --focus-ring: 0 0 0 3px rgba(102, 126, 234, 0.5);
     }
 
@@ -71,6 +81,19 @@
     :focus-visible {
       outline: none;
       box-shadow: var(--focus-ring);
+    }
+
+    .icon {
+      font-family: "Material Symbols Rounded";
+      font-style: normal;
+      font-weight: 500;
+      font-size: 20px;
+      line-height: 1;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      vertical-align: middle;
+      font-variation-settings: "FILL" var(--icon-fill, 0), "wght" 500, "GRAD" 0, "opsz" 24;
     }
 
     /* Reduced motion for users who prefer it */
@@ -137,19 +160,22 @@
       top: 0;
       left: 0;
       right: 0;
-      height: 56px;
-      background: linear-gradient(135deg, var(--card), var(--bg));
+      height: 60px;
+      background: var(--header-bg);
       border-bottom: 1px solid var(--border);
       display: flex;
       align-items: center;
-      padding: 0 20px;
-      gap: 12px;
+      padding: 0 16px;
+      gap: 10px;
       z-index: 10000;
-      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
-      backdrop-filter: blur(12px);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(14px) saturate(1.1);
     }
 
     .header-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
       padding: 10px 16px;
       opacity: 1;
       /* Changed from 0.3 to 1 */
@@ -166,28 +192,37 @@
 
     .header-btn:hover {
       background: var(--day-hover);
-      border-color: var(--accent);
+      border-color: rgba(102, 126, 234, 0.2);
     }
 
     .header-btn.active {
-      background: var(--accent);
-      color: white;
-      border-color: var(--accent);
+      background: var(--accent-soft);
+      color: var(--accent);
+      border-color: rgba(102, 126, 234, 0.2);
     }
 
     .header-btn.icon-only {
-      width: 40px;
-      height: 40px;
+      width: 38px;
+      height: 38px;
       padding: 0;
       justify-content: center;
+      border-radius: 12px;
+      background: var(--day-other);
+    }
+
+    .header-btn .icon {
       font-size: 18px;
+    }
+
+    .header-btn.active .icon {
+      --icon-fill: 1;
     }
 
     /* Notification button enabled state */
     #notifyBtn.notify-enabled {
-      background: rgba(34, 197, 94, 0.15);
-      border-color: rgba(34, 197, 94, 0.4);
-      box-shadow: 0 0 8px rgba(34, 197, 94, 0.3);
+      background: var(--accent-soft);
+      border-color: rgba(102, 126, 234, 0.35);
+      box-shadow: none;
     }
 
     .sync-badge {
@@ -952,7 +987,8 @@
 
     body {
       font-family: var(--font);
-      background: var(--bg);
+      background-color: var(--bg);
+      background-image: var(--bg-gradient);
       min-height: 100vh;
       min-height: 100dvh;
       color: var(--text);
@@ -1479,12 +1515,12 @@
     .btn-primary {
       background: linear-gradient(135deg, var(--accent), var(--accent2));
       color: white;
-      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+      box-shadow: 0 6px 14px rgba(102, 126, 234, 0.25);
     }
 
     .btn-primary:hover {
       transform: translateY(-1px);
-      box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
+      box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
     }
 
     .btn-primary:active {
@@ -1492,12 +1528,13 @@
     }
 
     .btn-ghost {
-      background: #fef2f2;
-      color: var(--danger);
+      background: rgba(239, 68, 68, 0.08);
+      border: 1px solid rgba(239, 68, 68, 0.2);
+      color: #dc2626;
     }
 
     .btn-ghost:hover {
-      background: #fee2e2;
+      background: rgba(239, 68, 68, 0.12);
     }
 
     .btn-cancel {
@@ -1513,7 +1550,7 @@
     .event-list {
       display: flex;
       flex-direction: column;
-      gap: 12px;
+      gap: 16px;
     }
 
     .event-list.loading .event-row {
@@ -1547,24 +1584,24 @@
     .event-row {
       background: var(--card);
       border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 16px 20px;
+      border-radius: var(--radius-lg);
+      padding: 18px 18px;
       display: flex;
       align-items: center;
-      gap: 20px;
+      gap: 16px;
       box-shadow: var(--shadow);
       transition: transform 0.15s, box-shadow 0.15s, background 0.2s;
     }
 
     .event-row:hover {
-      transform: translateY(-2px);
+      transform: translateY(-1px);
       box-shadow: var(--shadow-hover);
-      border-color: #d1d5db;
+      border-color: #d7dbe8;
     }
 
     .event-row.highlighted {
-      border: 2px solid;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+      border: 1px solid var(--accent);
+      box-shadow: 0 0 0 2px var(--accent-soft);
     }
 
     .color-dot {
@@ -1581,7 +1618,7 @@
     }
 
     .event-name {
-      font-size: 17px;
+      font-size: 18px;
       font-weight: 600;
       color: var(--text);
       white-space: nowrap;
@@ -1590,9 +1627,9 @@
     }
 
     .event-date {
-      font-size: 13px;
+      font-size: 12px;
       color: var(--muted);
-      margin-top: 3px;
+      margin-top: 4px;
     }
 
     /* Inline editing helpers */
@@ -4451,13 +4488,12 @@
     .star-btn {
       width: 32px;
       height: 32px;
-      border: none;
+      border: 1px solid transparent;
       background: transparent;
-      color: #d1d5db;
-      font-size: 22px;
+      color: var(--muted);
       cursor: pointer;
-      border-radius: 8px;
-      transition: all 0.15s;
+      border-radius: 10px;
+      transition: background 0.15s, color 0.15s, border-color 0.15s;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -4465,58 +4501,55 @@
     }
 
     .star-btn:hover {
-      background: #fef3c7;
-      color: #f59e0b;
-      transform: scale(1.1);
+      background: var(--day-hover);
+      color: var(--accent);
+      border-color: rgba(102, 126, 234, 0.15);
     }
 
     .star-btn.active {
-      color: #f59e0b;
+      color: var(--accent);
+      --icon-fill: 1;
     }
 
     .pin-btn {
       width: 32px;
       height: 32px;
-      border: none;
+      border: 1px solid transparent;
       background: transparent;
-      color: #9ca3af;
-      font-size: 20px;
+      color: var(--muted);
       cursor: pointer;
-      border-radius: 8px;
-      transition: all 0.15s;
+      border-radius: 10px;
+      transition: background 0.15s, color 0.15s, border-color 0.15s;
       display: flex;
       align-items: center;
       justify-content: center;
       line-height: 1;
-      opacity: 0.25;
     }
 
     .pin-btn:hover {
-      background: #dbeafe;
-      color: #3b82f6;
-      transform: scale(1.1);
-      opacity: 0.6;
+      background: var(--day-hover);
+      color: var(--accent);
+      border-color: rgba(102, 126, 234, 0.15);
     }
 
     .pin-btn.pinned {
-      color: #3b82f6;
-      opacity: 1;
+      color: var(--accent);
+      --icon-fill: 1;
     }
 
     .pin-btn.pinned:hover {
-      opacity: 1;
+      border-color: rgba(102, 126, 234, 0.25);
     }
 
     .edit-btn {
-      width: 28px;
-      height: 28px;
-      border: none;
+      width: 32px;
+      height: 32px;
+      border: 1px solid transparent;
       background: transparent;
-      color: #9ca3af;
-      font-size: 16px;
+      color: var(--muted);
       cursor: pointer;
-      border-radius: 6px;
-      transition: all 0.15s;
+      border-radius: 10px;
+      transition: background 0.15s, color 0.15s, border-color 0.15s;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -4524,9 +4557,9 @@
     }
 
     .edit-btn:hover {
-      background: #eff6ff;
+      background: var(--day-hover);
       color: var(--accent);
-      transform: scale(1.1);
+      border-color: rgba(102, 126, 234, 0.15);
     }
 
     .event-reminder-wrap {
@@ -4534,29 +4567,29 @@
     }
 
     .reminder-btn {
-      width: 28px;
-      height: 28px;
-      border: none;
+      width: 32px;
+      height: 32px;
+      border: 1px solid transparent;
       background: transparent;
-      color: #9ca3af;
-      font-size: 14px;
+      color: var(--muted);
       cursor: pointer;
-      border-radius: 6px;
-      transition: all 0.15s;
+      border-radius: 10px;
+      transition: background 0.15s, color 0.15s, border-color 0.15s;
       display: flex;
       align-items: center;
       justify-content: center;
     }
 
     .reminder-btn:hover {
-      background: #fef3c7;
-      color: #f59e0b;
-      transform: scale(1.1);
+      background: var(--day-hover);
+      color: var(--accent);
+      border-color: rgba(102, 126, 234, 0.15);
     }
 
     .reminder-btn.has-reminder {
-      color: #f59e0b;
-      background: rgba(245, 158, 11, 0.1);
+      color: var(--accent);
+      background: var(--accent-soft);
+      border-color: rgba(102, 126, 234, 0.2);
     }
 
     .event-reminder-dropdown {
@@ -4566,7 +4599,7 @@
       background: var(--card);
       border: 1px solid var(--border);
       border-radius: 10px;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+      box-shadow: var(--shadow-hover);
       padding: 8px;
       display: none;
       z-index: 100;
@@ -4602,38 +4635,39 @@
 
     .timer {
       display: flex;
-      gap: 8px;
+      gap: 12px;
     }
 
     .time-unit {
       text-align: center;
       background: var(--day-other);
-      border-radius: 8px;
-      padding: 8px 12px;
-      min-width: 60px;
-      transition: all 0.2s;
+      border: 1px solid transparent;
+      border-radius: 10px;
+      padding: 10px 12px;
+      min-width: 64px;
+      transition: background 0.2s, border-color 0.2s;
     }
 
     .time-unit:hover {
       background: var(--day-hover);
-      transform: translateY(-1px);
+      border-color: rgba(102, 126, 234, 0.12);
     }
 
     .time-val {
       display: block;
-      font-size: 22px;
+      font-size: 24px;
       font-weight: 700;
       font-variant-numeric: tabular-nums;
-      line-height: 1.2;
+      line-height: 1.1;
     }
 
     .time-label {
       display: block;
-      font-size: 10px;
+      font-size: 9px;
       color: var(--muted);
       text-transform: uppercase;
-      letter-spacing: 0.5px;
-      margin-top: 3px;
+      letter-spacing: 0.6px;
+      margin-top: 4px;
     }
 
     .badge {
@@ -4645,25 +4679,25 @@
     }
 
     .badge-upcoming {
-      background: #ecfdf5;
-      color: #059669;
+      background: var(--accent-soft);
+      color: var(--accent);
     }
 
     .badge-ended {
-      background: #fef2f2;
+      background: rgba(239, 68, 68, 0.1);
       color: #dc2626;
     }
 
     .delete-btn {
-      width: 28px;
-      height: 28px;
-      border: none;
+      width: 32px;
+      height: 32px;
+      border: 1px solid transparent;
       background: transparent;
-      color: #9ca3af;
-      font-size: 20px;
+      color: var(--muted);
+      font-size: 18px;
       cursor: pointer;
-      border-radius: 6px;
-      transition: all 0.15s;
+      border-radius: 10px;
+      transition: background 0.15s, color 0.15s, border-color 0.15s;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -4671,15 +4705,15 @@
     }
 
     .delete-btn:hover {
-      background: #fef2f2;
+      background: rgba(239, 68, 68, 0.12);
       color: var(--danger);
-      transform: scale(1.1);
+      border-color: rgba(239, 68, 68, 0.2);
     }
 
     .event-actions {
       display: flex;
       align-items: center;
-      gap: 4px;
+      gap: 6px;
     }
 
     .empty-state {
@@ -7824,8 +7858,8 @@
         --mobile-spacing-lg: 24px;
         --mobile-radius: 16px;
         --mobile-radius-lg: 24px;
-        --mobile-card-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
-        --mobile-header-height: 56px;
+        --mobile-card-shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
+        --mobile-header-height: 60px;
         --mobile-bottom-nav-height: 64px;
       }
 
@@ -7866,9 +7900,9 @@
         height: var(--mobile-header-height);
         padding: 0 var(--mobile-spacing-md);
         gap: var(--mobile-spacing-sm);
-        background: var(--card);
-        border-bottom: none;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        background: var(--header-bg);
+        border-bottom: 1px solid var(--border);
+        box-shadow: var(--shadow);
       }
 
       /* Hide main nav buttons in header - they move to bottom nav */
@@ -7888,9 +7922,12 @@
       .fixed-header-bar .header-btn.icon-only {
         width: var(--mobile-touch-target);
         height: var(--mobile-touch-target);
-        font-size: 22px;
-        border-radius: 50%;
+        border-radius: 12px;
         background: var(--day-other);
+      }
+
+      .fixed-header-bar .header-btn.icon-only .icon {
+        font-size: 20px;
       }
 
       .fixed-header-bar #userBtn {
@@ -7922,7 +7959,7 @@
         justify-content: space-around;
         align-items: stretch;
         z-index: 10001;
-        box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.08);
+        box-shadow: 0 -6px 16px rgba(15, 23, 42, 0.08);
       }
 
       .mobile-nav-item {
@@ -7931,7 +7968,7 @@
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        gap: 2px;
+        gap: 4px;
         background: transparent;
         border: none;
         color: var(--muted);
@@ -7965,13 +8002,17 @@
       }
 
       .mobile-nav-icon {
-        font-size: 24px;
+        font-size: 22px;
         line-height: 1;
       }
 
       .mobile-nav-label {
         font-size: 10px;
         white-space: nowrap;
+      }
+
+      .mobile-nav-item.active .icon {
+        --icon-fill: 1;
       }
 
       /* ===== MAIN CONTENT AREA ===== */
@@ -8013,19 +8054,17 @@
         border-radius: 16px;
         flex-direction: column;
         gap: var(--mobile-spacing-sm);
-        box-shadow:
-          0 2px 8px rgba(0, 0, 0, 0.08),
-          0 1px 2px rgba(0, 0, 0, 0.04);
-        border: 1px solid rgba(0, 0, 0, 0.04);
+        box-shadow: var(--shadow);
+        border: 1px solid var(--border);
         background: var(--card);
         position: relative;
         overflow: hidden;
-        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        transition: box-shadow 0.2s ease;
       }
 
       .event-row:active {
-        transform: scale(0.985);
-        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+        transform: none;
+        box-shadow: var(--shadow);
       }
 
       /* Event color accent - gradient bar at top */
@@ -8035,9 +8074,9 @@
         top: 0;
         left: 0;
         right: 0;
-        height: 4px;
-        background: linear-gradient(90deg, var(--event-color, var(--accent)), var(--accent2));
-        opacity: 1;
+        height: 0;
+        background: transparent;
+        opacity: 0;
       }
 
       /* Subtle glow effect using event color */
@@ -8049,24 +8088,22 @@
         transform: translateX(-50%);
         width: 70%;
         height: 40px;
-        background: var(--event-color, var(--accent));
-        opacity: 0.06;
+        background: transparent;
+        opacity: 0;
         border-radius: 0 0 50% 50%;
         pointer-events: none;
       }
 
       /* Highlighted event - premium glow */
       .event-row.highlighted {
-        border: 2px solid var(--event-color, var(--accent));
-        box-shadow:
-          0 4px 16px rgba(102, 126, 234, 0.2),
-          0 2px 4px rgba(0, 0, 0, 0.06);
-        padding: calc(var(--mobile-spacing-md) - 2px);
+        border: 1px solid var(--accent);
+        box-shadow: 0 0 0 2px var(--accent-soft);
+        padding: var(--mobile-spacing-md);
       }
 
       .event-row.highlighted::after {
-        opacity: 0.1;
-        height: 60px;
+        opacity: 0;
+        height: 0;
       }
 
       .event-row .color-dot {
@@ -8111,9 +8148,10 @@
         min-width: 52px;
         padding: 10px 6px 8px;
         border-radius: 12px;
-        background: linear-gradient(145deg, var(--day-other), var(--day-hover));
+        background: var(--day-other);
+        border: 1px solid rgba(102, 126, 234, 0.12);
         text-align: center;
-        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5);
+        box-shadow: none;
         position: relative;
         overflow: hidden;
       }
@@ -8125,9 +8163,9 @@
         bottom: 0;
         left: 0;
         right: 0;
-        height: 2px;
-        background: var(--event-color, var(--accent));
-        opacity: 0.4;
+        height: 0;
+        background: transparent;
+        opacity: 0;
       }
 
       .event-row .time-val {
@@ -8154,10 +8192,10 @@
         font-weight: 600;
         padding: 5px 14px;
         border-radius: 20px;
-        background: linear-gradient(135deg, var(--accent), var(--accent2));
-        color: white;
-        box-shadow: 0 2px 6px rgba(102, 126, 234, 0.3);
-        text-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
+        background: var(--accent-soft);
+        color: var(--accent);
+        box-shadow: none;
+        text-shadow: none;
       }
 
       /* Mobile Event Actions - Refined buttons */
@@ -8171,24 +8209,26 @@
       }
 
       .event-row .star-btn,
+      .event-row .pin-btn,
+      .event-row .reminder-btn,
       .event-row .edit-btn,
       .event-row .delete-btn {
         width: 40px;
         height: 40px;
-        font-size: 18px;
         border-radius: 12px;
         background: var(--day-other);
         display: flex;
         align-items: center;
         justify-content: center;
-        transition: transform 0.15s ease, background 0.15s ease;
-        border: 1px solid rgba(0, 0, 0, 0.04);
+        transition: background 0.15s ease, border-color 0.15s ease;
+        border: 1px solid var(--border);
       }
 
       .event-row .star-btn:active,
+      .event-row .pin-btn:active,
+      .event-row .reminder-btn:active,
       .event-row .edit-btn:active,
       .event-row .delete-btn:active {
-        transform: scale(0.9);
         background: var(--day-hover);
       }
 

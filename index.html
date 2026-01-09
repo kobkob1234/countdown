@@ -27,6 +27,9 @@
   <link rel="icon" type="image/svg+xml"
     href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%23667eea'/%3E%3Cstop offset='100%25' stop-color='%23764ba2'/%3E%3C/linearGradient%3E%3C/defs%3E%3Ccircle cx='16' cy='16' r='14' fill='url(%23g)'/%3E%3Cpath d='M16 8v8l5 3' stroke='white' stroke-width='2.5' stroke-linecap='round' fill='none'/%3E%3C/svg%3E" />
 
+  <link rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,400..600,0..1,-25..0" />
+
   <!-- External CSS -->
   <link rel="stylesheet" href="css/styles.css">
 </head>
@@ -34,23 +37,42 @@
 <body>
   <!-- Fixed Header Bar -->
   <div class="fixed-header-bar">
-    <button class="header-btn active" id="toggleCountdown">⏱️ ספירה לאחור</button>
-    <button class="header-btn" id="toggleTasks">📝 משימות</button>
-    <button class="header-btn" id="togglePomodoro">🍅 פומודורו</button>
-    <button class="header-btn" id="togglePlanner">📅 מתכנן יומי</button>
+    <button class="header-btn active" id="toggleCountdown">
+      <span class="icon" aria-hidden="true">timer</span>
+      <span>ספירה לאחור</span>
+    </button>
+    <button class="header-btn" id="toggleTasks">
+      <span class="icon" aria-hidden="true">checklist</span>
+      <span>משימות</span>
+    </button>
+    <button class="header-btn" id="togglePomodoro">
+      <span class="icon" aria-hidden="true">timelapse</span>
+      <span>פומודורו</span>
+    </button>
+    <button class="header-btn" id="togglePlanner">
+      <span class="icon" aria-hidden="true">event_note</span>
+      <span>מתכנן יומי</span>
+    </button>
     <div class="header-spacer"></div>
-    <button class="header-btn" id="toggleSidebar">📅 לוח</button>
+    <button class="header-btn" id="toggleSidebar">
+      <span class="icon" aria-hidden="true">calendar_month</span>
+      <span>לוח</span>
+    </button>
     <span class="sync-badge hidden" id="syncBadge"><span class="sync-dot"></span><span
         class="sync-text">Syncing…</span></span>
     <button class="header-btn icon-only" id="calendarSyncBtn" aria-label="Sync with Calendar"
-      title="סנכרון עם לוח השנה">🔄</button>
+      title="סנכרון עם לוח השנה"><span class="icon" aria-hidden="true">sync</span></button>
     <button class="header-btn icon-only" id="notifyBtn" aria-label="Enable notifications"
-      title="Enable notifications">🔔</button>
+      title="Enable notifications"><span class="icon" aria-hidden="true">notifications</span></button>
     <button class="header-btn icon-only" id="helpShortcuts" aria-label="Keyboard shortcuts"
-      title="קיצורים (H)">?</button>
-    <button class="header-btn icon-only" id="themeToggle" aria-label="Toggle dark mode">🌙</button>
+      title="קיצורים (H)"><span class="icon" aria-hidden="true">keyboard</span></button>
+    <button class="header-btn icon-only" id="themeToggle" aria-label="Toggle dark mode"><span class="icon"
+        aria-hidden="true">dark_mode</span></button>
     <button class="header-btn" id="userBtn"
-      style="margin-left:8px; border:1px solid var(--accent); color:var(--accent);">👤 Guest</button>
+      style="margin-left:8px; border:1px solid var(--accent); color:var(--accent);">
+      <span class="icon" aria-hidden="true">account_circle</span>
+      <span>Guest</span>
+    </button>
   </div>
 
   <!-- Task Manager Fullscreen -->
@@ -2693,11 +2715,6 @@
         // Set event color for mobile accent bar
         row.style.setProperty('--event-color', color);
 
-        if (evt.highlighted) {
-          row.style.background = color + '12';
-          row.style.borderColor = color;
-        }
-
         const dot = document.createElement("span");
         dot.className = "color-dot";
         dot.style.background = color;
@@ -2758,7 +2775,7 @@
 
           const val = document.createElement("span");
           val.className = `time-val time-${key}`;
-          val.style.color = color;
+          val.style.color = t.ended ? "var(--muted)" : "var(--text)";
           val.textContent = key === 'd' ? t[key] : String(t[key]).padStart(2, '0');
 
           const lbl = document.createElement("div");
@@ -2776,17 +2793,32 @@
 
         const starBtn = document.createElement("button");
         starBtn.className = `star-btn ${evt.highlighted ? 'active' : ''}`;
-        starBtn.textContent = "☆";
+        starBtn.setAttribute("aria-label", "Highlight event");
+        const starIcon = document.createElement("span");
+        starIcon.className = "icon";
+        starIcon.textContent = "star";
+        starIcon.setAttribute("aria-hidden", "true");
+        starBtn.appendChild(starIcon);
 
         const pinBtn = document.createElement("button");
         pinBtn.className = `pin-btn ${evt.pinned ? 'pinned' : ''}`;
-        pinBtn.textContent = "📌";
+        pinBtn.setAttribute("aria-label", evt.pinned ? "Unpin event" : "Pin event");
         pinBtn.title = evt.pinned ? "Unpin" : "Pin to top";
+        const pinIcon = document.createElement("span");
+        pinIcon.className = "icon";
+        pinIcon.textContent = "push_pin";
+        pinIcon.setAttribute("aria-hidden", "true");
+        pinBtn.appendChild(pinIcon);
 
         const editBtn = document.createElement("button");
         editBtn.className = "edit-btn";
-        editBtn.textContent = "✎";
+        editBtn.setAttribute("aria-label", "Edit event");
         editBtn.title = "Edit";
+        const editIcon = document.createElement("span");
+        editIcon.className = "icon";
+        editIcon.textContent = "edit";
+        editIcon.setAttribute("aria-hidden", "true");
+        editBtn.appendChild(editIcon);
 
         // Reminder button with dropdown
         const reminderWrap = document.createElement("div");
@@ -2794,8 +2826,13 @@
 
         const reminderBtn = document.createElement("button");
         reminderBtn.className = `reminder-btn ${evt.reminder ? 'has-reminder' : ''}`;
-        reminderBtn.textContent = "🔔";
+        reminderBtn.setAttribute("aria-label", "Set reminder");
         reminderBtn.title = evt.reminder ? `תזכורת ${evt.reminder} דקות לפני` : "הגדר תזכורת";
+        const reminderIcon = document.createElement("span");
+        reminderIcon.className = "icon";
+        reminderIcon.textContent = "notifications";
+        reminderIcon.setAttribute("aria-hidden", "true");
+        reminderBtn.appendChild(reminderIcon);
 
         const reminderDropdown = document.createElement("div");
         reminderDropdown.className = "event-reminder-dropdown";
@@ -2834,7 +2871,12 @@
 
         const deleteBtn = document.createElement("button");
         deleteBtn.className = "delete-btn";
-        deleteBtn.textContent = "×";
+        deleteBtn.setAttribute("aria-label", "Delete event");
+        const deleteIcon = document.createElement("span");
+        deleteIcon.className = "icon";
+        deleteIcon.textContent = "close";
+        deleteIcon.setAttribute("aria-hidden", "true");
+        deleteBtn.appendChild(deleteIcon);
 
         const actions = document.createElement("div");
         actions.className = "event-actions";
@@ -3711,7 +3753,7 @@
         return;
       }
 
-      if (e.target.classList.contains("delete-btn")) {
+      if (e.target.closest(".delete-btn")) {
         if (editingId === id) cancelEdit();
         const existing = pendingDeletes.get(id);
         if (existing) clearTimeout(existing.timer);
@@ -3727,14 +3769,14 @@
         render();
         requestAnimationFrame(() => window.scrollTo(0, scrollPos));
         showUndoToast(evt ? evt.name : 'Event', id);
-      } else if (e.target.classList.contains("edit-btn")) {
+      } else if (e.target.closest(".edit-btn")) {
         startEdit(id);
-      } else if (e.target.classList.contains("star-btn")) {
+      } else if (e.target.closest(".star-btn")) {
         const evt = events.find(evt => evt.id === id);
         if (evt) {
           updateInCloud(id, { ...evt, highlighted: !evt.highlighted });
         }
-      } else if (e.target.classList.contains("pin-btn")) {
+      } else if (e.target.closest(".pin-btn")) {
         const evt = events.find(evt => evt.id === id);
         if (evt) {
           updateInCloud(id, { ...evt, pinned: !evt.pinned });
@@ -9503,23 +9545,23 @@
   <!-- Mobile Bottom Navigation Bar -->
   <nav class="mobile-bottom-nav" id="mobileBottomNav" style="display: none;">
     <button class="mobile-nav-item active" data-view="countdown">
-      <span class="mobile-nav-icon">⏱️</span>
+      <span class="icon mobile-nav-icon" aria-hidden="true">timer</span>
       <span class="mobile-nav-label">ספירה</span>
     </button>
     <button class="mobile-nav-item" data-view="tasks">
-      <span class="mobile-nav-icon">📝</span>
+      <span class="icon mobile-nav-icon" aria-hidden="true">checklist</span>
       <span class="mobile-nav-label">משימות</span>
     </button>
     <button class="mobile-nav-item" data-view="pomodoro">
-      <span class="mobile-nav-icon">🍅</span>
+      <span class="icon mobile-nav-icon" aria-hidden="true">timelapse</span>
       <span class="mobile-nav-label">פומודורו</span>
     </button>
     <button class="mobile-nav-item" data-view="planner">
-      <span class="mobile-nav-icon">📅</span>
+      <span class="icon mobile-nav-icon" aria-hidden="true">event_note</span>
       <span class="mobile-nav-label">מתכנן</span>
     </button>
     <button class="mobile-nav-item" data-view="calendar">
-      <span class="mobile-nav-icon">📆</span>
+      <span class="icon mobile-nav-icon" aria-hidden="true">calendar_month</span>
       <span class="mobile-nav-label">לוח</span>
     </button>
   </nav>
