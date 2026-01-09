@@ -1556,6 +1556,12 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import { getDatabase, ref, set, onValue, push, remove, onChildAdded, onChildChanged, onChildRemoved, goOnline, goOffline } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+    import { ctx } from "./js/context.js";
+    import { initEvents } from "./js/events.js";
+    import { initTasks } from "./js/tasks.js";
+    import { initCalendar } from "./js/calendar.js";
+    import { createPomodoro } from "./js/pomodoro.js";
+    import { initUi } from "./js/ui.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyB_IflOD8CwVLQQjqtz_ZKWzbfgCiOm2Js",
@@ -1570,6 +1576,20 @@
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
     const eventsRef = ref(db, 'events');
+    Object.assign(ctx, {
+      db,
+      ref,
+      set,
+      onValue,
+      push,
+      remove,
+      onChildAdded,
+      onChildChanged,
+      onChildRemoved,
+      goOnline,
+      goOffline,
+      eventsRef
+    });
 
     // 2. USER AUTHENTICATION LOGIC
     const userBtn = document.getElementById('userBtn');
@@ -1598,6 +1618,7 @@
     // 3. PRIVATE REFERENCES (Scoped to the user)
     const tasksRef = ref(db, `users/${currentUser}/tasks`);
     const subjectsRef = ref(db, `users/${currentUser}/subjects`);
+    Object.assign(ctx, { currentUser, tasksRef, subjectsRef });
 
     // 4. LOGOUT / SWITCH USER FUNCTION
     if (userBtn) {
@@ -1626,6 +1647,7 @@
       '"': '&quot;',
       "'": '&#39;'
     })[c]);
+    Object.assign(ctx, { COLORS, HEBREW_DAYS, HEBREW_MONTHS, escapeHtml });
 
     const $ = id => document.getElementById(id);
     const eventList = $("eventList");
@@ -1652,6 +1674,7 @@
     const clearModal = $("clearModal");
     const confirmClearBtn = $("confirmClearBtn");
     const cancelClearModalBtn = $("cancelClearModalBtn");
+    ctx.clearModal = clearModal;
     const themeToggle = $("themeToggle");
     const notifyBtn = $("notifyBtn");
     const togglePomodoro = $("togglePomodoro");
@@ -1665,35 +1688,29 @@
     const shortcutsModal = $("shortcutsModal");
     const shortcutsClose = $("shortcutsClose");
     const helpShortcuts = $("helpShortcuts");
+    const dayDrawer = $("dayDrawer");
+    Object.assign(ctx, {
+      eventList,
+      emptyState,
+      eventName,
+      eventDate,
+      eventNotes,
+      inputPanel,
+      themeToggle,
+      notifyBtn,
+      pomodoroOverlay,
+      eventAlertModal,
+      alertTitle,
+      alertMessage,
+      undoToast,
+      undoToastMsg,
+      shortcutsModal,
+      shortcutsClose,
+      helpShortcuts,
+      dayDrawer
+    });
     let shortcutsLastFocus = null;
 
-    // Event delegation for main calendar: single handler instead of per-chip listeners
-    if (calendarGrid) {
-      calendarGrid.addEventListener('click', (e) => {
-        const chip = e.target.closest('.calendar-event-chip');
-        if (chip) {
-          e.stopPropagation();
-          const eventId = chip.dataset.eventId;
-          if (eventId) {
-            const eventRow = document.querySelector(`.event-row[data-id="${eventId}"]`);
-            if (eventRow) {
-              eventRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
-              eventRow.style.transition = 'background 0.3s';
-              eventRow.style.background = 'var(--accent)';
-              setTimeout(() => { eventRow.style.background = ''; }, 800);
-            }
-          }
-          return;
-        }
-
-        const day = e.target.closest('.calendar-day:not(.other-month)');
-        if (day) {
-          const dateKey = day.dataset.date;
-          if (!dateKey) return;
-          openDayDrawer(dateKey);
-        }
-      });
-    }
     const undoToastUndo = $("undoToastUndo");
     const pomodoroCard = $("pomodoroCard");
     const pomodoroTaskSelect = $("pomodoroTaskSelect");
@@ -1728,14 +1745,22 @@
       TASKS_PREFIX: 'countdown-tasks-cache-v1:',
       SUBJECTS_PREFIX: 'countdown-subjects-cache-v1:'
     };
+    Object.assign(ctx, { STORAGE_KEYS, CACHE_KEYS });
 
     let editingId = null;
+    Object.defineProperty(ctx, 'editingId', { get: () => editingId, set: (val) => { editingId = val; } });
     let events = [];
     let eventsLoaded = false;
     let hasEventsCache = false;
     const eventsById = new Map();
     const refs = new Map();
     let tickerHandle = null;
+    Object.defineProperties(ctx, {
+      events: { get: () => events, set: (val) => { events = val; } },
+      eventsLoaded: { get: () => eventsLoaded, set: (val) => { eventsLoaded = val; } },
+      hasEventsCache: { get: () => hasEventsCache, set: (val) => { hasEventsCache = val; } },
+      eventsById: { value: eventsById }
+    });
     function getEventById(id) { return eventsById.get(id); }
     function upsertLocalEvent(id, data) {
       const existing = eventsById.get(id);
@@ -1746,33 +1771,115 @@
         eventsById.set(id, evt);
       }
     }
-    let calendarRenderTimer = null;
-    function scheduleCalendarRender() {
-      if (calendarRenderTimer) return;
-      const run = () => {
-        calendarRenderTimer = null;
-        renderCalendar();
-      };
-      if ('requestIdleCallback' in window) {
-        calendarRenderTimer = requestIdleCallback(run, { timeout: 200 });
-      } else {
-        calendarRenderTimer = setTimeout(run, 0);
-      }
-    }
+    ctx.upsertLocalEvent = upsertLocalEvent;
     let currentMonth = new Date();
     let eventCalendarView = 'month'; // 'month', 'week', 'day'
     let eventCalendarFocusDate = new Date();
+    Object.defineProperties(ctx, {
+      currentMonth: { get: () => currentMonth, set: (val) => { currentMonth = val; } },
+      eventCalendarView: { get: () => eventCalendarView, set: (val) => { eventCalendarView = val; } },
+      eventCalendarFocusDate: { get: () => eventCalendarFocusDate, set: (val) => { eventCalendarFocusDate = val; } }
+    });
     const pendingDeletes = new Map();
     let lastDeletedId = null;
     const DELETE_TIMEOUT_MS = 10000;
-    const notifiedEvents = new Map();
-    const notifiedTasks = new Map();
+    const taskNotifyScope = currentUser ? `:${currentUser}` : '';
+    const NOTIFY_KEYS = {
+      EVENTS: 'countdown-notified-events-v1',
+      TASKS: `countdown-notified-tasks-v1${taskNotifyScope}`,
+      EVENTS_LAST_CHECK: 'countdown-last-event-check-v1',
+      TASKS_LAST_CHECK: `countdown-last-task-check-v1${taskNotifyScope}`
+    };
+    const NOTIFY_TTL_MS = 1000 * 60 * 60 * 24 * 7;
+    const REMINDER_CATCHUP_MAX_MS = 1000 * 60 * 60 * 12;
+    const REMINDER_CATCHUP_MAX_COUNT = 6; // Limit burst after long inactivity.
+    const NOTIFY_CHECK_PERSIST_MS = 30000;
+
+    function loadNotifiedMap(storageKey) {
+      const map = new Map();
+      const now = Date.now();
+      try {
+        const raw = localStorage.getItem(storageKey);
+        if (!raw) return map;
+        const parsed = JSON.parse(raw);
+        if (!parsed || typeof parsed !== 'object') return map;
+        Object.entries(parsed).forEach(([id, entry]) => {
+          if (typeof entry === 'string') {
+            map.set(id, { key: entry, ts: now });
+            return;
+          }
+          if (!entry || typeof entry !== 'object') return;
+          const key = entry.key;
+          const ts = Number(entry.ts) || 0;
+          if (!key || !ts) return;
+          if (now - ts > NOTIFY_TTL_MS) return;
+          map.set(id, { key, ts });
+        });
+      } catch (e) { }
+      return map;
+    }
+
+    function persistNotifiedMap(storageKey, map) {
+      try {
+        const payload = {};
+        map.forEach((entry, id) => {
+          if (!entry || !entry.key) return;
+          payload[id] = { key: entry.key, ts: entry.ts || Date.now() };
+        });
+        localStorage.setItem(storageKey, JSON.stringify(payload));
+      } catch (e) { }
+    }
+
+    function pruneNotifiedMap(storageKey, map, validIds) {
+      const now = Date.now();
+      let changed = false;
+      map.forEach((entry, id) => {
+        const ts = Number(entry?.ts) || 0;
+        if (!entry?.key || !ts || now - ts > NOTIFY_TTL_MS || (validIds && !validIds.has(id))) {
+          map.delete(id);
+          changed = true;
+        }
+      });
+      if (changed) persistNotifiedMap(storageKey, map);
+    }
+
+    function loadLastCheck(storageKey) {
+      const raw = Number(localStorage.getItem(storageKey));
+      return Number.isFinite(raw) && raw > 0 ? raw : 0;
+    }
+
+    function getReminderWindow(lastCheck, nowMs) {
+      let start = Number.isFinite(lastCheck) && lastCheck > 0 ? lastCheck : nowMs;
+      if (start > nowMs) start = nowMs;
+      const minStart = nowMs - REMINDER_CATCHUP_MAX_MS;
+      const isCatchup = start < minStart;
+      if (isCatchup) start = minStart;
+      return { start, isCatchup };
+    }
+
+    function persistLastCheck(state, nowMs, force = false) {
+      if (!force && nowMs - state.lastPersisted < NOTIFY_CHECK_PERSIST_MS) return;
+      state.lastPersisted = nowMs;
+      try { localStorage.setItem(state.key, String(nowMs)); } catch (e) { }
+    }
+
+    const notifiedEvents = loadNotifiedMap(NOTIFY_KEYS.EVENTS);
+    const notifiedTasks = loadNotifiedMap(NOTIFY_KEYS.TASKS);
+    const reminderCheckState = {
+      events: { key: NOTIFY_KEYS.EVENTS_LAST_CHECK, lastCheck: loadLastCheck(NOTIFY_KEYS.EVENTS_LAST_CHECK), lastPersisted: 0 },
+      tasks: { key: NOTIFY_KEYS.TASKS_LAST_CHECK, lastCheck: loadLastCheck(NOTIFY_KEYS.TASKS_LAST_CHECK), lastPersisted: 0 }
+    };
     let pendingEventAlert = null;
     const reminderAudio = new Audio('https://assets.mixkit.co/sfx/preview/mixkit-software-interface-start-2574.mp3');
     reminderAudio.preload = 'auto';
     reminderAudio.volume = 0.6;
 
     const getActiveEvents = () => events.filter(evt => !pendingDeletes.has(evt.id));
+    ctx.getActiveEvents = getActiveEvents;
+    const pruneNotifiedEvents = () => {
+      const ids = new Set(getActiveEvents().map(evt => evt.id));
+      pruneNotifiedMap(NOTIFY_KEYS.EVENTS, notifiedEvents, ids);
+    };
 
     const readCache = (key) => {
       try {
@@ -1792,6 +1899,7 @@
         localStorage.setItem(key, JSON.stringify(payload));
       } catch (e) { }
     };
+    Object.assign(ctx, { readCache, writeCache });
 
     // Web Push (works when closed) requires: HTTPS + Service Worker + a backend sender (VAPID private key).
     // 1) Generate VAPID keys on your backend, then paste the PUBLIC key here.
@@ -2133,6 +2241,7 @@
       if (!eventList) return;
       eventList.classList.toggle('loading', isLoading);
     };
+    ctx.setEventsLoading = setEventsLoading;
 
     const syncBadge = $("syncBadge");
     const syncState = { events: false, tasks: false, subjects: false };
@@ -2140,6 +2249,12 @@
     const SYNC_TIMEOUT_MS = 15000;
     const SUBJECTS_NO_CACHE_TIMEOUT_MS = 8000;
     const syncTimeouts = { events: null, tasks: null, subjects: null, subjectsNoCache: null };
+    Object.assign(ctx, {
+      syncState,
+      syncCacheUsed,
+      SYNC_TIMEOUT_MS,
+      SUBJECTS_NO_CACHE_TIMEOUT_MS
+    });
     const clearSyncTimeouts = (key) => {
       const keys = key === 'subjects' ? ['subjects', 'subjectsNoCache'] : [key];
       keys.forEach((timeoutKey) => {
@@ -2181,6 +2296,7 @@
       console.debug(`[sync] ${key} ready (${source}) ${readyCount}/${total}`);
       updateSyncBadge();
     };
+    Object.assign(ctx, { clearSyncTimeouts, startSyncTimeout, updateSyncBadge, markSyncReady });
 
     const showUndoToast = (name, id) => {
       undoToastMsg.textContent = `${name} deleted`;
@@ -2196,6 +2312,7 @@
     const closeEventAlert = () => {
       if (eventAlertModal) eventAlertModal.classList.remove('open');
     };
+    ctx.closeEventAlert = closeEventAlert;
 
     const getReminderMinutesFromUI = () => {
       if (!eventReminder) return 0;
@@ -2269,17 +2386,30 @@
       });
     }
 
+    const flushReminderChecks = () => {
+      const now = Date.now();
+      persistLastCheck(reminderCheckState.events, now, true);
+      persistLastCheck(reminderCheckState.tasks, now, true);
+    };
+
     document.addEventListener('visibilitychange', () => {
+      if (document.hidden) {
+        flushReminderChecks();
+        return;
+      }
       if (!document.hidden && pendingEventAlert) {
         showEventAlert(pendingEventAlert.title, pendingEventAlert.message, true);
         pendingEventAlert = null;
       }
+      checkEventReminders(Date.now());
+      checkTaskReminders();
       // Force Firebase reconnect when app becomes visible (fixes mobile sync issues)
       if (!document.hidden) {
         goOffline(db);
         setTimeout(() => goOnline(db), 100);
       }
     });
+    window.addEventListener('beforeunload', flushReminderChecks);
 
     undoToastUndo.onclick = () => {
       if (!lastDeletedId) return;
@@ -2299,6 +2429,7 @@
       return COLORS[charCode % COLORS.length];
 
     }
+    ctx.getEventColor = getEventColor;
 
 
 
@@ -2347,419 +2478,10 @@
       localStorage.setItem(STORAGE_KEYS.THEME, isDark ? 'dark' : 'light');
     };
 
-    // ========================================
-    // CALENDAR SYNC FUNCTIONALITY
-    // ========================================
+    const calendarApi = initCalendar();
+    const { renderCalendar, scheduleCalendarRender, openDayDrawer, closeDayDrawer } = calendarApi;
+    Object.assign(ctx, { renderCalendar, scheduleCalendarRender, openDayDrawer, closeDayDrawer });
 
-    const calendarSyncBtn = $('calendarSyncBtn');
-    const calendarSyncModal = $('calendarSyncModal');
-    const closeCalendarSyncBtn = $('closeCalendarSyncBtn');
-    const syncGoogleCalendar = $('syncGoogleCalendar');
-    const syncAppleCalendar = $('syncAppleCalendar');
-    const calendarSyncStatus = $('calendarSyncStatus');
-    const calendarEventsList = $('calendarEventsList');
-    const calendarEventsContent = $('calendarEventsContent');
-    const importCalendarEventsBtn = $('importCalendarEventsBtn');
-
-    let pendingCalendarEvents = [];
-
-    // Google Calendar API Configuration
-    const GOOGLE_API_KEY_DEFAULT = 'AIzaSyBH6g_Wz_RJKmEZL9xYWB6J2QaQ5f8z7hY'; // Optional; can be overridden in UI
-    const GOOGLE_CLIENT_ID_DEFAULT = ''; // Set via UI (recommended) or hardcode if desired
-    const GOOGLE_SCOPES = 'https://www.googleapis.com/auth/calendar.readonly';
-
-    const googleSettingsDetails = $('googleSettingsDetails');
-    const googleApiKeyInput = $('googleApiKeyInput');
-    const googleClientIdInput = $('googleClientIdInput');
-    const saveGoogleSettingsBtn = $('saveGoogleSettingsBtn');
-    const resetGoogleSettingsBtn = $('resetGoogleSettingsBtn');
-
-    const getGoogleApiKey = () => (localStorage.getItem(STORAGE_KEYS.GOOGLE_API_KEY) || GOOGLE_API_KEY_DEFAULT || '').trim();
-    const getGoogleClientId = () => (localStorage.getItem(STORAGE_KEYS.GOOGLE_CLIENT_ID) || GOOGLE_CLIENT_ID_DEFAULT || '').trim();
-
-    const isPlaceholderClientId = (clientId) =>
-      !clientId ||
-      clientId === 'YOUR_CLIENT_ID.apps.googleusercontent.com' ||
-      clientId.includes('123456789');
-
-    const isPlaceholderApiKey = (apiKey) =>
-      !apiKey ||
-      apiKey === 'YOUR_API_KEY_HERE' ||
-      apiKey.includes('YOUR_API_KEY');
-
-    const syncGoogleSettingsInputsFromStorage = () => {
-      if (googleApiKeyInput) googleApiKeyInput.value = getGoogleApiKey();
-      if (googleClientIdInput) googleClientIdInput.value = getGoogleClientId();
-    };
-
-    const openGoogleSettings = () => {
-      if (googleSettingsDetails) googleSettingsDetails.open = true;
-      if (googleClientIdInput) googleClientIdInput.focus();
-    };
-
-    // Helper function to show status message
-    const showCalendarStatus = (message, type = 'info') => {
-      calendarSyncStatus.textContent = message;
-      calendarSyncStatus.style.display = 'block';
-      calendarSyncStatus.style.background = type === 'error' ? '#fef2f2' :
-        type === 'success' ? '#f0fdf4' : 'var(--day-other)';
-      calendarSyncStatus.style.color = type === 'error' ? '#ef4444' :
-        type === 'success' ? '#10b981' : 'var(--muted)';
-    };
-
-    const hideCalendarStatus = () => {
-      calendarSyncStatus.style.display = 'none';
-    };
-
-    if (saveGoogleSettingsBtn) {
-      saveGoogleSettingsBtn.onclick = () => {
-        const apiKey = (googleApiKeyInput?.value || '').trim();
-        const clientId = (googleClientIdInput?.value || '').trim();
-
-        if (apiKey) localStorage.setItem(STORAGE_KEYS.GOOGLE_API_KEY, apiKey);
-        else localStorage.removeItem(STORAGE_KEYS.GOOGLE_API_KEY);
-
-        if (clientId) localStorage.setItem(STORAGE_KEYS.GOOGLE_CLIENT_ID, clientId);
-        else localStorage.removeItem(STORAGE_KEYS.GOOGLE_CLIENT_ID);
-
-        showCalendarStatus('✅ Saved Google settings', 'success');
-      };
-    }
-
-    if (resetGoogleSettingsBtn) {
-      resetGoogleSettingsBtn.onclick = () => {
-        localStorage.removeItem(STORAGE_KEYS.GOOGLE_API_KEY);
-        localStorage.removeItem(STORAGE_KEYS.GOOGLE_CLIENT_ID);
-        syncGoogleSettingsInputsFromStorage();
-        showCalendarStatus('🔄 Reset Google settings', 'info');
-      };
-    }
-
-    // Open calendar sync modal
-    if (calendarSyncBtn) {
-      calendarSyncBtn.onclick = () => {
-        calendarSyncModal.classList.add('open');
-        hideCalendarStatus();
-        syncGoogleSettingsInputsFromStorage();
-        calendarEventsList.style.display = 'none';
-        importCalendarEventsBtn.style.display = 'none';
-        pendingCalendarEvents = [];
-      };
-    }
-
-    // Close calendar sync modal
-    if (closeCalendarSyncBtn) {
-      closeCalendarSyncBtn.onclick = () => {
-        calendarSyncModal.classList.remove('open');
-      };
-    }
-
-    // Click outside to close
-    if (calendarSyncModal) {
-      calendarSyncModal.addEventListener('click', (e) => {
-        if (e.target === calendarSyncModal) {
-          calendarSyncModal.classList.remove('open');
-        }
-      });
-    }
-
-    // Google Calendar Integration
-    if (syncGoogleCalendar) {
-      syncGoogleCalendar.onclick = async () => {
-        if (location.protocol === 'file:') {
-          showCalendarStatus('❌ Google Calendar sign-in does not work from file://. Run the app via http://localhost (e.g. `python3 -m http.server 8000`).', 'error');
-          openGoogleSettings();
-          return;
-        }
-
-        const apiKey = getGoogleApiKey();
-        const clientId = getGoogleClientId();
-        if (isPlaceholderClientId(clientId)) {
-          showCalendarStatus('❌ Missing OAuth Client ID. Open “Google Settings” and paste your Client ID (ends with .apps.googleusercontent.com).', 'error');
-          openGoogleSettings();
-          return;
-        }
-        if (isPlaceholderApiKey(apiKey)) {
-          showCalendarStatus('⚠️ Missing Google API Key. It may still work, but recommended to add one in “Google Settings”.', 'info');
-          openGoogleSettings();
-        }
-
-        showCalendarStatus('🔄 Connecting to Google Calendar...', 'info');
-
-        try {
-          // Load Google API client library
-          if (!window.gapi) {
-            await loadGoogleAPI();
-          }
-
-          // Initialize Google API
-          await new Promise((resolve, reject) => {
-            gapi.load('client:auth2', {
-              callback: resolve,
-              onerror: () => reject(new Error('Failed to load Google auth library')),
-              timeout: 15000,
-              ontimeout: () => reject(new Error('Timed out loading Google auth library'))
-            });
-          });
-
-          await gapi.client.init({
-            apiKey: apiKey || undefined,
-            clientId,
-            discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest'],
-            scope: GOOGLE_SCOPES
-          });
-
-          // Sign in
-          const auth = gapi.auth2.getAuthInstance();
-          if (!auth.isSignedIn.get()) {
-            await auth.signIn();
-          }
-
-          showCalendarStatus('✅ Connected! Fetching events...', 'success');
-
-          // Fetch calendar events (next 30 days)
-          const now = new Date();
-          const oneMonthLater = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
-
-          const response = await gapi.client.calendar.events.list({
-            calendarId: 'primary',
-            timeMin: now.toISOString(),
-            timeMax: oneMonthLater.toISOString(),
-            showDeleted: false,
-            singleEvents: true,
-            maxResults: 50,
-            orderBy: 'startTime'
-          });
-
-          const events = response.result.items || [];
-
-          if (events.length === 0) {
-            showCalendarStatus('No upcoming events found in your Google Calendar', 'info');
-            return;
-          }
-
-          displayCalendarEvents(events, 'google');
-
-        } catch (error) {
-          console.error('Google Calendar sync error:', error);
-          const details =
-            error?.result?.error?.message ||
-            error?.details ||
-            error?.error ||
-            error?.message ||
-            (typeof error === 'string' ? error : '');
-
-          let hint = '';
-          const combined = String(details || '');
-          if (/idpiframe_initialization_failed/i.test(combined)) {
-            hint = ' (Tip: allow third‑party cookies or try a different browser/profile.)';
-          } else if (/redirect_uri_mismatch|origin_mismatch/i.test(combined)) {
-            hint = ' (Tip: add this site to “Authorized JavaScript origins” in Google OAuth settings.)';
-          } else if (/invalid_client/i.test(combined)) {
-            hint = ' (Tip: check your OAuth Client ID.)';
-          }
-
-          showCalendarStatus(`❌ Error: ${details || 'Failed to connect to Google Calendar'}${hint}`, 'error');
-          openGoogleSettings();
-        }
-      };
-    }
-
-    // Apple Calendar (iCal) Integration
-    if (syncAppleCalendar) {
-      syncAppleCalendar.onclick = async () => {
-        showCalendarStatus('🍎 Apple Calendar requires .ics file import', 'info');
-
-        // Create file input for .ics files
-        const input = document.createElement('input');
-        input.type = 'file';
-        input.accept = '.ics,.ical';
-
-        input.onchange = async (e) => {
-          const file = e.target.files[0];
-          if (!file) return;
-
-          showCalendarStatus('🔄 Reading calendar file...', 'info');
-
-          try {
-            const text = await file.text();
-            const events = parseICalendar(text);
-
-            if (events.length === 0) {
-              showCalendarStatus('No events found in the .ics file', 'info');
-              return;
-            }
-
-            displayCalendarEvents(events, 'apple');
-
-          } catch (error) {
-            console.error('iCal parse error:', error);
-            showCalendarStatus(`❌ Error: ${error.message || 'Failed to read calendar file'}`, 'error');
-          }
-        };
-
-        input.click();
-      };
-    }
-
-    // Load Google API dynamically
-    function loadGoogleAPI() {
-      return new Promise((resolve, reject) => {
-        if (document.querySelector('script[src*="apis.google.com"]')) {
-          resolve();
-          return;
-        }
-
-        const script = document.createElement('script');
-        script.src = 'https://apis.google.com/js/api.js';
-        script.onload = resolve;
-        script.onerror = reject;
-        document.head.appendChild(script);
-      });
-    }
-
-    // Parse iCalendar (.ics) format
-    function parseICalendar(icsText) {
-      const events = [];
-      const lines = icsText.split(/\r?\n/);
-      let currentEvent = null;
-
-      for (let i = 0; i < lines.length; i++) {
-        let line = lines[i].trim();
-
-        // Handle line folding (lines starting with space or tab)
-        while (i + 1 < lines.length && /^[ \t]/.test(lines[i + 1])) {
-          line += lines[++i].trim();
-        }
-
-        if (line === 'BEGIN:VEVENT') {
-          currentEvent = {};
-        } else if (line === 'END:VEVENT' && currentEvent) {
-          if (currentEvent.summary && currentEvent.start) {
-            events.push(currentEvent);
-          }
-          currentEvent = null;
-        } else if (currentEvent) {
-          const match = line.match(/^([^:;]+)(?:;([^:]+))?:(.+)$/);
-          if (match) {
-            const [, key, params, value] = match;
-
-            if (key === 'SUMMARY') {
-              currentEvent.summary = value;
-            } else if (key === 'DTSTART') {
-              currentEvent.start = parseICalDate(value, params);
-            } else if (key === 'DTEND') {
-              currentEvent.end = parseICalDate(value, params);
-            } else if (key === 'DESCRIPTION') {
-              currentEvent.description = value.replace(/\\n/g, '\n');
-            }
-          }
-        }
-      }
-
-      return events;
-    }
-
-    // Parse iCal date format
-    function parseICalDate(dateStr, params) {
-      // Format: YYYYMMDDTHHMMSS or YYYYMMDD
-      const match = dateStr.match(/^(\d{4})(\d{2})(\d{2})(?:T(\d{2})(\d{2})(\d{2}))?/);
-      if (!match) return null;
-
-      const [, year, month, day, hour = '00', minute = '00', second = '00'] = match;
-      return new Date(year, month - 1, day, hour, minute, second);
-    }
-
-    // Display calendar events for selection
-    function displayCalendarEvents(calendarEvents, source) {
-      pendingCalendarEvents = calendarEvents.map(evt => {
-        if (source === 'google') {
-          return {
-            name: evt.summary || 'Untitled Event',
-            date: evt.start.dateTime || evt.start.date,
-            notes: evt.description || '',
-            source: 'Google Calendar'
-          };
-        } else {
-          return {
-            name: evt.summary || 'Untitled Event',
-            date: evt.start.toISOString(),
-            notes: evt.description || '',
-            source: 'Apple Calendar'
-          };
-        }
-      });
-
-      showCalendarStatus(`✅ Found ${pendingCalendarEvents.length} events`, 'success');
-
-      calendarEventsContent.innerHTML = pendingCalendarEvents.map((evt, idx) => {
-        const eventDate = new Date(evt.date);
-        const dateStr = eventDate.toLocaleString('he-IL', {
-          year: 'numeric',
-          month: 'short',
-          day: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit'
-        });
-
-        return `
-        <label style="display: flex; align-items: center; padding: 8px; border-radius: 6px; background: var(--card); border: 1px solid var(--border); cursor: pointer; transition: all 0.2s;" 
-               onmouseover="this.style.background='var(--day-hover)'" 
-               onmouseout="this.style.background='var(--card)'">
-          <input type="checkbox" checked data-event-idx="${idx}" style="margin-left: 8px;">
-          <div style="flex: 1;">
-            <div style="font-weight: 500; color: var(--text);">${escapeHtml(evt.name)}</div>
-            <div style="font-size: 12px; color: var(--muted);">${dateStr}</div>
-          </div>
-        </label>
-      `;
-      }).join('');
-
-      calendarEventsList.style.display = 'block';
-      importCalendarEventsBtn.style.display = 'block';
-    }
-
-    // Import selected calendar events
-    if (importCalendarEventsBtn) {
-      importCalendarEventsBtn.onclick = async () => {
-        const checkboxes = calendarEventsContent.querySelectorAll('input[type="checkbox"]:checked');
-        const selectedIndices = Array.from(checkboxes).map(cb => parseInt(cb.dataset.eventIdx));
-
-        if (selectedIndices.length === 0) {
-          showCalendarStatus('Please select at least one event to import', 'error');
-          return;
-        }
-
-        showCalendarStatus(`🔄 Importing ${selectedIndices.length} events...`, 'info');
-
-        let imported = 0;
-        for (const idx of selectedIndices) {
-          const evt = pendingCalendarEvents[idx];
-          try {
-            await saveToCloud({
-              name: evt.name,
-              date: evt.date,
-              notes: evt.notes ? `${evt.notes}\n\n[Imported from ${evt.source}]` : `[Imported from ${evt.source}]`,
-              reminder: 60, // Default 1 hour reminder
-              highlighted: false,
-              pinned: false
-            });
-            imported++;
-          } catch (error) {
-            console.error('Failed to import event:', evt.name, error);
-          }
-        }
-
-        showCalendarStatus(`✅ Successfully imported ${imported} events!`, 'success');
-
-        setTimeout(() => {
-          calendarSyncModal.classList.remove('open');
-        }, 2000);
-      };
-    }
-
-    // ========================================
-    // END CALENDAR SYNC FUNCTIONALITY
     // ========================================
 
     // Persist sidebar width
@@ -2788,549 +2510,24 @@
       const d = new Date(date);
       return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
     }
+    Object.assign(ctx, { parseLocal, toLocalDatetime, toDateKey });
 
-    const cachedEvents = readCache(CACHE_KEYS.EVENTS);
-    if (cachedEvents && cachedEvents.length) {
-      events = cachedEvents;
-      eventsById.clear();
-      events.forEach(e => eventsById.set(e.id, e));
-      hasEventsCache = true;
-      syncCacheUsed.events = true;
-      eventsLoaded = true;
-      markSyncReady('events', 'cache');
-      setEventsLoading(false);
-      updateSyncBadge();
-      render();
-      scheduleCalendarRender();
-      startTicker();
-    } else {
-      setEventsLoading(true);
-    }
-
-    function getMonthEvents() {
-      const year = currentMonth.getFullYear();
-      const month = currentMonth.getMonth();
-      return getActiveEvents().filter(evt => {
-        const d = new Date(evt.date);
-        return d.getFullYear() === year && d.getMonth() === month;
-      }).sort((a, b) => new Date(a.date) - new Date(b.date));
-    }
-
-    function renderMonthEventsList() {
-      const monthEvents = getMonthEvents();
-      monthEventsTitle.textContent = `אירועי ${HEBREW_MONTHS[currentMonth.getMonth()]}`;
-
-      if (monthEvents.length === 0) {
-        monthEventsEl.innerHTML = '<div class="no-events-msg">אין אירועים החודש</div>';
-        return;
-      }
-
-      monthEventsEl.innerHTML = monthEvents.map(evt => {
-        const color = getEventColor(evt.id);
-        const d = new Date(evt.date);
-        const dateStr = `${d.getDate()}/${d.getMonth() + 1} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
-        return `
-        <div class="month-event-item" style="border-right-color: ${color}">
-          <div class="month-event-color" style="background: ${color}"></div>
-          <div class="month-event-info">
-            <div class="month-event-name">${escapeHtml(evt.name)}</div>
-            <div class="month-event-date">${dateStr}</div>
-          </div>
-        </div>
-      `;
-      }).join('');
-    }
-
-    function renderCalendar() {
-      const today = new Date();
-      const todayKey = toDateKey(today);
-
-      // Build event map by date
-      const eventsByDate = {};
-      getActiveEvents().forEach(evt => {
-        const key = toDateKey(evt.date);
-        if (!eventsByDate[key]) eventsByDate[key] = [];
-        eventsByDate[key].push(evt);
-      });
-
-      let html = '';
-      const sidebar = $("sidebar");
-
-      // Update view classes on sidebar
-      if (sidebar) {
-        sidebar.classList.toggle('calendar-view-week', eventCalendarView === 'week');
-        sidebar.classList.toggle('calendar-view-day', eventCalendarView === 'day');
-      }
-
-      if (eventCalendarView === 'month') {
-        const year = currentMonth.getFullYear();
-        const month = currentMonth.getMonth();
-        calendarTitle.textContent = `${HEBREW_MONTHS[month]} ${year}`;
-
-        const firstDay = new Date(year, month, 1);
-        const lastDay = new Date(year, month + 1, 0);
-        const startDay = firstDay.getDay();
-        const daysInMonth = lastDay.getDate();
-
-        // Day names
-        for (let i = 0; i < 7; i++) {
-          html += `<div class="calendar-day-name">${HEBREW_DAYS[i]}</div>`;
-        }
-
-        // Previous month days
-        const prevMonth = new Date(year, month, 0);
-        const prevDays = prevMonth.getDate();
-        for (let i = startDay - 1; i >= 0; i--) {
-          const day = prevDays - i;
-          html += `<div class="calendar-day other-month"><div class="calendar-day-number">${day}</div></div>`;
-        }
-
-        // Current month days
-        for (let day = 1; day <= daysInMonth; day++) {
-          const dateKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-          const isToday = dateKey === todayKey;
-          const dayEvents = eventsByDate[dateKey] || [];
-
-          let classes = 'calendar-day';
-          if (isToday) classes += ' today';
-
-          let eventsHtml = '<div class="calendar-day-events">';
-          const maxShow = 2;
-          const showTime = dayEvents.length > 1;
-          dayEvents.slice(0, maxShow).forEach(evt => {
-            const color = getEventColor(evt.id);
-            const safeName = escapeHtml(evt.name);
-            const evtDate = new Date(evt.date);
-            const timeStr = showTime ? `${String(evtDate.getHours()).padStart(2, '0')}:${String(evtDate.getMinutes()).padStart(2, '0')} ` : '';
-            const displayText = timeStr + safeName;
-            eventsHtml += `<div class="calendar-event-chip" style="background: ${color}" title="${safeName}" aria-label="${safeName}" data-event-id="${evt.id}">${displayText}</div>`;
-          });
-          if (dayEvents.length > maxShow) {
-            eventsHtml += `<div class="calendar-more">+${dayEvents.length - maxShow} עוד</div>`;
-          }
-          eventsHtml += '</div>';
-
-          html += `<div class="${classes}" data-date="${dateKey}">
-          <div class="calendar-day-number">${day}</div>
-          ${eventsHtml}
-        </div>`;
-        }
-
-        // Next month days
-        const totalCells = startDay + daysInMonth;
-        const remainingCells = totalCells % 7 === 0 ? 0 : 7 - (totalCells % 7);
-        for (let i = 1; i <= remainingCells; i++) {
-          html += `<div class="calendar-day other-month"><div class="calendar-day-number">${i}</div></div>`;
-        }
-      } else if (eventCalendarView === 'week') {
-        const focus = eventCalendarFocusDate || new Date();
-        const start = getStartOfWeek(focus);
-        const end = new Date(start);
-        end.setDate(start.getDate() + 6);
-        calendarTitle.textContent = `שבוע ${formatHebrewShortDate(start)} - ${formatHebrewShortDate(end)}`;
-
-        for (let i = 0; i < 7; i++) {
-          const dayDate = new Date(start);
-          dayDate.setDate(start.getDate() + i);
-          html += `<div class="calendar-day-name">${HEBREW_DAYS[dayDate.getDay()]}</div>`;
-        }
-
-        for (let i = 0; i < 7; i++) {
-          const dayDate = new Date(start);
-          dayDate.setDate(start.getDate() + i);
-          const dateKey = toDateKey(dayDate);
-          const dayEvents = eventsByDate[dateKey] || [];
-          const isToday = dateKey === todayKey;
-          let classes = 'calendar-day';
-          if (isToday) classes += ' today';
-
-          let eventsHtml = '<div class="calendar-day-events">';
-          const maxShow = 4;
-          dayEvents.slice(0, maxShow).forEach(evt => {
-            const color = getEventColor(evt.id);
-            const safeName = escapeHtml(evt.name);
-            const evtDate = new Date(evt.date);
-            const timeStr = `${String(evtDate.getHours()).padStart(2, '0')}:${String(evtDate.getMinutes()).padStart(2, '0')} `;
-            eventsHtml += `<div class="calendar-event-chip" style="background: ${color}" title="${safeName}" data-event-id="${evt.id}">${timeStr}${safeName}</div>`;
-          });
-          if (dayEvents.length > maxShow) {
-            eventsHtml += `<div class="calendar-more">+${dayEvents.length - maxShow} עוד</div>`;
-          }
-          eventsHtml += '</div>';
-
-          html += `<div class="${classes}" data-date="${dateKey}">
-          <div class="calendar-day-number">${dayDate.getDate()}</div>
-          ${eventsHtml}
-        </div>`;
-        }
-      } else if (eventCalendarView === 'day') {
-        const focus = eventCalendarFocusDate || new Date();
-        const dateKey = toDateKey(focus);
-        const dayEvents = eventsByDate[dateKey] || [];
-        const dayOfWeek = focus.getDay();
-        const hebrewDayNames = ['יום ראשון', 'יום שני', 'יום שלישי', 'יום רביעי', 'יום חמישי', 'יום שישי', 'שבת'];
-        calendarTitle.textContent = `${hebrewDayNames[dayOfWeek]}, ${formatHebrewShortDate(focus)}`;
-
-        html += `<div class="calendar-day-name">${hebrewDayNames[dayOfWeek]}</div>`;
-
-        const isToday = dateKey === todayKey;
-        let classes = 'calendar-day';
-        if (isToday) classes += ' today';
-
-        let eventsHtml = '<div class="calendar-day-events">';
-        dayEvents.forEach(evt => {
-          const color = getEventColor(evt.id);
-          const safeName = escapeHtml(evt.name);
-          const evtDate = new Date(evt.date);
-          const timeStr = `${String(evtDate.getHours()).padStart(2, '0')}:${String(evtDate.getMinutes()).padStart(2, '0')} `;
-          eventsHtml += `<div class="calendar-event-chip" style="background: ${color}" title="${safeName}" data-event-id="${evt.id}">${timeStr}${safeName}</div>`;
-        });
-        if (dayEvents.length === 0) {
-          eventsHtml += `<div class="no-events-msg" style="padding: 20px; text-align: center;">אין אירועים ביום זה</div>`;
-        }
-        eventsHtml += '</div>';
-
-        html += `<div class="${classes}" data-date="${dateKey}">
-        <div class="calendar-day-number">${focus.getDate()}</div>
-        ${eventsHtml}
-      </div>`;
-      }
-
-      calendarGrid.innerHTML = html;
-      renderMonthEventsList();
-    }
-
-    // Day Drawer functionality
-    const dayDrawer = $("dayDrawer");
-    const dayDrawerTitle = $("dayDrawerTitle");
-    const dayDrawerSubtitle = $("dayDrawerSubtitle");
-    const dayEventsList = $("dayEventsList");
-    const dayTasksList = $("dayTasksList");
-    const dayEventsCount = $("dayEventsCount");
-    const dayTasksCount = $("dayTasksCount");
-    const closeDayDrawerBtn = $("closeDayDrawer");
-    const addEventToDay = $("addEventToDay");
-    const addTaskToDay = $("addTaskToDay");
-
-    let selectedDayKey = null;
-
-    function openDayDrawer(dateKey) {
-      selectedDayKey = dateKey;
-      const [year, month, day] = dateKey.split('-').map(Number);
-      const date = new Date(year, month - 1, day);
-
-      // Format title (Hebrew day + date)
-      const dayOfWeek = date.getDay();
-      const hebrewDayNames = ['יום ראשון', 'יום שני', 'יום שלישי', 'יום רביעי', 'יום חמישי', 'יום שישי', 'שבת'];
-      dayDrawerTitle.textContent = hebrewDayNames[dayOfWeek];
-      dayDrawerSubtitle.textContent = `${day} ב${HEBREW_MONTHS[month - 1]} ${year}`;
-
-      // Get events for this day
-      const dayEvents = getActiveEvents().filter(evt => toDateKey(evt.date) === dateKey)
-        .sort((a, b) => new Date(a.date) - new Date(b.date));
-
-      // Get tasks due this day (need to access tasks array from task manager scope)
-      const allTasks = (typeof tasks !== 'undefined' && Array.isArray(tasks)) ? tasks : [];
-      const dayTasks = allTasks.filter(task => {
-        if (!task.dueDate) return false;
-        return toDateKey(task.dueDate) === dateKey;
-      }).sort((a, b) => {
-        // Sort by completed, then priority
-        if (a.completed !== b.completed) return a.completed ? 1 : -1;
-        const PRIORITY_ORDER = { urgent: 0, high: 1, medium: 2, low: 3, none: 4 };
-        return (PRIORITY_ORDER[a.priority] || 4) - (PRIORITY_ORDER[b.priority] || 4);
-      });
-
-      // Update counts
-      dayEventsCount.textContent = dayEvents.length;
-      dayTasksCount.textContent = dayTasks.length;
-
-      // Render events
-      if (dayEvents.length === 0) {
-        dayEventsList.innerHTML = '<div class="day-drawer-empty">אין אירועים ביום זה</div>';
-      } else {
-        dayEventsList.innerHTML = dayEvents.map(evt => {
-          const color = getEventColor(evt.id);
-          const evtDate = new Date(evt.date);
-          const timeStr = `${String(evtDate.getHours()).padStart(2, '0')}:${String(evtDate.getMinutes()).padStart(2, '0')}`;
-          return `
-          <div class="day-drawer-item" data-event-id="${evt.id}">
-            <div class="day-drawer-item-color" style="background: ${color}"></div>
-            <div class="day-drawer-item-info">
-              <div class="day-drawer-item-name">${escapeHtml(evt.name)}</div>
-              <div class="day-drawer-item-time">🕐 ${timeStr}</div>
-            </div>
-          </div>
-        `;
-        }).join('');
-      }
-
-      // Render tasks
-      if (dayTasks.length === 0) {
-        dayTasksList.innerHTML = '<div class="day-drawer-empty">אין משימות ביום זה</div>';
-      } else {
-        const PRIORITY_COLORS = { urgent: '#ef4444', high: '#f97316', medium: '#eab308', low: '#22c55e', none: '#6b7280' };
-        const PRIORITY_BG = { urgent: 'rgba(239,68,68,0.15)', high: 'rgba(249,115,22,0.15)', medium: 'rgba(234,179,8,0.15)', low: 'rgba(34,197,94,0.15)', none: 'var(--day-other)' };
-        const PRIORITY_LABELS_HE = { urgent: 'דחוף', high: 'גבוה', medium: 'בינוני', low: 'נמוך', none: '' };
-
-        dayTasksList.innerHTML = dayTasks.map(task => {
-          const priority = task.priority || 'none';
-          const priorityLabel = PRIORITY_LABELS_HE[priority];
-          const completedClass = task.completed ? 'task-completed' : '';
-          const due = task.dueDate ? new Date(task.dueDate) : null;
-          const timeStr = due ? `${String(due.getHours()).padStart(2, '0')}:${String(due.getMinutes()).padStart(2, '0')}` : '';
-
-          return `
-          <div class="day-drawer-item ${completedClass}" data-task-id="${task.id}">
-            <div class="day-drawer-item-color" style="background: ${PRIORITY_COLORS[priority]}"></div>
-            <div class="day-drawer-item-info">
-              <div class="day-drawer-item-name">${escapeHtml(task.title)}</div>
-              ${timeStr ? `<div class="day-drawer-item-time">🕐 ${timeStr}</div>` : ''}
-            </div>
-            ${priorityLabel ? `<div class="day-drawer-item-priority" style="background: ${PRIORITY_BG[priority]}; color: ${PRIORITY_COLORS[priority]}">${priorityLabel}</div>` : ''}
-          </div>
-        `;
-        }).join('');
-      }
-
-      // Add click handlers for items
-      dayEventsList.querySelectorAll('.day-drawer-item').forEach(item => {
-        item.addEventListener('click', () => {
-          const eventId = item.dataset.eventId;
-          if (eventId) {
-            closeDayDrawer();
-            // Scroll to event in main list
-            setTimeout(() => {
-              const eventRow = document.querySelector(`.event-row[data-id="${eventId}"]`);
-              if (eventRow) {
-                eventRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                eventRow.style.transition = 'background 0.3s';
-                eventRow.style.background = 'var(--accent)';
-                setTimeout(() => { eventRow.style.background = ''; }, 800);
-              }
-            }, 200);
-          }
-        });
-      });
-
-      dayTasksList.querySelectorAll('.day-drawer-item').forEach(item => {
-        item.addEventListener('click', () => {
-          const taskId = item.dataset.taskId;
-          if (taskId) {
-            closeDayDrawer();
-            // Open task manager and highlight task
-            setTimeout(() => {
-              if (typeof showView === 'function' && currentView !== 'tasks') {
-                showView('tasks');
-              } else {
-                const tmOverlay = $("taskManagerOverlay");
-                if (tmOverlay && !tmOverlay.classList.contains('open')) {
-                  tmOverlay.classList.add('open');
-                  if (typeof renderSubjectsSidebar === 'function') renderSubjectsSidebar();
-                  if (typeof renderTasks === 'function') renderTasks();
-                  if (typeof startTaskTicker === 'function') startTaskTicker();
-                }
-              }
-              setTimeout(() => {
-                const taskItem = document.querySelector(`.task-item[data-id="${taskId}"]`);
-                if (taskItem) {
-                  taskItem.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                  taskItem.style.transition = 'box-shadow 0.3s';
-                  taskItem.style.boxShadow = '0 0 0 3px var(--accent)';
-                  setTimeout(() => { taskItem.style.boxShadow = ''; }, 1000);
-                }
-              }, 300);
-            }, 200);
-          }
-        });
-      });
-
-      dayDrawer.classList.add('open');
-    }
-
-    function closeDayDrawer() {
-      dayDrawer.classList.remove('open');
-      selectedDayKey = null;
-    }
-
-    closeDayDrawerBtn.onclick = closeDayDrawer;
-
-    // Close on backdrop click
-    dayDrawer.addEventListener('click', (e) => {
-      if (e.target === dayDrawer) closeDayDrawer();
-    });
-
-    // Add event to selected day
-    addEventToDay.onclick = () => {
-      if (!selectedDayKey) return;
-      const dateToUse = selectedDayKey; // Save before closing
-      closeDayDrawer();
-      eventDate.value = dateToUse + 'T12:00';
-      eventName.focus();
-      inputPanel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    };
-
-    // Add task to selected day
-    addTaskToDay.onclick = () => {
-      if (!selectedDayKey) return;
-      const dateToUse = selectedDayKey; // Save before closing
-      closeDayDrawer();
-      // Open task manager
-      if (typeof showView === 'function' && currentView !== 'tasks') {
-        showView('tasks');
-      } else {
-        const tmOverlay = $("taskManagerOverlay");
-        if (tmOverlay) {
-          tmOverlay.classList.add('open');
-          if (typeof renderSubjectsSidebar === 'function') renderSubjectsSidebar();
-          if (typeof renderTasks === 'function') renderTasks();
-          if (typeof startTaskTicker === 'function') startTaskTicker();
-        }
-      }
-      // Pre-fill the due date
-      setTimeout(() => {
-        const taskDueInput = $("newTaskDue");
-        const taskTitleInput = $("newTaskTitle");
-        const quickRow = $("quickAddRow");
-        if (taskDueInput) taskDueInput.value = dateToUse + 'T23:59';
-        if (taskTitleInput) taskTitleInput.focus();
-        if (quickRow) quickRow.style.display = 'flex';
-      }, 200);
-    };
-
-    $("prevMonth").onclick = () => {
-      if (eventCalendarView === 'month') {
-        currentMonth.setMonth(currentMonth.getMonth() - 1);
-      } else if (eventCalendarView === 'week') {
-        eventCalendarFocusDate.setDate(eventCalendarFocusDate.getDate() - 7);
-      } else if (eventCalendarView === 'day') {
-        eventCalendarFocusDate.setDate(eventCalendarFocusDate.getDate() - 1);
-      }
-      renderCalendar();
-    };
-
-    $("nextMonth").onclick = () => {
-      if (eventCalendarView === 'month') {
-        currentMonth.setMonth(currentMonth.getMonth() + 1);
-      } else if (eventCalendarView === 'week') {
-        eventCalendarFocusDate.setDate(eventCalendarFocusDate.getDate() + 7);
-      } else if (eventCalendarView === 'day') {
-        eventCalendarFocusDate.setDate(eventCalendarFocusDate.getDate() + 1);
-      }
-      renderCalendar();
-    };
-
-    // Today button - jump to current date
-    const todayBtn = $("todayBtn");
-    if (todayBtn) {
-      todayBtn.onclick = () => {
-        currentMonth = new Date();
-        eventCalendarFocusDate = new Date();
-        renderCalendar();
-      };
-    }
-
-    // Event calendar view toggle
-    const eventCalendarViewToggle = $("eventCalendarViewToggle");
-    if (eventCalendarViewToggle) {
-      eventCalendarViewToggle.addEventListener('click', (e) => {
-        const btn = e.target.closest('button[data-view]');
-        if (!btn) return;
-        eventCalendarView = btn.dataset.view;
-        eventCalendarFocusDate = new Date();
-        eventCalendarViewToggle.querySelectorAll('button').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        renderCalendar();
-      });
-    }
-
-    startSyncTimeout('events', SYNC_TIMEOUT_MS, 'firebase', () => {
-      eventsLoaded = true;
-      setEventsLoading(false);
-      render();
-      scheduleCalendarRender();
-      startTicker();
-    });
-    onValue(eventsRef, (snapshot) => {
-      clearSyncTimeouts('events');
-      const data = snapshot.val();
-      eventsById.clear();
-      if (data) {
-        events = Object.keys(data).map(key => ({ id: key, ...data[key] }));
-        events.forEach(e => eventsById.set(e.id, e));
-      } else {
-        events = [];
-      }
-      eventsLoaded = true;
-      markSyncReady('events', 'firebase');
-      writeCache(CACHE_KEYS.EVENTS, events, 300);
-      setEventsLoading(false);
-      render();
-      // Defer heavy calendar render so list paints first
-      scheduleCalendarRender();
-      startTicker();
-    }, (error) => {
-      console.error('Events sync error:', error);
-      clearSyncTimeouts('events');
-      eventsLoaded = true;
-      markSyncReady('events', 'error');
-      setEventsLoading(false);
-      updateSyncBadge();
-    });
-
-    const saveToCloud = async (eventData) => {
-      const newEventRef = push(eventsRef);
-      const id = newEventRef.key;
-
-      // Optimistic UI
-      upsertLocalEvent(id, eventData);
-      render();
-      scheduleCalendarRender();
-      startTicker();
-      writeCache(CACHE_KEYS.EVENTS, events, 300);
-
-      try {
-        await set(newEventRef, eventData);
-      } catch (err) {
-        // Rollback on failure
-        events = events.filter(e => e.id !== id);
-        eventsById.delete(id);
+    const eventsApi = initEvents({
+      onEventsUpdated: () => {
+        pruneNotifiedEvents();
         render();
         scheduleCalendarRender();
-        console.error(err);
-        alert("Save failed (check connection).");
-      }
-    };
-
-    const updateInCloud = async (id, data) => {
-      const { id: _ignore, ...payload } = data;
-      const prev = eventsById.get(id) ? { ...eventsById.get(id) } : null;
-
-      // Optimistic UI
-      upsertLocalEvent(id, payload);
-      render();
-      scheduleCalendarRender();
-      writeCache(CACHE_KEYS.EVENTS, events, 300);
-
-      try {
-        await set(ref(db, 'events/' + id), payload);
-      } catch (err) {
-        // Rollback
-        if (prev) upsertLocalEvent(id, prev);
+        startTicker();
+      },
+      onEventsCacheLoaded: () => {
+        pruneNotifiedEvents();
         render();
         scheduleCalendarRender();
-        console.error(err);
-        alert("Update failed (check connection).");
+        startTicker();
       }
-    };
-
-    const deleteFromCloud = (id) => {
-      remove(ref(db, 'events/' + id));
-    };
-
-    const clearAllCloud = () => {
-      set(eventsRef, null);
-    };
+    });
+    const { saveToCloud, updateInCloud, deleteFromCloud, clearAllCloud } = eventsApi;
+    Object.assign(ctx, { saveToCloud, updateInCloud, deleteFromCloud, clearAllCloud });
 
     function formatDate(iso) {
       const d = new Date(iso);
@@ -3352,6 +2549,7 @@
       }
       return minutes === 1 ? '1 minute' : `${minutes} minutes`;
     }
+    Object.assign(ctx, { formatDate, formatReminderOffset });
 
     function playReminderSound() {
       if (!reminderAudio) return;
@@ -3369,10 +2567,24 @@
       if (playSound) playReminderSound();
     }
 
-    async function triggerAlert(evt) {
-      const reminderMinutes = parseInt(evt.reminder, 10) || 0;
-      const timeString = formatReminderOffset(reminderMinutes);
-      const msg = `${evt.name} starts in ${timeString}!`;
+    async function triggerAlert(evt, nowMs = Date.now()) {
+      const eventTime = new Date(evt.date).getTime();
+      if (!Number.isFinite(eventTime)) return;
+      const diffMinutes = Math.round((eventTime - nowMs) / 60000);
+      let msg = '';
+      let inAppMsg = '';
+      if (diffMinutes > 0) {
+        const timeString = formatReminderOffset(Math.max(1, diffMinutes));
+        msg = `${evt.name} starts in ${timeString}!`;
+        inAppMsg = `Starting in ${timeString}`;
+      } else if (diffMinutes < 0) {
+        const timeString = formatReminderOffset(Math.max(1, Math.abs(diffMinutes)));
+        msg = `${evt.name} started ${timeString} ago`;
+        inAppMsg = `Started ${timeString} ago`;
+      } else {
+        msg = `${evt.name} starts now!`;
+        inAppMsg = 'Starting now';
+      }
 
       showSystemNotification("Event Reminder ⏰", {
         body: msg,
@@ -3382,9 +2594,9 @@
 
       // Show in-app alert if visible, or queue for later
       if (document.hidden) {
-        pendingEventAlert = { title: evt.name, message: `Starting in ${timeString}` };
+        pendingEventAlert = { title: evt.name, message: inAppMsg };
       } else {
-        showEventAlert(evt.name, `Starting in ${timeString}`, true);
+        showEventAlert(evt.name, inAppMsg, true);
       }
     }
 
@@ -3398,6 +2610,7 @@
         s: Math.floor((diff % 60000) / 1000)
       };
     }
+    ctx.calcTime = calcTime;
 
     function startEdit(id) {
       const evt = events.find(e => e.id === id);
@@ -3426,6 +2639,7 @@
       clearBtn.style.display = "block";
       inputPanel.classList.remove("editing");
     }
+    ctx.cancelEdit = cancelEdit;
 
     function setEventReminder(id, minutes) {
       const evt = events.find(e => e.id === id);
@@ -3753,6 +2967,42 @@
       });
     }
 
+    function checkEventReminders(nowMs = Date.now()) {
+      const state = reminderCheckState.events;
+      const { start, isCatchup } = getReminderWindow(state.lastCheck, nowMs);
+      const candidates = [];
+
+      getActiveEvents().forEach(evt => {
+        const reminderMinutes = parseInt(evt.reminder, 10) || 0;
+        if (!reminderMinutes) return;
+        const reminderKey = `${evt.date || ''}|${reminderMinutes}`;
+        const entry = notifiedEvents.get(evt.id);
+        if (entry && entry.key === reminderKey) return;
+        const eventTime = new Date(evt.date).getTime();
+        if (!Number.isFinite(eventTime)) return;
+        const triggerTime = eventTime - (reminderMinutes * 60000);
+        if (triggerTime < start || triggerTime > nowMs) return;
+        candidates.push({ evt, reminderKey, triggerTime });
+      });
+
+      if (candidates.length) {
+        if (isCatchup && candidates.length > REMINDER_CATCHUP_MAX_COUNT) {
+          candidates.sort((a, b) => b.triggerTime - a.triggerTime);
+          candidates.length = REMINDER_CATCHUP_MAX_COUNT;
+        } else {
+          candidates.sort((a, b) => a.triggerTime - b.triggerTime);
+        }
+        candidates.forEach(item => {
+          triggerAlert(item.evt, nowMs);
+          notifiedEvents.set(item.evt.id, { key: item.reminderKey, ts: nowMs });
+        });
+        persistNotifiedMap(NOTIFY_KEYS.EVENTS, notifiedEvents);
+      }
+
+      state.lastCheck = nowMs;
+      persistLastCheck(state, nowMs);
+    }
+
     function tick() {
       const now = Date.now();
 
@@ -3775,20 +3025,7 @@
       });
 
       const nowMs = now;
-      getActiveEvents().forEach(evt => {
-        const reminderMinutes = parseInt(evt.reminder, 10) || 0;
-        if (!reminderMinutes) return;
-        const reminderKey = `${evt.date || ''}|${reminderMinutes}`;
-        if (notifiedEvents.get(evt.id) === reminderKey) return;
-        const eventTime = new Date(evt.date).getTime();
-        if (!Number.isFinite(eventTime)) return;
-        const triggerTime = eventTime - (reminderMinutes * 60000);
-        // Check within 2-minute window to avoid missing notifications
-        if (nowMs >= triggerTime && nowMs < triggerTime + 120000) {
-          triggerAlert(evt);
-          notifiedEvents.set(evt.id, reminderKey);
-        }
-      });
+      checkEventReminders(nowMs);
     }
 
     function startTicker() {
@@ -3878,6 +3115,7 @@
     const closeClearModal = () => {
       clearModal.classList.remove("open");
     };
+    ctx.closeClearModal = closeClearModal;
 
     clearBtn.onclick = openClearModal;
     cancelClearModalBtn.onclick = closeClearModal;
@@ -3890,423 +3128,51 @@
       if (e.target === clearModal) closeClearModal();
     });
 
+    const uiApi = initUi();
+    const {
+      openShortcuts,
+      closeShortcuts,
+      toggleShortcuts,
+      openGuide,
+      closeGuide,
+      toggleGuide,
+      openCommandPalette,
+      closeCommandPalette,
+      toggleCommandPalette,
+      focusQuickAdd,
+      goToToday,
+      openPomodoro,
+      toggleCalendarSidebar,
+      openTasksView,
+      openCountdownView,
+      focusTaskSearch,
+      toggleTheme
+    } = uiApi;
+    Object.assign(ctx, {
+      openShortcuts,
+      closeShortcuts,
+      toggleShortcuts,
+      openGuide,
+      closeGuide,
+      toggleGuide,
+      openCommandPalette,
+      closeCommandPalette,
+      toggleCommandPalette,
+      focusQuickAdd,
+      goToToday,
+      openPomodoro,
+      toggleCalendarSidebar,
+      openTasksView,
+      openCountdownView,
+      focusTaskSearch,
+      toggleTheme
+    });
+
     const isEditableTarget = (el) => {
       if (!el) return false;
       const tag = el.tagName;
       return el.isContentEditable || tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT';
     };
-
-    const openShortcuts = () => {
-      if (!shortcutsModal) return;
-      shortcutsLastFocus = document.activeElement;
-      shortcutsModal.classList.add('open');
-    };
-
-    const closeShortcuts = () => {
-      if (!shortcutsModal) return;
-      shortcutsModal.classList.remove('open');
-      if (shortcutsLastFocus && typeof shortcutsLastFocus.focus === 'function') {
-        shortcutsLastFocus.focus();
-      }
-      shortcutsLastFocus = null;
-    };
-
-    const toggleShortcuts = () => {
-      if (!shortcutsModal) return;
-      shortcutsModal.classList.contains('open') ? closeShortcuts() : openShortcuts();
-    };
-
-    if (shortcutsClose) shortcutsClose.onclick = closeShortcuts;
-
-    // ============ GUIDE MODAL ============
-    const guideModal = $("guideModal");
-    const guideClose = $("guideClose");
-    let guideLastFocus = null;
-
-    const openGuide = () => {
-      if (!guideModal) return;
-      guideLastFocus = document.activeElement;
-      guideModal.classList.add('open');
-    };
-
-    const closeGuide = () => {
-      if (!guideModal) return;
-      guideModal.classList.remove('open');
-      if (guideLastFocus && typeof guideLastFocus.focus === 'function') {
-        guideLastFocus.focus();
-      }
-      guideLastFocus = null;
-    };
-
-    const toggleGuide = () => {
-      if (!guideModal) return;
-      guideModal.classList.contains('open') ? closeGuide() : openGuide();
-    };
-
-    if (guideClose) guideClose.onclick = closeGuide;
-    if (guideModal) {
-      guideModal.addEventListener('click', (e) => {
-        if (e.target === guideModal) closeGuide();
-      });
-    }
-
-    // ? key to toggle guide
-    document.addEventListener('keydown', (e) => {
-      if (e.key === '?' && !isEditableTarget(e.target)) {
-        e.preventDefault();
-        toggleGuide();
-      }
-    });
-    if (shortcutsModal) {
-      shortcutsModal.addEventListener('click', (e) => {
-        if (e.target === shortcutsModal) closeShortcuts();
-      });
-    }
-    if (helpShortcuts) helpShortcuts.onclick = openShortcuts;
-
-    const focusQuickAdd = () => {
-      if (currentView === 'tasks') {
-        if (quickAddRow) quickAddRow.style.display = 'flex';
-        if (newTaskTitle) {
-          newTaskTitle.focus();
-          if (typeof newTaskTitle.select === 'function') newTaskTitle.select();
-        }
-        return;
-      }
-      if (typeof showView === 'function' && currentView !== 'countdown') showView('countdown');
-      if (eventName) {
-        eventName.focus();
-        if (typeof eventName.select === 'function') eventName.select();
-      }
-      if (inputPanel) inputPanel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    };
-
-    const goToToday = () => {
-      if (currentView === 'tasks') {
-        currentTaskMonth = new Date();
-        if (typeof renderTaskCalendar === 'function') renderTaskCalendar();
-        return;
-      }
-      if (typeof showView === 'function' && currentView !== 'countdown') showView('countdown');
-      currentMonth = new Date();
-      renderCalendar();
-    };
-
-    const openPomodoro = () => {
-      if (typeof showView === 'function') showView('pomodoro');
-    };
-
-    const toggleCalendarSidebar = () => {
-      if (typeof showView === 'function' && currentView !== 'countdown') showView('countdown');
-      const toggleBtn = $("toggleSidebar");
-      if (toggleBtn) toggleBtn.click();
-    };
-
-    const openTasksView = () => {
-      if (typeof showView === 'function') showView('tasks');
-    };
-
-    const openCountdownView = () => {
-      if (typeof showView === 'function') showView('countdown');
-    };
-
-    const focusTaskSearch = () => {
-      if (typeof showView === 'function' && currentView !== 'tasks') showView('tasks');
-      if (taskSearch) {
-        taskSearch.focus();
-        if (typeof taskSearch.select === 'function') taskSearch.select();
-      }
-    };
-
-    const toggleTheme = () => {
-      if (themeToggle) themeToggle.click();
-    };
-
-    document.addEventListener('keydown', (e) => {
-      if (e.key.toLowerCase() === 'h' && !isEditableTarget(e.target)) {
-        e.preventDefault();
-        toggleShortcuts();
-        return;
-      }
-      if (e.metaKey || e.ctrlKey || e.altKey) return;
-      if (isEditableTarget(e.target)) return;
-      const key = e.key.toLowerCase();
-      if (key === 'n') {
-        e.preventDefault();
-        focusQuickAdd();
-      } else if (key === 't') {
-        e.preventDefault();
-        goToToday();
-      } else if (key === 'p') {
-        e.preventDefault();
-        openPomodoro();
-      } else if (key === 'c') {
-        e.preventDefault();
-        toggleCalendarSidebar();
-      } else if (key === 'm') {
-        e.preventDefault();
-        openTasksView();
-      } else if (key === 'g') {
-        e.preventDefault();
-        openCountdownView();
-      } else if (key === '/') {
-        e.preventDefault();
-        focusTaskSearch();
-      } else if (key === 'd') {
-        e.preventDefault();
-        toggleTheme();
-      }
-    });
-
-    // Escape key handler (consolidated)
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') {
-        // Close command palette first (highest priority for new feature)
-        const cmdPalette = $("commandPalette");
-        if (cmdPalette && cmdPalette.classList.contains('open')) {
-          closeCommandPalette();
-          return;
-        }
-        if (shortcutsModal && shortcutsModal.classList.contains('open')) {
-          closeShortcuts();
-          return;
-        }
-        // Close context menus first (highest priority)
-        if (typeof hideContextMenu === 'function') hideContextMenu();
-        if (typeof hideAddEventContextMenu === 'function') hideAddEventContextMenu();
-        if (typeof hideEventContextMenu === 'function') hideEventContextMenu();
-
-        // Task edit modal (check first since it's on top)
-        const tEditModal = $("taskEditModal");
-        if (tEditModal && tEditModal.classList.contains('open')) {
-          if (typeof closeTaskEditModal === 'function') closeTaskEditModal();
-          return;
-        }
-        // Task manager overlay - go back to countdown
-        const tmOverlay = $("taskManagerOverlay");
-        if (tmOverlay && tmOverlay.classList.contains('open')) {
-          if (typeof showView === 'function') showView('countdown');
-          return;
-        }
-        // Pomodoro overlay - go back to countdown
-        const pOverlay = $("pomodoroOverlay");
-        if (pOverlay && pOverlay.classList.contains('open')) {
-          if (typeof showView === 'function') showView('countdown');
-          return;
-        }
-        if (eventAlertModal && eventAlertModal.classList.contains('open')) {
-          closeEventAlert();
-          return;
-        }
-        // Day drawer
-        if (dayDrawer.classList.contains('open')) {
-          closeDayDrawer();
-          return;
-        }
-        // Clear modal
-        if (clearModal.classList.contains('open')) {
-          closeClearModal();
-          return;
-        }
-        // Event editing
-        if (editingId) {
-          cancelEdit();
-          return;
-        }
-      }
-    });
-
-    // ============ COMMAND PALETTE ============
-    const commandPaletteEl = $("commandPalette");
-    const commandPaletteInput = $("commandPaletteInput");
-    const commandPaletteResults = $("commandPaletteResults");
-    let commandPaletteSelectedIndex = 0;
-    let commandPaletteItems = [];
-
-    const COMMANDS = [
-      { id: 'newTask', icon: '✅', label: 'משימה חדשה', shortcut: 'N', action: () => { if (typeof showView === 'function') showView('tasks'); setTimeout(() => newTaskTitle?.focus(), 100); } },
-      { id: 'newEvent', icon: '📅', label: 'אירוע חדש', shortcut: 'G', action: () => { if (typeof showView === 'function') showView('countdown'); setTimeout(() => eventName?.focus(), 100); } },
-      { id: 'goToday', icon: '📆', label: 'עבור להיום', shortcut: 'T', action: goToToday },
-      { id: 'openPomodoro', icon: '🍅', label: 'פתח פומודורו', shortcut: 'P', action: openPomodoro },
-      { id: 'openTasks', icon: '📋', label: 'עבור למשימות', shortcut: 'M', action: openTasksView },
-      { id: 'openCountdown', icon: '⏱️', label: 'עבור לספירה לאחור', shortcut: 'G', action: openCountdownView },
-      { id: 'toggleCalendar', icon: '📅', label: 'הצג/הסתר לוח שנה', shortcut: 'C', action: toggleCalendarSidebar },
-      { id: 'toggleTheme', icon: '🌙', label: 'מצב כהה/בהיר', shortcut: 'D', action: toggleTheme },
-      { id: 'openShortcuts', icon: '⌨️', label: 'קיצורי מקלדת', shortcut: 'H', action: openShortcuts },
-      { id: 'search', icon: '🔍', label: 'חפש משימות', shortcut: '/', action: focusTaskSearch },
-    ];
-
-    function openCommandPalette() {
-      if (!commandPaletteEl) return;
-      commandPaletteEl.classList.add('open');
-      commandPaletteInput.value = '';
-      commandPaletteSelectedIndex = 0;
-      renderCommandPaletteResults('');
-      setTimeout(() => commandPaletteInput.focus(), 50);
-    }
-
-    function closeCommandPalette() {
-      if (!commandPaletteEl) return;
-      commandPaletteEl.classList.remove('open');
-    }
-
-    function fuzzyMatch(text, query) {
-      if (!query) return { match: true, score: 0 };
-      const lowerText = text.toLowerCase();
-      const lowerQuery = query.toLowerCase();
-
-      // Exact match scores highest
-      if (lowerText.includes(lowerQuery)) {
-        return { match: true, score: 100 - lowerText.indexOf(lowerQuery) };
-      }
-
-      // Fuzzy match - each character in sequence
-      let queryIdx = 0;
-      let score = 0;
-      for (let i = 0; i < lowerText.length && queryIdx < lowerQuery.length; i++) {
-        if (lowerText[i] === lowerQuery[queryIdx]) {
-          score += 10;
-          queryIdx++;
-        }
-      }
-      return { match: queryIdx === lowerQuery.length, score };
-    }
-
-    function highlightMatch(text, query) {
-      if (!query) return escapeHtml(text);
-      const lowerText = text.toLowerCase();
-      const lowerQuery = query.toLowerCase();
-      const idx = lowerText.indexOf(lowerQuery);
-      if (idx === -1) return escapeHtml(text);
-      return escapeHtml(text.substring(0, idx)) +
-        '<span class="search-highlight">' + escapeHtml(text.substring(idx, idx + query.length)) + '</span>' +
-        escapeHtml(text.substring(idx + query.length));
-    }
-
-    function renderCommandPaletteResults(query) {
-      commandPaletteItems = [];
-      let html = '';
-
-      // Commands section
-      const matchedCommands = COMMANDS.filter(cmd => {
-        const result = fuzzyMatch(cmd.label, query);
-        return result.match;
-      }).slice(0, 5);
-
-      if (matchedCommands.length > 0) {
-        html += '<div class="command-palette-section-title">פקודות</div>';
-        matchedCommands.forEach((cmd, i) => {
-          commandPaletteItems.push({ type: 'command', data: cmd });
-          html += `<div class="command-palette-item ${i === commandPaletteSelectedIndex ? 'selected' : ''}" data-index="${commandPaletteItems.length - 1}">
-            <span class="command-palette-icon">${cmd.icon}</span>
-            <span class="command-palette-label">${highlightMatch(cmd.label, query)}</span>
-            ${cmd.shortcut ? `<span class="command-palette-shortcut">${cmd.shortcut}</span>` : ''}
-          </div>`;
-        });
-      }
-
-      // Search events
-      if (query.length >= 2) {
-        const matchedEvents = events.filter(evt => fuzzyMatch(evt.name, query).match).slice(0, 3);
-        if (matchedEvents.length > 0) {
-          html += '<div class="command-palette-section-title">אירועים</div>';
-          matchedEvents.forEach(evt => {
-            commandPaletteItems.push({ type: 'event', data: evt });
-            const idx = commandPaletteItems.length - 1;
-            html += `<div class="command-palette-item ${idx === commandPaletteSelectedIndex ? 'selected' : ''}" data-index="${idx}">
-              <span class="command-palette-icon">📅</span>
-              <span class="command-palette-label">${highlightMatch(evt.name, query)}</span>
-              <span class="command-palette-shortcut">${formatDate(evt.date).split(',')[0]}</span>
-            </div>`;
-          });
-        }
-
-        // Search tasks
-        const matchedTasks = tasks.filter(t => fuzzyMatch(t.title, query).match).slice(0, 3);
-        if (matchedTasks.length > 0) {
-          html += '<div class="command-palette-section-title">משימות</div>';
-          matchedTasks.forEach(task => {
-            commandPaletteItems.push({ type: 'task', data: task });
-            const idx = commandPaletteItems.length - 1;
-            html += `<div class="command-palette-item ${idx === commandPaletteSelectedIndex ? 'selected' : ''}" data-index="${idx}">
-              <span class="command-palette-icon">${task.completed ? '✅' : '⬜'}</span>
-              <span class="command-palette-label">${highlightMatch(task.title, query)}</span>
-            </div>`;
-          });
-        }
-      }
-
-      if (commandPaletteItems.length === 0) {
-        html = '<div class="command-palette-empty">לא נמצאו תוצאות</div>';
-      }
-
-      commandPaletteResults.innerHTML = html;
-    }
-
-    function executeCommandPaletteItem(index) {
-      const item = commandPaletteItems[index];
-      if (!item) return;
-      closeCommandPalette();
-
-      if (item.type === 'command') {
-        item.data.action();
-      } else if (item.type === 'event') {
-        if (typeof showView === 'function') showView('countdown');
-        setTimeout(() => {
-          const row = document.querySelector(`.event-row[data-id="${item.data.id}"]`);
-          if (row) row.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }, 100);
-      } else if (item.type === 'task') {
-        if (typeof showView === 'function') showView('tasks');
-        setTimeout(() => openTaskEditModal(item.data.id), 100);
-      }
-    }
-
-    if (commandPaletteInput) {
-      commandPaletteInput.addEventListener('input', () => {
-        commandPaletteSelectedIndex = 0;
-        renderCommandPaletteResults(commandPaletteInput.value.trim());
-      });
-
-      commandPaletteInput.addEventListener('keydown', (e) => {
-        if (e.key === 'ArrowDown') {
-          e.preventDefault();
-          commandPaletteSelectedIndex = Math.min(commandPaletteSelectedIndex + 1, commandPaletteItems.length - 1);
-          renderCommandPaletteResults(commandPaletteInput.value.trim());
-        } else if (e.key === 'ArrowUp') {
-          e.preventDefault();
-          commandPaletteSelectedIndex = Math.max(commandPaletteSelectedIndex - 1, 0);
-          renderCommandPaletteResults(commandPaletteInput.value.trim());
-        } else if (e.key === 'Enter') {
-          e.preventDefault();
-          executeCommandPaletteItem(commandPaletteSelectedIndex);
-        }
-      });
-    }
-
-    if (commandPaletteResults) {
-      commandPaletteResults.addEventListener('click', (e) => {
-        const item = e.target.closest('.command-palette-item');
-        if (item) {
-          const idx = parseInt(item.dataset.index, 10);
-          executeCommandPaletteItem(idx);
-        }
-      });
-    }
-
-    if (commandPaletteEl) {
-      commandPaletteEl.addEventListener('click', (e) => {
-        if (e.target === commandPaletteEl) closeCommandPalette();
-      });
-    }
-
-    // Cmd+K or Ctrl+K to open command palette
-    document.addEventListener('keydown', (e) => {
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
-        e.preventDefault();
-        openCommandPalette();
-      }
-    });
 
     // ============ CONFETTI ANIMATION ============
     const CONFETTI_COLORS = ['#667eea', '#22c55e', '#f59e0b', '#ec4899', '#8b5cf6', '#06b6d4'];
@@ -4347,6 +3213,7 @@
       redoStack.length = 0; // Clear redo stack on new action
       showUndoStackToast(action.message);
     }
+    ctx.pushToUndoStack = pushToUndoStack;
 
     function showUndoStackToast(message) {
       if (!undoStackToast) return;
@@ -4912,6 +3779,12 @@
     const editTaskReminder = $("editTaskReminder");
     const clearDueBtn = $("clearDueBtn");
     const duplicateTaskBtn = $("duplicateTaskBtn");
+    Object.assign(ctx, {
+      taskManagerOverlay,
+      taskSearch,
+      quickAddRow,
+      newTaskTitle
+    });
     const deleteTaskBtn = $("deleteTaskBtn");
     const saveTaskBtn = $("saveTaskBtn");
     const quickTaskColorPicker = $("quickTaskColorPicker");
@@ -4972,6 +3845,15 @@
     let tasks = [];
     let tasksLoaded = false;
     let hasTasksCache = false;
+    Object.defineProperties(ctx, {
+      tasks: { get: () => tasks, set: (val) => { tasks = val; } },
+      tasksLoaded: { get: () => tasksLoaded, set: (val) => { tasksLoaded = val; } },
+      hasTasksCache: { get: () => hasTasksCache, set: (val) => { hasTasksCache = val; } }
+    });
+    const pruneNotifiedTasks = () => {
+      const ids = new Set(tasks.filter(task => !task.completed).map(task => task.id));
+      pruneNotifiedMap(NOTIFY_KEYS.TASKS, notifiedTasks, ids);
+    };
     let editingTaskId = null;
     let editingTask = null;
     let selectedTaskPriority = 'medium';
@@ -4981,6 +3863,7 @@
     let taskReminderTickerHandle = null;
     // Shared subject state (used by Task Manager + Subjects sidebar)
     let subjects = [];
+    Object.defineProperty(ctx, 'subjects', { get: () => subjects, set: (val) => { subjects = val; } });
     let currentSubject = 'all';
     let currentSmartView = null; // 'today', 'week', 'overdue', 'nodate'
     let editingSubjectId = null;
@@ -5239,792 +4122,8 @@
     }
 
     // ============ POMODORO MODULE (self-contained) ============
-    const Pomodoro = (() => {
-      const refs = {
-        card: document.getElementById('pomodoroCard'),
-        taskSelect: document.getElementById('pomodoroTaskSelect'),
-        presets: Array.from(document.querySelectorAll('.pomodoro-preset')),
-        focusInput: document.getElementById('pomodoroFocus'),
-        breakInput: document.getElementById('pomodoroBreak'),
-        longInput: document.getElementById('pomodoroLong'),
-        longEveryInput: document.getElementById('pomodoroLongEvery'),
-        autoContinue: document.getElementById('pomodoroAutoContinue'),
-        soundEnabled: document.getElementById('pomodoroSoundEnabled'),
-        soundSelect: document.getElementById('pomodoroSound'),
-        previewBtn: document.getElementById('pomodoroPreviewSound'),
-        display: document.getElementById('pomodoroDisplay'),
-        mode: document.getElementById('pomodoroMode'),
-        next: document.getElementById('pomodoroNext'),
-        progress: document.getElementById('pomodoroRing'),
-        startBtn: document.getElementById('pomodoroStart'),
-        skipBtn: document.getElementById('pomodoroSkip'),
-        resetBtn: document.getElementById('pomodoroReset'),
-        sessionCount: document.getElementById('pomodoroSessionCount'),
-        focusMinutes: document.getElementById('pomodoroFocusMinutes'),
-        streak: document.getElementById('pomodoroStreak'),
-        dayProgress: document.getElementById('pomodoroDayProgress'),
-        dayLabel: document.getElementById('pomodoroDayLabel'),
-        badDayTip: document.getElementById('pomodoroBadDayTip'),
-        // Mini player refs
-        mini: document.getElementById('pomodoroMini'),
-        miniTime: document.getElementById('pomodoroMiniTime'),
-        miniMode: document.getElementById('pomodoroMiniMode'),
-        miniToggle: document.getElementById('pomodoroMiniToggle'),
-        miniClose: document.getElementById('pomodoroMiniClose'),
-        // Picture-in-Picture refs
-        pipBtn: document.getElementById('pomodoroPiP'),
-        pipCanvas: document.getElementById('pomodoroPipCanvas')
-      };
-
-      const KEYS = {
-        STATS: 'pomodoro-stats-v1',
-        PRESET: 'pomodoro-preset-v1',
-        CUSTOM: 'pomodoro-custom-v1',
-        SETTINGS: 'pomodoro-settings-v1'
-      };
-
-      const presets = {
-        classic: { focus: 25, shortBreak: 5, longBreak: 15, longEvery: 4, label: '25/5 קלאסי' },
-        flow: { focus: 50, shortBreak: 10, longBreak: 20, longEvery: 3, label: '50/10 זרימה' },
-        ultradian: { focus: 90, shortBreak: 20, longBreak: 25, longEvery: 1, label: '90/20 אולטרה' },
-        perfect: { focus: 52, shortBreak: 17, longBreak: 20, longEvery: 3, label: '52/17 קצב יעיל' },
-        // Bad day presets - based on research showing even short focus sessions help
-        badday10: { focus: 10, shortBreak: 3, longBreak: 5, longEvery: 4, label: '😔 10 דק׳', isBadDay: true },
-        badday5: { focus: 5, shortBreak: 2, longBreak: 5, longEvery: 6, label: '💫 5 דק׳', isBadDay: true }
-      };
-
-      const clampNum = (val, min, max, fallback) => {
-        const n = Number(val);
-        if (Number.isFinite(n)) return Math.min(max, Math.max(min, n));
-        return fallback;
-      };
-
-      const getTodayKey = () => new Date().toISOString().slice(0, 10);
-      const daysBetween = (a, b) => Math.round((new Date(b) - new Date(a)) / 86400000);
-
-      const loadCustom = () => {
-        try {
-          const raw = localStorage.getItem(KEYS.CUSTOM);
-          if (!raw) return null;
-          const parsed = JSON.parse(raw);
-          if (!parsed || typeof parsed !== 'object') return null;
-          return {
-            focus: clampNum(parsed.focus, 5, 240, 25),
-            shortBreak: clampNum(parsed.shortBreak, 3, 60, 5),
-            longBreak: clampNum(parsed.longBreak, 5, 90, 15),
-            longEvery: clampNum(parsed.longEvery, 1, 8, 4)
-          };
-        } catch (e) { return null; }
-      };
-
-      const saveCustom = (config) => {
-        try { localStorage.setItem(KEYS.CUSTOM, JSON.stringify(config)); } catch (e) { }
-      };
-
-      const loadStats = () => {
-        const today = getTodayKey();
-        try {
-          const raw = localStorage.getItem(KEYS.STATS);
-          if (!raw) return { date: today, sessions: 0, focusMinutes: 0, streak: 0, lastActiveDate: null };
-          const parsed = JSON.parse(raw);
-          if (!parsed) return { date: today, sessions: 0, focusMinutes: 0, streak: 0, lastActiveDate: null };
-          if (parsed.date !== today) {
-            const carry = parsed.focusMinutes > 0 && daysBetween(parsed.date, today) === 1;
-            const streak = carry ? (parsed.streak || 0) + 1 : (parsed.focusMinutes > 0 ? 1 : 0);
-            return { date: today, sessions: 0, focusMinutes: 0, streak, lastActiveDate: parsed.lastActiveDate };
-          }
-          return parsed;
-        } catch (e) {
-          return { date: today, sessions: 0, focusMinutes: 0, streak: 0, lastActiveDate: null };
-        }
-      };
-
-      const loadSettings = () => {
-        try {
-          const raw = localStorage.getItem(KEYS.SETTINGS);
-          if (!raw) return { autoContinue: false, sound: 'chime', soundEnabled: true };
-          const parsed = JSON.parse(raw);
-          return {
-            autoContinue: !!parsed.autoContinue,
-            sound: parsed.sound || 'chime',
-            soundEnabled: parsed.soundEnabled !== false // default true
-          };
-        } catch (e) {
-          return { autoContinue: false, sound: 'chime', soundEnabled: true };
-        }
-      };
-
-      const saveSettings = () => {
-        try { localStorage.setItem(KEYS.SETTINGS, JSON.stringify(settings)); } catch (e) { }
-      };
-      const saveStats = () => {
-        try { localStorage.setItem(KEYS.STATS, JSON.stringify(stats)); } catch (e) { }
-      };
-
-      let config = loadCustom() || { ...presets.classic };
-      let state = {
-        mode: 'focus',
-        remainingMs: (config.focus || 25) * 60000,
-        running: false,
-        cycle: 0,
-        preset: localStorage.getItem(KEYS.PRESET) || 'classic',
-        timerId: null,
-        startTimestamp: null,  // Track when timer actually started
-        pausedMs: 0  // Track how much time was on timer when paused
-      };
-      let stats = loadStats();
-      let settings = loadSettings();
-      let tasksCache = [];
-
-      const getDuration = (mode) => {
-        if (mode === 'focus') return config.focus;
-        if (mode === 'long') return config.longBreak;
-        return config.shortBreak;
-      };
-
-      const formatTime = (ms) => {
-        const total = Math.max(0, Math.round(ms / 1000));
-        const m = Math.floor(total / 60);
-        const s = total % 60;
-        return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
-      };
-
-      const updatePresetButtons = () => {
-        refs.presets.forEach(btn => {
-          btn.classList.toggle('active', btn.dataset.preset === state.preset);
-        });
-
-        // Show/hide bad day tip based on selected preset
-        const currentPreset = presets[state.preset];
-        const isBadDay = currentPreset?.isBadDay || false;
-        if (refs.badDayTip) {
-          refs.badDayTip.style.display = isBadDay ? 'flex' : 'none';
-        }
-      };
-
-      const renderStats = () => {
-        if (!refs.sessionCount || !refs.focusMinutes || !refs.streak) return;
-        refs.sessionCount.textContent = stats.sessions;
-        refs.focusMinutes.textContent = stats.focusMinutes;
-        refs.streak.textContent = stats.streak;
-        const goal = 8;
-        if (refs.dayProgress) {
-          const pct = Math.min(100, Math.round((stats.sessions / goal) * 100));
-          refs.dayProgress.style.width = pct + '%';
-        }
-        if (refs.dayLabel) {
-          refs.dayLabel.textContent = `${Math.min(stats.sessions, goal)}/${goal} מחזורי מיקוד היום`;
-        }
-      };
-
-      const render = () => {
-        if (!refs.display) return;
-        refs.display.textContent = formatTime(state.remainingMs);
-        const modeLabel = state.mode === 'focus' ? 'מיקוד' : (state.mode === 'long' ? 'הפסקה ארוכה' : 'הפסקה קצרה');
-        refs.mode.textContent = modeLabel;
-        refs.next.textContent = `הבא: ${getNextLabel()}`;
-        const totalMs = getDuration(state.mode) * 60000;
-        const pct = Math.max(0, Math.min(100, 100 - (state.remainingMs / totalMs) * 100));
-        if (refs.progress) refs.progress.style.setProperty('--progress', pct + '%');
-        if (refs.startBtn) refs.startBtn.textContent = state.running ? '⏸️' : '▶️';
-        // Update mini player
-        if (refs.miniTime) refs.miniTime.textContent = formatTime(state.remainingMs);
-        if (refs.miniMode) refs.miniMode.textContent = state.mode === 'focus' ? 'מיקוד' : (state.mode === 'long' ? 'הפסקה ארוכה' : 'הפסקה קצרה');
-      };
-
-      const setMode = (mode) => {
-        state.mode = mode;
-        state.remainingMs = getDuration(mode) * 60000;
-        render();
-      };
-
-      const getNextLabel = () => {
-        if (state.mode === 'focus') {
-          const nextIsLong = ((state.cycle + 1) % config.longEvery === 0);
-          return nextIsLong ? 'הפסקה ארוכה' : 'הפסקה קצרה';
-        }
-        return 'מיקוד';
-      };
-
-      const clearTimer = () => {
-        if (state.timerId) {
-          clearInterval(state.timerId);
-          state.timerId = null;
-        }
-      };
-
-      const tick = () => {
-        if (!state.running || !state.startTimestamp) return;
-
-        // Calculate actual elapsed time based on timestamp (immune to tab throttling)
-        const now = Date.now();
-        const elapsed = now - state.startTimestamp;
-        state.remainingMs = Math.max(0, state.pausedMs - elapsed);
-
-        if (state.remainingMs <= 0) {
-          advance(true);
-        } else {
-          render();
-        }
-      };
-
-      const start = () => {
-        if (state.running) return;
-        state.running = true;
-        state.startTimestamp = Date.now();
-        state.pausedMs = state.remainingMs;
-        clearTimer();
-        state.timerId = setInterval(tick, 100); // Check more frequently for accuracy
-        render();
-      };
-
-      const pause = () => {
-        state.running = false;
-        state.startTimestamp = null;
-        clearTimer();
-        render();
-      };
-
-      const reset = () => {
-        state.running = false;
-        state.startTimestamp = null;
-        state.pausedMs = 0;
-        clearTimer();
-        state.mode = 'focus';
-        state.remainingMs = config.focus * 60000;
-        state.cycle = 0;
-        render();
-      };
-
-      const recordFocus = () => {
-        const today = getTodayKey();
-        if (stats.date !== today) {
-          const carry = stats.focusMinutes > 0 && daysBetween(stats.date, today) === 1;
-          stats.streak = carry ? stats.streak + 1 : (stats.focusMinutes > 0 ? 1 : stats.streak || 0);
-          stats.date = today;
-          stats.sessions = 0;
-          stats.focusMinutes = 0;
-        }
-        stats.sessions += 1;
-        stats.focusMinutes += config.focus;
-        stats.lastActiveDate = today;
-        saveStats();
-        renderStats();
-      };
-
-      // Enhanced sound patterns with distinct tones
-      const tonePatterns = {
-        // Gentle ascending chime - pleasant completion sound
-        chime: [
-          { f: 523, d: 0.15, type: 'sine', vol: 0.12 },
-          { f: 659, d: 0.15, type: 'sine', vol: 0.14 },
-          { f: 784, d: 0.25, type: 'sine', vol: 0.16 }
-        ],
-        // Soft meditation bowl - calming
-        soft: [
-          { f: 396, d: 0.4, type: 'sine', vol: 0.1 },
-          { f: 528, d: 0.5, type: 'sine', vol: 0.08 }
-        ],
-        // Classic bell - clear and bright
-        bell: [
-          { f: 1047, d: 0.08, type: 'sine', vol: 0.18 },
-          { f: 1319, d: 0.12, type: 'sine', vol: 0.14 },
-          { f: 1568, d: 0.3, type: 'triangle', vol: 0.1 }
-        ],
-        // Digital beep - modern alert
-        digital: [
-          { f: 880, d: 0.1, type: 'square', vol: 0.06 },
-          { f: 0, d: 0.05, type: 'sine', vol: 0 },
-          { f: 880, d: 0.1, type: 'square', vol: 0.06 },
-          { f: 0, d: 0.05, type: 'sine', vol: 0 },
-          { f: 1175, d: 0.2, type: 'square', vol: 0.08 }
-        ],
-        // Crystal glass - high clarity
-        glass: [
-          { f: 2093, d: 0.15, type: 'sine', vol: 0.08 },
-          { f: 2637, d: 0.2, type: 'sine', vol: 0.06 },
-          { f: 3136, d: 0.35, type: 'sine', vol: 0.04 }
-        ],
-        // Success fanfare - celebratory
-        success: [
-          { f: 523, d: 0.12, type: 'triangle', vol: 0.12 },
-          { f: 659, d: 0.12, type: 'triangle', vol: 0.14 },
-          { f: 784, d: 0.12, type: 'triangle', vol: 0.16 },
-          { f: 1047, d: 0.3, type: 'triangle', vol: 0.18 }
-        ]
-      };
-
-      let audioCtx = null;
-      const playTonePattern = (pattern, startTime = null) => {
-        if (!pattern) return 0;
-        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        if (audioCtx.state === 'suspended') audioCtx.resume();
-        let t = startTime !== null ? startTime : audioCtx.currentTime;
-        pattern.forEach(step => {
-          if (step.f === 0) { t += step.d; return; } // silence gap
-          const osc = audioCtx.createOscillator();
-          const gain = audioCtx.createGain();
-          osc.type = step.type || 'sine';
-          osc.frequency.value = step.f;
-          const vol = step.vol || 0.15;
-          gain.gain.setValueAtTime(0.001, t);
-          gain.gain.linearRampToValueAtTime(vol, t + 0.015);
-          gain.gain.exponentialRampToValueAtTime(0.001, t + step.d);
-          osc.connect(gain).connect(audioCtx.destination);
-          osc.start(t);
-          osc.stop(t + step.d + 0.02);
-          t += step.d + 0.02;
-        });
-        return t; // return end time
-      };
-
-      // Extended alarm - plays pattern 3 times with pauses for better notification
-      const playExtendedAlarm = (pattern) => {
-        if (!pattern || !audioCtx) return;
-        const patternDuration = pattern.reduce((sum, step) => sum + step.d + 0.02, 0);
-        const gap = 0.4; // pause between repetitions
-        let t = audioCtx.currentTime;
-
-        for (let i = 0; i < 3; i++) {
-          t = playTonePattern(pattern, t);
-          t += gap;
-        }
-      };
-
-      const playAlarm = () => {
-        if (!settings.soundEnabled) {
-          // Still vibrate even if sound is off
-          if (navigator.vibrate) navigator.vibrate([100, 50, 100, 50, 200]);
-          return;
-        }
-        const pattern = tonePatterns[settings.sound] || tonePatterns.chime;
-        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        if (audioCtx.state === 'suspended') audioCtx.resume();
-        playExtendedAlarm(pattern);
-        if (navigator.vibrate) navigator.vibrate([100, 50, 100, 50, 200]);
-      };
-
-      const advance = (countFocus = false) => {
-        const wasRunning = state.running;
-        clearTimer();
-        state.running = false;
-        state.startTimestamp = null;
-        state.pausedMs = 0;
-        if (state.mode === 'focus') {
-          if (countFocus) recordFocus();
-          state.cycle += 1;
-          const useLong = config.longEvery > 0 && (state.cycle % config.longEvery === 0);
-          setMode(useLong ? 'long' : 'short');
-        } else {
-          setMode('focus');
-        }
-        render();
-        playAlarm();
-        // Auto-continue: only start next phase if setting is enabled
-        if (settings.autoContinue) {
-          start();
-        }
-      };
-
-      const applyConfig = (cfg, presetKey) => {
-        config = { ...cfg };
-        state.preset = presetKey;
-        refs.focusInput.value = config.focus;
-        refs.breakInput.value = config.shortBreak;
-        refs.longInput.value = config.longBreak;
-        refs.longEveryInput.value = config.longEvery;
-        state.mode = 'focus';
-        state.remainingMs = config.focus * 60000;
-        state.cycle = 0;
-        updatePresetButtons();
-        render();
-      };
-
-      const selectPreset = (key) => {
-        const base = key === 'custom' ? (loadCustom() || config) : presets[key];
-        if (!base) return;
-        localStorage.setItem(KEYS.PRESET, key);
-        if (key === 'custom') saveCustom(base);
-        applyConfig(base, key);
-      };
-
-      const handleCustomChange = () => {
-        const cfg = {
-          focus: clampNum(refs.focusInput.value, 5, 240, config.focus),
-          shortBreak: clampNum(refs.breakInput.value, 3, 60, config.shortBreak),
-          longBreak: clampNum(refs.longInput.value, 5, 90, config.longBreak),
-          longEvery: clampNum(refs.longEveryInput.value, 1, 8, config.longEvery)
-        };
-        saveCustom(cfg);
-        selectPreset('custom');
-      };
-
-      const updateTaskOptions = () => {
-        if (!refs.taskSelect) return;
-        const prev = refs.taskSelect.value;
-        refs.taskSelect.innerHTML = '<option value="">בחר משימת מיקוד (לא חובה)</option>';
-        const active = (tasksCache || []).filter(t => !t.completed).slice(0, 50);
-        active.forEach(t => {
-          const opt = document.createElement('option');
-          opt.value = t.id;
-          opt.textContent = t.title || 'ללא שם';
-          refs.taskSelect.appendChild(opt);
-        });
-        if (prev && active.some(t => t.id === prev)) refs.taskSelect.value = prev;
-      };
-
-      // ============ PICTURE-IN-PICTURE FUNCTIONALITY ============
-      let pipVideo = null;
-      let pipAnimationFrame = null;
-      let isPiPActive = false;
-
-      const drawPiPCanvas = () => {
-        if (!refs.pipCanvas) return;
-        const canvas = refs.pipCanvas;
-        const ctx = canvas.getContext('2d');
-
-        // Clear canvas
-        ctx.fillStyle = '#1a1a2e';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-        // Draw time
-        const time = formatTime(state.remainingMs);
-        ctx.font = 'bold 72px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-        ctx.fillStyle = '#ffffff';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(time, canvas.width / 2, canvas.height / 2 - 20);
-
-        // Draw mode
-        const modeLabel = state.mode === 'focus' ? 'מיקוד' : (state.mode === 'long' ? 'הפסקה ארוכה' : 'הפסקה קצרה');
-        ctx.font = '24px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-        ctx.fillStyle = state.mode === 'focus' ? '#00d4ff' : '#ff6b9d';
-        ctx.fillText(modeLabel, canvas.width / 2, canvas.height / 2 + 40);
-
-        // Draw progress bar
-        const totalMs = getDuration(state.mode) * 60000;
-        const progress = Math.max(0, Math.min(1, 1 - (state.remainingMs / totalMs)));
-        const barWidth = canvas.width * 0.8;
-        const barHeight = 6;
-        const barX = (canvas.width - barWidth) / 2;
-        const barY = canvas.height - 30;
-
-        // Background bar
-        ctx.fillStyle = '#2d2d44';
-        ctx.fillRect(barX, barY, barWidth, barHeight);
-
-        // Progress bar
-        ctx.fillStyle = state.mode === 'focus' ? '#00d4ff' : '#ff6b9d';
-        ctx.fillRect(barX, barY, barWidth * progress, barHeight);
-      };
-
-      const updatePiPCanvas = () => {
-        if (!isPiPActive) return;
-        drawPiPCanvas();
-        pipAnimationFrame = requestAnimationFrame(updatePiPCanvas);
-      };
-
-      const startPiP = async () => {
-        if (!refs.pipCanvas) return;
-
-        // Check if PiP is supported
-        if (!document.pictureInPictureEnabled) {
-          window.alert('Picture-in-Picture אינו נתמך בדפדפן זה.\nנסה Chrome, Edge, או Safari.');
-          return;
-        }
-
-        try {
-          // Create or reuse video element
-          if (!pipVideo) {
-            pipVideo = document.createElement('video');
-            pipVideo.muted = true;
-            pipVideo.autoplay = true;
-            pipVideo.loop = true;
-            pipVideo.style.display = 'none';
-            document.body.appendChild(pipVideo);
-          }
-
-          // Get stream from canvas
-          const stream = refs.pipCanvas.captureStream(30); // 30 FPS
-          pipVideo.srcObject = stream;
-
-          // Play the video
-          // Play the video - handle "interrupted by a new load request" error
-          try {
-            await pipVideo.play();
-          } catch (err) {
-            console.warn('PiP video play interrupted, retrying...', err);
-            // Retry once after a short delay
-            await new Promise(r => setTimeout(r, 50));
-            await pipVideo.play();
-          }
-
-          // Request PiP
-          await pipVideo.requestPictureInPicture();
-          isPiPActive = true;
-
-          if (refs.pipBtn) refs.pipBtn.classList.add('active');
-
-          // Start animation loop
-          updatePiPCanvas();
-
-          // Handle PiP close
-          const handleLeavePiP = () => {
-            isPiPActive = false;
-            if (refs.pipBtn) refs.pipBtn.classList.remove('active');
-            if (pipAnimationFrame) {
-              cancelAnimationFrame(pipAnimationFrame);
-              pipAnimationFrame = null;
-            }
-            pipVideo.removeEventListener('leavepictureinpicture', handleLeavePiP);
-          };
-
-          pipVideo.addEventListener('leavepictureinpicture', handleLeavePiP);
-
-        } catch (error) {
-          console.error('PiP error:', error);
-          window.alert('שגיאה בהפעלת Picture-in-Picture: ' + error.message);
-        }
-      };
-
-      const stopPiP = async () => {
-        if (document.pictureInPictureElement) {
-          try {
-            await document.exitPictureInPicture();
-          } catch (e) {
-            console.error('PiP exit error:', e);
-          }
-        }
-        isPiPActive = false;
-        if (refs.pipBtn) refs.pipBtn.classList.remove('active');
-        if (pipAnimationFrame) {
-          cancelAnimationFrame(pipAnimationFrame);
-          pipAnimationFrame = null;
-        }
-      };
-
-      const initPiP = () => {
-        if (!refs.pipBtn) return;
-
-        const pipSupported = !!document.pictureInPictureEnabled;
-
-        const setMiniVisible = (visible) => {
-          const enabled = !!visible;
-          if (refs.miniToggle) refs.miniToggle.checked = enabled;
-          try { localStorage.setItem('pomodoro-mini-enabled', enabled ? 'true' : 'false'); } catch (e) { }
-          if (refs.mini) refs.mini.classList.toggle('visible', enabled);
-          if (refs.pipBtn) refs.pipBtn.classList.toggle('active', enabled && !pipSupported);
-        };
-
-        refs.pipBtn.addEventListener('click', () => {
-          if (pipSupported) {
-            if (isPiPActive) stopPiP();
-            else startPiP();
-            return;
-          }
-          // Fallback: show a draggable mini timer (works even when PiP isn't supported).
-          const currentlyVisible = !!refs.mini && refs.mini.classList.contains('visible');
-          setMiniVisible(!currentlyVisible);
-        });
-
-        if (!pipSupported) {
-          refs.pipBtn.title = 'הצג מיני-טיימר צף (גרירה להזזה)';
-        } else {
-          refs.pipBtn.title = 'הצג כחלון צף (Picture-in-Picture)';
-        }
-      };
-
-      const init = () => {
-        if (!refs.card) return;
-        const savedPreset = localStorage.getItem(KEYS.PRESET) || 'classic';
-        const baseConfig = savedPreset === 'custom' ? (loadCustom() || presets.classic) : (presets[savedPreset] || presets.classic);
-        applyConfig(baseConfig, savedPreset);
-        renderStats();
-
-        if (refs.autoContinue) {
-          refs.autoContinue.checked = settings.autoContinue;
-          refs.autoContinue.addEventListener('change', () => {
-            settings.autoContinue = refs.autoContinue.checked;
-            saveSettings();
-          });
-        }
-
-        if (refs.soundSelect) {
-          refs.soundSelect.value = settings.sound;
-          refs.soundSelect.addEventListener('change', () => {
-            settings.sound = refs.soundSelect.value;
-            saveSettings();
-          });
-        }
-
-        // Sound enabled toggle
-        if (refs.soundEnabled) {
-          refs.soundEnabled.checked = settings.soundEnabled;
-          refs.soundEnabled.addEventListener('change', () => {
-            settings.soundEnabled = refs.soundEnabled.checked;
-            saveSettings();
-            // Update sound select visibility
-            if (refs.soundSelect) {
-              refs.soundSelect.style.opacity = settings.soundEnabled ? '1' : '0.5';
-            }
-            if (refs.previewBtn) {
-              refs.previewBtn.style.opacity = settings.soundEnabled ? '1' : '0.5';
-            }
-          });
-          // Initial state
-          if (refs.soundSelect) refs.soundSelect.style.opacity = settings.soundEnabled ? '1' : '0.5';
-          if (refs.previewBtn) refs.previewBtn.style.opacity = settings.soundEnabled ? '1' : '0.5';
-        }
-
-        if (refs.previewBtn) {
-          refs.previewBtn.addEventListener('click', () => {
-            const key = (refs.soundSelect && refs.soundSelect.value) || settings.sound || 'chime';
-            if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
-            playTonePattern(tonePatterns[key] || tonePatterns.chime);
-          });
-        }
-
-        refs.presets.forEach(btn => btn.addEventListener('click', () => selectPreset(btn.dataset.preset)));
-
-        [refs.focusInput, refs.breakInput, refs.longInput, refs.longEveryInput].forEach(input => {
-          if (!input) return;
-          input.addEventListener('change', handleCustomChange);
-          input.addEventListener('input', () => state.preset = 'custom');
-        });
-
-        if (refs.startBtn) refs.startBtn.onclick = () => { state.running ? pause() : start(); };
-        if (refs.skipBtn) refs.skipBtn.onclick = () => advance(false);
-        if (refs.resetBtn) refs.resetBtn.onclick = reset;
-
-        // Mini player setup
-        const MINI_KEY = 'pomodoro-mini-enabled-v2';
-        const MINI_POS_KEY = 'pomodoro-mini-pos-v1';
-        let miniDragging = false;
-        let miniDragged = false;
-        const miniEnabled = localStorage.getItem(MINI_KEY) === 'true';
-        if (refs.miniToggle) {
-          refs.miniToggle.checked = miniEnabled;
-          if (refs.mini) refs.mini.classList.toggle('visible', miniEnabled);
-        }
-        if (refs.miniToggle) {
-          refs.miniToggle.addEventListener('change', () => {
-            const enabled = refs.miniToggle.checked;
-            console.log('[Pomodoro] Mini toggle changed:', enabled, 'refs.mini exists:', !!refs.mini);
-            localStorage.setItem(MINI_KEY, enabled ? 'true' : 'false');
-            if (refs.mini) {
-              refs.mini.classList.toggle('visible', enabled);
-              console.log('[Pomodoro] Mini visible class:', refs.mini.classList.contains('visible'));
-            } else {
-              console.warn('[Pomodoro] refs.mini is null!');
-            }
-            if (refs.pipBtn && !document.pictureInPictureEnabled) refs.pipBtn.classList.toggle('active', enabled);
-          });
-        }
-        if (refs.miniClose) {
-          refs.miniClose.addEventListener('click', () => {
-            if (refs.miniToggle) refs.miniToggle.checked = false;
-            localStorage.setItem(MINI_KEY, 'false');
-            if (refs.mini) refs.mini.classList.remove('visible');
-            if (refs.pipBtn && !document.pictureInPictureEnabled) refs.pipBtn.classList.remove('active');
-          });
-        }
-        // Restore mini player position (if dragged previously)
-        if (refs.mini) {
-          try {
-            const raw = localStorage.getItem(MINI_POS_KEY);
-            const parsed = raw ? JSON.parse(raw) : null;
-            if (parsed && Number.isFinite(parsed.left) && Number.isFinite(parsed.top)) {
-              refs.mini.style.left = `${parsed.left}px`;
-              refs.mini.style.top = `${parsed.top}px`;
-              refs.mini.style.right = 'auto';
-              refs.mini.style.bottom = 'auto';
-            }
-          } catch (e) { }
-        }
-        // Draggable mini player
-        if (refs.mini) {
-          const clamp = (v, min, max) => Math.min(max, Math.max(min, v));
-          refs.mini.addEventListener('pointerdown', (e) => {
-            if (e.button !== undefined && e.button !== 0) return;
-            if (e.target === refs.miniClose) return;
-            e.preventDefault();
-            miniDragged = false;
-            miniDragging = true;
-            refs.mini.classList.add('dragging');
-            try { refs.mini.setPointerCapture(e.pointerId); } catch (err) { }
-
-            const startX = e.clientX;
-            const startY = e.clientY;
-            const rect = refs.mini.getBoundingClientRect();
-            const offsetX = startX - rect.left;
-            const offsetY = startY - rect.top;
-
-            const move = (ev) => {
-              if (!miniDragging) return;
-              const dx = Math.abs(ev.clientX - startX);
-              const dy = Math.abs(ev.clientY - startY);
-              if (dx + dy > 4) miniDragged = true;
-
-              const maxLeft = window.innerWidth - rect.width - 8;
-              const maxTop = window.innerHeight - rect.height - 8;
-              const left = clamp(ev.clientX - offsetX, 8, Math.max(8, maxLeft));
-              const top = clamp(ev.clientY - offsetY, 8, Math.max(8, maxTop));
-              refs.mini.style.left = `${left}px`;
-              refs.mini.style.top = `${top}px`;
-              refs.mini.style.right = 'auto';
-              refs.mini.style.bottom = 'auto';
-            };
-
-            const up = () => {
-              if (!miniDragging) return;
-              miniDragging = false;
-              refs.mini.classList.remove('dragging');
-              window.removeEventListener('pointermove', move);
-              window.removeEventListener('pointerup', up);
-              window.removeEventListener('pointercancel', up);
-              try {
-                const r = refs.mini.getBoundingClientRect();
-                localStorage.setItem(MINI_POS_KEY, JSON.stringify({ left: Math.round(r.left), top: Math.round(r.top) }));
-              } catch (err) { }
-            };
-
-            window.addEventListener('pointermove', move, { passive: true });
-            window.addEventListener('pointerup', up, { passive: true });
-            window.addEventListener('pointercancel', up, { passive: true });
-          });
-        }
-        // Click on mini player opens Pomodoro overlay
-        if (refs.mini) {
-          refs.mini.addEventListener('click', (e) => {
-            if (e.target === refs.miniClose) return;
-            if (miniDragged) return;
-            const overlay = document.getElementById('pomodoroOverlay');
-            if (overlay) overlay.classList.add('open');
-          });
-        }
-
-        // Picture-in-Picture setup
-        initPiP();
-
-        // Handle visibility change - force tick when tab becomes visible
-        document.addEventListener('visibilitychange', () => {
-          if (!document.hidden && state.running) {
-            tick(); // Update immediately when returning to tab
-          }
-        });
-
-        updatePresetButtons();
-        render();
-        updateTaskOptions();
-      };
-
-      const updateTasks = (tasks = []) => {
-        tasksCache = tasks;
-        updateTaskOptions();
-      };
-
-      return { init, updateTasks };
-    })();
+    const Pomodoro = createPomodoro();
+    ctx.Pomodoro = Pomodoro;
 
     // Toggle overlays - menu buttons switch between views
     // Four main views: Countdown (app-layout), Tasks (taskManagerOverlay), Pomodoro (pomodoroOverlay), Planner (plannerOverlay)
@@ -6034,6 +4133,7 @@
     const appLayout = document.querySelector('.app-layout');
     // Ensure current view state and commonly used DOM refs exist before showView
     let currentView = 'countdown';
+    Object.defineProperty(ctx, 'currentView', { get: () => currentView, set: (val) => { currentView = val; } });
 
     function updateHeaderButtons() {
       try {
@@ -6099,6 +4199,7 @@
 
     // Expose for non-module scripts (e.g. mobile bottom nav handler)
     window.showView = showView;
+    ctx.showView = showView;
 
     toggleCountdown.onclick = () => showView('countdown');
     toggleTasks.onclick = () => showView('tasks');
@@ -6260,60 +4361,30 @@
       if (!tasksEmptyDefaults) return;
       setTasksEmptyMessage(tasksEmptyDefaults.icon, tasksEmptyDefaults.title, tasksEmptyDefaults.desc);
     };
+    Object.assign(ctx, { showTasksLoading, resetTasksEmptyMessage });
 
-    const cachedTasksKey = `${CACHE_KEYS.TASKS_PREFIX}${currentUser}`;
-    const cachedTasks = readCache(cachedTasksKey);
-    if (cachedTasks && cachedTasks.length) {
-      tasks = cachedTasks;
-      hasTasksCache = true;
-      syncCacheUsed.tasks = true;
-      markSyncReady('tasks', 'cache');
-      updateSyncBadge();
-      Pomodoro.updateTasks(tasks);
-      if (taskManagerOverlay.classList.contains('open')) {
-        renderTasks();
-        renderSubjectsSidebar();
-      }
-    } else {
-      showTasksLoading();
-    }
-
-    // Listen to tasks from Firebase
-    startSyncTimeout('tasks', SYNC_TIMEOUT_MS, 'firebase', () => {
-      tasksLoaded = true;
-      resetTasksEmptyMessage();
-      if (taskManagerOverlay.classList.contains('open')) {
-        renderTasks();
-        renderSubjectsSidebar();
+    const tasksApi = initTasks({
+      onTasksUpdated: () => {
+        pruneNotifiedTasks();
+        if (taskManagerOverlay.classList.contains('open')) {
+          renderTasks();
+          renderSubjectsSidebar();
+        }
+        const trSidebar = $('taskRightSidebar');
+        if (trSidebar && !trSidebar.classList.contains('hidden')) {
+          renderTaskCalendar();
+        }
+      },
+      onTasksCacheLoaded: () => {
+        pruneNotifiedTasks();
+        if (taskManagerOverlay.classList.contains('open')) {
+          renderTasks();
+          renderSubjectsSidebar();
+        }
       }
     });
-    onValue(tasksRef, (snapshot) => {
-      clearSyncTimeouts('tasks');
-      const data = snapshot.val();
-      if (data) {
-        ownTasks = Object.keys(data).map(key => ({ id: key, ...data[key], isOwn: true }));
-      } else {
-        ownTasks = [];
-      }
-      tasksLoaded = true;
-      markSyncReady('tasks', 'firebase');
-      writeCache(cachedTasksKey, ownTasks, 500);
-      resetTasksEmptyMessage();
-      mergeTasks();
-      Pomodoro.updateTasks(tasks);
-      // Update task calendar if visible
-      const trSidebar = $("taskRightSidebar");
-      if (trSidebar && !trSidebar.classList.contains('hidden')) {
-        renderTaskCalendar();
-      }
-    }, (error) => {
-      console.error('Tasks sync error:', error);
-      clearSyncTimeouts('tasks');
-      tasksLoaded = true;
-      markSyncReady('tasks', 'error');
-      resetTasksEmptyMessage();
-      updateSyncBadge();
-    });
+    const { getTaskRef, saveTask, removeTask, createTask } = tasksApi;
+    Object.assign(ctx, { getTaskRef, saveTask, removeTask, createTask });
 
     function getFilteredTasks() {
       let filtered = [...tasks];
@@ -6555,6 +4626,7 @@
 
       // Event delegation is set up once below, no need to call attachTaskEventHandlers
     }
+    ctx.renderTasks = renderTasks;
 
     function renderTaskItem(task, showSubjectTag = false) {
       const priority = task.priority || 'none';
@@ -7246,24 +5318,44 @@
       tick();
       taskTickerHandle = setInterval(tick, 10000); // Check every 10 seconds for accuracy
     }
+    ctx.startTaskTicker = startTaskTicker;
 
-    function checkTaskReminders() {
-      const nowMs = Date.now();
+    function checkTaskReminders(nowMs = Date.now()) {
+      const state = reminderCheckState.tasks;
+      const { start, isCatchup } = getReminderWindow(state.lastCheck, nowMs);
+      const candidates = [];
+
       tasks.forEach(task => {
         if (task.completed) return;
         const reminderMinutes = parseInt(task.reminder, 10) || 0;
         if (!reminderMinutes) return;
         if (!task.dueDate) return;
         const reminderKey = `${task.dueDate}|${reminderMinutes}`;
-        if (notifiedTasks.get(task.id) === reminderKey) return;
+        const entry = notifiedTasks.get(task.id);
+        if (entry && entry.key === reminderKey) return;
         const taskTime = new Date(task.dueDate).getTime();
         if (!Number.isFinite(taskTime)) return;
         const triggerTime = taskTime - (reminderMinutes * 60000);
-        if (nowMs >= triggerTime && nowMs < triggerTime + 120000) {
-          triggerTaskAlert(task);
-          notifiedTasks.set(task.id, reminderKey);
-        }
+        if (triggerTime < start || triggerTime > nowMs) return;
+        candidates.push({ task, reminderKey, triggerTime });
       });
+
+      if (candidates.length) {
+        if (isCatchup && candidates.length > REMINDER_CATCHUP_MAX_COUNT) {
+          candidates.sort((a, b) => b.triggerTime - a.triggerTime);
+          candidates.length = REMINDER_CATCHUP_MAX_COUNT;
+        } else {
+          candidates.sort((a, b) => a.triggerTime - b.triggerTime);
+        }
+        candidates.forEach(item => {
+          triggerTaskAlert(item.task);
+          notifiedTasks.set(item.task.id, { key: item.reminderKey, ts: nowMs });
+        });
+        persistNotifiedMap(NOTIFY_KEYS.TASKS, notifiedTasks);
+      }
+
+      state.lastCheck = nowMs;
+      persistLastCheck(state, nowMs);
     }
 
     function startTaskReminderTicker() {
@@ -7351,6 +5443,7 @@
       editingTaskId = null;
       editingTask = null;
     }
+    ctx.closeTaskEditModal = closeTaskEditModal;
 
     taskEditModal.addEventListener('click', (e) => {
       if (e.target === taskEditModal) closeTaskEditModal();
@@ -7705,6 +5798,7 @@
 
     // Own tasks storage
     let ownTasks = [];
+    Object.defineProperty(ctx, 'ownTasks', { get: () => ownTasks, set: (val) => { ownTasks = val; } });
 
     function mergeTasks() {
       tasks = [...ownTasks, ...sharedTasks];
@@ -7716,6 +5810,7 @@
         DailyPlanner.refreshTasks();
       }
     }
+    ctx.mergeTasks = mergeTasks;
 
     // Get top-level subjects (no parent)
     function getTopLevelSubjects() {
@@ -7737,51 +5832,6 @@
         });
       }
       return count;
-    }
-
-    // Helper function to get the correct task reference based on subject type
-    function getTaskRef(task) {
-      if (!task) return null;
-      const subject = subjects.find(s => s.id === task.subject);
-      if (subject?.isShared) {
-        return ref(db, `sharedSubjects/${task.subject}/tasks/${task.id}`);
-      }
-      return ref(db, `users/${currentUser}/tasks/${task.id}`);
-    }
-
-    // Helper to save task to correct location
-    function saveTask(taskId, taskData, subjectId) {
-      const subject = subjects.find(s => s.id === subjectId);
-      if (subject?.isShared) {
-        return set(ref(db, `sharedSubjects/${subjectId}/tasks/${taskId}`), taskData);
-      }
-      return set(ref(db, `users/${currentUser}/tasks/${taskId}`), taskData);
-    }
-
-    // Helper to remove task from correct location
-    function removeTask(task) {
-      if (!task) return;
-      // Push to undo stack before deleting
-      if (typeof pushToUndoStack === 'function') {
-        pushToUndoStack({ type: 'deleteTask', taskId: task.id, taskData: { ...task }, message: `🗑️ "${task.title}" נמחק` });
-      }
-      const subject = subjects.find(s => s.id === task.subject);
-      if (subject?.isShared || task.isShared) {
-        return remove(ref(db, `sharedSubjects/${task.subject}/tasks/${task.id}`));
-      }
-      return remove(ref(db, `users/${currentUser}/tasks/${task.id}`));
-    }
-
-    // Helper to create a new task in the correct location based on subject
-    function createTask(taskData) {
-      const subjectId = taskData.subject;
-      const subject = subjects.find(s => s.id === subjectId);
-      if (subject?.isShared) {
-        const newTaskRef = push(ref(db, `sharedSubjects/${subjectId}/tasks`));
-        return set(newTaskRef, taskData);
-      }
-      const newTaskRef = push(tasksRef);
-      return set(newTaskRef, taskData);
     }
 
     // ============ SMART VIEWS COUNTS ============
@@ -7837,6 +5887,7 @@
 
     // ============ TASK CALENDAR ============
     let currentTaskMonth = new Date();
+    Object.defineProperty(ctx, 'currentTaskMonth', { get: () => currentTaskMonth, set: (val) => { currentTaskMonth = val; } });
     let taskCalendarExpanded = false;
     let taskCalendarView = 'month';
     let taskCalendarFocusDate = new Date();
@@ -7939,6 +5990,7 @@
     function formatHebrewShortDate(date) {
       return date.toLocaleDateString('he-IL', { day: 'numeric', month: 'short' });
     }
+    Object.assign(ctx, { getStartOfWeek, formatHebrewShortDate });
 
     function renderTaskCalendar() {
       if (!taskCalendarGrid || !taskCalendarTitle) return;
@@ -8101,6 +6153,7 @@
       taskCalendarGrid.innerHTML = html;
       renderTaskMonthList();
     }
+    ctx.renderTaskCalendar = renderTaskCalendar;
 
     function renderTaskMonthList() {
       if (!taskMonthEvents || !taskMonthEventsTitle) return;
@@ -8335,6 +6388,7 @@
       setupSubjectsSidebarHandlers();
       setupSmartViewsHandlers();
     }
+    ctx.renderSubjectsSidebar = renderSubjectsSidebar;
 
     function setupSubjectsSidebarHandlers() {
       // Subject headers click - toggle collapse OR select subject
@@ -8570,6 +6624,11 @@
         addEventContextMenu.classList.remove('open');
       }
     }
+    Object.assign(ctx, {
+      hideContextMenu,
+      hideEventContextMenu,
+      hideAddEventContextMenu
+    });
 
     // Add event context menu item clicks
     if (addEventContextMenu) {

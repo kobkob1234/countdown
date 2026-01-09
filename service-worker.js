@@ -1,9 +1,15 @@
-const CACHE_NAME = 'countdown-push-v4';
+const CACHE_NAME = 'countdown-push-v5';
 const CACHE_URLS = [
   './',
   './icon-192.png',
   './icon-512.png',
   './css/styles.css',
+  './js/context.js',
+  './js/events.js',
+  './js/tasks.js',
+  './js/calendar.js',
+  './js/pomodoro.js',
+  './js/ui.js',
   './js/state.js',
   './js/utils.js',
   './js/firebase-config.js',
