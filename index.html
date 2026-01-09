@@ -4463,7 +4463,8 @@
       document.querySelectorAll('.dynamic-context-menu').forEach(m => m.remove());
 
       const menu = document.createElement('div');
-      menu.className = `context-menu dynamic-context-menu ${className}`;
+      menu.className = `context-menu dynamic-context-menu ${className}`.trim();
+      menu.classList.add('open');
       menu.style.cssText = `position: fixed; left: ${x}px; top: ${y}px; z-index: 15000;`;
 
       items.forEach(item => {
@@ -11483,6 +11484,10 @@
       const installBtn = document.getElementById('pwaInstallBtn');
       const closeBtn = document.getElementById('pwaInstallClose');
 
+      const canShowInstallBanner = () => window.matchMedia(
+        '(max-width: 768px), (display-mode: standalone) and (max-width: 1024px)'
+      ).matches;
+
       // Check if already installed or dismissed
       const isInstalled = () => window.matchMedia('(display-mode: standalone)').matches
         || window.navigator.standalone === true;
@@ -11498,6 +11503,7 @@
       };
 
       const showBanner = () => {
+        if (!canShowInstallBanner()) return;
         if (banner && deferredPrompt && !isInstalled() && !wasDismissed()) {
           banner.classList.add('visible');
           console.log('[PWA] Install banner shown');
@@ -11510,6 +11516,9 @@
 
       // Capture the install prompt event
       window.addEventListener('beforeinstallprompt', (e) => {
+        if (!canShowInstallBanner()) {
+          return;
+        }
         e.preventDefault();
         deferredPrompt = e;
         console.log('[PWA] beforeinstallprompt captured');
