@@ -1,8 +1,16 @@
-const CACHE_NAME = 'countdown-push-v2';
+const CACHE_NAME = 'countdown-push-v3';
 const CACHE_URLS = [
   './',
   './icon-192.png',
-  './icon-512.png'
+  './icon-512.png',
+  './css/styles.css',
+  './js/state.js',
+  './js/utils.js',
+  './js/firebase-config.js',
+  './js/auth.js',
+  './js/notifications.js',
+  './js/sync.js',
+  './js/app.js'
 ];
 
 self.addEventListener('install', (event) => {
