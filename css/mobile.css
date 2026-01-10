@@ -307,9 +307,16 @@
     @media screen and (max-width: 768px) and (pointer: coarse),
     (display-mode: standalone) and (max-width: 1024px) and (pointer: coarse) {
 
+      /* ===== GLOBAL RESET ===== */
+      * {
+        box-sizing: border-box;
+      }
+
       /* ===== ROOT MOBILE VARIABLES ===== */
       :root {
         --mobile-touch-target: 48px;
+
+
         --mobile-spacing-xs: 6px;
         --mobile-spacing-sm: 10px;
         --mobile-spacing-md: 16px;
@@ -1573,8 +1580,9 @@
         align-items: center;
         justify-content: center;
         box-shadow: 0 4px 20px rgba(102, 126, 234, 0.4);
-        z-index: 1000;
+        z-index: 10010;
         cursor: pointer;
+
         transition: transform 0.2s, box-shadow 0.2s;
       }
 
