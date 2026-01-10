@@ -205,7 +205,7 @@ export function initMobileController() {
                 // Prevent default pull-to-refresh behavior of the browser if possible?
                 // Probably can't with passive: true, but let's see logic.
 
-                if (diff > 80) { // Activation threshold
+                if (diff > 50) { // Activation threshold (lowered for responsiveness)
                     body.classList.add('pull-active');
                     if (pullIcon) {
                         pullIcon.classList.add('pulling');

@@ -701,6 +701,48 @@
         background: var(--day-hover);
       }
 
+      /* FIX: Position reminder dropdown ABOVE the button on mobile */
+      .event-reminder-wrap {
+        position: relative;
+        overflow: visible !important;
+      }
+
+      .event-reminder-dropdown {
+        position: absolute;
+        bottom: calc(100% + 8px) !important;
+        top: auto !important;
+        right: 50% !important;
+        transform: translateX(50%);
+        min-width: 160px !important;
+        z-index: 10010 !important;
+        border-radius: 12px !important;
+        box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15) !important;
+        padding: 10px !important;
+        background: var(--card) !important;
+      }
+
+      .event-reminder-dropdown.open {
+        display: block !important;
+      }
+
+      .event-reminder-option {
+        padding: 12px 16px !important;
+        font-size: 14px !important;
+        min-height: 44px !important;
+        display: flex !important;
+        align-items: center !important;
+        border-radius: 8px !important;
+      }
+
+      /* Make sure event-row doesn't clip the dropdown */
+      .event-row {
+        overflow: visible !important;
+      }
+
+      .event-actions {
+        overflow: visible !important;
+      }
+
       /* ===== HIDE INLINE INPUT PANEL ON MOBILE ===== */
       /* Desktop users see the inline panel; mobile users see FAB + bottom sheet */
       .input-panel {
@@ -2637,5 +2679,97 @@
 
       .mobile-fab {
         animation: fab-appear 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+      }
+
+      /* ===== FIX: Quick Reminder Buttons Overflow ===== */
+      .quick-reminder-btns {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px !important;
+        margin-bottom: 10px;
+        overflow: visible;
+      }
+
+      .quick-reminder-btn {
+        flex-shrink: 0;
+        min-width: auto;
+        padding: 8px 10px !important;
+        font-size: 12px !important;
+        white-space: nowrap;
+      }
+
+      /* ===== FIX: Pomodoro Settings Panel Alignment ===== */
+      .pomodoro-settings-panel {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 12px !important;
+        padding: 16px !important;
+      }
+
+      .pomodoro-field {
+        flex-direction: column;
+        align-items: stretch !important;
+        text-align: center;
+      }
+
+      .pomodoro-field label {
+        font-size: 9px !important;
+        white-space: normal !important;
+        word-wrap: break-word;
+        line-height: 1.3;
+        margin-bottom: 6px;
+        text-align: center;
+        min-height: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .pomodoro-field input {
+        width: 100% !important;
+        max-width: 70px;
+        margin: 0 auto;
+      }
+
+      /* ===== FIX: Task Edit Modal for Mobile ===== */
+      .task-edit-modal {
+        padding: 0 !important;
+        align-items: flex-end !important;
+      }
+
+      .task-edit-card {
+        max-height: 85vh !important;
+        border-radius: 24px 24px 0 0 !important;
+        padding: 16px !important;
+        padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px)) !important;
+        margin: 0 !important;
+        width: 100% !important;
+        max-width: 100% !important;
+      }
+
+      .task-edit-section {
+        padding: 12px 0 !important;
+        margin-top: 12px !important;
+        overflow: visible !important;
+      }
+
+      /* Ensure quick reminder buttons are fully visible */
+      .task-edit-section .quick-reminder-btns {
+        display: flex !important;
+        flex-wrap: wrap !important;
+        gap: 8px !important;
+        margin-bottom: 12px !important;
+        overflow: visible !important;
+        min-height: 40px;
+      }
+
+      .task-edit-section .quick-reminder-btn {
+        flex: 0 0 auto !important;
+        padding: 10px 14px !important;
+        font-size: 14px !important;
+        min-height: 44px !important;
+        border-radius: 10px !important;
+        background: var(--btn-secondary-bg) !important;
+        border: 1px solid var(--border) !important;
+        color: var(--text) !important;
       }
     }

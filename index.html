@@ -499,21 +499,16 @@
 
       <div class="task-edit-section">
         <div class="task-edit-section-title">Reminder</div>
-        <div class="quick-reminder-btns" style="display: flex; gap: 8px; margin-bottom: 10px;">
-          <button type="button" class="quick-reminder-btn" data-minutes="1"
-            style="padding: 6px 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--btn-secondary-bg); color: var(--text); font-size: 12px; cursor: pointer;">1
+        <div class="quick-reminder-btns">
+          <button type="button" class="quick-reminder-btn" data-minutes="1">1
             דקה</button>
-          <button type="button" class="quick-reminder-btn" data-minutes="5"
-            style="padding: 6px 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--btn-secondary-bg); color: var(--text); font-size: 12px; cursor: pointer;">5
+          <button type="button" class="quick-reminder-btn" data-minutes="5">5
             דקות</button>
-          <button type="button" class="quick-reminder-btn" data-minutes="10"
-            style="padding: 6px 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--btn-secondary-bg); color: var(--text); font-size: 12px; cursor: pointer;">10
+          <button type="button" class="quick-reminder-btn" data-minutes="10">10
             דקות</button>
-          <button type="button" class="quick-reminder-btn" data-minutes="15"
-            style="padding: 6px 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--btn-secondary-bg); color: var(--text); font-size: 12px; cursor: pointer;">15
+          <button type="button" class="quick-reminder-btn" data-minutes="15">15
             דקות</button>
-          <button type="button" class="quick-reminder-btn" data-minutes="60"
-            style="padding: 6px 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--btn-secondary-bg); color: var(--text); font-size: 12px; cursor: pointer;">שעה</button>
+          <button type="button" class="quick-reminder-btn" data-minutes="60">שעה</button>
         </div>
         <select id="editTaskReminder"
           style="padding: 12px 14px; border: 2px solid var(--border); border-radius: 10px; font-size: 14px; background: var(--input-bg); color: var(--text); outline: none; width: 100%; max-width: 250px; cursor: pointer;">
@@ -2685,6 +2680,45 @@
       const evt = events.find(e => e.id === id);
       if (!evt) return;
 
+      // Detect mobile - input panel is hidden on mobile
+      const isMobile = window.innerWidth <= 768 ||
+        document.body.classList.contains('is-mobile') ||
+        (window.matchMedia && window.matchMedia('(pointer: coarse)').matches && window.innerWidth <= 1024);
+
+      if (isMobile) {
+        // Inline mobile bottom sheet handling to avoid timing issues
+        const mobileEventSheet = document.getElementById('mobileEventSheet');
+        const mobileEventSheetBackdrop = document.getElementById('mobileEventSheetBackdrop');
+        const mobileSheetTitle = document.getElementById('mobileSheetTitle');
+        const mobileSheetAdd = document.getElementById('mobileSheetAdd');
+        const mobileEventName = document.getElementById('mobileEventName');
+        const mobileEventDate = document.getElementById('mobileEventDate');
+        const mobileEventReminder = document.getElementById('mobileEventReminder');
+        const mobileEventNotes = document.getElementById('mobileEventNotes');
+
+        if (mobileEventSheet && mobileEventSheetBackdrop) {
+          // Set edit id on the sheet for the save handler to use
+          mobileEventSheet.dataset.editingId = id;
+
+          // Populate form with event data
+          if (mobileSheetTitle) mobileSheetTitle.textContent = 'עריכת אירוע ✏️';
+          if (mobileSheetAdd) mobileSheetAdd.textContent = 'שמור שינויים ✓';
+          if (mobileEventName) mobileEventName.value = evt.name || '';
+          if (mobileEventDate) mobileEventDate.value = toLocalDatetime(evt.date) || '';
+          if (mobileEventReminder) mobileEventReminder.value = String(evt.reminder || 0);
+          if (mobileEventNotes) mobileEventNotes.value = evt.notes || '';
+
+          // Open sheet
+          mobileEventSheetBackdrop.classList.add('open');
+          mobileEventSheet.classList.add('open');
+          document.body.style.overflow = 'hidden';
+
+          setTimeout(() => mobileEventName?.focus(), 350);
+          return;
+        }
+      }
+
+      // Desktop flow
       editingId = id;
       eventName.value = evt.name;
       eventDate.value = toLocalDatetime(evt.date);
@@ -9857,20 +9891,44 @@
       const mobileSheetClose = document.getElementById('mobileSheetClose');
       const mobileSheetCancel = document.getElementById('mobileSheetCancel');
       const mobileSheetAdd = document.getElementById('mobileSheetAdd');
+      const mobileSheetTitle = document.getElementById('mobileSheetTitle');
+      let mobileEditingId = null; // Track if we're editing an event
 
-      function openMobileEventSheet() {
+      function openMobileEventSheet(eventToEdit = null) {
         if (!mobileEventSheet || !mobileEventSheetBackdrop) return;
 
-        // Set default date to tomorrow at 9:00 AM
-        const tomorrow = new Date();
-        tomorrow.setDate(tomorrow.getDate() + 1);
-        tomorrow.setHours(9, 0, 0, 0);
         const dateInput = document.getElementById('mobileEventDate');
-        if (dateInput) {
-          const year = tomorrow.getFullYear();
-          const month = String(tomorrow.getMonth() + 1).padStart(2, '0');
-          const day = String(tomorrow.getDate()).padStart(2, '0');
-          dateInput.value = `${year}-${month}-${day}T09:00`;
+        const nameInput = document.getElementById('mobileEventName');
+        const reminderSelect = document.getElementById('mobileEventReminder');
+        const notesInput = document.getElementById('mobileEventNotes');
+
+        if (eventToEdit) {
+          // Edit mode
+          mobileEditingId = eventToEdit.id;
+          if (mobileSheetTitle) mobileSheetTitle.textContent = 'עריכת אירוע ✏️';
+          if (mobileSheetAdd) mobileSheetAdd.textContent = 'שמור שינויים ✓';
+          if (nameInput) nameInput.value = eventToEdit.name || '';
+          if (dateInput) dateInput.value = window.ctx?.toLocalDatetime?.(eventToEdit.date) || eventToEdit.date || '';
+          if (reminderSelect) reminderSelect.value = String(eventToEdit.reminder || 0);
+          if (notesInput) notesInput.value = eventToEdit.notes || '';
+        } else {
+          // Add mode
+          mobileEditingId = null;
+          if (mobileSheetTitle) mobileSheetTitle.textContent = 'הוסף אירוע חדש ➕';
+          if (mobileSheetAdd) mobileSheetAdd.textContent = 'הוסף אירוע ✓';
+          // Set default date to tomorrow at 9:00 AM
+          const tomorrow = new Date();
+          tomorrow.setDate(tomorrow.getDate() + 1);
+          tomorrow.setHours(9, 0, 0, 0);
+          if (dateInput) {
+            const year = tomorrow.getFullYear();
+            const month = String(tomorrow.getMonth() + 1).padStart(2, '0');
+            const day = String(tomorrow.getDate()).padStart(2, '0');
+            dateInput.value = `${year}-${month}-${day}T09:00`;
+          }
+          if (nameInput) nameInput.value = '';
+          if (reminderSelect) reminderSelect.value = '0';
+          if (notesInput) notesInput.value = '';
         }
 
         mobileEventSheetBackdrop.classList.add('open');
@@ -9879,7 +9937,7 @@
 
         // Focus on name input after animation
         setTimeout(() => {
-          document.getElementById('mobileEventName')?.focus();
+          nameInput?.focus();
         }, 350);
       }
 
@@ -9888,6 +9946,8 @@
         mobileEventSheetBackdrop.classList.remove('open');
         mobileEventSheet.classList.remove('open');
         document.body.style.overflow = '';
+        mobileEditingId = null; // Reset edit mode
+        if (mobileEventSheet) delete mobileEventSheet.dataset.editingId; // Also reset dataset.editingId from startEdit
 
         // Clear form
         const nameInput = document.getElementById('mobileEventName');
@@ -9896,6 +9956,10 @@
         if (nameInput) nameInput.value = '';
         if (notesInput) notesInput.value = '';
         if (reminderSelect) reminderSelect.value = '0';
+
+        // Reset title and button text
+        if (mobileSheetTitle) mobileSheetTitle.textContent = 'הוסף אירוע חדש ➕';
+        if (mobileSheetAdd) mobileSheetAdd.textContent = 'הוסף אירוע ✓';
       }
 
       // Close handlers
@@ -9903,7 +9967,13 @@
       mobileSheetCancel?.addEventListener('click', closeMobileEventSheet);
       mobileEventSheetBackdrop?.addEventListener('click', closeMobileEventSheet);
 
-      // Add event handler
+      // Expose to ctx for cross-script access (used by startEdit for mobile)
+      if (window.ctx) {
+        window.ctx.openMobileEventSheet = openMobileEventSheet;
+        window.ctx.closeMobileEventSheet = closeMobileEventSheet;
+      }
+
+      // Add/Edit event handler
       mobileSheetAdd?.addEventListener('click', () => {
         const name = document.getElementById('mobileEventName')?.value?.trim();
         const dateValue = document.getElementById('mobileEventDate')?.value;
@@ -9920,7 +9990,29 @@
           return;
         }
 
-        // Sync values to the original form inputs and trigger add
+        // Check for edit mode - either from mobileEditingId or from dataset.editingId (set by startEdit)
+        const editId = mobileEditingId || mobileEventSheet?.dataset?.editingId;
+
+        if (editId) {
+          // Edit mode - update existing event using context
+          if (window.ctx && window.ctx.updateInCloud) {
+            const existingEvents = window.ctx.events || [];
+            const existingEvent = existingEvents.find(e => e.id === editId);
+            if (existingEvent) {
+              window.ctx.updateInCloud(editId, {
+                ...existingEvent,
+                name: name,
+                date: new Date(dateValue).toISOString(),
+                reminder: parseInt(reminder) || null,
+                notes: notes
+              });
+            }
+          }
+          closeMobileEventSheet();
+          return;
+        }
+
+        // Add mode - Sync values to the original form inputs and trigger add
         const originalName = document.getElementById('eventName');
         const originalDate = document.getElementById('eventDate');
         const originalReminder = document.getElementById('eventReminder');

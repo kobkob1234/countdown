@@ -7588,3 +7588,31 @@
         transition-duration: 0.01ms !important;
       }
     }
+
+    /* ===== Quick Reminder Buttons Base Styles ===== */
+    .quick-reminder-btns {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+    }
+
+    .quick-reminder-btn {
+      padding: 6px 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--btn-secondary-bg);
+      color: var(--text);
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .quick-reminder-btn:hover {
+      background: var(--btn-secondary-hover);
+      border-color: var(--accent);
+    }
+
+    .quick-reminder-btn:active {
+      transform: scale(0.95);
+    }
