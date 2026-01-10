@@ -9944,7 +9944,7 @@
         e.preventDefault(); // Prevent double taps or focus issues
         const activeNavItem = document.querySelector('.mobile-nav-item.active');
         // Default to countdown if detection fails
-        const currentView = activeNavItem?.dataset.view || 'countdown';
+        const currentView = activeNavItem?.dataset.view || window.currentView || 'countdown';
 
 
         switch (currentView) {
@@ -9972,6 +9972,9 @@
             break;
           case 'calendar':
             // Open bottom sheet for adding event
+            openMobileEventSheet();
+            break;
+          default:
             openMobileEventSheet();
             break;
         }
