@@ -1,4 +1,4 @@
-const CACHE_NAME = 'countdown-push-v5';
+const CACHE_NAME = 'countdown-push-v6';
 const CACHE_URLS = [
   './',
   './icon-192.png',
@@ -135,29 +135,78 @@ self.addEventListener('notificationclick', (event) => {
     const targetUrl = (action === 'complete' && completeUrl) ? completeUrl : url;
 
     const allClients = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+
+    // Try to find an existing window and navigate it
     for (const client of allClients) {
       try {
-        if ('focus' in client) {
+        // First check if we can navigate this client
+        if ('navigate' in client) {
           await client.focus();
-          // Try to navigate - if this fails, we'll fall through to openWindow
+          await client.navigate(targetUrl);
+          // Send message for in-page handling
           try {
-            if ('navigate' in client) {
-              await client.navigate(targetUrl);
-              // Best-effort in-page handling without full reload (if app listens)
-              try { client.postMessage({ type: 'notificationclick', action, url: targetUrl }); } catch (e) { }
-              return;
-            }
-          } catch (navError) {
-            console.warn('[SW] Navigation failed, opening new window:', navError);
-            // Fall through to openWindow below
-            break;
+            client.postMessage({ type: 'notificationclick', action, url: targetUrl });
+          } catch (e) {
+            // Best-effort, ignore errors
           }
-          return;
+          return; // Success - exit
+        } else if ('focus' in client) {
+          // Client exists but can't navigate - focus it and open new window
+          await client.focus();
+          // Fall through to openWindow below
+          break;
         }
       } catch (e) {
-        // Focus failed, try next client
+        // Focus or navigation failed, try next client or fall through to openWindow
+        console.warn('[SW] Client focus/navigate failed:', e);
       }
     }
+
+    // No suitable client found or all navigation attempts failed - open new window
     await self.clients.openWindow(targetUrl);
+  })());
+});
+
+// Handle push subscription changes (expiry, browser key rotation, etc.)
+// This is critical for Android where subscriptions can expire silently
+self.addEventListener('pushsubscriptionchange', (event) => {
+  console.log('[SW] Push subscription changed, attempting to resubscribe...');
+
+  event.waitUntil((async () => {
+    try {
+      // Get the old subscription's application server key if available
+      const oldSubscription = event.oldSubscription;
+      const newSubscription = event.newSubscription;
+
+      if (newSubscription) {
+        // Browser already created a new subscription, just notify the page
+        console.log('[SW] New subscription available, notifying page...');
+      } else if (oldSubscription) {
+        // Need to resubscribe with the same application server key
+        const applicationServerKey = oldSubscription.options?.applicationServerKey;
+        if (applicationServerKey) {
+          const newSub = await self.registration.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: applicationServerKey
+          });
+          console.log('[SW] Resubscribed successfully');
+        }
+      }
+
+      // Notify all open windows to sync the subscription with Firebase
+      const allClients = await self.clients.matchAll({ type: 'window' });
+      for (const client of allClients) {
+        try {
+          client.postMessage({
+            type: 'pushsubscriptionchange',
+            reason: 'subscription_expired_or_changed'
+          });
+        } catch (e) {
+          // Best-effort
+        }
+      }
+    } catch (err) {
+      console.error('[SW] Failed to handle subscription change:', err);
+    }
   })());
 });

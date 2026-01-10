@@ -13,9 +13,6 @@ const PUSH_LOCAL_USER_KEY = 'countdown_push_subscription_user';
 const NOTIFICATION_ICON = './icon-192.png';
 const NOTIFICATION_BADGE = './icon-192.png';
 
-// Reminder audio
-let reminderAudio = null;
-
 // ============================================
 // Service Worker Registration
 // ============================================
@@ -117,22 +114,65 @@ export async function showSystemNotification(title, options = {}) {
 // Reminder Sound
 // ============================================
 
-function initReminderAudio() {
-    if (!reminderAudio) {
-        reminderAudio = new Audio('https://assets.mixkit.co/sfx/preview/mixkit-software-interface-start-2574.mp3');
-        reminderAudio.preload = 'auto';
-        reminderAudio.volume = 0.6;
+// Audio context for generating notification tones (works offline)
+let audioContext = null;
+
+function getAudioContext() {
+    if (!audioContext) {
+        try {
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        } catch (e) {
+            console.warn('[Audio] Web Audio API not supported:', e);
+            return null;
+        }
     }
-    return reminderAudio;
+    return audioContext;
 }
 
+// Generate a pleasant notification tone using Web Audio API
+// This works offline and doesn't require external resources
 export function playReminderSound() {
-    const audio = initReminderAudio();
-    if (!audio) return;
-    audio.currentTime = 0;
-    audio.play().catch(() => {
-        console.log("Audio play failed (interaction needed)");
-    });
+    const ctx = getAudioContext();
+    if (!ctx) return;
+
+    try {
+        // Resume audio context if suspended (required after user interaction)
+        if (ctx.state === 'suspended') {
+            ctx.resume();
+        }
+
+        const now = ctx.currentTime;
+        const volume = 0.3;
+
+        // Create a pleasant two-tone notification sound
+        const frequencies = [830, 1046]; // G5, C6 - pleasing upward interval
+        const duration = 0.15;
+        const gap = 0.08;
+
+        frequencies.forEach((freq, i) => {
+            const oscillator = ctx.createOscillator();
+            const gainNode = ctx.createGain();
+
+            oscillator.connect(gainNode);
+            gainNode.connect(ctx.destination);
+
+            oscillator.type = 'sine';
+            oscillator.frequency.value = freq;
+
+            const startTime = now + i * (duration + gap);
+
+            // Envelope: quick attack, sustain, quick release
+            gainNode.gain.setValueAtTime(0, startTime);
+            gainNode.gain.linearRampToValueAtTime(volume, startTime + 0.01);
+            gainNode.gain.setValueAtTime(volume, startTime + duration - 0.02);
+            gainNode.gain.linearRampToValueAtTime(0, startTime + duration);
+
+            oscillator.start(startTime);
+            oscillator.stop(startTime + duration);
+        });
+    } catch (e) {
+        console.log('[Audio] Play failed:', e.message);
+    }
 }
 
 // ============================================
@@ -411,9 +451,6 @@ export function setLastActiveTimestamp(ts = Date.now()) {
 export async function initNotifications() {
     console.log('[Notifications] Initializing...');
 
-    // Initialize audio
-    initReminderAudio();
-
     // Load notification tracking maps
     AppState.notifiedEvents = loadNotifiedMap(NOTIFY_KEYS.EVENTS);
     AppState.notifiedTasks = loadNotifiedMap(NOTIFY_KEYS.TASKS);
@@ -437,6 +474,17 @@ export async function initNotifications() {
         notifyBtn.addEventListener('click', toggleNotificationsFromUser);
     }
     await refreshNotifyButton();
+
+    // Listen for service worker messages (e.g., subscription changes)
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.addEventListener('message', async (event) => {
+            if (event.data?.type === 'pushsubscriptionchange') {
+                console.log('[Push] Subscription changed, re-syncing with Firebase...');
+                await syncExistingSubscriptionToCurrentUser();
+                await refreshNotifyButton();
+            }
+        });
+    }
 
     // Register periodic background sync for Android
     if ('serviceWorker' in navigator && 'periodicSync' in (await navigator.serviceWorker.ready)) {
