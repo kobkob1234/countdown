@@ -2573,7 +2573,7 @@
     const { renderCalendar, scheduleCalendarRender, openDayDrawer, closeDayDrawer } = calendarApi;
     Object.assign(ctx, { renderCalendar, scheduleCalendarRender, openDayDrawer, closeDayDrawer });
 
-    // ========================================
+    // ============ 4. EVENT/COUNTDOWN MANAGEMENT ============
 
     // Persist sidebar width
     const savedWidth = localStorage.getItem(STORAGE_KEYS.SIDEBAR_WIDTH);
@@ -3305,7 +3305,7 @@
       return el.isContentEditable || tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT';
     };
 
-    // ============ CONFETTI ANIMATION ============
+    // ============ 5. CONFETTI ANIMATION ============
     const CONFETTI_COLORS = ['#667eea', '#22c55e', '#f59e0b', '#ec4899', '#8b5cf6', '#06b6d4'];
 
     function createConfetti(x, y) {
@@ -3328,7 +3328,7 @@
       setTimeout(() => container.remove(), 1500);
     }
 
-    // ============ UNDO/REDO STACK ============
+    // ============ 6. UNDO/REDO STACK ============
     const undoStack = [];
     const redoStack = [];
     const MAX_UNDO_STACK = 50;
@@ -3409,7 +3409,7 @@
       }
     });
 
-    // ============ VIM-STYLE NAVIGATION ============
+    // ============ 7. KEYBOARD NAVIGATION ============
     let vimFocusedTaskIndex = -1;
 
     function updateVimFocus() {
@@ -3454,7 +3454,7 @@
       }
     });
 
-    // ============ ENHANCED RIGHT-CLICK CONTEXT MENUS ============
+    // ============ 8. CONTEXT MENUS ============
 
     // Helper to create context menu
     function createContextMenu(x, y, items, className = '') {
@@ -3830,7 +3830,7 @@
       createContextMenu(x, y, items, 'quick-add-context-menu');
     }
 
-    // ============ END ENHANCED CONTEXT MENUS ============
+    // ============ END CONTEXT MENUS ============
 
     eventList.onclick = e => {
       const row = e.target.closest(".event-row");
@@ -3876,7 +3876,7 @@
     renderCalendar();
     startTicker();
 
-    // ============ TASK MANAGER ============
+    // ============ 9. TASK MANAGER ============
 
     const taskManagerOverlay = $("taskManagerOverlay");
 
@@ -4252,7 +4252,7 @@
       pushTaskClone(task, { dueDate: nextDate.toISOString(), completed: false });
     }
 
-    // ============ POMODORO MODULE (self-contained) ============
+    // ============ 10. POMODORO INTEGRATION ============
     const Pomodoro = createPomodoro();
     ctx.Pomodoro = Pomodoro;
 
@@ -4391,6 +4391,11 @@
     }
 
     // ============ UNIFIED ADD TASK FUNCTION ============
+    /**
+     * Creates a new task from the quick-add form.
+     * Reads values from form inputs, validates, creates task object,
+     * saves to Firebase, and resets the form.
+     */
     function addTask() {
       const title = newTaskTitle.value.trim();
       if (!title) return;
@@ -4702,6 +4707,11 @@
       return { overdue: false, text, urgency, days, hours, mins };
     }
 
+    /**
+     * Renders all tasks to the DOM based on current filters and sorting.
+     * Separates active and completed tasks, updates sidebar counts,
+     * and applies virtual scrolling for performance.
+     */
     function renderTasks() {
       if (!tasksLoaded && !hasTasksCache) {
         showTasksLoading();
@@ -5823,7 +5833,7 @@
       }
     });
 
-    // ============ SUBJECTS / CATEGORIES ============
+    // ============ 11. SUBJECTS / CATEGORIES ============
 
     const cachedSubjectsKey = `${CACHE_KEYS.SUBJECTS_PREFIX}${currentUser}`;
     const cachedSubjects = readCache(cachedSubjectsKey);
@@ -6029,7 +6039,7 @@
       if (countNoDate) countNoDate.textContent = noDateCount;
     }
 
-    // ============ TASK CALENDAR ============
+    // ============ 12. TASK CALENDAR ============
     let currentTaskMonth = new Date();
     Object.defineProperty(ctx, 'currentTaskMonth', { get: () => currentTaskMonth, set: (val) => { currentTaskMonth = val; } });
     let taskCalendarExpanded = false;
@@ -7397,7 +7407,13 @@
       }
     };
 
-    // ============ IMPROVED NATURAL LANGUAGE PARSING (Hebrew + English RTL-Safe) ============
+    // ============ 13. NATURAL LANGUAGE PARSING ============
+    /**
+     * Parses natural language task input to extract metadata.
+     * Supports Hebrew + English, extracts priority, date/time, and subject.
+     * @param {string} input - Raw user input text
+     * @returns {Object} - {title, dueDate, priority, subjectId}
+     */
     function parseNaturalLanguage(input) {
       let title = input;
       let dueDate = null;
@@ -7916,7 +7932,7 @@
     // ============ INITIALIZE SMART VIEWS ============
     setupSmartViewsHandlers();
 
-    // ============ DAILY PLANNER MODULE ============
+    // ============ 14. DAILY PLANNER ============
     const DailyPlanner = (() => {
       // State
       let currentDate = new Date();
