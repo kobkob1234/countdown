@@ -305,6 +305,7 @@
         width: 100%;
       }
     }
+
     @media screen and (max-width: 768px) and (pointer: coarse),
     (display-mode: standalone) and (max-width: 1024px) and (pointer: coarse) {
 
@@ -691,15 +692,196 @@
         background: var(--day-hover);
       }
 
-      /* ===== MOBILE INPUT PANEL ===== */
+      /* ===== HIDE INLINE INPUT PANEL ON MOBILE ===== */
+      /* Desktop users see the inline panel; mobile users see FAB + bottom sheet */
       .input-panel {
+        display: none !important;
+      }
+
+      /* ===== MOBILE EVENT BOTTOM SHEET MODAL ===== */
+      .mobile-event-sheet-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.5);
+        backdrop-filter: blur(4px);
+        z-index: 10003;
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.3s, visibility 0.3s;
+      }
+
+      .mobile-event-sheet-backdrop.open {
+        opacity: 1;
+        visibility: visible;
+      }
+
+      .mobile-event-sheet {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        max-height: 85vh;
+        background: var(--card);
+        border-radius: 24px 24px 0 0;
+        z-index: 10004;
+        transform: translateY(100%);
+        transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+        box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.2);
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .mobile-event-sheet.open {
+        transform: translateY(0);
+      }
+
+      .mobile-sheet-handle {
+        width: 40px;
+        height: 5px;
+        background: var(--border);
+        border-radius: 3px;
+        margin: 12px auto 8px;
+        flex-shrink: 0;
+      }
+
+      .mobile-sheet-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: var(--mobile-spacing-sm) var(--mobile-spacing-md);
+        border-bottom: 1px solid var(--border);
+        flex-shrink: 0;
+      }
+
+      .mobile-sheet-header h3 {
+        font-size: 18px;
+        font-weight: 700;
+        color: var(--text);
+        margin: 0;
+      }
+
+      .mobile-sheet-close {
+        width: 36px;
+        height: 36px;
+        border: none;
+        background: var(--day-other);
+        border-radius: 50%;
+        font-size: 22px;
+        color: var(--muted);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: background 0.2s;
+      }
+
+      .mobile-sheet-close:active {
+        background: var(--day-hover);
+      }
+
+      .mobile-sheet-content {
+        flex: 1;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
         padding: var(--mobile-spacing-md);
+        padding-bottom: calc(var(--mobile-spacing-lg) + env(safe-area-inset-bottom, 0px));
+      }
+
+      /* Form elements inside bottom sheet */
+      .mobile-sheet-content .sheet-form-group {
+        margin-bottom: var(--mobile-spacing-md);
+      }
+
+      .mobile-sheet-content .sheet-form-label {
+        display: block;
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--muted);
+        margin-bottom: 6px;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+      }
+
+      .mobile-sheet-content input,
+      .mobile-sheet-content select,
+      .mobile-sheet-content textarea {
+        width: 100%;
+        padding: var(--mobile-spacing-md);
+        font-size: 16px;
+        border: 2px solid var(--border);
         border-radius: var(--mobile-radius);
-        margin-bottom: 0;
-        box-shadow: var(--mobile-card-shadow);
+        background: var(--input-bg);
+        color: var(--text);
+        outline: none;
+        min-height: var(--mobile-touch-target);
+        transition: border-color 0.2s;
+      }
+
+      .mobile-sheet-content input:focus,
+      .mobile-sheet-content select:focus,
+      .mobile-sheet-content textarea:focus {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
+      }
+
+      .mobile-sheet-content textarea {
+        min-height: 80px;
+        resize: vertical;
+      }
+
+      .mobile-sheet-content .sheet-reminder-row {
+        display: flex;
+        gap: var(--mobile-spacing-sm);
+      }
+
+      .mobile-sheet-content .sheet-reminder-row input,
+      .mobile-sheet-content .sheet-reminder-row select {
+        flex: 1;
+        min-width: 0;
+      }
+
+      .mobile-sheet-actions {
+        display: flex;
+        gap: var(--mobile-spacing-sm);
+        margin-top: var(--mobile-spacing-md);
+        padding-top: var(--mobile-spacing-md);
+        border-top: 1px solid var(--border);
+      }
+
+      .mobile-sheet-actions .btn {
+        flex: 1;
+        padding: var(--mobile-spacing-md);
+        min-height: var(--mobile-touch-target);
+        font-size: 16px;
+        font-weight: 600;
+        border-radius: var(--mobile-radius);
+      }
+
+      .mobile-sheet-actions .btn-primary {
+        background: linear-gradient(135deg, var(--accent), var(--accent2));
+        color: white;
         border: none;
       }
 
+      .mobile-sheet-actions .btn-secondary {
+        background: var(--day-other);
+        color: var(--muted);
+        border: 1px solid var(--border);
+      }
+
+      /* ===== FIX UNEVEN MOBILE SPACING ===== */
+      .main-content {
+        padding: var(--mobile-spacing-md);
+        padding-top: var(--mobile-spacing-md);
+      }
+
+      .container {
+        padding: 0;
+        gap: var(--mobile-spacing-md);
+      }
+
+      /* ===== INPUT ROW STYLES (kept for reference) ===== */
       .input-row {
         flex-direction: column;
         gap: var(--mobile-spacing-sm);
@@ -747,6 +929,8 @@
         font-size: 15px;
         min-height: 90px;
       }
+
+
 
       /* ===== MOBILE TASK MANAGER REDESIGN ===== */
       .task-manager-overlay {
@@ -1551,6 +1735,7 @@
         padding-bottom: calc(52px + env(safe-area-inset-bottom, 0px));
       }
     }
+
     @media screen and (max-width: 768px) and (pointer: coarse),
     (display-mode: standalone) and (max-width: 1024px) and (pointer: coarse) {
 

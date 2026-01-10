@@ -64,8 +64,8 @@
       title="סנכרון עם לוח השנה"><span class="icon" aria-hidden="true">sync</span></button>
     <button class="header-btn icon-only" id="notifyBtn" aria-label="Enable notifications"
       title="Enable notifications"><span class="icon" aria-hidden="true">notifications</span></button>
-    <button class="header-btn icon-only" id="helpShortcuts" aria-label="Keyboard shortcuts"
-      title="קיצורים (H)"><span class="icon" aria-hidden="true">keyboard</span></button>
+    <button class="header-btn icon-only" id="helpShortcuts" aria-label="Keyboard shortcuts" title="קיצורים (H)"><span
+        class="icon" aria-hidden="true">keyboard</span></button>
     <button class="header-btn icon-only" id="themeToggle" aria-label="Toggle dark mode"><span class="icon"
         aria-hidden="true">dark_mode</span></button>
     <button class="header-btn" id="userBtn"
@@ -1241,8 +1241,55 @@
   <!-- Mobile Floating Action Button -->
   <button class="mobile-fab" id="mobileFab" aria-label="הוספה מהירה" style="display: none;">+</button>
 
+  <!-- Mobile Event Bottom Sheet -->
+  <div class="mobile-event-sheet-backdrop" id="mobileEventSheetBackdrop"></div>
+  <div class="mobile-event-sheet" id="mobileEventSheet" role="dialog" aria-modal="true"
+    aria-labelledby="mobileSheetTitle">
+    <div class="mobile-sheet-handle"></div>
+    <div class="mobile-sheet-header">
+      <h3 id="mobileSheetTitle">הוסף אירוע חדש ➕</h3>
+      <button class="mobile-sheet-close" id="mobileSheetClose" aria-label="סגור">×</button>
+    </div>
+    <div class="mobile-sheet-content">
+      <div class="sheet-form-group">
+        <label class="sheet-form-label" for="mobileEventName">שם האירוע</label>
+        <input type="text" id="mobileEventName" placeholder="למשל: מבחן מתמטיקה, יום הולדת..." autocomplete="off"
+          dir="auto" />
+      </div>
+
+      <div class="sheet-form-group">
+        <label class="sheet-form-label" for="mobileEventDate">תאריך ושעה</label>
+        <input type="datetime-local" id="mobileEventDate" max="9999-12-31T23:59" style="direction: ltr;" />
+      </div>
+
+      <div class="sheet-form-group">
+        <label class="sheet-form-label" for="mobileEventReminder">תזכורת</label>
+        <select id="mobileEventReminder">
+          <option value="0">🔕 ללא תזכורת</option>
+          <option value="5">5 דקות לפני</option>
+          <option value="10">10 דקות לפני</option>
+          <option value="60">שעה לפני</option>
+          <option value="1440">יום לפני</option>
+          <option value="2880">יומיים לפני</option>
+          <option value="10080">שבוע לפני</option>
+        </select>
+      </div>
+
+      <div class="sheet-form-group">
+        <label class="sheet-form-label" for="mobileEventNotes">הערות (אופציונלי)</label>
+        <textarea id="mobileEventNotes" placeholder="פרטים נוספים..." dir="auto"></textarea>
+      </div>
+
+      <div class="mobile-sheet-actions">
+        <button class="btn btn-secondary" id="mobileSheetCancel">ביטול</button>
+        <button class="btn btn-primary" id="mobileSheetAdd">הוסף אירוע ✓</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Mobile Sidebar Backdrop -->
   <div class="mobile-sidebar-backdrop" id="mobileSidebarBackdrop"></div>
+
 
   <div class="modal-backdrop" id="clearModal" role="dialog" aria-modal="true" aria-labelledby="clearModalTitle"
     aria-describedby="clearModalDesc">
@@ -9798,6 +9845,94 @@
       updateFabVisibility();
       window.addEventListener('resize', updateFabVisibility);
 
+      // ===== Mobile Event Bottom Sheet =====
+      const mobileEventSheet = document.getElementById('mobileEventSheet');
+      const mobileEventSheetBackdrop = document.getElementById('mobileEventSheetBackdrop');
+      const mobileSheetClose = document.getElementById('mobileSheetClose');
+      const mobileSheetCancel = document.getElementById('mobileSheetCancel');
+      const mobileSheetAdd = document.getElementById('mobileSheetAdd');
+
+      function openMobileEventSheet() {
+        if (!mobileEventSheet || !mobileEventSheetBackdrop) return;
+
+        // Set default date to tomorrow at 9:00 AM
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        tomorrow.setHours(9, 0, 0, 0);
+        const dateInput = document.getElementById('mobileEventDate');
+        if (dateInput) {
+          const year = tomorrow.getFullYear();
+          const month = String(tomorrow.getMonth() + 1).padStart(2, '0');
+          const day = String(tomorrow.getDate()).padStart(2, '0');
+          dateInput.value = `${year}-${month}-${day}T09:00`;
+        }
+
+        mobileEventSheetBackdrop.classList.add('open');
+        mobileEventSheet.classList.add('open');
+        document.body.style.overflow = 'hidden';
+
+        // Focus on name input after animation
+        setTimeout(() => {
+          document.getElementById('mobileEventName')?.focus();
+        }, 350);
+      }
+
+      function closeMobileEventSheet() {
+        if (!mobileEventSheet || !mobileEventSheetBackdrop) return;
+        mobileEventSheetBackdrop.classList.remove('open');
+        mobileEventSheet.classList.remove('open');
+        document.body.style.overflow = '';
+
+        // Clear form
+        const nameInput = document.getElementById('mobileEventName');
+        const notesInput = document.getElementById('mobileEventNotes');
+        const reminderSelect = document.getElementById('mobileEventReminder');
+        if (nameInput) nameInput.value = '';
+        if (notesInput) notesInput.value = '';
+        if (reminderSelect) reminderSelect.value = '0';
+      }
+
+      // Close handlers
+      mobileSheetClose?.addEventListener('click', closeMobileEventSheet);
+      mobileSheetCancel?.addEventListener('click', closeMobileEventSheet);
+      mobileEventSheetBackdrop?.addEventListener('click', closeMobileEventSheet);
+
+      // Add event handler
+      mobileSheetAdd?.addEventListener('click', () => {
+        const name = document.getElementById('mobileEventName')?.value?.trim();
+        const dateValue = document.getElementById('mobileEventDate')?.value;
+        const reminder = document.getElementById('mobileEventReminder')?.value || '0';
+        const notes = document.getElementById('mobileEventNotes')?.value?.trim() || '';
+
+        if (!name) {
+          document.getElementById('mobileEventName')?.focus();
+          return;
+        }
+
+        if (!dateValue) {
+          document.getElementById('mobileEventDate')?.focus();
+          return;
+        }
+
+        // Sync values to the original form inputs and trigger add
+        const originalName = document.getElementById('eventName');
+        const originalDate = document.getElementById('eventDate');
+        const originalReminder = document.getElementById('eventReminder');
+        const originalNotes = document.getElementById('eventNotes');
+        const addBtn = document.getElementById('addBtn');
+
+        if (originalName) originalName.value = name;
+        if (originalDate) originalDate.value = dateValue;
+        if (originalReminder) originalReminder.value = reminder;
+        if (originalNotes) originalNotes.value = notes;
+
+        // Trigger the existing add event logic
+        addBtn?.click();
+
+        // Close the sheet
+        closeMobileEventSheet();
+      });
+
       // FAB click handler - context-aware action
       mobileFab?.addEventListener('click', () => {
         const activeNavItem = document.querySelector('.mobile-nav-item.active');
@@ -9805,12 +9940,8 @@
 
         switch (currentView) {
           case 'countdown':
-            // Focus on event name input
-            const eventNameInput = document.getElementById('eventName');
-            if (eventNameInput) {
-              eventNameInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
-              setTimeout(() => eventNameInput.focus(), 300);
-            }
+            // Open bottom sheet for adding event
+            openMobileEventSheet();
             break;
           case 'tasks':
             // Focus on task input
@@ -9831,19 +9962,13 @@
             plannerAddBtn?.click();
             break;
           case 'calendar':
-            // Focus on event input
-            const eventInput = document.getElementById('eventName');
-            if (eventInput) {
-              document.querySelector('.mobile-nav-item[data-view="countdown"]')?.click();
-              setTimeout(() => {
-                eventInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                eventInput.focus();
-              }, 350);
-            }
+            // Open bottom sheet for adding event
+            openMobileEventSheet();
             break;
         }
       });
     })();
+
   </script>
 
   <!-- Mobile Enhancements: Swipe Gestures, Haptic Feedback, Toast Notifications -->
