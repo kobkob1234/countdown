@@ -1253,10 +1253,20 @@
         background: var(--day-other);
       }
 
-      .task-action-btn:active {
+      .task-reminder-btn {
+        width: 44px;
+        height: 44px;
+        font-size: 20px;
+        border-radius: 12px;
+        background: var(--day-other);
+      }
+
+      .task-action-btn:active,
+      .task-reminder-btn:active {
         transform: scale(0.92);
         background: var(--day-hover);
       }
+
 
       /* Quick Add Task - Mobile Optimized */
       .quick-add-task {
