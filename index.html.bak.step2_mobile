@@ -9984,9 +9984,552 @@
   </script>
 
   <!-- Mobile Enhancements: Swipe Gestures, Haptic Feedback, Toast Notifications -->
-  <script type="module">
-    import { initMobileController } from './js/controllers/mobile.js';
-    initMobileController();
+  <script>
+    (function MobileEnhancements() {
+      'use strict';
+
+      // ===== Mobile Detection =====
+      const isMobile = () => window.innerWidth <= 768 ||
+        (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches && window.innerWidth <= 1024);
+
+      // Don't initialize on desktop
+      if (!isMobile()) {
+        // Re-check on resize
+        window.addEventListener('resize', () => {
+          if (isMobile()) initMobileEnhancements();
+        }, { once: true });
+        return;
+      }
+
+      initMobileEnhancements();
+
+      function initMobileEnhancements() {
+        console.log('[Mobile] Initializing enhanced mobile experience');
+
+        // ===== Haptic Feedback =====
+        const haptic = {
+          light: () => navigator.vibrate?.(10),
+          medium: () => navigator.vibrate?.(15),
+          heavy: () => navigator.vibrate?.(30),
+          success: () => navigator.vibrate?.([10, 30, 10]),
+          error: () => navigator.vibrate?.([15, 45, 15, 45]),
+          selection: () => navigator.vibrate?.(5)
+        };
+        window.haptic = haptic; // Expose globally
+
+        // ===== Touch Ripple Effect =====
+        function createRipple(event, element) {
+          const ripple = document.createElement('span');
+          ripple.className = 'ripple';
+
+          const rect = element.getBoundingClientRect();
+          const size = Math.max(rect.width, rect.height);
+          const x = (event.touches?.[0]?.clientX || event.clientX) - rect.left - size / 2;
+          const y = (event.touches?.[0]?.clientY || event.clientY) - rect.top - size / 2;
+
+          ripple.style.width = ripple.style.height = `${size}px`;
+          ripple.style.left = `${x}px`;
+          ripple.style.top = `${y}px`;
+
+          element.classList.add('ripple-container');
+          element.appendChild(ripple);
+
+          ripple.addEventListener('animationend', () => ripple.remove());
+        }
+
+        // Add ripple to buttons
+        document.addEventListener('touchstart', (e) => {
+          const btn = e.target.closest('button, .btn, .mobile-nav-item, .filter-pill, .task-checkbox');
+          if (btn && isMobile()) {
+            createRipple(e, btn);
+            haptic.selection();
+          }
+        }, { passive: true });
+
+        // ===== Toast Notification System =====
+        let toastContainer = document.getElementById('mobileToast');
+        if (!toastContainer) {
+          toastContainer = document.createElement('div');
+          toastContainer.id = 'mobileToast';
+          toastContainer.className = 'mobile-toast';
+          toastContainer.innerHTML = `
+            <span class="mobile-toast-icon"></span>
+            <span class="mobile-toast-message"></span>
+            <button class="mobile-toast-action" style="display:none;"></button>
+          `;
+          document.body.appendChild(toastContainer);
+        }
+
+        let toastTimeout = null;
+        function showToast(message, { icon = '✓', duration = 3000, action = null, actionText = 'Undo' } = {}) {
+          clearTimeout(toastTimeout);
+
+          toastContainer.querySelector('.mobile-toast-icon').textContent = icon;
+          toastContainer.querySelector('.mobile-toast-message').textContent = message;
+
+          const actionBtn = toastContainer.querySelector('.mobile-toast-action');
+          if (action) {
+            actionBtn.textContent = actionText;
+            actionBtn.style.display = 'block';
+            actionBtn.onclick = () => {
+              action();
+              hideToast();
+            };
+          } else {
+            actionBtn.style.display = 'none';
+          }
+
+          toastContainer.classList.add('visible');
+
+          toastTimeout = setTimeout(hideToast, duration);
+        }
+
+        function hideToast() {
+          toastContainer.classList.remove('visible');
+        }
+
+        // Expose toast globally
+        window.mobileToast = showToast;
+
+        // ===== Swipe Gesture System =====
+        const SWIPE_THRESHOLD = 70; // Reduced for easier activation
+        const SWIPE_VELOCITY_THRESHOLD = 0.25; // More responsive
+
+        function initSwipeGestures() {
+          setupSwipeContainers();
+
+          // Re-setup when tasks are rendered
+          const observer = new MutationObserver((mutations) => {
+            for (const mutation of mutations) {
+              if (mutation.addedNodes.length > 0) {
+                setupSwipeContainers();
+              }
+            }
+          });
+
+          const taskList = document.querySelector('.task-list');
+          const eventList = document.querySelector('.event-list');
+
+          if (taskList) observer.observe(taskList, { childList: true, subtree: true });
+          if (eventList) observer.observe(eventList, { childList: true, subtree: true });
+        }
+
+        function setupSwipeContainers() {
+          // Wrap task items in swipe containers
+          document.querySelectorAll('.task-item:not(.swipe-initialized)').forEach(item => {
+            wrapInSwipeContainer(item, 'task');
+          });
+
+          // Wrap event rows in swipe containers
+          document.querySelectorAll('.event-row:not(.swipe-initialized)').forEach(item => {
+            wrapInSwipeContainer(item, 'event');
+          });
+        }
+
+        function wrapInSwipeContainer(item, type) {
+          // Skip if already wrapped
+          if (item.closest('.swipe-container')) return;
+          item.classList.add('swipe-initialized');
+
+          const container = document.createElement('div');
+          container.className = 'swipe-container';
+          container.innerHTML = `
+            <div class="swipe-actions swipe-actions-left">
+              <button class="swipe-action-btn complete-action">
+                ✓
+                <span>Done</span>
+              </button>
+            </div>
+            <div class="swipe-actions swipe-actions-right">
+              <button class="swipe-action-btn delete-action">
+                🗑️
+                <span>Delete</span>
+              </button>
+            </div>
+          `;
+
+          item.parentNode.insertBefore(container, item);
+          container.appendChild(item);
+
+          initSwipeHandlers(container, item, type);
+        }
+
+        function initSwipeHandlers(container, item, type) {
+          let startX = 0;
+          let startY = 0;
+          let currentX = 0;
+          let startTime = 0;
+          let isSwiping = false;
+          let isVerticalScroll = false;
+
+          const onTouchStart = (e) => {
+            if (e.target.closest('button, .task-checkbox, input, .task-action-btn')) return;
+
+            startX = e.touches[0].clientX;
+            startY = e.touches[0].clientY;
+            currentX = 0;
+            startTime = Date.now();
+            isSwiping = false;
+            isVerticalScroll = false;
+          };
+
+          const onTouchMove = (e) => {
+            if (isVerticalScroll) return;
+
+            const touchX = e.touches[0].clientX;
+            const touchY = e.touches[0].clientY;
+            const diffX = touchX - startX;
+            const diffY = touchY - startY;
+
+            // Determine if it's a vertical scroll
+            if (!isSwiping && Math.abs(diffY) > Math.abs(diffX) && Math.abs(diffY) > 10) {
+              isVerticalScroll = true;
+              return;
+            }
+
+            // Start swiping if horizontal movement is significant
+            if (Math.abs(diffX) > 15) {
+              isSwiping = true;
+              container.classList.add('swiping');
+              e.preventDefault();
+            }
+
+            if (isSwiping) {
+              currentX = diffX;
+              // Add resistance at edges
+              const resistance = 0.5;
+              const resistedX = currentX > 0
+                ? Math.sign(currentX) * Math.min(Math.abs(currentX), 120) * resistance
+                : Math.sign(currentX) * Math.min(Math.abs(currentX), 120) * resistance;
+
+              item.style.transform = `translateX(${resistedX}px)`;
+
+              // Threshold indicators
+              container.classList.toggle('threshold-left', currentX > SWIPE_THRESHOLD);
+              container.classList.toggle('threshold-right', currentX < -SWIPE_THRESHOLD);
+
+              // Haptic at threshold
+              if (Math.abs(currentX) > SWIPE_THRESHOLD && !container.dataset.thresholdReached) {
+                haptic.medium();
+                container.dataset.thresholdReached = 'true';
+              }
+            }
+          };
+
+          const onTouchEnd = () => {
+            container.classList.remove('swiping', 'threshold-left', 'threshold-right');
+            delete container.dataset.thresholdReached;
+
+            if (!isSwiping) {
+              item.style.transform = '';
+              return;
+            }
+
+            const velocity = Math.abs(currentX) / (Date.now() - startTime);
+            const shouldTrigger = Math.abs(currentX) > SWIPE_THRESHOLD || velocity > SWIPE_VELOCITY_THRESHOLD;
+
+            if (shouldTrigger) {
+              if (currentX > SWIPE_THRESHOLD) {
+                // Swipe right = Complete
+                triggerComplete(container, item, type);
+              } else if (currentX < -SWIPE_THRESHOLD) {
+                // Swipe left = Delete
+                triggerDelete(container, item, type);
+              }
+            } else {
+              // Snap back
+              item.style.transform = '';
+            }
+
+            isSwiping = false;
+          };
+
+          container.addEventListener('touchstart', onTouchStart, { passive: true });
+          container.addEventListener('touchmove', onTouchMove, { passive: false });
+          container.addEventListener('touchend', onTouchEnd, { passive: true });
+        }
+
+        function triggerComplete(container, item, type) {
+          haptic.success();
+
+          container.classList.add('completing');
+          item.style.transform = '';
+
+          setTimeout(() => {
+            if (type === 'task') {
+              const taskId = item.dataset.taskId || item.dataset.id;
+              const checkbox = item.querySelector('.task-checkbox');
+              if (checkbox) {
+                checkbox.click();
+              } else if (typeof window.handleCompleteTask === 'function' && taskId) {
+                window.handleCompleteTask(taskId);
+              }
+            }
+            container.classList.remove('completing');
+
+            showToast('Task completed!', { icon: '✓' });
+          }, 300);
+        }
+
+        function triggerDelete(container, item, type) {
+          haptic.error();
+
+          const deletedData = {
+            type,
+            html: container.outerHTML,
+            parent: container.parentNode,
+            nextSibling: container.nextSibling
+          };
+
+          container.classList.add('deleting');
+
+          setTimeout(() => {
+            if (type === 'task') {
+              const taskId = item.dataset.taskId || item.dataset.id;
+              const deleteBtn = item.querySelector('.task-action-btn.delete, [aria-label*="Delete"]');
+              if (deleteBtn) {
+                deleteBtn.click();
+              } else if (typeof window.handleDeleteTask === 'function' && taskId) {
+                window.handleDeleteTask(taskId);
+              }
+            } else if (type === 'event') {
+              const deleteBtn = item.querySelector('.delete-btn');
+              if (deleteBtn) {
+                deleteBtn.click();
+              }
+            }
+          }, 350);
+
+          const itemName = type === 'task'
+            ? item.querySelector('.task-title')?.textContent?.slice(0, 25)
+            : item.querySelector('.event-name')?.textContent?.slice(0, 25);
+
+          showToast(`Deleted: ${itemName || type}`, {
+            icon: '🗑️',
+            duration: 5000
+          });
+        }
+
+        // Initialize swipe gestures
+        initSwipeGestures();
+
+        // ===== Pull to Refresh =====
+        let pullContainer = document.getElementById('pullToRefreshContainer');
+        if (!pullContainer) {
+          pullContainer = document.createElement('div');
+          pullContainer.id = 'pullToRefreshContainer';
+          pullContainer.className = 'pull-to-refresh-container';
+          pullContainer.innerHTML = '<div class="pull-to-refresh-spinner">↻</div>';
+          document.body.appendChild(pullContainer);
+        }
+
+        let pullStartY = 0;
+        let isPulling = false;
+        const mainContent = document.querySelector('.main-content') || document.querySelector('.app-layout');
+
+        function initPullToRefresh() {
+          if (!mainContent) return;
+
+          document.addEventListener('touchstart', (e) => {
+            // Only at top of page
+            if (window.scrollY <= 0 && !document.querySelector('.task-manager-overlay.open, .pomodoro-overlay.open, .planner-overlay.open')) {
+              pullStartY = e.touches[0].clientY;
+              isPulling = true;
+            }
+          }, { passive: true });
+
+          document.addEventListener('touchmove', (e) => {
+            if (!isPulling || window.scrollY > 0) return;
+
+            const currentY = e.touches[0].clientY;
+            const pullDistance = currentY - pullStartY;
+
+            if (pullDistance > 60) {
+              pullContainer.classList.add('visible');
+
+              if (pullDistance > 100) {
+                haptic.light();
+              }
+            }
+          }, { passive: true });
+
+          document.addEventListener('touchend', () => {
+            if (pullContainer.classList.contains('visible')) {
+              const spinner = pullContainer.querySelector('.pull-to-refresh-spinner');
+              spinner.classList.add('refreshing');
+              haptic.medium();
+
+              // Simulate refresh
+              setTimeout(() => {
+                spinner.classList.remove('refreshing');
+                pullContainer.classList.remove('visible');
+                showToast('Refreshed!', { icon: '↻' });
+
+                // Trigger data reload if available
+                if (typeof window.refreshTasks === 'function') window.refreshTasks();
+                if (typeof window.loadEvents === 'function') window.loadEvents();
+              }, 800);
+            }
+
+            isPulling = false;
+            pullStartY = 0;
+          }, { passive: true });
+        }
+
+        initPullToRefresh();
+
+        // ===== Edge Swipe Navigation =====
+        const EDGE_THRESHOLD = 40; // pixels from edge to trigger
+        const SWIPE_MIN_DISTANCE = 80; // minimum swipe distance
+        let edgeSwipeStartX = 0;
+        let edgeSwipeStartY = 0;
+        let isEdgeSwiping = false;
+        let edgeSwipeStartedFromEdge = false;
+
+        function getCurrentTabIndex() {
+          const activeNav = document.querySelector('.mobile-nav-item.active');
+          const allNavs = Array.from(document.querySelectorAll('.mobile-nav-item'));
+          return allNavs.indexOf(activeNav);
+        }
+
+        function switchToTab(index) {
+          const allNavs = Array.from(document.querySelectorAll('.mobile-nav-item'));
+          if (index >= 0 && index < allNavs.length) {
+            allNavs[index].click();
+            haptic.selection();
+          }
+        }
+
+        document.addEventListener('touchstart', (e) => {
+          if (!isMobile()) return;
+
+          const touch = e.touches[0];
+          const screenWidth = window.innerWidth;
+
+          // Check if touch started near left or right edge
+          const isLeftEdge = touch.clientX < EDGE_THRESHOLD;
+          const isRightEdge = touch.clientX > screenWidth - EDGE_THRESHOLD;
+
+          if (isLeftEdge || isRightEdge) {
+            edgeSwipeStartX = touch.clientX;
+            edgeSwipeStartY = touch.clientY;
+            edgeSwipeStartedFromEdge = true;
+            isEdgeSwiping = false;
+
+            // Show edge indicator
+            const indicator = document.querySelector(isLeftEdge ? '.edge-swipe-indicator.left' : '.edge-swipe-indicator.right');
+            indicator?.classList.add('visible');
+          } else {
+            edgeSwipeStartedFromEdge = false;
+          }
+        }, { passive: true });
+
+        document.addEventListener('touchmove', (e) => {
+          if (!edgeSwipeStartedFromEdge || !isMobile()) return;
+
+          const touch = e.touches[0];
+          const diffX = touch.clientX - edgeSwipeStartX;
+          const diffY = Math.abs(touch.clientY - edgeSwipeStartY);
+
+          // Only horizontal swipes
+          if (Math.abs(diffX) > diffY && Math.abs(diffX) > 20) {
+            isEdgeSwiping = true;
+
+            // Activate indicator when threshold reached
+            const leftIndicator = document.querySelector('.edge-swipe-indicator.left');
+            const rightIndicator = document.querySelector('.edge-swipe-indicator.right');
+
+            if (Math.abs(diffX) >= SWIPE_MIN_DISTANCE) {
+              if (edgeSwipeStartX < EDGE_THRESHOLD) {
+                leftIndicator?.classList.add('active');
+              } else {
+                rightIndicator?.classList.add('active');
+              }
+            }
+          }
+        }, { passive: true });
+
+
+        document.addEventListener('touchend', (e) => {
+          // Hide all edge indicators
+          document.querySelectorAll('.edge-swipe-indicator').forEach(ind => {
+            ind.classList.remove('visible', 'active');
+          });
+
+          if (!edgeSwipeStartedFromEdge || !isEdgeSwiping || !isMobile()) {
+            edgeSwipeStartedFromEdge = false;
+            isEdgeSwiping = false;
+            return;
+          }
+
+          const touch = e.changedTouches[0];
+          const diffX = touch.clientX - edgeSwipeStartX;
+          const currentIndex = getCurrentTabIndex();
+
+          if (Math.abs(diffX) >= SWIPE_MIN_DISTANCE) {
+            if (diffX > 0 && edgeSwipeStartX < EDGE_THRESHOLD) {
+              // Swiped right from left edge → go to previous tab
+              switchToTab(currentIndex - 1);
+            } else if (diffX < 0 && edgeSwipeStartX > window.innerWidth - EDGE_THRESHOLD) {
+              // Swiped left from right edge → go to next tab
+              switchToTab(currentIndex + 1);
+            }
+          }
+
+          edgeSwipeStartedFromEdge = false;
+          isEdgeSwiping = false;
+        }, { passive: true });
+
+
+        // ===== Enhanced View Transitions =====
+        const navItems = document.querySelectorAll('.mobile-nav-item');
+        navItems.forEach(item => {
+          item.addEventListener('click', () => {
+            haptic.selection();
+
+            // Add view transition class
+            const mainContent = document.querySelector('.main-content, .task-manager-body');
+            if (mainContent) {
+              mainContent.classList.remove('view-container');
+              void mainContent.offsetWidth; // Force reflow
+              mainContent.classList.add('view-container');
+            }
+          });
+        });
+
+
+        // ===== Long Press Detection for Context Menu =====
+        let longPressTimer = null;
+
+        document.addEventListener('touchstart', (e) => {
+          const target = e.target.closest('.task-item, .event-row');
+          if (!target) return;
+
+          longPressTimer = setTimeout(() => {
+            haptic.heavy();
+
+            // Show context actions
+            const actions = target.querySelector('.task-actions, .event-actions');
+            if (actions) {
+              actions.style.opacity = '1';
+              actions.style.visibility = 'visible';
+            }
+
+            showToast('Long press detected', { icon: '👆', duration: 1500 });
+          }, 500);
+        }, { passive: true });
+
+        document.addEventListener('touchend', () => {
+          clearTimeout(longPressTimer);
+        });
+
+        document.addEventListener('touchmove', () => {
+          clearTimeout(longPressTimer);
+        });
+
+        console.log('[Mobile] Enhanced mobile experience initialized');
+      }
+    })();
   </script>
 
 </body>
