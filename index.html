@@ -9839,12 +9839,14 @@
       const mobileFab = document.getElementById('mobileFab');
 
       const updateFabVisibility = () => {
+        if (!mobileFab) return;
         if (isMobile()) {
           mobileFab.style.display = 'flex';
         } else {
           mobileFab.style.display = 'none';
         }
       };
+
 
       updateFabVisibility();
       window.addEventListener('resize', updateFabVisibility);
