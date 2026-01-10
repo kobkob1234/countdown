@@ -202,11 +202,20 @@ export function initMobileController() {
             const diff = y - pullStartY;
 
             if (diff > 0 && window.scrollY === 0) {
+                // Prevent default pull-to-refresh behavior of the browser if possible?
+                // Probably can't with passive: true, but let's see logic.
+
                 if (diff > 80) { // Activation threshold
                     body.classList.add('pull-active');
-                    if (pullIcon) pullIcon.classList.add('pulling');
+                    if (pullIcon) {
+                        pullIcon.classList.add('pulling');
+                        pullIcon.style.transform = ''; // Allow CSS class to take over
+                    }
                 } else {
-                    if (pullIcon) pullIcon.style.transform = `translateX(-50%) translateY(${diff - 100}px)`;
+                    if (pullIcon) {
+                        pullIcon.classList.remove('pulling');
+                        pullIcon.style.transform = `translateX(-50%) translateY(${diff - 100}px)`;
+                    }
                 }
             }
         }, { passive: true });
@@ -214,6 +223,8 @@ export function initMobileController() {
         window.addEventListener('touchend', async () => {
             if (!isPulling) return;
             isPulling = false;
+
+            if (pullIcon) pullIcon.style.transform = ''; // Clear inline styles on release
 
             if (body.classList.contains('pull-active')) {
                 body.classList.remove('pull-active');
