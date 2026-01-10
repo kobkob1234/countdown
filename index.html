@@ -1618,6 +1618,32 @@
   </div>
 
   <script type="module">
+    // ╔══════════════════════════════════════════════════════════════════════════╗
+    // ║                    SHARED EVENT COUNTDOWNS - MAIN CONTROLLER             ║
+    // ╠══════════════════════════════════════════════════════════════════════════╣
+    // ║  This inline script acts as the main controller, coordinating the        ║
+    // ║  modular components in the js/ directory.                                ║
+    // ║                                                                          ║
+    // ║  TABLE OF CONTENTS:                                                      ║
+    // ║  ─────────────────                                                       ║
+    // ║  1. FIREBASE INITIALIZATION                          (Line ~30)          ║
+    // ║  2. USER AUTHENTICATION                              (Line ~60)          ║
+    // ║  3. GLOBAL CONSTANTS & DOM REFERENCES                (Line ~100)         ║
+    // ║  4. EVENT/COUNTDOWN MANAGEMENT                       (Line ~200)         ║
+    // ║  5. CONFETTI & ANIMATIONS                            (Line ~2500)        ║
+    // ║  6. UNDO/REDO STACK                                  (Line ~3300)        ║
+    // ║  7. KEYBOARD NAVIGATION                              (Line ~3400)        ║
+    // ║  8. CONTEXT MENUS                                    (Line ~3430)        ║
+    // ║  9. TASK MANAGER                                     (Line ~3850)        ║
+    // ║  10. POMODORO INTEGRATION                            (Line ~4230)        ║
+    // ║  11. SUBJECTS/CATEGORIES                             (Line ~5800)        ║
+    // ║  12. TASK CALENDAR                                   (Line ~6000)        ║
+    // ║  13. NATURAL LANGUAGE PARSING                        (Line ~7370)        ║
+    // ║  14. DAILY PLANNER                                   (Line ~7890)        ║
+    // ║  15. INITIALIZATION                                  (Line ~9500+)       ║
+    // ╚══════════════════════════════════════════════════════════════════════════╝
+
+    // ============ 1. FIREBASE INITIALIZATION ============
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import { getDatabase, ref, set, onValue, push, remove, onChildAdded, onChildChanged, onChildRemoved, goOnline, goOffline } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
     import { ctx } from "./js/context.js";
@@ -1655,7 +1681,7 @@
       eventsRef
     });
 
-    // 2. USER AUTHENTICATION LOGIC
+    // ============ 2. USER AUTHENTICATION ============
     const userBtn = document.getElementById('userBtn');
     let currentUser = localStorage.getItem('countdown_username');
 
@@ -1700,6 +1726,7 @@
       };
     }
 
+    // ============ 3. GLOBAL CONSTANTS & DOM REFERENCES ============
     const COLORS = ['#667eea', '#f59e0b', '#10b981', '#ec4899', '#8b5cf6', '#06b6d4', '#ef4444', '#84cc16'];
     const HEBREW_DAYS = ['א׳', 'ב׳', 'ג׳', 'ד׳', 'ה׳', 'ו׳', 'ש׳'];
     const HEBREW_MONTHS = ['ינואר', 'פברואר', 'מרץ', 'אפריל', 'מאי', 'יוני', 'יולי', 'אוגוסט', 'ספטמבר', 'אוקטובר', 'נובמבר', 'דצמבר'];
