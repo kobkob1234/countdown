@@ -1,5 +1,5 @@
 
-import { ctx } from '../state.js';
+import { AppState } from '../state.js';
 
 export function initMobileController() {
     // ===== Mobile Detection =====

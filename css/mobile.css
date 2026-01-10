@@ -358,6 +358,7 @@
         height: auto;
         min-height: calc(100dvh - var(--mobile-header-height) - var(--mobile-bottom-nav-height));
         padding-bottom: var(--mobile-bottom-nav-height);
+        align-items: stretch;
       }
 
       /* ===== MOBILE HEADER BAR REDESIGN ===== */
@@ -484,6 +485,7 @@
       .main-content {
         padding: var(--mobile-spacing-md);
         padding-top: calc(var(--mobile-spacing-md) + 8px);
+        width: 100%;
       }
 
       .container {
@@ -492,6 +494,7 @@
         display: flex;
         flex-direction: column;
         gap: var(--mobile-spacing-md);
+        width: 100%;
       }
 
       .header {
@@ -512,6 +515,7 @@
       .event-list {
         gap: var(--mobile-spacing-md);
         padding: 0;
+        width: 100%;
       }
 
       .event-row {
