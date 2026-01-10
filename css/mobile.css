@@ -2387,4 +2387,257 @@
       .pwa-install-close:active {
         background: rgba(255, 255, 255, 0.3);
       }
+
+      /* ===== VIEW SLIDE TRANSITIONS ===== */
+      .main-content,
+      .task-manager-body,
+      .pomodoro-content,
+      .planner-content {
+        animation: view-fade-in 0.2s ease-out;
+      }
+
+      @keyframes view-fade-in {
+        from {
+          opacity: 0;
+          transform: translateY(8px);
+        }
+
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      /* Slide animation for overlays */
+      .task-manager-overlay.open,
+      .pomodoro-overlay.open,
+      .planner-overlay.open {
+        animation: overlay-slide-up 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+      }
+
+      @keyframes overlay-slide-up {
+        from {
+          opacity: 0;
+          transform: translateY(20px);
+        }
+
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      /* ===== EDGE SWIPE INDICATOR ===== */
+      .edge-swipe-indicator {
+        position: fixed;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 8px;
+        height: 60px;
+        background: linear-gradient(135deg, var(--accent), var(--accent2));
+        border-radius: 4px;
+        opacity: 0;
+        transition: opacity 0.15s, transform 0.15s;
+        z-index: 10000;
+        pointer-events: none;
+      }
+
+      .edge-swipe-indicator.left {
+        left: 4px;
+      }
+
+      .edge-swipe-indicator.right {
+        right: 4px;
+      }
+
+      .edge-swipe-indicator.visible {
+        opacity: 0.6;
+      }
+
+      .edge-swipe-indicator.active {
+        opacity: 1;
+        transform: translateY(-50%) scaleY(1.2);
+      }
+
+      /* ===== IMPROVED SUBJECT LIST ANIMATIONS ===== */
+      .subject-list-item {
+        transition: background 0.15s ease;
+      }
+
+      .subject-list-item.expanded .subject-list-children {
+        animation: subject-expand 0.25s ease-out;
+      }
+
+      @keyframes subject-expand {
+        from {
+          opacity: 0;
+          max-height: 0;
+          transform: translateY(-8px);
+        }
+
+        to {
+          opacity: 1;
+          max-height: 500px;
+          transform: translateY(0);
+        }
+      }
+
+      .subject-list-header {
+        transition: background 0.15s ease, transform 0.1s ease;
+      }
+
+      .subject-list-header:active {
+        transform: scale(0.98);
+        background: var(--day-hover);
+      }
+
+      .subject-expand-arrow {
+        transition: transform 0.2s ease;
+      }
+
+      .subject-list-item.expanded .subject-expand-arrow {
+        transform: rotate(90deg);
+      }
+
+      /* ===== ENHANCED CARD INTERACTIONS ===== */
+      .event-row {
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
+      }
+
+      .event-row:active {
+        transform: scale(0.98);
+      }
+
+      /* Staggered animation for event list */
+      .event-list .event-row {
+        animation: card-slide-in 0.3s ease-out backwards;
+      }
+
+      .event-list .event-row:nth-child(1) {
+        animation-delay: 0ms;
+      }
+
+      .event-list .event-row:nth-child(2) {
+        animation-delay: 50ms;
+      }
+
+      .event-list .event-row:nth-child(3) {
+        animation-delay: 100ms;
+      }
+
+      .event-list .event-row:nth-child(4) {
+        animation-delay: 150ms;
+      }
+
+      .event-list .event-row:nth-child(5) {
+        animation-delay: 200ms;
+      }
+
+      @keyframes card-slide-in {
+        from {
+          opacity: 0;
+          transform: translateY(16px);
+        }
+
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      /* Task items stagger */
+      .task-list .task-item {
+        animation: card-slide-in 0.25s ease-out backwards;
+      }
+
+      .task-list .task-item:nth-child(1) {
+        animation-delay: 0ms;
+      }
+
+      .task-list .task-item:nth-child(2) {
+        animation-delay: 40ms;
+      }
+
+      .task-list .task-item:nth-child(3) {
+        animation-delay: 80ms;
+      }
+
+      .task-list .task-item:nth-child(4) {
+        animation-delay: 120ms;
+      }
+
+      .task-list .task-item:nth-child(5) {
+        animation-delay: 160ms;
+      }
+
+      /* ===== BOTTOM NAV ACTIVE STATE ENHANCEMENT ===== */
+      .mobile-nav-item {
+        transition: color 0.2s ease, transform 0.15s ease;
+      }
+
+      .mobile-nav-item:active {
+        transform: scale(0.9);
+      }
+
+      .mobile-nav-item.active .mobile-nav-icon {
+        transform: scale(1.1);
+        transition: transform 0.2s ease;
+      }
+
+      /* ===== COUNTDOWN SPECIFIC ENHANCEMENTS ===== */
+      .time-unit {
+        transition: transform 0.1s ease, background 0.15s ease;
+      }
+
+      .time-unit:active {
+        transform: scale(0.95);
+        background: var(--day-hover);
+      }
+
+      /* Pulse animation for countdowns near deadline */
+      .event-row.urgent .timer {
+        animation: urgent-pulse 1.5s ease-in-out infinite;
+      }
+
+      @keyframes urgent-pulse {
+
+        0%,
+        100% {
+          opacity: 1;
+        }
+
+        50% {
+          opacity: 0.7;
+        }
+      }
+
+      /* ===== FAB ENHANCEMENTS ===== */
+      .mobile-fab {
+        transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease;
+      }
+
+      .mobile-fab:active {
+        transform: scale(0.85) rotate(45deg);
+      }
+
+      /* FAB appears with bounce animation */
+      @keyframes fab-appear {
+        0% {
+          opacity: 0;
+          transform: scale(0) translateY(20px);
+        }
+
+        60% {
+          transform: scale(1.15) translateY(-5px);
+        }
+
+        100% {
+          opacity: 1;
+          transform: scale(1) translateY(0);
+        }
+      }
+
+      .mobile-fab {
+        animation: fab-appear 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+      }
     }

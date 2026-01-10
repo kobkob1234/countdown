@@ -9607,6 +9607,10 @@
     </button>
   </nav>
 
+  <!-- Edge Swipe Indicators -->
+  <div class="edge-swipe-indicator left"></div>
+  <div class="edge-swipe-indicator right"></div>
+
   <!-- PWA Install Banner -->
   <div class="pwa-install-banner" id="pwaInstallBanner">
     <div class="pwa-install-icon">📱</div>
@@ -10403,6 +10407,10 @@
             edgeSwipeStartY = touch.clientY;
             edgeSwipeStartedFromEdge = true;
             isEdgeSwiping = false;
+
+            // Show edge indicator
+            const indicator = document.querySelector(isLeftEdge ? '.edge-swipe-indicator.left' : '.edge-swipe-indicator.right');
+            indicator?.classList.add('visible');
           } else {
             edgeSwipeStartedFromEdge = false;
           }
@@ -10418,10 +10426,28 @@
           // Only horizontal swipes
           if (Math.abs(diffX) > diffY && Math.abs(diffX) > 20) {
             isEdgeSwiping = true;
+
+            // Activate indicator when threshold reached
+            const leftIndicator = document.querySelector('.edge-swipe-indicator.left');
+            const rightIndicator = document.querySelector('.edge-swipe-indicator.right');
+
+            if (Math.abs(diffX) >= SWIPE_MIN_DISTANCE) {
+              if (edgeSwipeStartX < EDGE_THRESHOLD) {
+                leftIndicator?.classList.add('active');
+              } else {
+                rightIndicator?.classList.add('active');
+              }
+            }
           }
         }, { passive: true });
 
+
         document.addEventListener('touchend', (e) => {
+          // Hide all edge indicators
+          document.querySelectorAll('.edge-swipe-indicator').forEach(ind => {
+            ind.classList.remove('visible', 'active');
+          });
+
           if (!edgeSwipeStartedFromEdge || !isEdgeSwiping || !isMobile()) {
             edgeSwipeStartedFromEdge = false;
             isEdgeSwiping = false;
@@ -10445,6 +10471,7 @@
           edgeSwipeStartedFromEdge = false;
           isEdgeSwiping = false;
         }, { passive: true });
+
 
         // ===== Enhanced View Transitions =====
         const navItems = document.querySelectorAll('.mobile-nav-item');
