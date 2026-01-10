@@ -14,15 +14,12 @@
     }
 
     @media (max-width: 640px) and (pointer: coarse) {
-      .main-content {
-        padding: var(--mobile-spacing-md, 16px);
-        padding-top: var(--mobile-spacing-md, 16px);
-      }
-
+      /* Extra small screen adjustments (builds on 768px rules) */
 
       .header {
         margin-bottom: 20px;
       }
+
 
       .header h1 {
         font-size: 22px;
@@ -869,17 +866,6 @@
         background: var(--day-other);
         color: var(--muted);
         border: 1px solid var(--border);
-      }
-
-      /* ===== FIX UNEVEN MOBILE SPACING ===== */
-      .main-content {
-        padding: var(--mobile-spacing-md);
-        padding-top: var(--mobile-spacing-md);
-      }
-
-      .container {
-        padding: 0;
-        gap: var(--mobile-spacing-md);
       }
 
       /* ===== INPUT ROW STYLES (kept for reference) ===== */
