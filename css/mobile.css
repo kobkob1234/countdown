@@ -15,9 +15,10 @@
 
     @media (max-width: 640px) and (pointer: coarse) {
       .main-content {
-        padding: 12px;
-        padding-top: 70px;
+        padding: var(--mobile-spacing-md, 16px);
+        padding-top: var(--mobile-spacing-md, 16px);
       }
+
 
       .header {
         margin-bottom: 20px;
