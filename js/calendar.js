@@ -659,17 +659,26 @@ export function initCalendar() {
       showCalendarStatus(`🗑️ Deleting ${imported.length} imported events...`, 'info');
 
       let deleted = 0;
+      const deletedIds = [];
       for (const evt of imported) {
         try {
           if (typeof ctx.deleteFromCloud === 'function') {
             await ctx.deleteFromCloud(evt.id);
             deleted++;
+            deletedIds.push(evt.id);
           }
         } catch (err) {
           console.error('Failed to delete', evt.id, err);
         }
       }
-      showCalendarStatus(`✅ Deleted ${deleted} events.`, 'success');
+
+      // Cleanup planner blocks
+      if (typeof ctx.bulkDeleteImportedBlocks === 'function' && deletedIds.length > 0) {
+        const blocksRemoved = ctx.bulkDeleteImportedBlocks(deletedIds);
+        showCalendarStatus(`✅ Deleted ${deleted} events and ${blocksRemoved} planner blocks.`, 'success');
+      } else {
+        showCalendarStatus(`✅ Deleted ${deleted} events.`, 'success');
+      }
     };
   }
 

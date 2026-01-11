@@ -9177,6 +9177,20 @@
         return syncedCount;
       };
 
+      ctx.bulkDeleteImportedBlocks = (eventIds) => {
+        if (!eventIds || !eventIds.length) return 0;
+        const initialLen = plannerBlocks.length;
+        // Filter out blocks that are linked to the deleted events
+        plannerBlocks = plannerBlocks.filter(b => !b.linkedEventId || !eventIds.includes(b.linkedEventId));
+
+        if (plannerBlocks.length !== initialLen) {
+          saveBlocks();
+          render();
+          return initialLen - plannerBlocks.length;
+        }
+        return 0;
+      };
+
       // Sync all scheduled tasks for current date to planner
       const syncAllScheduledTasks = () => {
         const currentDateKey = getDateKey(currentDate);
