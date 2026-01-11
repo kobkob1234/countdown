@@ -53,6 +53,10 @@
       <span class="icon" aria-hidden="true">event_note</span>
       <span>מתכנן יומי</span>
     </button>
+    <button class="header-btn" id="toggleExam">
+      <span class="icon" aria-hidden="true">school</span>
+      <span>תקופת מבחנים</span>
+    </button>
     <div class="header-spacer"></div>
     <button class="header-btn" id="toggleSidebar">
       <span class="icon" aria-hidden="true">calendar_month</span>
@@ -73,6 +77,338 @@
       <span class="icon" aria-hidden="true">account_circle</span>
       <span>Guest</span>
     </button>
+  </div>
+
+  <!-- Exam Mode Overlay -->
+  <div id="examModeOverlay">
+    <div class="container">
+      <h1>תוכנית סיירת: לוח זמנים סופי</h1>
+      <div class="legend">
+        <span style="background:#0ea5e9;">חומר חדש (7-12)</span>
+        <span style="background:#f97316;">חזרה חומר ישן (1-6)</span>
+        <span style="background:#0284c7; color:white;">מרתון מבחנים</span>
+        <span style="background:#facc15;">כלכלה ("קינוח")</span>
+        <span style="background:#c084fc; color:white;">תורת המשחקים</span>
+      </div>
+
+      <h2 style="color: #cbd5e1; margin-bottom: 10px;">ינואר: סגירת פערים ויישור קו</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>א'</th>
+            <th>ב'</th>
+            <th>ג'</th>
+            <th>ד'</th>
+            <th>ה'</th>
+            <th>ו'</th>
+            <th>ש'</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="date">11</span>
+              <div class="chip rest">התארגנות</div>
+            </td>
+            <td><span class="date">12</span>
+              <div class="chip stat-new">נושא 7 מלא</div>
+              <div class="chip stat-new">אונ' + ספרייה</div>
+            </td>
+            <td><span class="date">13</span>
+              <div class="chip stat-new">נושא 8 מלא</div>
+              <div class="chip stat-new">יום בית</div>
+            </td>
+            <td><span class="date">14</span>
+              <div class="chip stat-new">נושא 9 מלא</div>
+              <div class="chip stat-new">אונ' + ספרייה</div>
+            </td>
+            <td><span class="date">15</span>
+              <div class="chip stat-new">חזרה והטמעה</div>
+              <div class="chip stat-new">תרגול 7-9</div>
+            </td>
+            <td><span class="date">16</span>
+              <div class="chip stat-new">נושא 10 מלא</div>
+            </td>
+            <td><span class="date">17</span>
+              <div class="chip rest">מנוחה</div>
+            </td>
+          </tr>
+          <tr>
+            <td><span class="date">18</span>
+              <div class="chip stat-new">נושא 11 מלא</div>
+            </td>
+            <td><span class="date">19</span>
+              <div class="chip stat-new">נושא 12 (סיום!)</div>
+              <div class="chip stat-test">🏆 כל החומר נלמד</div>
+            </td>
+
+            <td><span class="date">20</span>
+              <div class="chip stat-review">חזרה: נושאים 1-2</div>
+              <div class="chip rest">קריאת סיכומים + תרגול</div>
+            </td>
+            <td><span class="date">21</span>
+              <div class="chip stat-review">חזרה: נושאים 3-4</div>
+              <div class="chip rest">אונ' - יום ממוקד</div>
+            </td>
+            <td><span class="date">22</span>
+              <div class="chip stat-review">חזרה: נושאים 5-6</div>
+              <div class="chip econ">ערב: כלכלה 1</div>
+            </td>
+            <td><span class="date">23</span>
+              <div class="chip stat-review">אינטגרציה 1-6</div>
+              <div class="chip rest">שאלות משולבות</div>
+            </td>
+            <td><span class="date">24</span>
+              <div class="chip rest">מנוחה</div>
+            </td>
+          </tr>
+          <tr>
+            <td><span class="date">25</span>
+              <div class="chip stat-test">🚀 תחילת מרתון</div>
+              <div class="chip stat-test">מבחן מס' 1</div>
+            </td>
+            <td><span class="date">26</span>
+              <div class="chip stat-test">תחקור עומק 1</div>
+              <div class="chip stat-test">חזרה על טעויות</div>
+            </td>
+            <td><span class="date">27</span>
+              <div class="chip stat-test">מבחן מס' 2</div>
+              <div class="chip econ">ערב: כלכלה 2</div>
+            </td>
+            <td><span class="date">28</span>
+              <div class="chip stat-test">מבחן מס' 3</div>
+            </td>
+            <td><span class="date">29</span>
+              <div class="chip stat-test">תחקור 2+3</div>
+              <div class="chip econ">ערב: כלכלה 3</div>
+            </td>
+            <td><span class="date">30</span>
+              <div class="chip stat-test">מבחן מס' 4</div>
+            </td>
+            <td><span class="date">31</span>
+              <div class="chip rest">מנוחה</div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h2 style="color: #cbd5e1; margin-bottom: 10px;">פברואר: ליטוש סופי</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>א'</th>
+            <th>ב'</th>
+            <th>ג'</th>
+            <th>ד'</th>
+            <th>ה'</th>
+            <th>ו'</th>
+            <th>ש'</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="date">1</span>
+              <div class="chip stat-test">מבחן 5</div>
+            </td>
+            <td><span class="date">2</span>
+              <div class="chip stat-test">מבחן 6</div>
+              <div class="chip econ">ערב: כלכלה 4</div>
+            </td>
+            <td><span class="date">3</span>
+              <div class="chip stat-test">תחקור</div>
+            </td>
+            <td><span class="date">4</span>
+              <div class="chip stat-test">מבחן 7</div>
+              <div class="chip econ">ערב: כלכלה 5</div>
+            </td>
+            <td><span class="date">5</span>
+              <div class="chip stat-test">מבחן 8</div>
+            </td>
+            <td><span class="date">6</span>
+              <div class="chip stat-test">חיזוקים</div>
+              <div class="chip econ">ערב: כלכלה 6</div>
+            </td>
+            <td><span class="date">7</span>
+              <div class="chip rest">מנוחה</div>
+            </td>
+          </tr>
+          <tr>
+            <td><span class="date">8</span>
+              <div class="chip stat-test">🔥 סימולציה</div>
+            </td>
+            <td><span class="date">9</span>
+              <div class="chip stat-test">🔥 סימולציה</div>
+              <div class="chip econ">ערב: כלכלה 7</div>
+            </td>
+            <td><span class="date">10</span>
+              <div class="chip stat-test">דיוקים אחרונים</div>
+            </td>
+            <td><span class="date">11</span>
+              <div class="chip stat-test">🔥 סימולציה</div>
+            </td>
+            <td><span class="date">12</span>
+              <div class="chip stat-test">🔥 סימולציה</div>
+            </td>
+            <td><span class="date">13</span>
+              <div class="chip stat-test">שחזורים</div>
+            </td>
+            <td><span class="date">14</span>
+              <div class="chip rest">מנוחה</div>
+            </td>
+          </tr>
+          <tr>
+            <td><span class="date">15</span>
+              <div class="chip stat-test">דף נוסחאות</div>
+            </td>
+            <td><span class="date">16</span>
+              <div class="chip stat-test">מבחן לביטחון</div>
+            </td>
+            <td><span class="date">17</span>
+              <div class="chip rest">מנוחה מוחלטת</div>
+            </td>
+            <td style="background: rgba(239, 68, 68, 0.1); border: 1px solid #ef4444;">
+              <span class="date">18</span>
+              <div class="exam">סטטיסטיקה 2<br>מועד א'</div>
+            </td>
+            <td><span class="date">19</span>
+              <div class="chip rest">חופש</div>
+            </td>
+            <td><span class="date">20</span>
+              <div class="chip rest">חופש</div>
+            </td>
+            <td><span class="date">21</span>
+              <div class="chip rest">חופש</div>
+            </td>
+          </tr>
+          <tr>
+            <td><span class="date">22</span>
+              <div class="chip econ">כלכלה - הילוך גבוה</div>
+              <div class="chip econ">צפייה + תרגול</div>
+            </td>
+            <td><span class="date">23</span>
+              <div class="chip econ">כלכלה נושאים 9-10</div>
+            </td>
+            <td>
+              <span class="date">24</span>
+              <div class="skipped-exam">משחקים מועד א'<br>(מדלגים)</div>
+              <div class="chip econ">ממשיכים כלכלה</div>
+            </td>
+            <td><span class="date">25</span>
+              <div class="chip econ">כלכלה נושאים 11-12</div>
+            </td>
+            <td><span class="date">26</span>
+              <div class="chip econ">סיום חומר כלכלה!</div>
+            </td>
+            <td><span class="date">27</span>
+              <div class="chip econ">תרגול כלכלה</div>
+            </td>
+            <td><span class="date">28</span>
+              <div class="chip econ">תרגול כלכלה</div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h2 style="color: #cbd5e1; margin-bottom: 10px;">מרץ: ספרינטים וחופשה</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>א'</th>
+            <th>ב'</th>
+            <th>ג'</th>
+            <th>ד'</th>
+            <th>ה'</th>
+            <th>ו'</th>
+            <th>ש'</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="date">1</span>
+              <div class="chip econ">מרתון כלכלה</div>
+            </td>
+            <td><span class="date">2</span>
+              <div class="chip econ">מרתון כלכלה</div>
+            </td>
+            <td><span class="date">3</span>
+              <div class="chip vacation">אריזות וטיסה ✈️</div>
+            </td>
+            <td><span class="date">4</span>
+              <div class="chip vacation">חופשה 🌴</div>
+            </td>
+            <td><span class="date">5</span>
+              <div class="chip vacation">חופשה 🌴</div>
+            </td>
+            <td><span class="date">6</span>
+              <div class="chip vacation">חופשה 🌴</div>
+            </td>
+            <td><span class="date">7</span>
+              <div class="chip vacation">חופשה 🌴</div>
+            </td>
+          </tr>
+          <tr>
+            <td><span class="date">8</span>
+              <div class="chip econ">נחיתה + חזרה</div>
+            </td>
+            <td><span class="date">9</span>
+              <div class="chip econ">מרתון כלכלה</div>
+            </td>
+            <td><span class="date">10</span>
+              <div class="chip econ">מרתון כלכלה</div>
+            </td>
+            <td><span class="date">11</span>
+              <div class="chip econ">ערב מבחן</div>
+            </td>
+            <td style="background: rgba(250, 204, 21, 0.1); border: 1px solid #facc15;">
+              <span class="date">12</span>
+              <div class="exam" style="background:#ca8a04;">כלכלה (מועד ב')</div>
+            </td>
+            <td><span class="date">13</span>
+              <div class="chip game">🚀 פתיחת משחקים</div>
+            </td>
+            <td><span class="date">14</span>
+              <div class="chip game">משחקים שיתופיים</div>
+            </td>
+          </tr>
+          <tr>
+            <td><span class="date">15</span>
+              <div class="chip game">משחקים שיתופיים</div>
+            </td>
+            <td><span class="date">16</span>
+              <div class="chip game">סיום חומר משחקים</div>
+            </td>
+            <td><span class="date">17</span>
+              <div class="chip game">מרתון משחקים</div>
+            </td>
+            <td><span class="date">18</span>
+              <div class="chip game">מרתון משחקים</div>
+            </td>
+            <td><span class="date">19</span>
+              <div class="chip game">מרתון משחקים</div>
+            </td>
+            <td><span class="date">20</span>
+              <div class="chip game">מרתון משחקים</div>
+            </td>
+            <td><span class="date">21</span>
+              <div class="chip game">ערב מבחן</div>
+            </td>
+          </tr>
+          <tr>
+            <td style="background: rgba(192, 132, 252, 0.1); border: 1px solid #c084fc;">
+              <span class="date">22</span>
+              <div class="exam" style="background:#9333ea;">משחקים (מועד ב')</div>
+            </td>
+            <td><span class="date">23</span>
+              <div class="chip rest">חופש סמסטר!</div>
+            </td>
+            <td>24</td>
+            <td>25</td>
+            <td>26</td>
+            <td>27</td>
+            <td>28</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
   </div>
 
   <!-- Task Manager Fullscreen -->
@@ -4282,6 +4618,8 @@
     const toggleCountdown = document.getElementById('toggleCountdown');
     const togglePlanner = document.getElementById('togglePlanner');
     const plannerOverlay = document.getElementById('plannerOverlay');
+    const toggleExam = document.getElementById('toggleExam');
+    const examModeOverlay = document.getElementById('examModeOverlay');
     const appLayout = document.querySelector('.app-layout');
     // Ensure current view state and commonly used DOM refs exist before showView
     let currentView = 'countdown';
@@ -4301,6 +4639,8 @@
           const el = $('togglePomodoro'); if (el) el.classList.add('active');
         } else if (currentView === 'planner') {
           const el = $('togglePlanner'); if (el) el.classList.add('active');
+        } else if (currentView === 'exam') {
+          const el = $('toggleExam'); if (el) el.classList.add('active');
         }
       } catch (e) {
         console.warn('updateHeaderButtons error', e);
@@ -4318,6 +4658,7 @@
       taskManagerOverlay.classList.remove('open');
       pomodoroOverlay.classList.remove('open');
       if (plannerOverlay) plannerOverlay.classList.remove('open');
+      if (examModeOverlay) examModeOverlay.classList.remove('open');
       stopTaskTicker();
 
       // Show calendar button only for countdown view
@@ -4342,6 +4683,11 @@
             DailyPlanner.init();
           }
         }
+      } else if (view === 'exam') {
+        if (examModeOverlay) {
+          examModeOverlay.classList.add('open');
+          initExamMode();
+        }
       }
 
       currentView = view;
@@ -4357,6 +4703,9 @@
     toggleTasks.onclick = () => showView('tasks');
     togglePomodoro.onclick = () => showView('pomodoro');
     if (togglePlanner) togglePlanner.onclick = () => showView('planner');
+    if (toggleExam) toggleExam.onclick = () => showView('exam');
+
+
 
     // Close task manager button
     if (closeTaskManager) {
@@ -10288,9 +10637,8 @@
   <!-- Mobile Enhancements: Swipe Gestures, Haptic Feedback, Toast Notifications -->
   <script type="module">
     import { initMobileController } from './js/controllers/mobile.js';
-    initMobileController();
   </script>
-
+  <script src="js/exam-mode.js"></script>
 </body>
 
 </html>

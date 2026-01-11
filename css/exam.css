@@ -1,0 +1,327 @@
+#examModeOverlay {
+    position: fixed;
+    top: 60px;
+    /* Below header */
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #f1f5f9;
+    /* Slate 100 - Light Background */
+    overflow-y: auto;
+    z-index: 100;
+    display: none;
+    padding: 20px;
+}
+
+#examModeOverlay.open {
+    display: block;
+}
+
+/* Controls Bar */
+.exam-controls {
+    max-width: 1400px;
+    margin: 0 auto 20px;
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    background: white;
+    padding: 10px;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.exam-btn {
+    padding: 8px 16px;
+    border: 1px solid #cbd5e1;
+    background: white;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.9em;
+    font-weight: 500;
+    color: #475569;
+    transition: all 0.2s;
+}
+
+.exam-btn:hover {
+    background: #f8fafc;
+    border-color: #94a3b8;
+}
+
+.exam-btn.active {
+    background: #e0f2fe;
+    color: #0284c7;
+    border-color: #0ea5e9;
+}
+
+/* Color Picker */
+.color-picker-btn {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    border: 2px solid white;
+    box-shadow: 0 0 0 1px #cbd5e1;
+    cursor: pointer;
+}
+
+/* Scoped styles based on user request */
+#examModeOverlay .container {
+    max-width: 1400px;
+    margin: 0 auto;
+    background: white;
+    padding: 20px;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    color: #334155;
+    /* Slate 700 */
+    line-height: 1.4;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+#examModeOverlay h1 {
+    text-align: center;
+    color: #0284c7;
+    /* Sky 600 */
+    margin-bottom: 5px;
+    font-size: 2em;
+    font-weight: bold;
+}
+
+#examModeOverlay h2 {
+    color: #475569;
+    /* Slate 600 */
+    margin-bottom: 10px;
+    font-size: 1.5em;
+    font-weight: bold;
+    border-bottom: 2px solid #f1f5f9;
+    padding-bottom: 5px;
+}
+
+#examModeOverlay .legend {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    background: #f8fafc;
+    padding: 10px;
+    border-radius: 8px;
+}
+
+#examModeOverlay .legend span {
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.9em;
+    font-weight: bold;
+    color: #0f172a;
+}
+
+#examModeOverlay table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 4px;
+    table-layout: fixed;
+    margin-bottom: 40px;
+}
+
+#examModeOverlay th {
+    background: #f1f5f9;
+    color: #475569;
+    padding: 10px;
+    border-bottom: 2px solid #e2e8f0;
+    text-align: center;
+    font-weight: bold;
+}
+
+#examModeOverlay td {
+    height: 160px;
+    vertical-align: top;
+    padding: 6px;
+    background: white;
+    border: 1px solid #e2e8f0;
+    font-size: 0.85em;
+    color: #334155;
+    position: relative;
+    transition: background-color 0.2s;
+}
+
+#examModeOverlay td:hover {
+    background: #f8fafc;
+}
+
+/* Add Tile Button (appears on hover) */
+#examModeOverlay td .add-tile-btn {
+    position: absolute;
+    bottom: 5px;
+    right: 5px;
+    width: 20px;
+    height: 20px;
+    background: #e2e8f0;
+    color: #64748b;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 14px;
+    opacity: 0;
+    transition: opacity 0.2s;
+    z-index: 10;
+}
+
+#examModeOverlay td:hover .add-tile-btn {
+    opacity: 1;
+}
+
+#examModeOverlay .date {
+    font-weight: bold;
+    color: #64748b;
+    /* Slate 500 */
+    margin-bottom: 4px;
+    display: block;
+}
+
+/* Task Chips */
+#examModeOverlay .chip {
+    padding: 4px 6px;
+    padding-right: 24px;
+    /* Space for checkbox */
+    margin-bottom: 4px;
+    border-radius: 4px;
+    font-size: 0.9em;
+    display: block;
+    border-left: 3px solid rgba(0, 0, 0, 0.1);
+    color: white;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+}
+
+#examModeOverlay .chip:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Completion Checkbox */
+#examModeOverlay .chip-check {
+    position: absolute;
+    right: 4px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 14px;
+    height: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    border-radius: 3px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#examModeOverlay .chip-check:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+#examModeOverlay .chip.completed {
+    opacity: 0.6;
+    text-decoration: line-through;
+    filter: grayscale(0.5);
+}
+
+#examModeOverlay .chip.completed .chip-check::after {
+    content: '✔';
+    font-size: 10px;
+    color: white;
+}
+
+/* Delete Button */
+#examModeOverlay .chip-delete {
+    position: absolute;
+    left: 4px;
+    /* On the left side */
+    top: 50%;
+    transform: translateY(-50%);
+    width: 14px;
+    height: 14px;
+    border-radius: 3px;
+    cursor: pointer;
+    display: none;
+    /* Hidden by default */
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    line-height: 1;
+    color: rgba(255, 255, 255, 0.8);
+    font-family: inherit;
+    z-index: 10;
+}
+
+#examModeOverlay .chip:hover .chip-delete {
+    display: flex;
+    /* Show on hover */
+}
+
+#examModeOverlay .chip-delete:hover {
+    background: rgba(255, 0, 0, 0.4);
+    color: white;
+}
+
+#examModeOverlay .chip {
+    padding-left: 20px;
+    /* Space for delete button */
+}
+
+#examModeOverlay .stat-new {
+    background: #0ea5e9;
+}
+
+#examModeOverlay .stat-review {
+    background: #f97316;
+}
+
+#examModeOverlay .stat-test {
+    background: #0284c7;
+}
+
+#examModeOverlay .econ {
+    background: #eab308;
+    color: white;
+}
+
+#examModeOverlay .game {
+    background: #a855f7;
+    color: white;
+}
+
+#examModeOverlay .vacation {
+    background: #22c55e;
+    color: white;
+}
+
+#examModeOverlay .rest {
+    background: #64748b;
+    color: white;
+}
+
+#examModeOverlay .exam {
+    background: #ef4444;
+    color: white;
+    font-weight: bold;
+    text-align: center;
+    padding: 8px;
+    margin-top: 10px;
+    border: 2px solid #fee2e2;
+    box-shadow: 0 4px 6px -1px rgba(239, 68, 68, 0.2);
+    display: block;
+}
+
+#examModeOverlay .skipped-exam {
+    background: #f1f5f9;
+    color: #94a3b8;
+    text-decoration: line-through;
+    border: 2px dashed #cbd5e1;
+    text-align: center;
+    padding: 5px;
+    margin-top: 10px;
+    display: block;
+}
