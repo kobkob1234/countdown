@@ -858,10 +858,11 @@ export function initCalendar() {
             currentEvent.start = parseICalDate(value, params);
           } else if (key === 'DTEND') {
             currentEvent.end = parseICalDate(value, params);
-          } else if (key === 'DESCRIPTION') {
             currentEvent.description = value.replace(/\\n/g, '\n');
           } else if (key === 'UID') {
             currentEvent.uid = value;
+          } else if (key === 'RRULE') {
+            currentEvent.rrule = value;
           }
         }
       }
@@ -884,12 +885,65 @@ export function initCalendar() {
     // Reset to start of day to include events from earlier today
     now.setHours(0, 0, 0, 0);
 
+    const getNextOccurrence = (start, rrule, fromDate) => {
+      if (!rrule) return null;
+      const parts = rrule.split(';');
+      const freqPart = parts.find(p => p.startsWith('FREQ='));
+      if (!freqPart) return null;
+      const freq = freqPart.split('=')[1];
+
+      let interval = 1;
+      const intervalPart = parts.find(p => p.startsWith('INTERVAL='));
+      if (intervalPart) interval = parseInt(intervalPart.split('=')[1], 10);
+
+      let next = new Date(start);
+
+      // Safety break to prevent infinite loops
+      let attempts = 0;
+      const MAX_ATTEMPTS = 1000;
+
+      while (next < fromDate && attempts < MAX_ATTEMPTS) {
+        attempts++;
+        switch (freq) {
+          case 'DAILY':
+            next.setDate(next.getDate() + interval);
+            break;
+          case 'WEEKLY':
+            next.setDate(next.getDate() + (7 * interval));
+            break;
+          case 'MONTHLY':
+            next.setMonth(next.getMonth() + interval);
+            break;
+          case 'YEARLY':
+            next.setFullYear(next.getFullYear() + interval);
+            break;
+          default:
+            return null; // Unsupported frequency
+        }
+      }
+
+      return (next >= fromDate) ? next : null;
+    };
+
     pendingCalendarEvents = calendarEvents
-      .filter(evt => {
-        const start = evt.start.dateTime ? new Date(evt.start.dateTime) : (evt.start.date ? new Date(evt.start.date) : evt.start);
-        return start >= now;
-      })
       .map(evt => {
+        let start = evt.start.dateTime ? new Date(evt.start.dateTime) : (evt.start.date ? new Date(evt.start.date) : evt.start);
+
+        // If start is in the past and we have an RRULE, try to find next occurrence
+        if (start < now && evt.rrule) {
+          const next = getNextOccurrence(start, evt.rrule, now);
+          if (next) {
+            start = next;
+            // Update the original object's start so downstream logic works
+            if (evt.start instanceof Date) evt.start = next;
+            else if (evt.start.dateTime) evt.start.dateTime = next.toISOString();
+            else if (evt.start.date) evt.start.date = next.toISOString().split('T')[0];
+          }
+        }
+        return { evt, start };
+      })
+      .filter(({ start }) => start >= now)
+      .map(({ evt, start }) => {
         if (source === 'google') {
           return {
             name: evt.summary || 'Untitled Event',
@@ -898,9 +952,21 @@ export function initCalendar() {
             source: 'Google Calendar'
           };
         }
-        const start = evt.start;
-        const end = evt.end || new Date(start.getTime() + 60 * 60 * 1000);
-        const duration = Math.max(15, Math.round((end - start) / (1000 * 60)));
+
+        // Use the potentially updated start date (for recurring events)
+        const end = evt.end ?
+          (evt.end.dateTime ? new Date(evt.end.dateTime) : (evt.end.date ? new Date(evt.end.date) : evt.end))
+          : new Date(start.getTime() + 60 * 60 * 1000);
+
+        // Recalculate duration just in case
+        let duration = 60;
+        if (evt.end) {
+          const originalStart = evt.start.dateTime ? new Date(evt.start.dateTime) : (evt.start.date ? new Date(evt.start.date) : evt.start);
+          // Use original duration logic
+          duration = Math.max(15, Math.round((end - originalStart) / (1000 * 60)));
+          // Fix: if projected, keep duration same
+          if (duration < 0 || isNaN(duration)) duration = 60;
+        }
 
         return {
           name: evt.summary || 'Untitled Event',
