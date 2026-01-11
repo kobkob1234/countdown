@@ -1,5 +1,6 @@
 
 import { AppState } from '../state.js';
+import { isEditableTarget } from '../utils.js';
 
 export function initMobileController() {
     // ===== Mobile Detection =====
@@ -155,24 +156,18 @@ export function initMobileController() {
             if ((Math.abs(diffX) > SWIPE_THRESHOLD) && container) {
                 if (diffX > 0) {
                     // Right Swipe (Complete)
-                    if (typeof handleCompleteTask === 'function') { // Check if legacy function exists
-                        const id = activeItem.dataset.id;
-                        if (id) {
-                            window.mobileToast('הושלם!', { icon: '✅' });
-                            handleCompleteTask(id);
-                        }
+                    const id = activeItem.dataset.id;
+                    if (id && typeof window.handleCompleteTask === 'function') {
+                        window.mobileToast('הושלם!', { icon: '✅' });
+                        window.handleCompleteTask(id);
                     }
                 } else {
                     // Left Swipe (Delete)
                     if (confirm('למחוק את המשימה?')) {
                         const id = activeItem.dataset.id;
-                        if (id && typeof removeTask === 'function') {
-                            // Legacy global or module? We might need to inject removeTask/handleCompleteTask
-                            // ensuring backward compatibility
-                            // For now, assume legacy globals are available on window
-                            // But since this is a module, window.removeTask needs to bridge
-                            const task = AppState.tasks.find(t => t.id === id) || { id };
-                            if (window.removeTask) window.removeTask(task);
+                        if (id && typeof window.deleteTask === 'function') {
+                            window.mobileToast('נמחק', { icon: '🗑️' });
+                            window.deleteTask(id);
                         }
                     }
                 }

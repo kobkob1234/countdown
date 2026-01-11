@@ -1,4 +1,4 @@
-const CACHE_NAME = 'countdown-push-v6';
+const CACHE_NAME = 'countdown-push-v7';
 const CACHE_URLS = [
   './',
   './icon-192.png',
@@ -16,7 +16,8 @@ const CACHE_URLS = [
   './js/auth.js',
   './js/notifications.js',
   './js/sync.js',
-  './js/app.js'
+  './js/app.js',
+  './js/controllers/mobile.js'
 ];
 
 self.addEventListener('install', (event) => {

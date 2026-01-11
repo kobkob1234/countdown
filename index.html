@@ -9629,6 +9629,19 @@
         }
       }
     };
+    // Expose for mobile.js swipe gestures
+    window.handleCompleteTask = handleCompleteTask;
+
+    // Delete task function for mobile.js swipe-to-delete
+    const deleteTask = (taskOrId) => {
+      const taskId = typeof taskOrId === 'string' ? taskOrId : taskOrId?.id;
+      if (!taskId) return;
+      remove(ref(db, `users/${currentUser}/tasks/${taskId}`));
+      if (typeof showToast === 'function') {
+        showToast('Task deleted');
+      }
+    };
+    window.deleteTask = deleteTask;
 
     const urlParams = new URLSearchParams(window.location.search);
     const completeTaskId = urlParams.get('completeTask');
