@@ -897,6 +897,23 @@ export function initCalendar() {
     const getNextOccurrence = (start, rrule, fromDate) => {
       if (!rrule) return null;
       const parts = rrule.split(';');
+
+      // Parse UNTIL
+      let untilDate = null;
+      const untilPart = parts.find(p => p.startsWith('UNTIL='));
+      if (untilPart) {
+        const val = untilPart.split('=')[1];
+        // Basic parsing for YYYYMMDD or YYYYMMDDTHHMMSSZ
+        const match = val.match(/^(\d{4})(\d{2})(\d{2})/);
+        if (match) {
+          // If it has time, it's UTC, but for filtering "is it over", simple date comparison is usually enough
+          untilDate = new Date(Date.UTC(match[1], match[2] - 1, match[3], 23, 59, 59));
+        }
+      }
+
+      // If the series ended before "now", don't even try to calculate matches
+      if (untilDate && untilDate < fromDate) return null;
+
       const freqPart = parts.find(p => p.startsWith('FREQ='));
       if (!freqPart) return null;
       const freq = freqPart.split('=')[1];
@@ -929,9 +946,12 @@ export function initCalendar() {
           default:
             return null; // Unsupported frequency
         }
+
+        // Check if we passed the UNTIL date during iteration
+        if (untilDate && next > untilDate) return null;
       }
 
-      return (next >= fromDate) ? next : null;
+      return (next >= fromDate && (!untilDate || next <= untilDate)) ? next : null;
     };
 
     pendingCalendarEvents = calendarEvents
