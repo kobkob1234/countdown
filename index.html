@@ -9116,6 +9116,67 @@
 
       ctx.syncAllCountdowns = syncAllCountdowns; // Expose for calendar import
 
+      // Bulk sync specifically for imported events (across ALL dates)
+      ctx.bulkSyncImportedEvents = (externalIds) => {
+        if (!externalIds || !externalIds.length) return 0;
+
+        const allEvents = typeof events !== 'undefined' ? events : [];
+        // Find events that match the imported externalIds
+        const importedEvents = allEvents.filter(e => e.externalId && externalIds.includes(e.externalId));
+
+        if (importedEvents.length === 0) return 0;
+
+        let syncedCount = 0;
+
+        importedEvents.forEach(evt => {
+          if (!evt.date) return;
+          const evtDate = new Date(evt.date);
+          const dateKey = getDateKey(evtDate);
+          const startMinutes = evtDate.getHours() * 60 + evtDate.getMinutes();
+
+          // Check if a block already exists for this event
+          const existingBlock = plannerBlocks.find(b => b.linkedEventId === evt.id);
+
+          if (existingBlock) {
+            // Update existing block
+            existingBlock.date = dateKey;
+            existingBlock.start = formatTime(startMinutes);
+            existingBlock.duration = evt.duration || 60;
+            existingBlock.title = evt.name;
+            existingBlock.notes = evt.notes || '';
+            syncedCount++;
+          } else {
+            // Create new block
+            const newBlock = {
+              id: generateId(),
+              title: evt.name || 'Imported Event',
+              start: formatTime(startMinutes),
+              duration: evt.duration || 60,
+              category: '',
+              notes: evt.notes || '',
+              repeat: false,
+              priority: 'medium',
+              color: evt.color || '',
+              reminder: 0,
+              completed: false,
+              date: dateKey,
+              createdAt: new Date().toISOString(),
+              linkedEventId: evt.id,
+              sourceType: 'countdown'
+            };
+            plannerBlocks.push(newBlock);
+            syncedCount++;
+          }
+        });
+
+        if (syncedCount > 0) {
+          saveBlocks();
+          render(); // Re-render current view
+        }
+        console.log(`[Planner] Auto-synced ${syncedCount} imported events.`);
+        return syncedCount;
+      };
+
       // Sync all scheduled tasks for current date to planner
       const syncAllScheduledTasks = () => {
         const currentDateKey = getDateKey(currentDate);

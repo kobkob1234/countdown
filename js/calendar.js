@@ -959,9 +959,11 @@ export function initCalendar() {
       let imported = 0;
       let updated = 0;
       const existingEvents = ctx.events || [];
+      const processedExternalIds = [];
 
       for (const idx of selectedIndices) {
         const evt = pendingCalendarEvents[idx];
+        if (evt.externalId) processedExternalIds.push(evt.externalId);
         try {
           // Check for existing event with same externalId/UID
           const existing = evt.externalId
@@ -1004,12 +1006,15 @@ export function initCalendar() {
 
       showCalendarStatus(`✅ Done! Added ${imported} new, Updated ${updated} events.`, 'success');
 
-      // Auto-sync to planner
-      if (typeof ctx.syncAllCountdowns === 'function') {
-        const synced = ctx.syncAllCountdowns();
-        if (synced > 0) {
-          showCalendarStatus(`✅ Added ${imported} events. Synced ${synced} to Daily Planner!`, 'success');
-        }
+      // Auto-sync ALL imported events to planner (bulk)
+      if (typeof ctx.bulkSyncImportedEvents === 'function' && processedExternalIds.length > 0) {
+        // Wait a small moment to ensure events are saved in ctx.events (optimistic UI handles it usually)
+        setTimeout(() => {
+          const synced = ctx.bulkSyncImportedEvents(processedExternalIds);
+          if (synced > 0) {
+            console.log('Bulk synced to planner:', synced);
+          }
+        }, 100);
       }
 
       setTimeout(() => {
