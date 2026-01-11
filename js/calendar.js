@@ -1007,63 +1007,77 @@ export function initCalendar() {
       return (next >= fromDate && (!untilDate || next <= untilDate) && (count === -1 || occurrences <= count)) ? next : null;
     };
 
-    pendingCalendarEvents = calendarEvents
-      .map(evt => {
-        let start = evt.start.dateTime ? new Date(evt.start.dateTime) : (evt.start.date ? new Date(evt.start.date) : evt.start);
+    const MAX_PROJECTION_DAYS = 60;
+    const futureLimit = new Date(now.getTime() + MAX_PROJECTION_DAYS * 24 * 60 * 60 * 1000);
 
-        // If start is in the past and we have an RRULE, try to find next occurrence
-        if (start < now && evt.rrule) {
-          const next = getNextOccurrence(start, evt.rrule, now, evt.exdates);
-          if (next) {
-            start = next;
-            // Update the original object's start so downstream logic works
-            if (evt.start instanceof Date) evt.start = next;
-            else if (evt.start.dateTime) evt.start.dateTime = next.toISOString();
-            else if (evt.start.date) evt.start.date = next.toISOString().split('T')[0];
-          }
-        }
-        return { evt, start };
-      })
-      .filter(({ start }) => start >= now)
-      .map(({ evt, start }) => {
-        if (source === 'google') {
-          return {
-            name: evt.summary || 'Untitled Event',
-            date: evt.start.dateTime || evt.start.date,
-            notes: evt.description || '',
-            source: 'Google Calendar'
-          };
-        }
+    const expandedEvents = [];
 
-        // Use the potentially updated start date (for recurring events)
-        const end = evt.end ?
-          (evt.end.dateTime ? new Date(evt.end.dateTime) : (evt.end.date ? new Date(evt.end.date) : evt.end))
-          : new Date(start.getTime() + 60 * 60 * 1000);
+    calendarEvents.forEach(evt => {
+      let start = evt.start.dateTime ? new Date(evt.start.dateTime) : (evt.start.date ? new Date(evt.start.date) : evt.start);
 
-        // Recalculate duration just in case
-        let duration = 60;
-        if (evt.end) {
+      if (evt.rrule) {
+        // Project occurrences up to futureLimit
+        let currentSearchFrom = new Date(now);
+        let safety = 0;
+
+        // Find ALL matches within the window
+        while (currentSearchFrom < futureLimit && safety < 100) {
+          safety++;
+          const occ = getNextOccurrence(start, evt.rrule, currentSearchFrom, evt.exdates);
+
+          if (!occ || occ > futureLimit) break;
+
+          // Found a match!
+          const occStart = new Date(occ);
+
+          // Use original duration
           const originalStart = evt.start.dateTime ? new Date(evt.start.dateTime) : (evt.start.date ? new Date(evt.start.date) : evt.start);
-          // Use original duration logic
-          duration = Math.max(15, Math.round((end - originalStart) / (1000 * 60)));
-          // Fix: if projected, keep duration same
-          if (duration < 0 || isNaN(duration)) duration = 60;
+          const originalEnd = evt.end ?
+            (evt.end.dateTime ? new Date(evt.end.dateTime) : (evt.end.date ? new Date(evt.end.date) : evt.end))
+            : new Date(originalStart.getTime() + 60 * 60 * 1000);
+
+          const duration = Math.max(15, Math.round((originalEnd - originalStart) / (1000 * 60)));
+          const dateSuffix = occStart.toISOString().split('T')[0].replace(/-/g, '');
+          const eventColor = evt.color || stringToColor(evt.summary || 'event');
+
+          expandedEvents.push({
+            name: evt.summary || 'Untitled Event',
+            date: occStart.toISOString(),
+            duration: duration,
+            notes: evt.description || '',
+            source: source === 'apple' ? 'iCal File' : 'Imported File',
+            externalId: evt.uid ? `${evt.uid}-${dateSuffix}` : null,
+            color: eventColor
+          });
+
+          // Move search pointer forward past this occurrence to find the next one
+          currentSearchFrom = new Date(occStart.getTime() + 1000);
         }
+      } else {
+        // Single event
+        if (start >= now) {
+          const originalEnd = evt.end ?
+            (evt.end.dateTime ? new Date(evt.end.dateTime) : (evt.end.date ? new Date(evt.end.date) : evt.end))
+            : new Date(start.getTime() + 60 * 60 * 1000);
+          const duration = Math.max(15, Math.round((originalEnd - start) / (1000 * 60)));
+          const eventColor = evt.color || stringToColor(evt.summary || 'event');
 
-        const eventColor = evt.color || stringToColor(evt.summary || 'event');
+          expandedEvents.push({
+            name: evt.summary || 'Untitled Event',
+            date: start.toISOString(),
+            duration: duration,
+            notes: evt.description || '',
+            source: source === 'apple' ? 'iCal File' : 'Imported File',
+            externalId: evt.uid || null,
+            color: eventColor
+          });
+        }
+      }
+    });
 
-        return {
-          name: evt.summary || 'Untitled Event',
-          date: start.toISOString(),
-          duration: duration,
-          notes: evt.description || '',
-          source: source === 'apple' ? 'iCal File' : 'Imported File',
-          externalId: evt.uid || null,
-          color: eventColor
-        };
-      });
+    pendingCalendarEvents = expandedEvents;
 
-    showCalendarStatus(`✅ Found ${pendingCalendarEvents.length} events`, 'success');
+    showCalendarStatus(`✅ Found ${pendingCalendarEvents.length} future occurrences`, 'success');
 
     if (calendarEventsContent) {
       calendarEventsContent.innerHTML = pendingCalendarEvents.map((evt, idx) => {
