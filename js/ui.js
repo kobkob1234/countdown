@@ -70,12 +70,7 @@ export function initUi() {
     });
   }
 
-  document.addEventListener('keydown', (e) => {
-    if (e.key === '?' && !isEditableTarget(e.target)) {
-      e.preventDefault();
-      toggleGuide();
-    }
-  });
+  // H key opens/closes guide modal
 
   if (shortcutsModal) {
     shortcutsModal.addEventListener('click', (e) => {
@@ -145,7 +140,7 @@ export function initUi() {
   document.addEventListener('keydown', (e) => {
     if (e.key.toLowerCase() === 'h' && !isEditableTarget(e.target)) {
       e.preventDefault();
-      toggleShortcuts();
+      toggleGuide();
       return;
     }
     if (e.metaKey || e.ctrlKey || e.altKey) return;
@@ -236,7 +231,7 @@ export function initUi() {
     { id: 'openCountdown', icon: '⏱️', label: 'עבור לספירה לאחור', shortcut: 'G', action: openCountdownView },
     { id: 'toggleCalendar', icon: '📅', label: 'הצג/הסתר לוח שנה', shortcut: 'C', action: toggleCalendarSidebar },
     { id: 'toggleTheme', icon: '🌙', label: 'מצב כהה/בהיר', shortcut: 'D', action: toggleTheme },
-    { id: 'openShortcuts', icon: '⌨️', label: 'קיצורי מקלדת', shortcut: 'H', action: openShortcuts },
+    { id: 'openGuide', icon: '❓', label: 'מדריך ועזרה', shortcut: 'H', action: openGuide },
     { id: 'search', icon: '🔍', label: 'חפש משימות', shortcut: '/', action: focusTaskSearch }
   ];
 

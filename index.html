@@ -1381,7 +1381,7 @@
         <div>
           <div class="shortcuts-eyebrow">❓ מדריך האפליקציה</div>
           <div class="shortcuts-title" id="guideTitle">Complete Guide & Shortcuts</div>
-          <div class="shortcuts-subtitle">? לפתיחה/סגירה</div>
+          <div class="shortcuts-subtitle">H לפתיחה/סגירה</div>
         </div>
         <button class="shortcuts-close" id="guideClose" aria-label="Close guide">×</button>
       </div>
@@ -1511,6 +1511,45 @@
             <div class="shortcut-item">
               <div class="shortcut-label">על פומודורו: התחל, אפס, סגור</div>
               <div class="shortcut-keys"><span class="keycap wide">→ פומודורו</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- NLP Quick Add Guide Section -->
+        <div class="shortcuts-section">
+          <div class="shortcuts-section-title">🧠 הוספה מהירה בשפה טבעית</div>
+          <div class="shortcuts-grid">
+            <div class="shortcut-item">
+              <div class="shortcut-label">📅 תאריך: היום, מחר, מחרתיים, ביום ראשון</div>
+              <div class="shortcut-keys"><span class="keycap wide">פגישה מחר</span></div>
+            </div>
+            <div class="shortcut-item">
+              <div class="shortcut-label">📅 תאריך מדויק: 15/1, ב-15 בינואר</div>
+              <div class="shortcut-keys"><span class="keycap wide">הגשה ב-20 בפברואר</span></div>
+            </div>
+            <div class="shortcut-item">
+              <div class="shortcut-label">⏰ שעה: 14:30, בשעה 9:00</div>
+              <div class="shortcut-keys"><span class="keycap wide">פגישה מחר ב-14:00</span></div>
+            </div>
+            <div class="shortcut-item">
+              <div class="shortcut-label">⏰ זמן ביום: הבוקר, בצהריים, בערב, בלילה</div>
+              <div class="shortcut-keys"><span class="keycap wide">פגישה מחר בבוקר</span></div>
+            </div>
+            <div class="shortcut-item">
+              <div class="shortcut-label">📁 שיוך לנושא: #שם_נושא</div>
+              <div class="shortcut-keys"><span class="keycap wide">הגשה #מתמטיקה</span></div>
+            </div>
+            <div class="shortcut-item">
+              <div class="shortcut-label">📁 שיוך לתת-נושא: #נושא/תת_נושא</div>
+              <div class="shortcut-keys"><span class="keycap wide">שיעורי בית #לימודים/מתמטיקה</span></div>
+            </div>
+            <div class="shortcut-item">
+              <div class="shortcut-label">🚨 עדיפות: דחוף, חשוב, נמוך</div>
+              <div class="shortcut-keys"><span class="keycap wide">הגשה דחוף מחר</span></div>
+            </div>
+            <div class="shortcut-item">
+              <div class="shortcut-label">✨ שילוב הכל ביחד</div>
+              <div class="shortcut-keys"><span class="keycap wide">הגשת פרויקט #לימודים מחר ב-14:00 דחוף</span></div>
             </div>
           </div>
         </div>
@@ -3674,7 +3713,7 @@
     function showHeaderContextMenu(x, y) {
       const items = [
         { icon: '⌨️', label: 'קיצורי מקלדת', shortcut: 'H', action: openShortcuts },
-        { icon: '❓', label: 'מדריך', shortcut: '?', action: openGuide },
+        { icon: '❓', label: 'מדריך ועזרה', shortcut: 'H', action: openGuide },
         { divider: true },
         { icon: '🌙', label: 'מצב כהה/בהיר', shortcut: 'D', action: toggleTheme },
         { icon: '🔍', label: 'פלטת פקודות', shortcut: '⌘K', action: openCommandPalette },
@@ -3697,7 +3736,7 @@
         { icon: '🍅', label: 'פתח פומודורו', shortcut: 'P', action: openPomodoro },
         { divider: true },
         { icon: '⌨️', label: 'קיצורי מקלדת', shortcut: 'H', action: openShortcuts },
-        { icon: '❓', label: 'מדריך', shortcut: '?', action: openGuide },
+        { icon: '❓', label: 'מדריך ועזרה', shortcut: 'H', action: openGuide },
       ];
       createContextMenu(x, y, items, 'countdown-context-menu');
     }
@@ -3825,7 +3864,7 @@
         { icon: '📅', label: 'עבור להיום', shortcut: 'T', action: goToToday },
         { divider: true },
         { icon: '⌨️', label: 'קיצורי מקלדת', shortcut: 'H', action: openShortcuts },
-        { icon: '❓', label: 'מדריך', shortcut: '?', action: openGuide },
+        { icon: '❓', label: 'מדריך ועזרה', shortcut: 'H', action: openGuide },
       ];
       createContextMenu(x, y, items, 'quick-add-context-menu');
     }
@@ -7423,12 +7462,12 @@
       // Helper: Normalize text by removing ALL spaces and converting to lowercase
       const normalize = (str) => str.replace(/\s+/g, '').toLowerCase();
 
-      // ============ STEP 1: EXTRACT & REMOVE PRIORITY ============
+      // ============ STEP 1: EXTRACT & REMOVE PRIORITY (Hebrew only) ============
       const priorityPatterns = [
-        { level: 'urgent', patterns: [/\b(דחוף|מיידי|urgent|asap|!!!|!!)\b/gi] },
-        { level: 'high', patterns: [/\b(גבוה|חשוב|high|important|!)\b/gi] },
-        { level: 'medium', patterns: [/\b(בינוני|רגיל|medium|normal)\b/gi] },
-        { level: 'low', patterns: [/\b(נמוך|לא דחוף|low)\b/gi] }
+        { level: 'urgent', patterns: [/(דחוף|מיידי|!!!|!!)/gi] },
+        { level: 'high', patterns: [/(גבוה|חשוב|!)/gi] },
+        { level: 'medium', patterns: [/(בינוני|רגיל)/gi] },
+        { level: 'low', patterns: [/(נמוך|לא\s*דחוף)/gi] }
       ];
 
       for (const { level, patterns } of priorityPatterns) {
@@ -7447,58 +7486,86 @@
       }
       title = title.trim();
 
-      // ============ STEP 2: EXTRACT & REMOVE TIME ============
+      // ============ STEP 2: EXTRACT & REMOVE TIME (Hebrew only) ============
       const now = new Date();
       const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
       let hours = 23, minutes = 59;
+      let timeExtracted = false;
 
-      // Time patterns - support multiple formats
-      const timePatterns = [
-        /\b(\d{1,2}):(\d{2})\b/g,                    // 14:30, 9:00
-        /\bבשעה\s*(\d{1,2}):(\d{2})\b/gi,           // בשעה 14:30
-        /\bat\s*(\d{1,2}):(\d{2})\b/gi,              // at 14:30
-        /\b(\d{1,2})\.(\d{2})\b/g,                   // 14.30
-        /\b(\d{1,2}):(\d{2})\s*(am|pm)\b/gi,        // 2:30 PM
-        /\bב-?(\d{1,2}):(\d{2})\b/gi                 // ב-14:30
+      // Time-of-day keywords (Hebrew)
+      const timeOfDayPatterns = [
+        { patterns: [/הבוקר/gi, /בבוקר/gi], hours: 9, minutes: 0 },
+        { patterns: [/בצהריים/gi, /צהריים/gi], hours: 12, minutes: 0 },
+        { patterns: [/אחה"צ/gi, /אחהצ/gi, /אחרי\s*הצהריים/gi], hours: 14, minutes: 0 },
+        { patterns: [/בערב/gi, /ערב/gi], hours: 19, minutes: 0 },
+        { patterns: [/בלילה/gi, /לילה/gi], hours: 21, minutes: 0 }
       ];
 
-      for (const pattern of timePatterns) {
-        const match = title.match(pattern);
-        if (match) {
-          const firstMatch = match[0];
-          const timeMatch = firstMatch.match(/(\d{1,2})[:.](\d{2})/);
-          if (timeMatch) {
-            hours = parseInt(timeMatch[1]);
-            minutes = parseInt(timeMatch[2]);
+      for (const { patterns, hours: h, minutes: m } of timeOfDayPatterns) {
+        for (const pattern of patterns) {
+          const matches = title.match(pattern);
+          if (matches) {
+            hours = h;
+            minutes = m;
+            timeExtracted = true;
+            matches.forEach(match => {
+              title = title.replace(match, ' ');
+            });
+            break;
+          }
+        }
+        if (timeExtracted) break;
+      }
 
-            // Handle AM/PM
-            const isPM = /pm/i.test(firstMatch);
-            const isAM = /am/i.test(firstMatch);
-            if (isPM && hours < 12) hours += 12;
-            if (isAM && hours === 12) hours = 0;
+      // Specific time patterns (Hebrew formats)
+      if (!timeExtracted) {
+        const timePatterns = [
+          /בשעה\s*(\d{1,2}):(\d{2})/gi,           // בשעה 14:30
+          /ב-?(\d{1,2}):(\d{2})/gi,                // ב-14:30 or ב14:30
+          /(\d{1,2}):(\d{2})/g,                    // 14:30
+          /(\d{1,2})\.(\d{2})/g                    // 14.30
+        ];
 
-            // Validate time
-            if (hours >= 0 && hours < 24 && minutes >= 0 && minutes < 60) {
-              title = title.replace(firstMatch, ' ').trim();
-              break;
+        for (const pattern of timePatterns) {
+          const match = title.match(pattern);
+          if (match) {
+            const firstMatch = match[0];
+            const timeMatch = firstMatch.match(/(\d{1,2})[:](\d{2})/);
+            if (timeMatch) {
+              hours = parseInt(timeMatch[1]);
+              minutes = parseInt(timeMatch[2]);
+
+              // Validate time
+              if (hours >= 0 && hours < 24 && minutes >= 0 && minutes < 60) {
+                title = title.replace(firstMatch, ' ').trim();
+                timeExtracted = true;
+                break;
+              }
             }
           }
         }
       }
 
-      // ============ STEP 3: EXTRACT & REMOVE DATE ============
+      // ============ STEP 3: EXTRACT & REMOVE DATE (Hebrew only) ============
+      // Hebrew month names for parsing
+      const hebrewMonthNames = ['ינואר', 'פברואר', 'מרץ', 'אפריל', 'מאי', 'יוני',
+        'יולי', 'אוגוסט', 'ספטמבר', 'אוקטובר', 'נובמבר', 'דצמבר'];
+
+      // Relative date keywords (Hebrew only)
       const dateKeywords = [
         { patterns: [/מחרתיים/gi], days: 2 },
-        { patterns: [/בעוד יומיים/gi, /in 2 days/gi], days: 2 },
-        { patterns: [/בעוד 3 ימים/gi, /in 3 days/gi], days: 3 },
-        { patterns: [/בעוד 4 ימים/gi, /in 4 days/gi], days: 4 },
-        { patterns: [/בעוד 5 ימים/gi, /in 5 days/gi], days: 5 },
-        { patterns: [/להיום/gi, /היום/gi, /today/gi], days: 0 },
-        { patterns: [/למחר/gi, /מחר/gi, /tomorrow/gi], days: 1 },
-        { patterns: [/בעוד שבועיים/gi, /in 2 weeks/gi], days: 14 },
-        { patterns: [/בעוד שבוע/gi, /in a week/gi], days: 7 },
-        { patterns: [/השבוע/gi, /בשבוע הבא/gi, /this week/gi, /next week/gi], days: 7 },
-        { patterns: [/בעוד חודש/gi, /in a month/gi], days: 30 },
+        { patterns: [/בעוד\s*יומיים/gi], days: 2 },
+        { patterns: [/בעוד\s*3\s*ימים/gi], days: 3 },
+        { patterns: [/בעוד\s*4\s*ימים/gi], days: 4 },
+        { patterns: [/בעוד\s*5\s*ימים/gi], days: 5 },
+        { patterns: [/בעוד\s*6\s*ימים/gi], days: 6 },
+        { patterns: [/להיום/gi, /היום/gi], days: 0 },
+        { patterns: [/למחר/gi, /מחר/gi], days: 1 },
+        { patterns: [/בעוד\s*שבועיים/gi], days: 14 },
+        { patterns: [/בעוד\s*שבוע/gi], days: 7 },
+        { patterns: [/השבוע/gi], days: 3 },  // Approximate to mid-week
+        { patterns: [/בשבוע\s*הבא/gi, /שבוע\s*הבא/gi], days: 7 },
+        { patterns: [/בעוד\s*חודש/gi], days: 30 },
       ];
 
       for (const { patterns, days } of dateKeywords) {
@@ -7520,37 +7587,65 @@
         if (matched) break;
       }
 
-      // Hebrew & English day names
+      // Hebrew day names only
       if (!dueDate) {
         const hebrewDays = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
-        const englishDays = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
 
         for (let i = 0; i < 7; i++) {
-          const hebrewPattern = new RegExp(`(ביום\\s+|יום\\s+)?${hebrewDays[i]}`, 'gi');
-          const englishPattern = new RegExp(`(on\\s+)?${englishDays[i]}`, 'gi');
+          // Match patterns like: "ביום ראשון", "יום ראשון", "ראשון", "ביום ראשון הבא"
+          const hebrewPattern = new RegExp(`(ביום\\s+|יום\\s+)?${hebrewDays[i]}(\\s+הבא)?`, 'gi');
 
           const heMatches = title.match(hebrewPattern);
-          const enMatches = title.match(englishPattern);
 
-          if (heMatches || enMatches) {
+          if (heMatches) {
             const currentDay = today.getDay();
             let daysToAdd = i - currentDay;
-            if (daysToAdd <= 0) daysToAdd += 7;
+            // Check if "הבא" (next) is in the match - if so, add a week
+            const isNextWeek = heMatches[0].includes('הבא');
+            if (daysToAdd <= 0 || isNextWeek) daysToAdd += 7;
 
             dueDate = new Date(today);
             dueDate.setDate(dueDate.getDate() + daysToAdd);
             dueDate.setHours(hours, minutes, 0, 0);
 
-            if (heMatches) heMatches.forEach(m => title = title.replace(m, ' '));
-            if (enMatches) enMatches.forEach(m => title = title.replace(m, ' '));
+            heMatches.forEach(m => title = title.replace(m, ' '));
             break;
+          }
+        }
+      }
+
+      // Hebrew month name dates: "ב-15 בינואר", "15 בינואר", "ב15 ינואר"
+      if (!dueDate) {
+        for (let monthIdx = 0; monthIdx < hebrewMonthNames.length; monthIdx++) {
+          const monthName = hebrewMonthNames[monthIdx];
+          // Match patterns like: ב-15 בינואר, 15 בינואר, ב15 ינואר
+          const monthPattern = new RegExp(`ב?-?(\\d{1,2})\\s*(ב?${monthName})`, 'gi');
+          const match = title.match(monthPattern);
+
+          if (match) {
+            const firstMatch = match[0];
+            const dayMatch = firstMatch.match(/(\d{1,2})/);
+            if (dayMatch) {
+              const day = parseInt(dayMatch[1]);
+              if (day >= 1 && day <= 31) {
+                dueDate = new Date(today.getFullYear(), monthIdx, day, hours, minutes, 0, 0);
+
+                // If date is in the past, assume next year
+                if (dueDate < now) {
+                  dueDate.setFullYear(dueDate.getFullYear() + 1);
+                }
+
+                title = title.replace(firstMatch, ' ').trim();
+                break;
+              }
+            }
           }
         }
       }
 
       // Specific date formats: DD/MM or DD.MM
       if (!dueDate) {
-        const datePattern = /\b(\d{1,2})[\/\.](\d{1,2})\b/g;
+        const datePattern = /(\d{1,2})[\/\.](\d{1,2})/g;
         const match = title.match(datePattern);
         if (match) {
           const firstMatch = match[0];
