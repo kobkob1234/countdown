@@ -906,13 +906,17 @@ export function initCalendar() {
         // Basic parsing for YYYYMMDD or YYYYMMDDTHHMMSSZ
         const match = val.match(/^(\d{4})(\d{2})(\d{2})/);
         if (match) {
-          // If it has time, it's UTC, but for filtering "is it over", simple date comparison is usually enough
           untilDate = new Date(Date.UTC(match[1], match[2] - 1, match[3], 23, 59, 59));
         }
       }
 
       // If the series ended before "now", don't even try to calculate matches
       if (untilDate && untilDate < fromDate) return null;
+
+      // Parse COUNT
+      let count = -1;
+      const countPart = parts.find(p => p.startsWith('COUNT='));
+      if (countPart) count = parseInt(countPart.split('=')[1], 10);
 
       const freqPart = parts.find(p => p.startsWith('FREQ='));
       if (!freqPart) return null;
@@ -924,12 +928,19 @@ export function initCalendar() {
 
       let next = new Date(start);
 
-      // Safety break to prevent infinite loops
+      // Track occurrences
+      let occurrences = 1; // The start date is the first occurrence
+
+      // Safety break
+      const MAX_ATTEMPTS = 2000;
       let attempts = 0;
-      const MAX_ATTEMPTS = 1000;
 
       while (next < fromDate && attempts < MAX_ATTEMPTS) {
         attempts++;
+
+        // Check COUNT limit before moving forward
+        if (count > 0 && occurrences >= count) return null;
+
         switch (freq) {
           case 'DAILY':
             next.setDate(next.getDate() + interval);
@@ -947,11 +958,13 @@ export function initCalendar() {
             return null; // Unsupported frequency
         }
 
+        occurrences++;
+
         // Check if we passed the UNTIL date during iteration
         if (untilDate && next > untilDate) return null;
       }
 
-      return (next >= fromDate && (!untilDate || next <= untilDate)) ? next : null;
+      return (next >= fromDate && (!untilDate || next <= untilDate) && (count === -1 || occurrences <= count)) ? next : null;
     };
 
     pendingCalendarEvents = calendarEvents
