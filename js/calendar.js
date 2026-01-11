@@ -637,9 +637,39 @@ export function initCalendar() {
     };
   }
 
+  const clearImportedEventsBtn = document.getElementById('clearImportedEventsBtn');
   if (closeCalendarSyncBtn && calendarSyncModal) {
     closeCalendarSyncBtn.onclick = () => {
       calendarSyncModal.classList.remove('open');
+    };
+  }
+
+  if (clearImportedEventsBtn) {
+    clearImportedEventsBtn.onclick = async () => {
+      if (!confirm('Are you sure you want to delete ALL imported calendar events? This cannot be undone.')) return;
+
+      const allEvents = ctx.events || [];
+      const imported = allEvents.filter(e => e.externalId || (e.notes && e.notes.includes('[Imported')));
+
+      if (imported.length === 0) {
+        showCalendarStatus('No imported events found to delete.', 'info');
+        return;
+      }
+
+      showCalendarStatus(`🗑️ Deleting ${imported.length} imported events...`, 'info');
+
+      let deleted = 0;
+      for (const evt of imported) {
+        try {
+          if (typeof ctx.deleteFromCloud === 'function') {
+            await ctx.deleteFromCloud(evt.id);
+            deleted++;
+          }
+        } catch (err) {
+          console.error('Failed to delete', evt.id, err);
+        }
+      }
+      showCalendarStatus(`✅ Deleted ${deleted} events.`, 'success');
     };
   }
 
@@ -974,9 +1004,17 @@ export function initCalendar() {
 
       showCalendarStatus(`✅ Done! Added ${imported} new, Updated ${updated} events.`, 'success');
 
+      // Auto-sync to planner
+      if (typeof ctx.syncAllCountdowns === 'function') {
+        const synced = ctx.syncAllCountdowns();
+        if (synced > 0) {
+          showCalendarStatus(`✅ Added ${imported} events. Synced ${synced} to Daily Planner!`, 'success');
+        }
+      }
+
       setTimeout(() => {
         if (calendarSyncModal) calendarSyncModal.classList.remove('open');
-      }, 2000);
+      }, 3000);
     };
   }
 

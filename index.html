@@ -1098,6 +1098,10 @@
           <span style="font-size: 20px;">📂</span>
           <span>Import .ics File</span>
         </button>
+        <button class="btn" id="clearImportedEventsBtn"
+          style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; background: transparent; border: 1px solid var(--border); color: var(--muted); font-size: 13px;">
+          <span>🗑️ Clear Imported Events</span>
+        </button>
       </div>
 
       <div id="calendarSyncStatus"
@@ -2805,7 +2809,13 @@
 
       const now = Date.now();
 
-      const sorted = [...events].filter(e => !pendingDeletes.has(e.id)).sort((a, b) => {
+      const sorted = [...events].filter(e => {
+        // Hide pending deletes
+        if (pendingDeletes.has(e.id)) return false;
+        // Hide imported events from the countdown list (but keep them for planner)
+        if (e.externalId || (e.notes && e.notes.includes('[Imported'))) return false;
+        return true;
+      }).sort((a, b) => {
         // First sort by pinned status
         if (a.pinned && !b.pinned) return -1;
         if (!a.pinned && b.pinned) return 1;
@@ -9103,6 +9113,8 @@
         }
         return added;
       };
+
+      ctx.syncAllCountdowns = syncAllCountdowns; // Expose for calendar import
 
       // Sync all scheduled tasks for current date to planner
       const syncAllScheduledTasks = () => {
