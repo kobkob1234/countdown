@@ -700,6 +700,54 @@
 
     .task-item.swiping {
       transition: transform 0.1s ease-out;
+      position: relative;
+      z-index: 10;
+    }
+
+    /* Swipe direction visual feedback */
+    .task-item.swiping {
+      background: linear-gradient(90deg,
+          rgba(34, 197, 94, 0.25) 0%,
+          var(--card) 25%,
+          var(--card) 75%,
+          rgba(239, 68, 68, 0.25) 100%) !important;
+    }
+
+    /* Glow when threshold reached */
+    .task-item.swipe-threshold-reached {
+      box-shadow: 0 0 20px rgba(34, 197, 94, 0.5) !important;
+    }
+
+    /* Visual hint badge when ready to complete */
+    .task-item.swipe-threshold-reached::after {
+      content: '✓';
+      position: absolute;
+      left: 8px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 32px;
+      height: 32px;
+      background: #22c55e;
+      color: white;
+      border-radius: 50%;
+      font-size: 18px;
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      animation: swipeComplete 0.2s ease-out;
+    }
+
+    @keyframes swipeComplete {
+      from {
+        opacity: 0;
+        transform: translateY(-50%) scale(0.5);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(-50%) scale(1);
+      }
     }
 
     /* Bottom Sheet Modal (Mobile) */
