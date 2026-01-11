@@ -5951,7 +5951,7 @@
     .task-reminder-dropdown {
       position: absolute;
       top: 100%;
-      right: 0;
+      left: 0;
       background: var(--card);
       border: 1px solid var(--border);
       border-radius: 10px;
