@@ -2772,4 +2772,74 @@
         border: 1px solid var(--border) !important;
         color: var(--text) !important;
       }
+
+      /* ===== DIRECT TASK SWIPE VISUAL FEEDBACK ===== */
+      .task-item.swiping {
+        position: relative;
+        z-index: 10;
+        transition: none !important;
+      }
+
+      /* Green glow when swiping right (complete) */
+      .task-item.swiping[style*="translateX("] {
+        box-shadow: 0 0 0 2px #22c55e;
+      }
+
+      /* Swipe threshold reached indicator */
+      .task-item.swipe-threshold-reached {
+        box-shadow: 0 0 20px rgba(102, 126, 234, 0.5);
+      }
+
+      /* Background colors revealed during swipe */
+      .task-item::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        border-radius: inherit;
+        opacity: 0;
+        transition: opacity 0.15s;
+        pointer-events: none;
+        z-index: -1;
+      }
+
+      /* Show green when swiping right */
+      .task-item.swiping {
+        background: linear-gradient(90deg,
+            rgba(34, 197, 94, 0.3) 0%,
+            var(--card) 30%,
+            var(--card) 70%,
+            rgba(239, 68, 68, 0.3) 100%) !important;
+      }
+
+      /* Swipe action hints */
+      .task-item.swipe-threshold-reached::after {
+        content: '✓ השלם';
+        position: absolute;
+        right: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        background: #22c55e;
+        color: white;
+        padding: 6px 12px;
+        border-radius: 8px;
+        font-size: 12px;
+        font-weight: 600;
+        opacity: 0;
+        animation: swipeHintIn 0.2s ease-out forwards;
+      }
+
+      @keyframes swipeHintIn {
+        from {
+          opacity: 0;
+          transform: translateY(-50%) scale(0.8);
+        }
+
+        to {
+          opacity: 1;
+          transform: translateY(-50%) scale(1);
+        }
+      }
     }
