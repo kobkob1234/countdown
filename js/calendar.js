@@ -929,6 +929,10 @@ export function initCalendar() {
       if (!freqPart) return null;
       const freq = freqPart.split('=')[1];
 
+      let interval = 1;
+      const intervalPart = parts.find(p => p.startsWith('INTERVAL='));
+      if (intervalPart) interval = parseInt(intervalPart.split('=')[1], 10);
+
       // Parse BYDAY (Example: MO,TU)
       let byDay = [];
       const byDayPart = parts.find(p => p.startsWith('BYDAY='));
