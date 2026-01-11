@@ -1088,43 +1088,15 @@
       <p style="color: var(--muted); font-size: 14px; margin-bottom: 20px;">ייבוא אירועים מלוח השנה שלך (חד-כיווני)
       </p>
 
-      <details class="calendar-sync-settings" id="googleSettingsDetails">
-        <summary>⚙️ Google Settings (API Key + Client ID)</summary>
-        <div class="settings-grid">
-          <label>
-            Google API Key
-            <input id="googleApiKeyInput" type="password" inputmode="text" autocomplete="off" spellcheck="false"
-              placeholder="AIza..." />
-          </label>
-          <label>
-            OAuth Client ID
-            <input id="googleClientIdInput" type="text" inputmode="text" autocomplete="off" spellcheck="false"
-              placeholder="1234567890-xxxx.apps.googleusercontent.com" />
-          </label>
-          <div class="settings-actions">
-            <button class="btn btn-primary" id="saveGoogleSettingsBtn" type="button" style="flex:1;">Save</button>
-            <button class="btn" id="resetGoogleSettingsBtn" type="button"
-              style="flex:1; background: var(--day-other); color: var(--muted);">Reset</button>
-          </div>
-        </div>
-        <div class="settings-hint">
-          Google Calendar sync requires serving this app via `http://localhost` or `https://` and adding that origin
-          to
-          your Google OAuth "Authorized JavaScript origins".
-        </div>
-      </details>
-
       <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px;">
-        <button class="btn btn-primary" id="syncGoogleCalendar"
-          style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px;">
-          <span style="font-size: 20px;">📆</span>
-          <span>Google Calendar</span>
-        </button>
-
+        <div style="text-align: center; margin-bottom: 10px; color: var(--muted); font-size: 13px;">
+          Export your Google/Apple Calendar as an .ics file and upload it here.
+          <br>Existing events will be updated, not duplicated.
+        </div>
         <button class="btn btn-primary" id="syncAppleCalendar"
           style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; background: linear-gradient(135deg, #667eea, #764ba2);">
-          <span style="font-size: 20px;">🍎</span>
-          <span>Apple Calendar (iCal)</span>
+          <span style="font-size: 20px;">📂</span>
+          <span>Import .ics File</span>
         </button>
       </div>
 
