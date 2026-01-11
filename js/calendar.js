@@ -879,6 +879,8 @@ export function initCalendar() {
               if (!currentEvent.exdates) currentEvent.exdates = [];
               currentEvent.exdates.push(ex.toISOString().split('T')[0]);
             }
+          } else if (key === 'COLOR' || key === 'X-GOOGLE-CALENDAR-COLOR') {
+            currentEvent.color = value;
           }
         }
       }
@@ -1048,13 +1050,16 @@ export function initCalendar() {
           if (duration < 0 || isNaN(duration)) duration = 60;
         }
 
+        const eventColor = evt.color || stringToColor(evt.summary || 'event');
+
         return {
           name: evt.summary || 'Untitled Event',
           date: start.toISOString(),
           duration: duration,
           notes: evt.description || '',
           source: source === 'apple' ? 'iCal File' : 'Imported File',
-          externalId: evt.uid || null
+          externalId: evt.uid || null,
+          color: eventColor
         };
       });
 
@@ -1072,7 +1077,7 @@ export function initCalendar() {
         });
 
         return `
-        <label style="display: flex; align-items: center; padding: 8px; border-radius: 6px; background: var(--card); border: 1px solid var(--border); cursor: pointer; transition: all 0.2s;" 
+        <label style="display: flex; align-items: center; padding: 8px; border-radius: 6px; background: var(--card); border: 1px solid var(--border); border-left: 4px solid ${evt.color || 'var(--primary)'}; cursor: pointer; transition: all 0.2s;" 
                onmouseover="this.style.background='var(--day-hover)'" 
                onmouseout="this.style.background='var(--card)'">
           <input type="checkbox" checked data-event-idx="${idx}" style="margin-left: 8px;">
@@ -1125,7 +1130,8 @@ export function initCalendar() {
                 name: evt.name,
                 date: evt.date,
                 duration: evt.duration,
-                notes: newNotes
+                notes: newNotes,
+                color: evt.color
               });
               updated++;
             }
@@ -1140,7 +1146,8 @@ export function initCalendar() {
                 reminder: 60,
                 highlighted: false,
                 pinned: false,
-                externalId: evt.externalId || null
+                externalId: evt.externalId || null,
+                color: evt.color
               });
               imported++;
             }
@@ -1167,6 +1174,16 @@ export function initCalendar() {
         if (calendarSyncModal) calendarSyncModal.classList.remove('open');
       }, 3000);
     };
+  }
+
+  function stringToColor(str) {
+    if (!str) return '#b3d1ff';
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+      hash = str.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    const h = Math.abs(hash) % 360;
+    return `hsl(${h}, 70%, 85%)`;
   }
 
   return {
