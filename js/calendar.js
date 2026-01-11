@@ -867,11 +867,18 @@ export function initCalendar() {
             currentEvent.start = parseICalDate(value, params);
           } else if (key === 'DTEND') {
             currentEvent.end = parseICalDate(value, params);
+          } else if (key === 'DESCRIPTION') {
             currentEvent.description = value.replace(/\\n/g, '\n');
           } else if (key === 'UID') {
             currentEvent.uid = value;
           } else if (key === 'RRULE') {
             currentEvent.rrule = value;
+          } else if (key === 'EXDATE') {
+            const ex = parseICalDate(value, params);
+            if (ex) {
+              if (!currentEvent.exdates) currentEvent.exdates = [];
+              currentEvent.exdates.push(ex.toISOString().split('T')[0]);
+            }
           }
         }
       }
@@ -894,7 +901,7 @@ export function initCalendar() {
     // Reset to start of day to include events from earlier today
     now.setHours(0, 0, 0, 0);
 
-    const getNextOccurrence = (start, rrule, fromDate) => {
+    const getNextOccurrence = (start, rrule, fromDate, exdates = []) => {
       if (!rrule) return null;
       const parts = rrule.split(';');
 
@@ -922,32 +929,64 @@ export function initCalendar() {
       if (!freqPart) return null;
       const freq = freqPart.split('=')[1];
 
-      let interval = 1;
-      const intervalPart = parts.find(p => p.startsWith('INTERVAL='));
-      if (intervalPart) interval = parseInt(intervalPart.split('=')[1], 10);
+      // Parse BYDAY (Example: MO,TU)
+      let byDay = [];
+      const byDayPart = parts.find(p => p.startsWith('BYDAY='));
+      if (byDayPart) {
+        const days = byDayPart.split('=')[1].split(',');
+        // Support regular 2-char day codes
+        const dayMap = { SU: 0, MO: 1, TU: 2, WE: 3, TH: 4, FR: 5, SA: 6 };
+        byDay = days.map(d => dayMap[d.slice(-2)]).filter(d => d !== undefined);
+      }
 
       let next = new Date(start);
-
       // Track occurrences
-      let occurrences = 1; // The start date is the first occurrence
-
-      // Safety break
-      const MAX_ATTEMPTS = 2000;
+      let occurrences = 0;
       let attempts = 0;
+      const MAX_ATTEMPTS = 5000;
 
-      while (next < fromDate && attempts < MAX_ATTEMPTS) {
+      while (attempts < MAX_ATTEMPTS) {
         attempts++;
 
-        // Check COUNT limit before moving forward
+        // 1. Check strict limits BEFORE usage
         if (count > 0 && occurrences >= count) return null;
+        if (untilDate && next > untilDate) return null;
 
+        // 2. Is current 'next' valid occurrence?
+        // Must be >= fromDate AND NOT excluded
+        if (next >= fromDate) {
+          const ds = next.toISOString().split('T')[0];
+          const isExcluded = exdates && exdates.includes(ds);
+          if (!isExcluded) return next;
+        }
+
+        occurrences++;
+        if (count > 0 && occurrences >= count && next < fromDate) return null;
+
+        // 3. Advance logic
         switch (freq) {
           case 'DAILY':
             next.setDate(next.getDate() + interval);
             break;
+
           case 'WEEKLY':
-            next.setDate(next.getDate() + (7 * interval));
+            if (byDay.length > 0) {
+              const currentDay = next.getDay();
+              byDay.sort((a, b) => a - b);
+              const nextDayInWeek = byDay.find(d => d > currentDay);
+
+              if (nextDayInWeek !== undefined) {
+                next.setDate(next.getDate() + (nextDayInWeek - currentDay));
+              } else {
+                const daysToSunday = 7 - currentDay;
+                const weeksToAdd = (interval - 1) * 7;
+                next.setDate(next.getDate() + daysToSunday + weeksToAdd + byDay[0]);
+              }
+            } else {
+              next.setDate(next.getDate() + (7 * interval));
+            }
             break;
+
           case 'MONTHLY':
             next.setMonth(next.getMonth() + interval);
             break;
@@ -955,13 +994,8 @@ export function initCalendar() {
             next.setFullYear(next.getFullYear() + interval);
             break;
           default:
-            return null; // Unsupported frequency
+            return null;
         }
-
-        occurrences++;
-
-        // Check if we passed the UNTIL date during iteration
-        if (untilDate && next > untilDate) return null;
       }
 
       return (next >= fromDate && (!untilDate || next <= untilDate) && (count === -1 || occurrences <= count)) ? next : null;
@@ -973,7 +1007,7 @@ export function initCalendar() {
 
         // If start is in the past and we have an RRULE, try to find next occurrence
         if (start < now && evt.rrule) {
-          const next = getNextOccurrence(start, evt.rrule, now);
+          const next = getNextOccurrence(start, evt.rrule, now, evt.exdates);
           if (next) {
             start = next;
             // Update the original object's start so downstream logic works
