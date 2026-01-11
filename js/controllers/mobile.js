@@ -123,20 +123,20 @@ export function initMobileController() {
             // Limit range
             const cappedDiff = Math.max(-100, Math.min(100, diffX));
 
-            // Update visual state (actions revealed)
-            const container = activeItem.querySelector('.task-item-swipe-container');
-            if (container) {
-                container.style.transform = `translateX(${cappedDiff}px)`;
+            // Apply transform directly to task item
+            activeItem.style.transform = `translateX(${cappedDiff}px)`;
 
-                // Visual feedback for activation
-                if (Math.abs(cappedDiff) > SWIPE_THRESHOLD) {
-                    if (navigator.vibrate && !activeItem.hasVibrated) {
-                        window.haptic.light();
-                        activeItem.hasVibrated = true;
-                    }
-                } else {
-                    activeItem.hasVibrated = false;
+            // Visual feedback for activation threshold
+            if (Math.abs(cappedDiff) > SWIPE_THRESHOLD) {
+                if (navigator.vibrate && !activeItem.hasVibrated) {
+                    window.haptic.light();
+                    activeItem.hasVibrated = true;
                 }
+                // Add visual indicator
+                activeItem.classList.add('swipe-threshold-reached');
+            } else {
+                activeItem.hasVibrated = false;
+                activeItem.classList.remove('swipe-threshold-reached');
             }
         }, { passive: false });
 
@@ -145,15 +145,12 @@ export function initMobileController() {
 
             const touchEndX = e.changedTouches[0].clientX;
             const diffX = touchEndX - touchStartX;
-            const container = activeItem.querySelector('.task-item-swipe-container');
-            const timeElapsed = Date.now() - (activeItem.touchStartTime || Date.now()); // Simplify
-            const velocity = Math.abs(diffX) / timeElapsed;
 
             activeItem.style.transition = 'transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)';
-            activeItem.classList.remove('swiping');
+            activeItem.classList.remove('swiping', 'swipe-threshold-reached');
 
-            // Trigger if crossed threshold OR fast swipe
-            if ((Math.abs(diffX) > SWIPE_THRESHOLD) && container) {
+            // Trigger if crossed threshold
+            if (Math.abs(diffX) > SWIPE_THRESHOLD) {
                 if (diffX > 0) {
                     // Right Swipe (Complete)
                     const id = activeItem.dataset.id;
@@ -174,7 +171,7 @@ export function initMobileController() {
             }
 
             // Reset position
-            if (container) container.style.transform = '';
+            activeItem.style.transform = '';
             activeItem = null;
         });
 
