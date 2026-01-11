@@ -830,6 +830,8 @@ export function initCalendar() {
             currentEvent.end = parseICalDate(value, params);
           } else if (key === 'DESCRIPTION') {
             currentEvent.description = value.replace(/\\n/g, '\n');
+          } else if (key === 'UID') {
+            currentEvent.uid = value;
           }
         }
       }
@@ -847,22 +849,38 @@ export function initCalendar() {
   }
 
   function displayCalendarEvents(calendarEvents, source) {
-    pendingCalendarEvents = calendarEvents.map(evt => {
-      if (source === 'google') {
+    // Filter events from today onwards
+    const now = new Date();
+    // Reset to start of day to include events from earlier today
+    now.setHours(0, 0, 0, 0);
+
+    pendingCalendarEvents = calendarEvents
+      .filter(evt => {
+        const start = evt.start.dateTime ? new Date(evt.start.dateTime) : (evt.start.date ? new Date(evt.start.date) : evt.start);
+        return start >= now;
+      })
+      .map(evt => {
+        if (source === 'google') {
+          return {
+            name: evt.summary || 'Untitled Event',
+            date: evt.start.dateTime || evt.start.date,
+            notes: evt.description || '',
+            source: 'Google Calendar'
+          };
+        }
+        const start = evt.start;
+        const end = evt.end || new Date(start.getTime() + 60 * 60 * 1000);
+        const duration = Math.max(15, Math.round((end - start) / (1000 * 60)));
+
         return {
           name: evt.summary || 'Untitled Event',
-          date: evt.start.dateTime || evt.start.date,
+          date: start.toISOString(),
+          duration: duration,
           notes: evt.description || '',
-          source: 'Google Calendar'
+          source: source === 'apple' ? 'iCal File' : 'Imported File',
+          externalId: evt.uid || null
         };
-      }
-      return {
-        name: evt.summary || 'Untitled Event',
-        date: evt.start.toISOString(),
-        notes: evt.description || '',
-        source: 'Apple Calendar'
-      };
-    });
+      });
 
     showCalendarStatus(`✅ Found ${pendingCalendarEvents.length} events`, 'success');
 
@@ -906,29 +924,55 @@ export function initCalendar() {
         return;
       }
 
-      showCalendarStatus(`🔄 Importing ${selectedIndices.length} events...`, 'info');
+      showCalendarStatus(`🔄 Processing ${selectedIndices.length} events...`, 'info');
 
       let imported = 0;
+      let updated = 0;
+      const existingEvents = ctx.events || [];
+
       for (const idx of selectedIndices) {
         const evt = pendingCalendarEvents[idx];
         try {
-          if (typeof ctx.saveToCloud === 'function') {
-            await ctx.saveToCloud({
-              name: evt.name,
-              date: evt.date,
-              notes: evt.notes ? `${evt.notes}\n\n[Imported from ${evt.source}]` : `[Imported from ${evt.source}]`,
-              reminder: 60,
-              highlighted: false,
-              pinned: false
-            });
+          // Check for existing event with same externalId/UID
+          const existing = evt.externalId
+            ? existingEvents.find(e => e.externalId === evt.externalId)
+            : null;
+
+          if (existing) {
+            // Update existing event
+            if (typeof ctx.updateInCloud === 'function') {
+              const newNotes = evt.notes ? (evt.notes.includes('[Imported') ? evt.notes : `${evt.notes}\n\n[Imported]`) : existing.notes;
+              await ctx.updateInCloud(existing.id, {
+                ...existing,
+                name: evt.name,
+                date: evt.date,
+                duration: evt.duration,
+                notes: newNotes
+              });
+              updated++;
+            }
+          } else {
+            // Create new event
+            if (typeof ctx.saveToCloud === 'function') {
+              await ctx.saveToCloud({
+                name: evt.name,
+                date: evt.date,
+                duration: evt.duration,
+                notes: evt.notes ? `${evt.notes}\n\n[Imported]` : `[Imported]`,
+                reminder: 60,
+                highlighted: false,
+                pinned: false,
+                externalId: evt.externalId || null
+              });
+              imported++;
+            }
           }
-          imported++;
         } catch (error) {
-          console.error('Failed to import event:', evt.name, error);
+          console.error('Failed to process event:', evt.name, error);
         }
       }
 
-      showCalendarStatus(`✅ Successfully imported ${imported} events!`, 'success');
+      showCalendarStatus(`✅ Done! Added ${imported} new, Updated ${updated} events.`, 'success');
 
       setTimeout(() => {
         if (calendarSyncModal) calendarSyncModal.classList.remove('open');
