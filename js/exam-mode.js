@@ -100,7 +100,7 @@
     const addChipControls = (chip) => {
         const check = document.createElement('span');
         check.className = 'chip-check';
-        check.textContent = '✓';
+        check.textContent = '';
         check.contentEditable = false;
         check.addEventListener('click', (e) => toggleTaskCompletion(e, chip));
 
@@ -114,7 +114,6 @@
         drag.className = 'chip-drag-handle';
         drag.textContent = '⋮⋮';
         drag.contentEditable = false;
-        drag.setAttribute('draggable', 'true');
 
         chip.appendChild(check);
         chip.appendChild(del);
@@ -204,7 +203,7 @@
         container.querySelectorAll('.chip').forEach(chip => {
             if (chip.closest('.week-goal-row')) return;
             chip.contentEditable = false;
-            chip.draggable = false;
+            chip.draggable = true;
             chip.spellcheck = false;
 
             chip.querySelectorAll('.chip-check, .chip-delete, .chip-drag-handle').forEach(el => el.remove());
@@ -220,11 +219,13 @@
         let draggedItem = null;
 
         container.addEventListener('dragstart', (e) => {
-            const handle = e.target.closest('.chip-drag-handle');
-            if (!handle) return;
-
-            const chip = handle.closest('.chip');
-            if (!chip || chip.classList.contains('editing')) {
+            const chip = e.target.closest('.chip');
+            if (!chip || chip.closest('.week-goal-row')) return;
+            if (e.target.closest('.chip-check, .chip-delete')) {
+                e.preventDefault();
+                return;
+            }
+            if (chip.classList.contains('editing')) {
                 e.preventDefault();
                 return;
             }
@@ -251,7 +252,7 @@
                 if (el !== targetTd) el.classList.remove('drag-over');
             });
 
-            if (targetTd) {
+            if (targetTd && !targetTd.closest('.week-goal-row')) {
                 targetTd.classList.add('drag-over');
                 e.dataTransfer.dropEffect = 'move';
             }
@@ -269,7 +270,7 @@
             if (!draggedItem) return;
 
             const targetTd = e.target.closest('td');
-            if (!targetTd) return;
+            if (!targetTd || targetTd.closest('.week-goal-row')) return;
 
             const targetChip = e.target.closest('.chip');
 

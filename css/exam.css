@@ -335,7 +335,7 @@
 }
 
 #examModeOverlay .chip.completed .chip-check::after {
-    content: '✔';
+    content: '✓';
     font-size: 10px;
     color: white;
 }
