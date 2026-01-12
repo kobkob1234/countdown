@@ -83,7 +83,8 @@ export const STORAGE_KEYS = {
     THEME: 'countdown-theme',
     SIDEBAR_WIDTH: 'countdown-sidebar-width',
     GOOGLE_API_KEY: 'countdown-google-api-key',
-    GOOGLE_CLIENT_ID: 'countdown-google-client-id'
+    GOOGLE_CLIENT_ID: 'countdown-google-client-id',
+    SETTINGS_AUTO_DELETE: 'countdown-settings-auto-delete'
 };
 
 export const CACHE_KEYS = {

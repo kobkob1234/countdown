@@ -413,9 +413,11 @@
 
   <!-- Task Manager Fullscreen -->
   <div class="task-manager-overlay" id="taskManagerOverlay">
+
     <div class="task-manager-header">
       <div class="task-manager-title">📝 Task Manager</div>
       <button class="header-btn" id="toggleTaskSidebar" style="margin-right: 12px;">📚 נושאים</button>
+      <button class="header-btn" id="taskSettingsBtn" title="הגדרות" style="margin-right: 8px;">⚙️</button>
       <button class="task-manager-close" id="closeTaskManager" aria-label="Close task manager">×</button>
       <div class="task-search-bar">
         <input type="text" id="taskSearch" placeholder="חיפוש משימות... / Search tasks..." />
@@ -425,6 +427,20 @@
         <button class="filter-pill" data-filter="active">פעיל</button>
         <button class="filter-pill" data-filter="completed">הושלם</button>
         <button class="header-btn" id="toggleTaskCalendar">📅 לוח</button>
+      </div>
+
+      <!-- Task Settings Popover -->
+      <div class="task-settings-popover" id="taskSettingsPopover" style="display: none;">
+        <div class="settings-row">
+          <label class="settings-toggle">
+            <input type="checkbox" id="autoDeleteToggle">
+            <span class="slider"></span>
+          </label>
+          <div class="settings-label">
+            <div class="settings-title">ניקוי אוטומטי</div>
+            <div class="settings-desc">מחק משימות שהושלמו לפני יותר ב-30 יום</div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -1998,6 +2014,7 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import { getDatabase, ref, set, onValue, push, remove, onChildAdded, onChildChanged, onChildRemoved, goOnline, goOffline } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
     import { ctx } from "./js/context.js";
+    window.ctx = ctx; // Expose globally for auto-cleanup logic
     import { initEvents } from "./js/events.js";
     import { initTasks } from "./js/tasks.js";
     import { initCalendar } from "./js/calendar.js";
@@ -5082,11 +5099,27 @@
      * Separates active and completed tasks, updates sidebar counts,
      * and applies virtual scrolling for performance.
      */
+    let hasRunAutoCleanup = false;
+
     function renderTasks() {
       if (!tasksLoaded && !hasTasksCache) {
         showTasksLoading();
         return;
       }
+
+      // Run auto-delete cleanup once after tasks are loaded
+      if (!hasRunAutoCleanup && tasksLoaded) {
+        // Use timeout to let thread clear and not block rendering
+        setTimeout(() => {
+          if (typeof window.runAutoDeleteCleanup === 'function') {
+            window.runAutoDeleteCleanup();
+          } else {
+            console.warn('[AutoDelete] function not available yet');
+          }
+        }, 1000);
+        hasRunAutoCleanup = true;
+      }
+
       const filtered = getFilteredTasks();
       const active = filtered.filter(t => !t.completed);
       const completed = filtered.filter(t => t.completed);
@@ -5597,7 +5630,11 @@
               }
             }
             const { id, isOwn, isShared, ...cleanTask } = task;
-            saveTask(taskId, { ...cleanTask, completed: nextCompleted }, task.subject);
+            // Update completion status AND timestamp
+            // If completing -> set completedAt to now
+            // If uncompleting -> set completedAt to null
+            const completedAt = nextCompleted ? Date.now() : null;
+            saveTask(taskId, { ...cleanTask, completed: nextCompleted, completedAt }, task.subject);
           } else if (action === 'edit') {
             // Edit button
             e.stopPropagation();
@@ -10632,6 +10669,114 @@
         }
       });
     })();
+
+
+
+    // ============ AUTO-DELETE SETTINGS & CLEANUP ============
+    function initAutoDeleteSettings() {
+      const toggle = document.getElementById('autoDeleteToggle');
+      const container = document.getElementById('taskSettingsPopover');
+      const btn = document.getElementById('taskSettingsBtn');
+
+      const context = (typeof ctx !== 'undefined') ? ctx : window.ctx;
+      const storageKey = context?.STORAGE_KEYS?.SETTINGS_AUTO_DELETE || 'countdown-settings-auto-delete';
+
+      if (!toggle || !container || !btn) return;
+
+      // Load initial state
+      const savedState = localStorage.getItem(storageKey);
+      toggle.checked = savedState === 'true';
+
+      // Toggle Listener
+      toggle.addEventListener('change', (e) => {
+        const isEnabled = e.target.checked;
+        localStorage.setItem(storageKey, isEnabled);
+        if (isEnabled) {
+          runAutoDeleteCleanup();
+        }
+      });
+
+      // Popover Logic
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const isVisible = container.style.display === 'block';
+        container.style.display = isVisible ? 'none' : 'block';
+      });
+
+      // Close on outside click
+      document.addEventListener('click', (e) => {
+        if (!container.contains(e.target) && e.target !== btn) {
+          if (container.style.display === 'block') {
+            container.style.display = 'none';
+          }
+        }
+      });
+    }
+
+    function runAutoDeleteCleanup() {
+      // Use window.ctx if available globally, or try to access the imported ctx
+      // Since this function is called via setTimeout from renderTasks, scope might be an issue.
+      // We will access ctx from window if possible, or fallback.
+      const context = (typeof ctx !== 'undefined') ? ctx : window.ctx;
+
+      if (!context) {
+        console.warn('[AutoDelete] CTX not found, skipping cleanup.');
+        return;
+      }
+
+      const storageKey = context.STORAGE_KEYS?.SETTINGS_AUTO_DELETE || 'countdown-settings-auto-delete';
+      const isEnabled = localStorage.getItem(storageKey) === 'true';
+
+      if (!isEnabled || !tasks || tasks.length === 0) return;
+
+      const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000;
+      const now = Date.now();
+      let deletedCount = 0;
+
+      // Filter tasks to delete
+      const tasksToDelete = tasks.filter(t => {
+        if (!t.completed || !t.completedAt) return false;
+        const completedTime = new Date(t.completedAt).getTime();
+        if (isNaN(completedTime)) return false;
+        return (now - completedTime) > thirtyDaysMs;
+      });
+
+      if (tasksToDelete.length > 0) {
+        console.log(`[AutoDelete] Found ${tasksToDelete.length} tasks to delete.`);
+        tasksToDelete.forEach(task => {
+          removeTask(task);
+          deletedCount++;
+        });
+        if (deletedCount > 0) {
+          console.log(`[AutoDelete] Successfully deleted ${deletedCount} old tasks.`);
+        }
+      }
+    }
+
+    // Expose cleanup to window so renderTasks can find it
+    window.runAutoDeleteCleanup = runAutoDeleteCleanup;
+
+    // Initialize Settings
+    // Initialize Settings with robust polling
+    try {
+      const checkCtx = (attempts = 0) => {
+        if (typeof window.ctx !== 'undefined') {
+          initAutoDeleteSettings();
+        } else if (attempts < 20) {
+          // Poll every 500ms for up to 10 seconds
+          setTimeout(() => checkCtx(attempts + 1), 500);
+        } else {
+          console.warn('CTX not defined for AutoDeleteSettings after 10s');
+        }
+      };
+
+      checkCtx();
+    } catch (e) {
+      console.error('Error initializing AutoDeleteSettings:', e);
+    }
+
+
+
 
   </script>
 

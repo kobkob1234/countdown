@@ -53,6 +53,32 @@
                 overlay.addEventListener('input', () => {
                     saveExamState(container);
                 });
+
+                // Re-run on hover to heal any persistence issues or structural changes
+                container.addEventListener('mouseenter', enhanceElements);
+
+                // Ensure we don't start editing when clicking controls
+                container.addEventListener('mousedown', (e) => {
+                    if (e.target.classList.contains('chip-delete') ||
+                        e.target.classList.contains('chip-check') ||
+                        e.target.classList.contains('chip-drag-handle')) {
+                        e.preventDefault(); // Prevent focus stealing/contenteditable activation
+                    }
+                });
+
+                // Chip Click to Cycle Colors (only if not clicking controls)
+                container.addEventListener('click', (e) => {
+                    if (e.target.classList.contains('chip')) {
+                        const currentClasses = e.target.className.split(' ');
+                        const baseClass = currentClasses[0]; // 'chip'
+                        // Preserve completed state if exists
+                        const isCompleted = e.target.classList.contains('completed') ? ' completed' : '';
+
+                        e.target.className = `${baseClass} ${window.activeExamColor}${isCompleted}`;
+
+                        saveExamState(container);
+                    }
+                });
             }
         }
     };
@@ -259,71 +285,67 @@
         });
     };
 
-    // Initial run
-    enhanceElements();
+    function enhanceElements() {
+        if (!overlay) return; // overlay might be null if called before init
+        const container = overlay.querySelector('.container');
+        if (!container) return;
 
-    // Re-run on hover to heal any persistence issues or structural changes
-    // Use a flag or debounce if this is too aggressive, but for now it's fine.
-    container.addEventListener('mouseenter', enhanceElements);
+        container.querySelectorAll('.chip').forEach(chip => {
+            // Re-attach controls if missing
+            if (!chip.querySelector('.chip-check')) {
+                const check = document.createElement('span');
+                check.className = 'chip-check';
+                check.textContent = '✓';
+                check.onclick = (e) => toggleTaskCompletion(e, chip);
+                chip.appendChild(check);
+            }
+            if (!chip.querySelector('.chip-delete')) {
+                const del = document.createElement('span');
+                del.className = 'chip-delete';
+                del.textContent = '×';
+                del.onclick = (e) => deleteTask(e, chip);
+                chip.appendChild(del);
+            }
+            if (!chip.querySelector('.chip-drag-handle')) {
+                const drag = document.createElement('span');
+                drag.className = 'chip-drag-handle';
+                drag.textContent = '⋮⋮';
+                chip.appendChild(drag);
+            }
+        });
+    };
 
-    // Also re-run on 'mousemove' over the container to catch moments where DOM might have been wiped
-    // But `mouseenter` on container is usually enough unless innerHTML was fully reset.
 
-    // Ensure we don't start editing when clicking controls
-    container.addEventListener('mousedown', (e) => {
-        if (e.target.classList.contains('chip-delete') ||
-            e.target.classList.contains('chip-check') ||
-            e.target.classList.contains('chip-drag-handle')) {
-            e.preventDefault(); // Prevent focus stealing/contenteditable activation
-        }
-    });
 
-    // Chip Click to Cycle Colors (only if not clicking controls)
-    container.addEventListener('click', (e) => {
-        if (e.target.classList.contains('chip')) {
-            const currentClasses = e.target.className.split(' ');
-            const baseClass = currentClasses[0]; // 'chip'
-            // Preserve completed state if exists
-            const isCompleted = e.target.classList.contains('completed') ? ' completed' : '';
 
-            e.target.className = `${baseClass} ${window.activeExamColor}${isCompleted}`;
+    function toggleTaskCompletion(e, chip) {
+        e.stopPropagation(); // prevent color change
+        chip.classList.toggle('completed');
+        saveExamState(chip.closest('.container'));
+    }
 
-            // We need to re-add controls because className change might wipe them if innerHTML was touched? 
-            // No, className change is safe. But let's be safe.
-
+    function deleteTask(e, chip) {
+        e.stopPropagation();
+        if (confirm('מחק משימה זו?')) {
+            const container = chip.closest('.container');
+            chip.remove();
             saveExamState(container);
         }
-    });
-};
-
-function toggleTaskCompletion(e, chip) {
-    e.stopPropagation(); // prevent color change
-    chip.classList.toggle('completed');
-    saveExamState(chip.closest('.container'));
-}
-
-function deleteTask(e, chip) {
-    e.stopPropagation();
-    if (confirm('מחק משימה זו?')) {
-        const container = chip.closest('.container');
-        chip.remove();
-        saveExamState(container);
     }
-}
 
-function saveExamState(container) {
-    // Clone to strip UI elements before saving to keep storage clean
-    const clone = container.cloneNode(true);
-    // Clean attributes
-    clone.removeAttribute('contenteditable');
+    function saveExamState(container) {
+        // Clone to strip UI elements before saving to keep storage clean
+        const clone = container.cloneNode(true);
+        // Clean attributes
+        clone.removeAttribute('contenteditable');
 
-    clone.querySelectorAll('.chip').forEach(c => {
-        c.removeAttribute('contenteditable');
-        c.removeAttribute('spellcheck');
-    });
+        clone.querySelectorAll('.chip').forEach(c => {
+            c.removeAttribute('contenteditable');
+            c.removeAttribute('spellcheck');
+        });
 
-    clone.querySelectorAll('.add-tile-btn, .chip-check, .chip-delete, .chip-drag-handle').forEach(el => el.remove());
-    localStorage.setItem('examModeContent', clone.innerHTML);
-}
+        clone.querySelectorAll('.add-tile-btn, .chip-check, .chip-delete, .chip-drag-handle').forEach(el => el.remove());
+        localStorage.setItem('examModeContent', clone.innerHTML);
+    }
 
-}) ();
+})();
