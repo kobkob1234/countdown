@@ -170,6 +170,16 @@
         });
     };
 
+    const enableExamTextEditing = (container) => {
+        if (!container) return;
+        const editableNodes = container.querySelectorAll('h1, h2, .legend span');
+        editableNodes.forEach(node => {
+            node.classList.add('exam-editable');
+            node.setAttribute('contenteditable', 'true');
+            node.setAttribute('spellcheck', 'false');
+        });
+    };
+
     const refreshExamCells = (container) => {
         if (!container) return;
 
@@ -376,6 +386,7 @@
 
                 // Re-run on hover to heal any persistence issues or structural changes
                 container.addEventListener('mouseenter', () => {
+                    enableExamTextEditing(container);
                     ensureWeeklyGoals(container);
                     refreshExamCells(container);
                     updateWeekProgress(container);
@@ -423,6 +434,7 @@
 
     window.setupExamInteractions = (container) => {
         if (!container) return;
+        enableExamTextEditing(container);
         ensureWeeklyGoals(container);
         refreshExamCells(container);
         updateWeekProgress(container);
@@ -466,6 +478,11 @@
         clone.querySelectorAll('.chip-label').forEach(label => {
             label.removeAttribute('contenteditable');
             label.removeAttribute('spellcheck');
+        });
+
+        clone.querySelectorAll('.exam-editable').forEach(node => {
+            node.removeAttribute('contenteditable');
+            node.removeAttribute('spellcheck');
         });
 
         clone.querySelectorAll('.add-tile-btn, .chip-check, .chip-delete, .chip-drag-handle').forEach(el => el.remove());

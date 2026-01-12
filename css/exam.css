@@ -113,6 +113,16 @@
     padding-bottom: 5px;
 }
 
+#examModeOverlay .exam-editable {
+    cursor: text;
+}
+
+#examModeOverlay .exam-editable:focus {
+    outline: 2px dashed #94a3b8;
+    outline-offset: 2px;
+    background: #f8fafc;
+}
+
 #examModeOverlay .legend {
     display: flex;
     justify-content: center;
