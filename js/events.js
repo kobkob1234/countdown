@@ -123,9 +123,37 @@ export function initEvents(hooks = {}) {
     }
   };
 
-  const deleteFromCloud = (id) => {
+  const deleteFromCloud = async (id) => {
     if (!ctx.remove || !ctx.ref || !ctx.db) return;
-    ctx.remove(ctx.ref(ctx.db, 'events/' + id));
+
+    // Snapshot for rollback
+    const prevEvents = getEvents();
+    const eventToDelete = eventsById?.get?.(id);
+
+    // Optimistic Update
+    const filtered = prevEvents.filter(e => e.id !== id);
+    setEvents(filtered);
+    eventsById?.delete?.(id);
+    runUpdated();
+
+    // Update Cache Immediately
+    if (typeof ctx.writeCache === 'function') {
+      ctx.writeCache(ctx.CACHE_KEYS?.EVENTS, filtered, 300);
+    }
+
+    try {
+      await ctx.remove(ctx.ref(ctx.db, 'events/' + id));
+    } catch (err) {
+      // Rollback on failure
+      console.error('Delete failed, rolling back:', err);
+      setEvents(prevEvents);
+      if (eventToDelete && eventsById) eventsById.set(id, eventToDelete);
+      runUpdated();
+      if (typeof ctx.writeCache === 'function') {
+        ctx.writeCache(ctx.CACHE_KEYS?.EVENTS, prevEvents, 300);
+      }
+      alert('Delete failed (check connection).');
+    }
   };
 
   const clearAllCloud = () => {

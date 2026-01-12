@@ -6188,7 +6188,8 @@
           return;
         }
         // Close event edit modal if open
-        if (eventModal && eventModal.style.display !== 'none') {
+        // Close event edit modal if open
+        if (typeof eventModal !== 'undefined' && eventModal && eventModal.style.display !== 'none') {
           eventModal.style.display = 'none';
           editingId = null;
           e.preventDefault();

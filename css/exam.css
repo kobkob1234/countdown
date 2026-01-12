@@ -325,3 +325,41 @@
     margin-top: 10px;
     display: block;
 }
+
+/* Drag and Drop Visuals */
+/* Drag and Drop Visuals */
+#examModeOverlay .chip-drag-handle {
+    position: absolute;
+    left: 2px;
+    top: 50%;
+    transform: translateY(-50%);
+    cursor: grab;
+    color: rgba(255, 255, 255, 0.6);
+    padding: 2px;
+    font-size: 14px;
+    line-height: 1;
+    z-index: 20;
+    user-select: none;
+}
+
+#examModeOverlay .chip-drag-handle:active {
+    cursor: grabbing;
+}
+
+#examModeOverlay .chip {
+    padding-left: 18px;
+    /* Space for handle */
+    padding-right: 24px;
+    /* Space for checkbox */
+}
+
+/* Adjust delete button position if needed, or hide handle on hover? No, keep handle always or hover? Handle always is better for discoverability */
+#examModeOverlay .chip-delete {
+    left: 18px;
+    /* Shift delete button to right of handle */
+}
+
+#examModeOverlay .chip.dragging {
+    opacity: 0.5;
+    border: 2px dashed #94a3b8;
+}
