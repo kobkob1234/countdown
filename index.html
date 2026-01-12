@@ -643,7 +643,20 @@
                   <option value="biweekly">דו-שבועי</option>
                   <option value="monthly">חודשי</option>
                   <option value="yearly">שנתי</option>
+                  <option value="custom">⚙️ מותאם אישית...</option>
                 </select>
+                <div class="task-recurrence-custom hidden" id="newTaskRecurrenceCustomWrap">
+                  <input type="number" id="newTaskRecurrenceCustomValue" min="1" step="1"
+                    style="width: 60px; padding: 4px 8px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px; background: var(--input-bg); color: var(--text);"
+                    placeholder="#" />
+                  <select id="newTaskRecurrenceCustomUnit"
+                    style="padding: 4px 8px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px; background: var(--input-bg); color: var(--text);">
+                    <option value="days">ימים</option>
+                    <option value="weeks">שבועות</option>
+                    <option value="months">חודשים</option>
+                    <option value="years">שנים</option>
+                  </select>
+                </div>
               </div>
               <div class="label-input-wrapper">
                 <span>🔔</span>
@@ -837,6 +850,14 @@
 
       <div class="task-edit-section">
         <div class="task-edit-section-title">Recurrence</div>
+        <div class="quick-recurrence-btns">
+          <button type="button" class="quick-recurrence-btn" data-target="edit" data-recurrence="daily">יומי</button>
+          <button type="button" class="quick-recurrence-btn" data-target="edit" data-recurrence="weekdays">ימי חול</button>
+          <button type="button" class="quick-recurrence-btn" data-target="edit" data-recurrence="weekly">שבועי</button>
+          <button type="button" class="quick-recurrence-btn" data-target="edit" data-recurrence="biweekly">דו-שבועי</button>
+          <button type="button" class="quick-recurrence-btn" data-target="edit" data-recurrence="monthly">חודשי</button>
+          <button type="button" class="quick-recurrence-btn" data-target="edit" data-recurrence="none">ללא חזרה</button>
+        </div>
         <select id="editTaskRecurrence"
           style="padding: 12px 14px; border: 2px solid var(--border); border-radius: 10px; font-size: 14px; background: var(--input-bg); color: var(--text); outline: none; width: 100%; max-width: 250px; cursor: pointer;">
           <option value="none">ללא חזרה</option>
@@ -846,7 +867,21 @@
           <option value="biweekly">דו-שבועי</option>
           <option value="monthly">חודשי</option>
           <option value="yearly">שנתי</option>
+          <option value="custom">⚙️ מותאם אישית...</option>
         </select>
+        <div class="task-recurrence-custom hidden" id="editTaskRecurrenceCustomWrap"
+          style="display: flex; gap: 8px; margin-top: 10px;">
+          <input type="number" id="editTaskRecurrenceCustomValue" min="1" step="1"
+            style="width: 80px; padding: 10px 12px; border: 2px solid var(--border); border-radius: 10px; font-size: 14px; background: var(--input-bg); color: var(--text);"
+            placeholder="מספר" />
+          <select id="editTaskRecurrenceCustomUnit"
+            style="padding: 10px 12px; border: 2px solid var(--border); border-radius: 10px; font-size: 14px; background: var(--input-bg); color: var(--text);">
+            <option value="days">ימים</option>
+            <option value="weeks">שבועות</option>
+            <option value="months">חודשים</option>
+            <option value="years">שנים</option>
+          </select>
+        </div>
       </div>
 
       <div class="task-edit-section">
@@ -1862,6 +1897,14 @@
             <div class="shortcut-item">
               <div class="shortcut-label">⏰ זמן ביום: הבוקר, בצהריים, בערב, בלילה</div>
               <div class="shortcut-keys"><span class="keycap wide">פגישה מחר בבוקר</span></div>
+            </div>
+            <div class="shortcut-item">
+              <div class="shortcut-label">🔔 תזכורת: תזכורת 10 דקות לפני, תזכיר לי שעה לפני</div>
+              <div class="shortcut-keys"><span class="keycap wide">הגשה מחר תזכורת 30 דקות לפני</span></div>
+            </div>
+            <div class="shortcut-item">
+              <div class="shortcut-label">🔁 חזרה: כל יום, כל שבוע, כל 3 ימים</div>
+              <div class="shortcut-keys"><span class="keycap wide">משימה כל שבוע</span></div>
             </div>
             <div class="shortcut-item">
               <div class="shortcut-label">📁 שיוך לנושא: #שם_נושא</div>
@@ -4435,7 +4478,20 @@
 
     const PRIORITY_ORDER = { urgent: 0, high: 1, medium: 2, low: 3, none: 4 };
     const PRIORITY_LABELS = { urgent: 'Urgent', high: 'High', medium: 'Medium', low: 'Low', none: '' };
-    const RECURRENCE_LABELS = { daily: 'יומי', weekly: 'שבועי', monthly: 'חודשי' };
+    const RECURRENCE_LABELS = {
+      daily: 'יומי',
+      weekdays: 'ימי חול',
+      weekly: 'שבועי',
+      biweekly: 'דו-שבועי',
+      monthly: 'חודשי',
+      yearly: 'שנתי'
+    };
+    const RECURRENCE_UNIT_LABELS = {
+      days: { singular: 'יום', plural: 'ימים' },
+      weeks: { singular: 'שבוע', plural: 'שבועות' },
+      months: { singular: 'חודש', plural: 'חודשים' },
+      years: { singular: 'שנה', plural: 'שנים' }
+    };
 
     // Task Reminder Custom Handling
     const newTaskReminderCustomWrap = $("newTaskReminderCustomWrap");
@@ -4444,6 +4500,14 @@
     const editTaskReminderCustomWrap = $("editTaskReminderCustomWrap");
     const editTaskReminderCustomValue = $("editTaskReminderCustomValue");
     const editTaskReminderCustomUnit = $("editTaskReminderCustomUnit");
+
+    // Task Recurrence Custom Handling
+    const newTaskRecurrenceCustomWrap = $("newTaskRecurrenceCustomWrap");
+    const newTaskRecurrenceCustomValue = $("newTaskRecurrenceCustomValue");
+    const newTaskRecurrenceCustomUnit = $("newTaskRecurrenceCustomUnit");
+    const editTaskRecurrenceCustomWrap = $("editTaskRecurrenceCustomWrap");
+    const editTaskRecurrenceCustomValue = $("editTaskRecurrenceCustomValue");
+    const editTaskRecurrenceCustomUnit = $("editTaskRecurrenceCustomUnit");
 
     // Get reminder value in minutes from custom inputs
     function getTaskReminderMinutes(selectEl, customValueEl, customUnitEl) {
@@ -4488,6 +4552,85 @@
       if (customUnitEl) customUnitEl.value = 'minutes';
     }
 
+    function parseRecurrenceValue(value) {
+      if (!value) return { type: 'none' };
+      if (typeof value === 'string') {
+        if (value === 'none') return { type: 'none' };
+        if (value.startsWith('custom:')) {
+          const parts = value.split(':');
+          const interval = parseInt(parts[1], 10);
+          const unit = parts[2];
+          if (Number.isFinite(interval) && interval > 0 && RECURRENCE_UNIT_LABELS[unit]) {
+            return { type: 'custom', interval, unit };
+          }
+          return { type: 'none' };
+        }
+        return { type: value };
+      }
+      if (typeof value === 'object' && value.type === 'custom') {
+        const interval = parseInt(value.interval, 10);
+        const unit = value.unit;
+        if (Number.isFinite(interval) && interval > 0 && RECURRENCE_UNIT_LABELS[unit]) {
+          return { type: 'custom', interval, unit };
+        }
+      }
+      return { type: 'none' };
+    }
+
+    function formatRecurrenceLabel(recurrence) {
+      const parsed = parseRecurrenceValue(recurrence);
+      if (parsed.type === 'none') return '';
+      if (parsed.type !== 'custom') return RECURRENCE_LABELS[parsed.type] || parsed.type;
+      const unitLabel = RECURRENCE_UNIT_LABELS[parsed.unit];
+      if (!unitLabel || !parsed.interval) return 'מותאם אישית';
+      if (parsed.interval === 1) return `כל ${unitLabel.singular}`;
+      return `כל ${parsed.interval} ${unitLabel.plural}`;
+    }
+
+    function toggleRecurrenceCustom(selectEl, customWrapEl, customValueEl, customUnitEl) {
+      if (!selectEl) return;
+      const isCustom = selectEl.value === 'custom';
+      if (customWrapEl) customWrapEl.classList.toggle('hidden', !isCustom);
+      if (isCustom) {
+        if (customUnitEl && !customUnitEl.value) customUnitEl.value = 'days';
+        if (customValueEl && !customValueEl.value) customValueEl.value = '1';
+        if (customValueEl) customValueEl.focus();
+      } else {
+        if (customValueEl) customValueEl.value = '';
+        if (customUnitEl) customUnitEl.value = 'days';
+      }
+    }
+
+    function getTaskRecurrenceValue(selectEl, customValueEl, customUnitEl) {
+      if (!selectEl) return { value: null };
+      if (selectEl.value !== 'custom') {
+        const val = selectEl.value && selectEl.value !== 'none' ? selectEl.value : null;
+        return { value: val };
+      }
+      const interval = parseInt(customValueEl?.value, 10);
+      const unit = customUnitEl?.value || 'days';
+      if (!Number.isFinite(interval) || interval < 1 || !RECURRENCE_UNIT_LABELS[unit]) {
+        return { value: null, error: 'אנא הזן מרווח חזרה מותאם אישית (מספר חיובי).' };
+      }
+      return { value: { type: 'custom', interval, unit } };
+    }
+
+    function setTaskRecurrenceUI(selectEl, customWrapEl, customValueEl, customUnitEl, recurrence) {
+      if (!selectEl) return;
+      const parsed = parseRecurrenceValue(recurrence);
+      if (parsed.type === 'custom') {
+        selectEl.value = 'custom';
+        if (customWrapEl) customWrapEl.classList.remove('hidden');
+        if (customValueEl) customValueEl.value = String(parsed.interval || 1);
+        if (customUnitEl) customUnitEl.value = parsed.unit || 'days';
+        return;
+      }
+      selectEl.value = parsed.type || 'none';
+      if (customWrapEl) customWrapEl.classList.add('hidden');
+      if (customValueEl) customValueEl.value = '';
+      if (customUnitEl) customUnitEl.value = 'days';
+    }
+
     // New task reminder change handler
     if (newTaskReminder) {
       newTaskReminder.addEventListener('change', () => {
@@ -4514,6 +4657,20 @@
       });
     }
 
+    // New task recurrence change handler
+    if (newTaskRecurrence) {
+      newTaskRecurrence.addEventListener('change', () => {
+        toggleRecurrenceCustom(newTaskRecurrence, newTaskRecurrenceCustomWrap, newTaskRecurrenceCustomValue, newTaskRecurrenceCustomUnit);
+      });
+    }
+
+    // Edit task recurrence change handler
+    if (editTaskRecurrence) {
+      editTaskRecurrence.addEventListener('change', () => {
+        toggleRecurrenceCustom(editTaskRecurrence, editTaskRecurrenceCustomWrap, editTaskRecurrenceCustomValue, editTaskRecurrenceCustomUnit);
+      });
+    }
+
     // Quick reminder button handlers
     document.querySelectorAll('.quick-reminder-btn').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -4521,6 +4678,21 @@
         if (editTaskReminder) {
           setTaskReminderUI(editTaskReminder, editTaskReminderCustomWrap, editTaskReminderCustomValue, editTaskReminderCustomUnit, minutes);
         }
+      });
+    });
+
+    // Quick recurrence button handlers
+    document.querySelectorAll('.quick-recurrence-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const target = btn.dataset.target || 'edit';
+        const value = btn.dataset.recurrence || 'none';
+        const selectEl = target === 'new' ? newTaskRecurrence : editTaskRecurrence;
+        const wrapEl = target === 'new' ? newTaskRecurrenceCustomWrap : editTaskRecurrenceCustomWrap;
+        const valueEl = target === 'new' ? newTaskRecurrenceCustomValue : editTaskRecurrenceCustomValue;
+        const unitEl = target === 'new' ? newTaskRecurrenceCustomUnit : editTaskRecurrenceCustomUnit;
+        if (!selectEl) return;
+        selectEl.value = value;
+        toggleRecurrenceCustom(selectEl, wrapEl, valueEl, unitEl);
       });
     });
 
@@ -4615,11 +4787,12 @@
     }
 
     function normalizeRecurrence(value) {
-      return value && value !== 'none' ? value : 'none';
+      return parseRecurrenceValue(value).type || 'none';
     }
 
     function getNextRecurrenceDate(baseIso, recurrence) {
-      const type = normalizeRecurrence(recurrence);
+      const parsedRecurrence = parseRecurrenceValue(recurrence);
+      const type = parsedRecurrence.type || 'none';
       if (type === 'none') return null;
       const now = new Date();
       let base = baseIso ? new Date(baseIso) : new Date();
@@ -4635,7 +4808,7 @@
           // Skip to next weekday (Sunday=0, Saturday=6)
           do {
             next.setDate(next.getDate() + 1);
-          } while (next.getDay() === 0 || next.getDay() === 6 || next.getDay() === 5);
+          } while (next.getDay() === 5 || next.getDay() === 6);
           break;
         case 'weekly':
           next.setDate(next.getDate() + 7);
@@ -4648,6 +4821,18 @@
           break;
         case 'yearly':
           next.setFullYear(next.getFullYear() + 1);
+          break;
+        case 'custom':
+          if (!parsedRecurrence.interval || !parsedRecurrence.unit) return null;
+          if (parsedRecurrence.unit === 'days') {
+            next.setDate(next.getDate() + parsedRecurrence.interval);
+          } else if (parsedRecurrence.unit === 'weeks') {
+            next.setDate(next.getDate() + (parsedRecurrence.interval * 7));
+          } else if (parsedRecurrence.unit === 'months') {
+            next.setMonth(next.getMonth() + parsedRecurrence.interval);
+          } else if (parsedRecurrence.unit === 'years') {
+            next.setFullYear(next.getFullYear() + parsedRecurrence.interval);
+          }
           break;
         default:
           return null;
@@ -4674,9 +4859,9 @@
     }
 
     function maybeCreateRecurringTask(task) {
-      const recurrence = normalizeRecurrence(task?.recurrence);
-      if (recurrence === 'none') return;
-      const nextDate = getNextRecurrenceDate(task?.dueDate, recurrence);
+      const parsedRecurrence = parseRecurrenceValue(task?.recurrence);
+      if (parsedRecurrence.type === 'none') return;
+      const nextDate = getNextRecurrenceDate(task?.dueDate, task?.recurrence);
       if (!nextDate) return;
       pushTaskClone(task, { dueDate: nextDate.toISOString(), completed: false });
     }
@@ -4844,7 +5029,12 @@
 
       const dueValue = newTaskDue.value;
       const dueDate = dueValue ? parseLocal(dueValue) : null;
-      const recurrence = newTaskRecurrence ? newTaskRecurrence.value : 'none';
+      const recurrenceResult = getTaskRecurrenceValue(newTaskRecurrence, newTaskRecurrenceCustomValue, newTaskRecurrenceCustomUnit);
+      if (recurrenceResult.error) {
+        alert(recurrenceResult.error);
+        return;
+      }
+      const recurrence = recurrenceResult.value;
       const reminder = getTaskReminderMinutes(newTaskReminder, newTaskReminderCustomValue, newTaskReminderCustomUnit);
       const durationEl = document.getElementById('newTaskDuration');
       const duration = durationEl ? parseInt(durationEl.value, 10) || 0 : 0;
@@ -4864,7 +5054,7 @@
         createdAt: new Date().toISOString(),
         ...(Number.isFinite(orderValue) ? { order: orderValue } : {}),
         ...(selectedTaskColor ? { color: selectedTaskColor } : {}),
-        ...(recurrence && recurrence !== 'none' ? { recurrence } : {}),
+        ...(recurrence ? { recurrence } : {}),
         ...(reminder > 0 ? { reminder } : {}),
         ...(duration > 0 ? { duration } : {})
       };
@@ -4875,6 +5065,9 @@
       newTaskTitle.value = '';
       newTaskDue.value = '';
       if (newTaskRecurrence) newTaskRecurrence.value = 'none';
+      if (newTaskRecurrenceCustomWrap) newTaskRecurrenceCustomWrap.classList.add('hidden');
+      if (newTaskRecurrenceCustomValue) newTaskRecurrenceCustomValue.value = '';
+      if (newTaskRecurrenceCustomUnit) newTaskRecurrenceCustomUnit.value = 'days';
       if (newTaskReminder) newTaskReminder.value = '0';
       if (newTaskReminderCustomWrap) newTaskReminderCustomWrap.classList.add('hidden');
       if (newTaskReminderCustomValue) newTaskReminderCustomValue.value = '';
@@ -5263,12 +5456,11 @@
       }
 
       let recurrenceHtml = '';
-      const recurrence = normalizeRecurrence(task.recurrence);
-      if (recurrence !== 'none') {
-        const label = RECURRENCE_LABELS[recurrence] || recurrence;
+      const recurrenceLabel = formatRecurrenceLabel(task.recurrence);
+      if (recurrenceLabel) {
         // Clear two-arrow repeat icon for better small-size rendering
         const icon = `<svg viewBox="0 0 24 24" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" style="width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"></path><path d="M21 3v5h-5"></path><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"></path><path d="M8 16H3v5"></path></svg>`;
-        recurrenceHtml = `<span class="task-recurrence">${icon}${label}</span>`;
+        recurrenceHtml = `<span class="task-recurrence">${icon}${recurrenceLabel}</span>`;
       }
 
       let reminderHtml = '';
@@ -6058,7 +6250,7 @@
       }
 
       if (editTaskRecurrence) {
-        editTaskRecurrence.value = normalizeRecurrence(editingTask.recurrence);
+        setTaskRecurrenceUI(editTaskRecurrence, editTaskRecurrenceCustomWrap, editTaskRecurrenceCustomValue, editTaskRecurrenceCustomUnit, editingTask.recurrence);
       }
 
       // Set reminder with custom support
@@ -6207,9 +6399,13 @@
       editingTask.content = editTaskContent.value.trim();
       editingTask.subject = newSubjectId;
       editingTask.color = getTaskColorFromPicker(taskColorPicker) || '';
-      const recurrenceValue = editTaskRecurrence ? editTaskRecurrence.value : 'none';
-      if (recurrenceValue && recurrenceValue !== 'none') {
-        editingTask.recurrence = recurrenceValue;
+      const recurrenceResult = getTaskRecurrenceValue(editTaskRecurrence, editTaskRecurrenceCustomValue, editTaskRecurrenceCustomUnit);
+      if (recurrenceResult.error) {
+        alert(recurrenceResult.error);
+        return;
+      }
+      if (recurrenceResult.value) {
+        editingTask.recurrence = recurrenceResult.value;
       } else {
         delete editingTask.recurrence;
       }
@@ -7893,13 +8089,15 @@
      * Parses natural language task input to extract metadata.
      * Supports Hebrew + English, extracts priority, date/time, and subject.
      * @param {string} input - Raw user input text
-     * @returns {Object} - {title, dueDate, priority, subjectId}
+     * @returns {Object} - {title, dueDate, priority, subjectId, reminderMinutes, recurrence}
      */
     function parseNaturalLanguage(input) {
       let title = input;
       let dueDate = null;
       let priority = 'medium';
       let subjectId = '';
+      let reminderMinutes = 0;
+      let recurrence = null;
 
       // Helper: Normalize text by removing ALL spaces and converting to lowercase
       const normalize = (str) => str.replace(/\s+/g, '').toLowerCase();
@@ -8108,6 +8306,95 @@
         }
       }
 
+      // ============ STEP 3.5: EXTRACT & REMOVE REMINDER (Hebrew only) ============
+      const reminderWordPattern = '(?:תזכורת|התראה|הזכרה|תזכיר(?:\\s+לי)?|להזכיר(?:\\s+לי)?|הזכר(?:\\s+לי)?)';
+      const reminderDoublePattern = new RegExp(`${reminderWordPattern}\\s*[:：-]?\\s*(?:בעוד\\s*)?(שעתיים|יומיים)\\s*(?:לפני|מראש)?`, 'i');
+      const reminderMatchDouble = title.match(reminderDoublePattern);
+      if (reminderMatchDouble) {
+        const unit = reminderMatchDouble[1];
+        reminderMinutes = unit.includes('שעת') ? 120 : 2880;
+        title = title.replace(reminderMatchDouble[0], ' ').trim();
+      }
+
+      if (!reminderMinutes) {
+        const reminderPattern = new RegExp(`${reminderWordPattern}\\s*[:：-]?\\s*(?:בעוד\\s*)?(\\d+)?\\s*(דק(?:ות)?['׳]?|דקה|דקות|שעה|שעות|יום|ימים)\\s*(?:לפני|מראש)?`, 'i');
+        const reminderMatch = title.match(reminderPattern);
+        if (reminderMatch) {
+          const value = parseInt(reminderMatch[1], 10) || 1;
+          const unitRaw = (reminderMatch[2] || '').replace(/[׳']/g, '');
+          if (unitRaw.startsWith('דק')) {
+            reminderMinutes = value;
+          } else if (unitRaw.startsWith('שעה') || unitRaw.startsWith('שעות')) {
+            reminderMinutes = value * 60;
+          } else if (unitRaw.startsWith('יום') || unitRaw.startsWith('ימים')) {
+            reminderMinutes = value * 1440;
+          }
+          title = title.replace(reminderMatch[0], ' ').trim();
+        }
+      }
+
+      // ============ STEP 3.6: EXTRACT & REMOVE RECURRENCE (Hebrew only) ============
+      const customRecurrencePattern = /כל\s*(\d+)\s*(ימים|יום|שבועות|שבוע|חודשים|חודש|שנים|שנה)/i;
+      const customMatch = title.match(customRecurrencePattern);
+      if (customMatch) {
+        const interval = parseInt(customMatch[1], 10);
+        const unitRaw = customMatch[2];
+        let unit = null;
+        if (unitRaw.startsWith('יום')) unit = 'days';
+        else if (unitRaw.startsWith('שבוע')) unit = 'weeks';
+        else if (unitRaw.startsWith('חודש')) unit = 'months';
+        else if (unitRaw.startsWith('שנה')) unit = 'years';
+        if (interval && unit) {
+          recurrence = { type: 'custom', interval, unit };
+          title = title.replace(customMatch[0], ' ').trim();
+        }
+      }
+
+      if (!recurrence) {
+        const doubleRecurrencePattern = /כל\s*(יומיים|שבועיים|חודשיים|שנתיים)/i;
+        const doubleMatch = title.match(doubleRecurrencePattern);
+        if (doubleMatch) {
+          const word = doubleMatch[1];
+          if (word.startsWith('יומ')) {
+            recurrence = { type: 'custom', interval: 2, unit: 'days' };
+          } else if (word.startsWith('שבוע')) {
+            recurrence = 'biweekly';
+          } else if (word.startsWith('חודש')) {
+            recurrence = { type: 'custom', interval: 2, unit: 'months' };
+          } else if (word.startsWith('שנת') || word.startsWith('שנה')) {
+            recurrence = { type: 'custom', interval: 2, unit: 'years' };
+          }
+          title = title.replace(doubleMatch[0], ' ').trim();
+        }
+      }
+
+      if (!recurrence) {
+        const recurrencePatterns = [
+          { type: 'weekdays', patterns: [/בימי\s*חול/gi, /ימי\s*חול/gi, /א['׳]?-ה['׳]?/g] },
+          { type: 'daily', patterns: [/כל\s*יום(?!יים)/gi, /יומי(?!ים)/gi, /בכל\s*יום(?!יים)/gi] },
+          { type: 'biweekly', patterns: [/כל\s*שבועיים/gi, /דו[-\s]*שבועי/gi, /דו[-\s]*שבועית/gi] },
+          { type: 'weekly', patterns: [/כל\s*שבוע(?!יים)/gi, /שבועי(?!ים)/gi, /מדי\s*שבוע(?!יים)/gi] },
+          { type: 'monthly', patterns: [/כל\s*חודש(?!יים)/gi, /חודשי(?!ים)/gi, /מדי\s*חודש(?!יים)/gi] },
+          { type: 'yearly', patterns: [/כל\s*שנה(?!יים)/gi, /שנתי(?!ים)/gi, /מדי\s*שנה(?!יים)/gi] }
+        ];
+
+        for (const { type, patterns } of recurrencePatterns) {
+          let matched = false;
+          for (const pattern of patterns) {
+            const matches = title.match(pattern);
+            if (matches) {
+              recurrence = type;
+              matches.forEach(match => {
+                title = title.replace(match, ' ');
+              });
+              matched = true;
+              break;
+            }
+          }
+          if (matched) break;
+        }
+      }
+
       // ============ STEP 4: ENHANCED SUBJECT DETECTION ============
       // Sort subjects by name length (longest first) to prevent partial matches
       const sortedSubjects = [...subjects].sort((a, b) => b.name.length - a.name.length);
@@ -8257,7 +8544,7 @@
       title = title.replace(/\s+/g, ' ').trim();
       title = title.replace(/^[,.:;\-]+\s*/, '').replace(/\s*[,.:;\-]+$/, '').trim();
 
-      return { title, dueDate, priority, subjectId };
+      return { title, dueDate, priority, subjectId, reminderMinutes, recurrence };
     }
 
     // Legacy helper - kept for compatibility
@@ -8310,13 +8597,23 @@
       if (!input) return;
 
       const parsed = parseNaturalLanguage(input);
-      const hasParsed = parsed.dueDate || parsed.subjectId || parsed.priority !== 'medium';
+      const hasParsed = parsed.dueDate || parsed.subjectId || parsed.priority !== 'medium' || parsed.reminderMinutes > 0 || parsed.recurrence;
 
       if (hasParsed) {
         const defaultSubjectId = getDefaultSubjectId();
         const selectedSubjectId = parsed.subjectId || defaultSubjectId;
         const orderValue = hasManualOrder() ? getNextTaskOrder(false) : null;
-        const recurrence = newTaskRecurrence ? newTaskRecurrence.value : 'none';
+        const recurrenceResult = parsed.recurrence
+          ? { value: null }
+          : getTaskRecurrenceValue(newTaskRecurrence, newTaskRecurrenceCustomValue, newTaskRecurrenceCustomUnit);
+        if (recurrenceResult.error) {
+          alert(recurrenceResult.error);
+          return;
+        }
+        const recurrence = parsed.recurrence || recurrenceResult.value;
+        const reminder = parsed.reminderMinutes > 0
+          ? parsed.reminderMinutes
+          : getTaskReminderMinutes(newTaskReminder, newTaskReminderCustomValue, newTaskReminderCustomUnit);
 
         const taskData = {
           title: parsed.title || input,
@@ -8329,7 +8626,8 @@
           createdAt: new Date().toISOString(),
           ...(Number.isFinite(orderValue) ? { order: orderValue } : {}),
           ...(selectedTaskColor ? { color: selectedTaskColor } : {}),
-          ...(recurrence && recurrence !== 'none' ? { recurrence } : {})
+          ...(recurrence ? { recurrence } : {}),
+          ...(reminder > 0 ? { reminder } : {})
         };
 
         createTask(taskData);
@@ -8342,6 +8640,13 @@
         quickAddRow.style.display = 'none';
         selectedTaskColor = '';
         if (newTaskRecurrence) newTaskRecurrence.value = 'none';
+        if (newTaskRecurrenceCustomWrap) newTaskRecurrenceCustomWrap.classList.add('hidden');
+        if (newTaskRecurrenceCustomValue) newTaskRecurrenceCustomValue.value = '';
+        if (newTaskRecurrenceCustomUnit) newTaskRecurrenceCustomUnit.value = 'days';
+        if (newTaskReminder) newTaskReminder.value = '0';
+        if (newTaskReminderCustomWrap) newTaskReminderCustomWrap.classList.add('hidden');
+        if (newTaskReminderCustomValue) newTaskReminderCustomValue.value = '';
+        if (newTaskReminderCustomUnit) newTaskReminderCustomUnit.value = 'minutes';
         setTaskColorSelection(quickTaskColorPicker, selectedTaskColor);
         syncQuickAddSubject();
       } else {
@@ -9651,8 +9956,23 @@
         return 0;
       };
 
+      const pruneDeletedTaskBlocks = () => {
+        if (typeof tasksLoaded !== 'undefined' && typeof hasTasksCache !== 'undefined') {
+          if (!tasksLoaded && !hasTasksCache) return 0;
+        }
+        const taskIds = new Set((typeof tasks !== 'undefined' ? tasks : []).map(t => t.id));
+        const initialLen = plannerBlocks.length;
+        plannerBlocks = plannerBlocks.filter(b => !b.linkedTaskId || taskIds.has(b.linkedTaskId));
+        const removed = initialLen - plannerBlocks.length;
+        if (removed > 0) {
+          saveBlocks();
+        }
+        return removed;
+      };
+
       // Sync all scheduled tasks for current date to planner
       const syncAllScheduledTasks = () => {
+        pruneDeletedTaskBlocks();
         const currentDateKey = getDateKey(currentDate);
         const currentBlocks = getBlocksForDate(currentDate);
 
@@ -10179,6 +10499,7 @@
 
       // Refresh scheduled tasks (called when tasks change)
       const refreshTasks = () => {
+        pruneDeletedTaskBlocks();
         if (refs.overlay && refs.overlay.classList.contains('open')) {
           // Full render to update timeline, scheduled tasks, and quick tasks
           render();

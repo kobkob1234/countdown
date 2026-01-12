@@ -1516,6 +1516,16 @@
       margin-top: var(--space-2);
     }
 
+    .task-recurrence-custom.hidden {
+      display: none !important;
+    }
+
+    .task-recurrence-custom {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+    }
+
     .reminder-custom input,
     .reminder-custom select {
       padding: var(--space-3) var(--space-4);
@@ -7663,5 +7673,33 @@
     }
 
     .quick-reminder-btn:active {
+      transform: scale(0.95);
+    }
+
+    /* ===== Quick Recurrence Buttons Base Styles ===== */
+    .quick-recurrence-btns {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+    }
+
+    .quick-recurrence-btn {
+      padding: 6px 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--btn-secondary-bg);
+      color: var(--text);
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .quick-recurrence-btn:hover {
+      background: var(--btn-secondary-hover);
+      border-color: var(--accent);
+    }
+
+    .quick-recurrence-btn:active {
       transform: scale(0.95);
     }

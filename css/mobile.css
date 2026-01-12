@@ -2698,6 +2698,22 @@
         white-space: nowrap;
       }
 
+      .quick-recurrence-btns {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px !important;
+        margin-bottom: 10px;
+        overflow: visible;
+      }
+
+      .quick-recurrence-btn {
+        flex-shrink: 0;
+        min-width: auto;
+        padding: 8px 10px !important;
+        font-size: 12px !important;
+        white-space: nowrap;
+      }
+
       /* ===== FIX: Pomodoro Settings Panel Alignment ===== */
       .pomodoro-settings-panel {
         grid-template-columns: repeat(2, 1fr) !important;
@@ -2763,6 +2779,26 @@
       }
 
       .task-edit-section .quick-reminder-btn {
+        flex: 0 0 auto !important;
+        padding: 10px 14px !important;
+        font-size: 14px !important;
+        min-height: 44px !important;
+        border-radius: 10px !important;
+        background: var(--btn-secondary-bg) !important;
+        border: 1px solid var(--border) !important;
+        color: var(--text) !important;
+      }
+
+      .task-edit-section .quick-recurrence-btns {
+        display: flex !important;
+        flex-wrap: wrap !important;
+        gap: 8px !important;
+        margin-bottom: 12px !important;
+        overflow: visible !important;
+        min-height: 40px;
+      }
+
+      .task-edit-section .quick-recurrence-btn {
         flex: 0 0 auto !important;
         padding: 10px 14px !important;
         font-size: 14px !important;
