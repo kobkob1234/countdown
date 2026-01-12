@@ -1,4 +1,6 @@
 const CACHE_NAME = 'countdown-push-v7';
+const NOTIFY_DEDUPE_CACHE = 'countdown-notify-dedupe-v1';
+const NOTIFY_DEDUPE_TTL_MS = 1000 * 60 * 60 * 24 * 7;
 const CACHE_URLS = [
   './',
   './icon-192.png',
@@ -20,6 +22,33 @@ const CACHE_URLS = [
   './js/controllers/mobile.js'
 ];
 
+function buildDedupeRequest(key) {
+  const safeKey = encodeURIComponent(String(key || ''));
+  const base = new URL('./', self.location.href);
+  return new Request(new URL(`__notify_dedupe__/${safeKey}`, base));
+}
+
+async function wasDedupeKeySeen(key, nowMs = Date.now()) {
+  if (!key || !self.caches) return false;
+  const cache = await caches.open(NOTIFY_DEDUPE_CACHE);
+  const req = buildDedupeRequest(key);
+  const res = await cache.match(req);
+  if (!res) return false;
+  const ts = Number(await res.text()) || 0;
+  if (!ts || (nowMs - ts) > NOTIFY_DEDUPE_TTL_MS) {
+    await cache.delete(req);
+    return false;
+  }
+  return true;
+}
+
+async function markDedupeKeySeen(key, nowMs = Date.now()) {
+  if (!key || !self.caches) return;
+  const cache = await caches.open(NOTIFY_DEDUPE_CACHE);
+  const req = buildDedupeRequest(key);
+  await cache.put(req, new Response(String(nowMs), { headers: { 'content-type': 'text/plain' } }));
+}
+
 self.addEventListener('install', (event) => {
   self.skipWaiting();
   // Pre-cache essential files
@@ -38,8 +67,9 @@ self.addEventListener('activate', (event) => {
       self.clients.claim(),
       // Clean up old caches
       caches.keys().then((keys) => {
+        const keepCaches = new Set([CACHE_NAME, NOTIFY_DEDUPE_CACHE]);
         return Promise.all(
-          keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))
+          keys.filter((key) => !keepCaches.has(key)).map((key) => caches.delete(key))
         );
       }),
       // Register periodic sync if available (helps keep SW alive on Android)
@@ -94,36 +124,48 @@ self.addEventListener('periodicsync', (event) => {
 });
 
 self.addEventListener('push', (event) => {
-  let data = {};
-  try {
-    data = event.data ? event.data.json() : {};
-  } catch (e) {
-    data = { title: 'Reminder', body: event.data ? event.data.text() : '' };
-  }
+  event.waitUntil((async () => {
+    let data = {};
+    try {
+      data = event.data ? event.data.json() : {};
+    } catch (e) {
+      data = { title: 'Reminder', body: event.data ? event.data.text() : '' };
+    }
 
-  const title = data.title || 'Task Reminder';
-  const options = {
-    body: data.body || '',
-    icon: data.icon || './icon-192.png',
-    // badge: data.badge || './icon-192.png', // Removed to fix Android white square issue
-    vibrate: data.vibrate || [200, 100, 200, 100, 200],
-    tag: data.tag || 'reminder',
-    renotify: data.renotify ?? true,
-    requireInteraction: data.requireInteraction ?? true,
-    data: {
-      url: data.url || '/',
-      completeUrl: data.completeUrl || null,
-      raw: data.data || null
-    },
-    actions: Array.isArray(data.actions) && data.actions.length
-      ? data.actions
-      : [
-        { action: 'view', title: 'View' },
-        { action: 'complete', title: 'Done' }
-      ]
-  };
+    const dedupeKey = data?.dedupeKey || data?.data?.dedupeKey || '';
+    if (dedupeKey) {
+      try {
+        if (await wasDedupeKeySeen(dedupeKey)) return;
+        await markDedupeKeySeen(dedupeKey);
+      } catch (e) {
+        // Best-effort dedupe; continue on failure.
+      }
+    }
 
-  event.waitUntil(self.registration.showNotification(title, options));
+    const title = data.title || 'Task Reminder';
+    const options = {
+      body: data.body || '',
+      icon: data.icon || './icon-192.png',
+      // badge: data.badge || './icon-192.png', // Removed to fix Android white square issue
+      vibrate: data.vibrate || [200, 100, 200, 100, 200],
+      tag: data.tag || 'reminder',
+      renotify: data.renotify ?? true,
+      requireInteraction: data.requireInteraction ?? true,
+      data: {
+        url: data.url || '/',
+        completeUrl: data.completeUrl || null,
+        raw: data.data || null
+      },
+      actions: Array.isArray(data.actions) && data.actions.length
+        ? data.actions
+        : [
+          { action: 'view', title: 'View' },
+          { action: 'complete', title: 'Done' }
+        ]
+    };
+
+    await self.registration.showNotification(title, options);
+  })());
 });
 
 self.addEventListener('notificationclick', (event) => {

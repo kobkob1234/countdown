@@ -2250,6 +2250,8 @@
       TASKS_LAST_CHECK: `countdown-last-task-check-v1${taskNotifyScope}`
     };
     const NOTIFY_TTL_MS = 1000 * 60 * 60 * 24 * 7;
+    const NOTIFY_DEDUPE_CACHE = 'countdown-notify-dedupe-v1';
+    const NOTIFY_DEDUPE_TTL_MS = NOTIFY_TTL_MS;
     const REMINDER_CATCHUP_MAX_MS = 1000 * 60 * 60 * 12;
     const REMINDER_CATCHUP_MAX_COUNT = 6; // Limit burst after long inactivity.
     const NOTIFY_CHECK_PERSIST_MS = 30000;
@@ -2322,12 +2324,47 @@
       try { localStorage.setItem(state.key, String(nowMs)); } catch (e) { }
     }
 
+    function buildDedupeRequest(key) {
+      const safeKey = encodeURIComponent(String(key || ''));
+      const base = new URL('./', window.location.href);
+      return new Request(new URL(`__notify_dedupe__/${safeKey}`, base));
+    }
+
+    async function wasDedupeKeySeen(key, nowMs = Date.now()) {
+      if (!key || !('caches' in window)) return false;
+      try {
+        const cache = await caches.open(NOTIFY_DEDUPE_CACHE);
+        const req = buildDedupeRequest(key);
+        const res = await cache.match(req);
+        if (!res) return false;
+        const ts = Number(await res.text()) || 0;
+        if (!ts || (nowMs - ts) > NOTIFY_DEDUPE_TTL_MS) {
+          await cache.delete(req);
+          return false;
+        }
+        return true;
+      } catch (e) {
+        return false;
+      }
+    }
+
+    async function markDedupeKeySeen(key, nowMs = Date.now()) {
+      if (!key || !('caches' in window)) return;
+      try {
+        const cache = await caches.open(NOTIFY_DEDUPE_CACHE);
+        const req = buildDedupeRequest(key);
+        await cache.put(req, new Response(String(nowMs), { headers: { 'content-type': 'text/plain' } }));
+      } catch (e) { }
+    }
+
     const notifiedEvents = loadNotifiedMap(NOTIFY_KEYS.EVENTS);
     const notifiedTasks = loadNotifiedMap(NOTIFY_KEYS.TASKS);
     const reminderCheckState = {
       events: { key: NOTIFY_KEYS.EVENTS_LAST_CHECK, lastCheck: loadLastCheck(NOTIFY_KEYS.EVENTS_LAST_CHECK), lastPersisted: 0 },
       tasks: { key: NOTIFY_KEYS.TASKS_LAST_CHECK, lastCheck: loadLastCheck(NOTIFY_KEYS.TASKS_LAST_CHECK), lastPersisted: 0 }
     };
+    let eventReminderCheckInFlight = false;
+    let taskReminderCheckInFlight = false;
     let pendingEventAlert = null;
     const reminderAudio = new Audio('https://assets.mixkit.co/sfx/preview/mixkit-software-interface-start-2574.mp3');
     reminderAudio.preload = 'auto';
@@ -2860,8 +2897,8 @@
         showEventAlert(pendingEventAlert.title, pendingEventAlert.message, true);
         pendingEventAlert = null;
       }
-      checkEventReminders(Date.now());
-      checkTaskReminders();
+      void checkEventReminders(Date.now());
+      void checkTaskReminders();
       // Force Firebase reconnect when app becomes visible (fixes mobile sync issues)
       if (!document.hidden) {
         goOffline(db);
@@ -3144,7 +3181,7 @@
       if (!evt) return;
 
       const eventRef = ref(db, `events/${id}`);
-      set(eventRef, { ...evt, reminder: minutes || null });
+      set(eventRef, { ...evt, reminder: minutes || null, reminderUserSet: !!minutes });
     }
 
     // Close reminder dropdowns when clicking outside
@@ -3472,40 +3509,56 @@
       });
     }
 
-    function checkEventReminders(nowMs = Date.now()) {
-      const state = reminderCheckState.events;
-      const { start, isCatchup } = getReminderWindow(state.lastCheck, nowMs);
-      const candidates = [];
+    async function checkEventReminders(nowMs = Date.now()) {
+      if (eventReminderCheckInFlight) return;
+      eventReminderCheckInFlight = true;
+      try {
+        const state = reminderCheckState.events;
+        const { start, isCatchup } = getReminderWindow(state.lastCheck, nowMs);
+        const candidates = [];
 
-      getActiveEvents().forEach(evt => {
-        const reminderMinutes = parseInt(evt.reminder, 10) || 0;
-        if (!reminderMinutes) return;
-        const reminderKey = `${evt.date || ''}|${reminderMinutes}`;
-        const entry = notifiedEvents.get(evt.id);
-        if (entry && entry.key === reminderKey) return;
-        const eventTime = new Date(evt.date).getTime();
-        if (!Number.isFinite(eventTime)) return;
-        const triggerTime = eventTime - (reminderMinutes * 60000);
-        if (triggerTime < start || triggerTime > nowMs) return;
-        candidates.push({ evt, reminderKey, triggerTime });
-      });
-
-      if (candidates.length) {
-        if (isCatchup && candidates.length > REMINDER_CATCHUP_MAX_COUNT) {
-          candidates.sort((a, b) => b.triggerTime - a.triggerTime);
-          candidates.length = REMINDER_CATCHUP_MAX_COUNT;
-        } else {
-          candidates.sort((a, b) => a.triggerTime - b.triggerTime);
-        }
-        candidates.forEach(item => {
-          triggerAlert(item.evt, nowMs);
-          notifiedEvents.set(item.evt.id, { key: item.reminderKey, ts: nowMs });
+        getActiveEvents().forEach(evt => {
+          const isImported = evt.externalId || (evt.notes && evt.notes.includes('[Imported'));
+          if (isImported && !evt.reminderUserSet) return;
+          const reminderMinutes = parseInt(evt.reminder, 10) || 0;
+          if (!reminderMinutes) return;
+          const reminderKey = `${evt.date || ''}|${reminderMinutes}`;
+          const entry = notifiedEvents.get(evt.id);
+          if (entry && entry.key === reminderKey) return;
+          const eventTime = new Date(evt.date).getTime();
+          if (!Number.isFinite(eventTime)) return;
+          const triggerTime = eventTime - (reminderMinutes * 60000);
+          if (triggerTime < start || triggerTime > nowMs) return;
+          const dedupeKey = `event|${evt.id}|${evt.date || ''}|${reminderMinutes}`;
+          candidates.push({ evt, reminderKey, triggerTime, dedupeKey });
         });
-        persistNotifiedMap(NOTIFY_KEYS.EVENTS, notifiedEvents);
-      }
 
-      state.lastCheck = nowMs;
-      persistLastCheck(state, nowMs);
+        if (candidates.length) {
+          if (isCatchup && candidates.length > REMINDER_CATCHUP_MAX_COUNT) {
+            candidates.sort((a, b) => b.triggerTime - a.triggerTime);
+            candidates.length = REMINDER_CATCHUP_MAX_COUNT;
+          } else {
+            candidates.sort((a, b) => a.triggerTime - b.triggerTime);
+          }
+          for (const item of candidates) {
+            if (item.dedupeKey && await wasDedupeKeySeen(item.dedupeKey, nowMs)) {
+              notifiedEvents.set(item.evt.id, { key: item.reminderKey, ts: nowMs });
+              continue;
+            }
+            if (item.dedupeKey) await markDedupeKeySeen(item.dedupeKey, nowMs);
+            triggerAlert(item.evt, nowMs);
+            notifiedEvents.set(item.evt.id, { key: item.reminderKey, ts: nowMs });
+          }
+          persistNotifiedMap(NOTIFY_KEYS.EVENTS, notifiedEvents);
+        }
+
+        state.lastCheck = nowMs;
+        persistLastCheck(state, nowMs);
+      } catch (e) {
+        console.warn('[Notifications] Event reminder check failed:', e);
+      } finally {
+        eventReminderCheckInFlight = false;
+      }
     }
 
     function tick() {
@@ -3530,7 +3583,7 @@
       });
 
       const nowMs = now;
-      checkEventReminders(nowMs);
+      void checkEventReminders(nowMs);
     }
 
     function startTicker() {
@@ -3571,6 +3624,7 @@
           date: parsedDate.toISOString(),
           notes: notes || null,
           reminder: reminderVal,
+          reminderUserSet: reminderVal > 0,
           highlighted: evt ? evt.highlighted : false,
           pinned: evt ? evt.pinned : false
         });
@@ -3581,6 +3635,7 @@
           date: parsedDate.toISOString(),
           notes: notes || null,
           reminder: reminderVal,
+          reminderUserSet: reminderVal > 0,
           highlighted: false,
           pinned: false
         });
@@ -5881,48 +5936,66 @@
     }
     ctx.startTaskTicker = startTaskTicker;
 
-    function checkTaskReminders(nowMs = Date.now()) {
-      const state = reminderCheckState.tasks;
-      const { start, isCatchup } = getReminderWindow(state.lastCheck, nowMs);
-      const candidates = [];
+    async function checkTaskReminders(nowMs = Date.now()) {
+      if (taskReminderCheckInFlight) return;
+      taskReminderCheckInFlight = true;
+      try {
+        const state = reminderCheckState.tasks;
+        const { start, isCatchup } = getReminderWindow(state.lastCheck, nowMs);
+        const candidates = [];
 
-      tasks.forEach(task => {
-        if (task.completed) return;
-        const reminderMinutes = parseInt(task.reminder, 10) || 0;
-        if (!reminderMinutes) return;
-        if (!task.dueDate) return;
-        const reminderKey = `${task.dueDate}|${reminderMinutes}`;
-        const entry = notifiedTasks.get(task.id);
-        if (entry && entry.key === reminderKey) return;
-        const taskTime = new Date(task.dueDate).getTime();
-        if (!Number.isFinite(taskTime)) return;
-        const triggerTime = taskTime - (reminderMinutes * 60000);
-        if (triggerTime < start || triggerTime > nowMs) return;
-        candidates.push({ task, reminderKey, triggerTime });
-      });
-
-      if (candidates.length) {
-        if (isCatchup && candidates.length > REMINDER_CATCHUP_MAX_COUNT) {
-          candidates.sort((a, b) => b.triggerTime - a.triggerTime);
-          candidates.length = REMINDER_CATCHUP_MAX_COUNT;
-        } else {
-          candidates.sort((a, b) => a.triggerTime - b.triggerTime);
-        }
-        candidates.forEach(item => {
-          triggerTaskAlert(item.task);
-          notifiedTasks.set(item.task.id, { key: item.reminderKey, ts: nowMs });
+        tasks.forEach(task => {
+          if (task.completed) return;
+          const reminderMinutes = parseInt(task.reminder, 10) || 0;
+          if (!reminderMinutes) return;
+          if (!task.dueDate) return;
+          const reminderKey = `${task.dueDate}|${reminderMinutes}`;
+          const entry = notifiedTasks.get(task.id);
+          if (entry && entry.key === reminderKey) return;
+          const taskTime = new Date(task.dueDate).getTime();
+          if (!Number.isFinite(taskTime)) return;
+          const triggerTime = taskTime - (reminderMinutes * 60000);
+          if (triggerTime < start || triggerTime > nowMs) return;
+          const dedupeKey = task.isShared
+            ? `shared-task|${task.subject || ''}|${task.id}|${task.dueDate || ''}|${reminderMinutes}`
+            : `task|${currentUser || ''}|${task.id}|${task.dueDate || ''}|${reminderMinutes}`;
+          candidates.push({ task, reminderKey, triggerTime, dedupeKey });
         });
-        persistNotifiedMap(NOTIFY_KEYS.TASKS, notifiedTasks);
-      }
 
-      state.lastCheck = nowMs;
-      persistLastCheck(state, nowMs);
+        if (candidates.length) {
+          if (isCatchup && candidates.length > REMINDER_CATCHUP_MAX_COUNT) {
+            candidates.sort((a, b) => b.triggerTime - a.triggerTime);
+            candidates.length = REMINDER_CATCHUP_MAX_COUNT;
+          } else {
+            candidates.sort((a, b) => a.triggerTime - b.triggerTime);
+          }
+          for (const item of candidates) {
+            if (item.dedupeKey && await wasDedupeKeySeen(item.dedupeKey, nowMs)) {
+              notifiedTasks.set(item.task.id, { key: item.reminderKey, ts: nowMs });
+              continue;
+            }
+            if (item.dedupeKey) await markDedupeKeySeen(item.dedupeKey, nowMs);
+            triggerTaskAlert(item.task);
+            notifiedTasks.set(item.task.id, { key: item.reminderKey, ts: nowMs });
+          }
+          persistNotifiedMap(NOTIFY_KEYS.TASKS, notifiedTasks);
+        }
+
+        state.lastCheck = nowMs;
+        persistLastCheck(state, nowMs);
+      } catch (e) {
+        console.warn('[Notifications] Task reminder check failed:', e);
+      } finally {
+        taskReminderCheckInFlight = false;
+      }
     }
 
     function startTaskReminderTicker() {
       if (taskReminderTickerHandle) return;
-      checkTaskReminders();
-      taskReminderTickerHandle = setInterval(checkTaskReminders, 10000);
+      void checkTaskReminders();
+      taskReminderTickerHandle = setInterval(() => {
+        void checkTaskReminders();
+      }, 10000);
     }
 
     async function triggerTaskAlert(task) {
@@ -10601,6 +10674,7 @@
                 name: name,
                 date: new Date(dateValue).toISOString(),
                 reminder: parseInt(reminder) || null,
+                reminderUserSet: (parseInt(reminder) || 0) > 0,
                 notes: notes
               });
             }

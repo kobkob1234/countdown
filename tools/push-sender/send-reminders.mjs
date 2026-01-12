@@ -56,6 +56,12 @@ function parseIsoMillis(iso) {
   return Number.isFinite(t) ? t : null;
 }
 
+function isImportedEvent(evt) {
+  if (!evt) return false;
+  if (evt.externalId) return true;
+  return typeof evt.notes === 'string' && evt.notes.includes('[Imported');
+}
+
 function formatReminderOffset(minutes) {
   const m = Number(minutes) || 0;
   if (m >= 10080) {
@@ -210,22 +216,24 @@ async function runCheck() {
 
   // Shared events -> all users/subscriptions
   for (const evt of sharedEvents) {
+    if (isImportedEvent(evt) && !evt.reminderUserSet) continue;
     const reminderMinutes = Number.parseInt(evt.reminder || '0', 10) || 0;
     const eventTimeMs = parseIsoMillis(evt.date);
     if (!shouldTrigger(nowMs, eventTimeMs, reminderMinutes)) continue;
 
     const offset = formatReminderOffset(reminderMinutes);
+    const dedupeKey = `event|${evt.id}|${evt.date}|${reminderMinutes}`;
     const payload = {
       title: 'Event Reminder ⏰',
       body: `${evt.name || 'Event'} starts in ${offset}`,
       tag: `event-${evt.id}`,
+      dedupeKey,
       url: buildUrl('/', {}),
       requireInteraction: true,
       renotify: true,
       actions: [{ action: 'view', title: 'View' }]
     };
 
-    const dedupeKey = `event|${evt.id}|${evt.date}|${reminderMinutes}`;
     await Promise.allSettled(users.flatMap(({ userId, subs }) =>
       subs.map(({ subKey, sub }) =>
         sendToSubscription({ userId, subKey, subscription: sub, payload, dedupeKey })
@@ -252,10 +260,12 @@ async function runCheck() {
 
       const offset = formatReminderOffset(reminderMinutes);
       const dueStr = task.dueDate ? new Date(dueMs).toLocaleString() : '';
+      const dedupeKey = `task|${userId}|${task.id}|${task.dueDate}|${reminderMinutes}`;
       const payload = {
         title: `Task Reminder 📋`,
         body: `${task.title || 'Task'} is due in ${offset}${dueStr ? ` (due: ${dueStr})` : ''}`,
         tag: `task-${task.id}`,
+        dedupeKey,
         url: buildUrl('/', {}),
         completeUrl: buildUrl('/', { completeTask: task.id, user: userId }),
         requireInteraction: true,
@@ -266,7 +276,6 @@ async function runCheck() {
         ]
       };
 
-      const dedupeKey = `task|${userId}|${task.id}|${task.dueDate}|${reminderMinutes}`;
       const results = await Promise.allSettled(
         subs.map(({ subKey, sub }) =>
           sendToSubscription({ userId, subKey, subscription: sub, payload, dedupeKey })
@@ -298,6 +307,7 @@ async function runCheck() {
 
       const offset = formatReminderOffset(reminderMinutes);
       const dueStr = task.dueDate ? new Date(dueMs).toLocaleString() : '';
+      const dedupeKey = `shared-task|${subject.id}|${taskId}|${task.dueDate}|${reminderMinutes}`;
 
       // Send to each user who has access to this shared subject
       for (const userId of allUsers) {
@@ -308,6 +318,7 @@ async function runCheck() {
           title: `Shared Task Reminder 📋`,
           body: `${task.title || 'Task'} is due in ${offset}${dueStr ? ` (due: ${dueStr})` : ''}`,
           tag: `shared-task-${taskId}`,
+          dedupeKey,
           url: buildUrl('/', {}),
           completeUrl: buildUrl('/', { completeTask: taskId, user: userId, sharedSubject: subject.id }),
           requireInteraction: true,
@@ -317,8 +328,6 @@ async function runCheck() {
             { action: 'complete', title: 'Done' }
           ]
         };
-
-        const dedupeKey = `shared-task|${subject.id}|${taskId}|${task.dueDate}|${reminderMinutes}`;
         const results = await Promise.allSettled(
           userEntry.subs.map(({ subKey, sub }) =>
             sendToSubscription({ userId, subKey, subscription: sub, payload, dedupeKey })
