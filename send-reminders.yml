@@ -94,9 +94,9 @@ jobs:
           : "${FIREBASE_DATABASE_URL:?Missing secret FIREBASE_DATABASE_URL}"
           : "${PUSH_APP_URL:?Missing secret PUSH_APP_URL}"
 
-          CODE_VAPID_PUBLIC_KEY="$(node -e 'const fs=require("fs"); const s=fs.readFileSync("index.html","utf8"); const m=s.match(/PUSH_VAPID_PUBLIC_KEY\s*=\s*["\x27]([^"\x27]+)["\x27]/); if(!m){ console.error("Could not find PUSH_VAPID_PUBLIC_KEY in index.html"); process.exit(1); } process.stdout.write(m[1]);')"
+          CODE_VAPID_PUBLIC_KEY="$(node -e 'const fs=require("fs"); const s=fs.readFileSync("js/notifications.js","utf8"); const m=s.match(/PUSH_VAPID_PUBLIC_KEY\s*=\s*["\x27]([^"\x27]+)["\x27]/); if(!m){ console.error("Could not find PUSH_VAPID_PUBLIC_KEY in js/notifications.js"); process.exit(1); } process.stdout.write(m[1]);')"
           if [ "$CODE_VAPID_PUBLIC_KEY" != "$VAPID_PUBLIC_KEY" ]; then
-            echo "VAPID_PUBLIC_KEY secret does not match PUSH_VAPID_PUBLIC_KEY in index.html." >&2
+            echo "VAPID_PUBLIC_KEY secret does not match PUSH_VAPID_PUBLIC_KEY in js/notifications.js." >&2
             echo "They must be the same key, otherwise push delivery will fail." >&2
             exit 1
           fi
