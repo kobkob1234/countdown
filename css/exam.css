@@ -24,6 +24,8 @@
     display: flex;
     gap: 10px;
     justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
     background: white;
     padding: 10px;
     border-radius: 8px;
@@ -51,6 +53,20 @@
     background: #e0f2fe;
     color: #0284c7;
     border-color: #0ea5e9;
+}
+
+.exam-divider {
+    width: 1px;
+    height: 24px;
+    background: #e2e8f0;
+    margin: 0 6px;
+}
+
+.exam-hint {
+    flex-basis: 100%;
+    text-align: center;
+    color: #64748b;
+    font-size: 0.85em;
 }
 
 /* Color Picker */
@@ -149,6 +165,74 @@
     background: #f8fafc;
 }
 
+#examModeOverlay .week-goal-row td {
+    height: auto;
+    background: #f8fafc;
+    border: 1px dashed #e2e8f0;
+    padding: 8px 10px;
+}
+
+#examModeOverlay .week-goal {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+#examModeOverlay .week-goal-label {
+    font-weight: 600;
+    color: #475569;
+}
+
+#examModeOverlay .week-goal-text {
+    min-width: 200px;
+    padding: 3px 6px;
+    border-radius: 6px;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    outline: none;
+}
+
+#examModeOverlay .week-goal-text:empty::before {
+    content: attr(data-placeholder);
+    color: #94a3b8;
+}
+
+#examModeOverlay .week-goal-progress {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1 1 240px;
+}
+
+#examModeOverlay .week-goal-bar {
+    flex: 1;
+    height: 8px;
+    background: #e2e8f0;
+    border-radius: 999px;
+    overflow: hidden;
+}
+
+#examModeOverlay .week-goal-fill {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, #0ea5e9, #22c55e);
+    transition: width 0.2s ease;
+}
+
+#examModeOverlay .week-goal-count,
+#examModeOverlay .week-goal-percent {
+    font-size: 0.85em;
+    color: #64748b;
+    min-width: 44px;
+    text-align: center;
+}
+
+#examModeOverlay td.drag-over {
+    background: #e2e8f0;
+    outline: 2px dashed #94a3b8;
+}
+
 /* Add Tile Button (appears on hover) */
 #examModeOverlay td .add-tile-btn {
     position: absolute;
@@ -197,9 +281,31 @@
     position: relative;
 }
 
+#examModeOverlay .chip-label {
+    display: inline-block;
+    min-width: 18px;
+    outline: none;
+}
+
+#examModeOverlay .chip-label:empty::before {
+    content: attr(data-placeholder);
+    opacity: 0.7;
+}
+
 #examModeOverlay .chip:hover {
     transform: translateY(-1px);
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+#examModeOverlay .chip.editing {
+    outline: 2px dashed rgba(255, 255, 255, 0.6);
+}
+
+#examModeOverlay .chip.editing .chip-check,
+#examModeOverlay .chip.editing .chip-delete,
+#examModeOverlay .chip.editing .chip-drag-handle {
+    opacity: 0.3;
+    pointer-events: none;
 }
 
 /* Completion Checkbox */
@@ -295,6 +401,26 @@
 
 #examModeOverlay .vacation {
     background: #22c55e;
+    color: white;
+}
+
+#examModeOverlay .focus {
+    background: #0f766e;
+    color: white;
+}
+
+#examModeOverlay .deadline {
+    background: #ef4444;
+    color: white;
+}
+
+#examModeOverlay .project {
+    background: #f472b6;
+    color: white;
+}
+
+#examModeOverlay .admin {
+    background: #6366f1;
     color: white;
 }
 
