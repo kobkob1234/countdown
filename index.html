@@ -2743,26 +2743,6 @@
     }
 
     if (notifyBtn) notifyBtn.addEventListener('click', toggleNotificationsFromUser);
-    async function ensureNotificationsForReminder() {
-      if (!("Notification" in window)) return;
-      if (!window.isSecureContext) return;
-      if (isIOS() && !isStandalone()) return;
-      if (Notification.permission === 'denied') return;
-
-      const perm = Notification.permission === 'granted'
-        ? 'granted'
-        : await Notification.requestPermission();
-      if (perm !== 'granted') {
-        await refreshNotifyButton();
-        return;
-      }
-
-      if (isPushSupported() && PUSH_VAPID_PUBLIC_KEY) {
-        try { await ensurePushRegistration(); } catch (e) { }
-        await syncExistingSubscriptionToCurrentUser();
-      }
-      await refreshNotifyButton();
-    }
     (async () => {
       if (window.isSecureContext && 'serviceWorker' in navigator) {
         try { await ensurePushRegistration(); } catch (e) { console.warn('[SW] register failed:', e); }
@@ -3268,9 +3248,6 @@
 
       const eventRef = ref(db, `events/${id}`);
       set(eventRef, { ...evt, reminder: minutes || null, reminderUserSet: !!minutes });
-      if (minutes > 0) {
-        ensureNotificationsForReminder();
-      }
     }
 
     // Close reminder dropdowns when clicking outside
@@ -3698,9 +3675,6 @@
       if (reminderVal === null) {
         alert("Please enter a valid custom reminder (positive number).");
         return;
-      }
-      if (reminderVal > 0) {
-        ensureNotificationsForReminder();
       }
 
       const parsedDate = parseLocal(dateValue);
@@ -5089,9 +5063,6 @@
       const reminder = getTaskReminderMinutes(newTaskReminder, newTaskReminderCustomValue, newTaskReminderCustomUnit);
       const durationEl = document.getElementById('newTaskDuration');
       const duration = durationEl ? parseInt(durationEl.value, 10) || 0 : 0;
-      if (reminder > 0) {
-        ensureNotificationsForReminder();
-      }
 
       const defaultSubjectId = getDefaultSubjectId();
       const selectedSubjectId = newTaskSubject ? (newTaskSubject.value || defaultSubjectId) : defaultSubjectId;
@@ -5798,9 +5769,6 @@
       const setReminder = (minutes) => {
         const { id, isOwn, isShared, ...cleanTask } = task;
         saveTask(task.id, { ...cleanTask, reminder: minutes || null }, task.subject);
-        if (minutes > 0) {
-          ensureNotificationsForReminder();
-        }
         closeReminderPopover();
       };
 
@@ -6491,7 +6459,6 @@
       const reminderValue = getTaskReminderMinutes(editTaskReminder, editTaskReminderCustomValue, editTaskReminderCustomUnit);
       if (reminderValue > 0) {
         editingTask.reminder = reminderValue;
-        ensureNotificationsForReminder();
       } else {
         delete editingTask.reminder;
       }
@@ -11208,9 +11175,6 @@
         const dateValue = document.getElementById('mobileEventDate')?.value;
         const reminder = document.getElementById('mobileEventReminder')?.value || '0';
         const notes = document.getElementById('mobileEventNotes')?.value?.trim() || '';
-        if ((parseInt(reminder, 10) || 0) > 0) {
-          ensureNotificationsForReminder();
-        }
 
         if (!name) {
           document.getElementById('mobileEventName')?.focus();
