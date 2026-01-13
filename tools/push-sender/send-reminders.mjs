@@ -307,7 +307,7 @@ async function runCheck() {
 
       const offset = formatReminderOffset(reminderMinutes);
       const dueStr = task.dueDate ? new Date(dueMs).toLocaleString() : '';
-      const dedupeKey = `shared-task|${subject.id}|${taskId}|${task.dueDate}|${reminderMinutes}`;
+      const dedupeKey = `shared-task|${userId}|${subject.id}|${taskId}|${task.dueDate}|${reminderMinutes}`;
 
       // Send to each user who has access to this shared subject
       for (const userId of allUsers) {

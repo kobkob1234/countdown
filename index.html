@@ -6157,7 +6157,7 @@
           const triggerTime = taskTime - (reminderMinutes * 60000);
           if (triggerTime < start || triggerTime > nowMs) return;
           const dedupeKey = task.isShared
-            ? `shared-task|${task.subject || ''}|${task.id}|${task.dueDate || ''}|${reminderMinutes}`
+            ? `shared-task|${currentUser || ''}|${task.subject || ''}|${task.id}|${task.dueDate || ''}|${reminderMinutes}`
             : `task|${currentUser || ''}|${task.id}|${task.dueDate || ''}|${reminderMinutes}`;
           candidates.push({ task, reminderKey, triggerTime, dedupeKey });
         });
@@ -6648,6 +6648,7 @@
       if (typeof DailyPlanner !== 'undefined' && DailyPlanner.refreshTasks) {
         DailyPlanner.refreshTasks();
       }
+      void checkTaskReminders();
     }
     ctx.mergeTasks = mergeTasks;
 
