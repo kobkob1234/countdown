@@ -975,6 +975,10 @@
                 <span id="pomodoroMode">מיקוד</span>
               </div>
               <div class="pomodoro-next" id="pomodoroNext">הבא: הפסקה קצרה</div>
+              <div class="pomodoro-phase-row">
+                <span class="pomodoro-phase-chip" id="pomodoroPhaseLabel">שלב: מיקוד</span>
+                <span class="pomodoro-phase-chip" id="pomodoroLongCountdown">הפסקה ארוכה בעוד 4 מחזורים</span>
+              </div>
             </div>
           </div>
 
@@ -1042,6 +1046,11 @@
               <option value="digital">📱 דיגיטלי</option>
               <option value="glass">✨ קריסטל</option>
               <option value="success">🎉 פנפרה</option>
+            </select>
+            <select class="pomodoro-sound-select" id="pomodoroSoundLength" aria-label="אורך צליל">
+              <option value="1">אורך צליל: קצר</option>
+              <option value="2">אורך צליל: בינוני</option>
+              <option value="3">אורך צליל: ארוך</option>
             </select>
             <button class="pomodoro-preview-btn" id="pomodoroPreviewSound">▶️ האזן</button>
           </div>
@@ -3065,12 +3074,18 @@
         render();
         scheduleCalendarRender();
         startTicker();
+        if (typeof DailyPlanner !== 'undefined' && typeof DailyPlanner.refreshEvents === 'function') {
+          DailyPlanner.refreshEvents();
+        }
       },
       onEventsCacheLoaded: () => {
         pruneNotifiedEvents();
         render();
         scheduleCalendarRender();
         startTicker();
+        if (typeof DailyPlanner !== 'undefined' && typeof DailyPlanner.refreshEvents === 'function') {
+          DailyPlanner.refreshEvents();
+        }
       }
     });
     const { saveToCloud, updateInCloud, deleteFromCloud, clearAllCloud } = eventsApi;
@@ -9972,6 +9987,7 @@
 
       // Sync all countdowns for current date to planner
       const syncAllCountdowns = () => {
+        pruneDeletedEventBlocks();
         const currentDateKey = getDateKey(currentDate);
         const currentBlocks = getBlocksForDate(currentDate);
 
@@ -10080,6 +10096,20 @@
         const taskIds = new Set((typeof tasks !== 'undefined' ? tasks : []).map(t => t.id));
         const initialLen = plannerBlocks.length;
         plannerBlocks = plannerBlocks.filter(b => !b.linkedTaskId || taskIds.has(b.linkedTaskId));
+        const removed = initialLen - plannerBlocks.length;
+        if (removed > 0) {
+          saveBlocks();
+        }
+        return removed;
+      };
+
+      const pruneDeletedEventBlocks = () => {
+        if (typeof eventsLoaded !== 'undefined' && typeof hasEventsCache !== 'undefined') {
+          if (!eventsLoaded && !hasEventsCache) return 0;
+        }
+        const eventIds = new Set((typeof events !== 'undefined' ? events : []).map(evt => evt.id));
+        const initialLen = plannerBlocks.length;
+        plannerBlocks = plannerBlocks.filter(b => !b.linkedEventId || eventIds.has(b.linkedEventId));
         const removed = initialLen - plannerBlocks.length;
         if (removed > 0) {
           saveBlocks();
@@ -10449,6 +10479,7 @@
 
         // Load saved blocks
         loadBlocks();
+        pruneDeletedEventBlocks();
         startPlannerReminderTicker();
 
         // Set up event listeners
@@ -10628,6 +10659,16 @@
         }
       };
 
+      const refreshEvents = () => {
+        pruneDeletedEventBlocks();
+        if (refs.overlay && refs.overlay.classList.contains('open')) {
+          render();
+        } else if (refs.countdownsList) {
+          renderCountdowns();
+          renderMiniCalendar();
+        }
+      };
+
       const addPlannerBlock = async ({ date, title, start, durationMinutes = 60, notes = '', category = '' }) => {
         if (typeof showView === 'function') showView('planner');
         if (!initialized) init();
@@ -10667,6 +10708,7 @@
         init,
         render,
         refreshTasks,
+        refreshEvents,
         addPlannerBlock,
         checkReminders: checkPlannerReminders,
         startReminderTicker: startPlannerReminderTicker

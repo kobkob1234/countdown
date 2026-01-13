@@ -11,10 +11,13 @@ export function createPomodoro() {
       autoContinue: document.getElementById('pomodoroAutoContinue'),
       soundEnabled: document.getElementById('pomodoroSoundEnabled'),
       soundSelect: document.getElementById('pomodoroSound'),
+      soundLengthSelect: document.getElementById('pomodoroSoundLength'),
       previewBtn: document.getElementById('pomodoroPreviewSound'),
       display: document.getElementById('pomodoroDisplay'),
       mode: document.getElementById('pomodoroMode'),
       next: document.getElementById('pomodoroNext'),
+      phaseLabel: document.getElementById('pomodoroPhaseLabel'),
+      longCountdown: document.getElementById('pomodoroLongCountdown'),
       progress: document.getElementById('pomodoroRing'),
       startBtn: document.getElementById('pomodoroStart'),
       skipBtn: document.getElementById('pomodoroSkip'),
@@ -42,6 +45,9 @@ export function createPomodoro() {
       CUSTOM: 'pomodoro-custom-v1',
       SETTINGS: 'pomodoro-settings-v1'
     };
+    const MINI_KEY = 'pomodoro-mini-enabled-v2';
+    const MINI_POS_KEY = 'pomodoro-mini-pos-v1';
+    const LEGACY_MINI_KEY = 'pomodoro-mini-enabled';
 
     const presets = {
       classic: { focus: 25, shortBreak: 5, longBreak: 15, longEvery: 4, label: '25/5 קלאסי' },
@@ -56,6 +62,12 @@ export function createPomodoro() {
     const clampNum = (val, min, max, fallback) => {
       const n = Number(val);
       if (Number.isFinite(n)) return Math.min(max, Math.max(min, n));
+      return fallback;
+    };
+
+    const normalizeSoundRepeat = (value, fallback = 3) => {
+      const n = Number(value);
+      if (Number.isFinite(n)) return Math.min(3, Math.max(1, Math.round(n)));
       return fallback;
     };
 
@@ -102,15 +114,16 @@ export function createPomodoro() {
     const loadSettings = () => {
       try {
         const raw = localStorage.getItem(KEYS.SETTINGS);
-        if (!raw) return { autoContinue: false, sound: 'chime', soundEnabled: true };
+        if (!raw) return { autoContinue: false, sound: 'chime', soundEnabled: true, soundRepeat: 3 };
         const parsed = JSON.parse(raw);
         return {
           autoContinue: !!parsed.autoContinue,
           sound: parsed.sound || 'chime',
-          soundEnabled: parsed.soundEnabled !== false // default true
+          soundEnabled: parsed.soundEnabled !== false, // default true
+          soundRepeat: normalizeSoundRepeat(parsed.soundRepeat, 3)
         };
       } catch (e) {
-        return { autoContinue: false, sound: 'chime', soundEnabled: true };
+        return { autoContinue: false, sound: 'chime', soundEnabled: true, soundRepeat: 3 };
       }
     };
 
@@ -182,6 +195,8 @@ export function createPomodoro() {
       refs.display.textContent = formatTime(state.remainingMs);
       const modeLabel = state.mode === 'focus' ? 'מיקוד' : (state.mode === 'long' ? 'הפסקה ארוכה' : 'הפסקה קצרה');
       refs.mode.textContent = modeLabel;
+      if (refs.phaseLabel) refs.phaseLabel.textContent = `שלב: ${modeLabel}`;
+      if (refs.longCountdown) refs.longCountdown.textContent = formatLongBreakCountdown();
       refs.next.textContent = `הבא: ${getNextLabel()}`;
       const totalMs = getDuration(state.mode) * 60000;
       const pct = Math.max(0, Math.min(100, 100 - (state.remainingMs / totalMs) * 100));
@@ -204,6 +219,14 @@ export function createPomodoro() {
         return nextIsLong ? 'הפסקה ארוכה' : 'הפסקה קצרה';
       }
       return 'מיקוד';
+    };
+
+    const formatLongBreakCountdown = () => {
+      const every = Math.max(1, Number(config.longEvery) || 1);
+      if (state.mode === 'long') return 'הפסקה ארוכה עכשיו';
+      const remaining = every - (state.cycle % every);
+      if (remaining <= 1) return 'הפסקה ארוכה בעוד מחזור אחד';
+      return `הפסקה ארוכה בעוד ${remaining} מחזורים`;
     };
 
     const clearTimer = () => {
@@ -338,14 +361,17 @@ export function createPomodoro() {
       return t; // return end time
     };
 
-    // Extended alarm - plays pattern 3 times with pauses for better notification
-    const playExtendedAlarm = (pattern) => {
-      if (!pattern || !audioCtx) return;
-      const patternDuration = pattern.reduce((sum, step) => sum + step.d + 0.02, 0);
+    const getSoundRepeatCount = () => normalizeSoundRepeat(settings.soundRepeat, 3);
+
+    // Extended alarm - repeat count controls total length
+    const playExtendedAlarm = (pattern, repeatCount = 3) => {
+      if (!pattern) return;
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
       const gap = 0.4; // pause between repetitions
       let t = audioCtx.currentTime;
 
-      for (let i = 0; i < 3; i++) {
+      for (let i = 0; i < repeatCount; i++) {
         t = playTonePattern(pattern, t);
         t += gap;
       }
@@ -360,8 +386,26 @@ export function createPomodoro() {
       const pattern = tonePatterns[settings.sound] || tonePatterns.chime;
       if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
       if (audioCtx.state === 'suspended') audioCtx.resume();
-      playExtendedAlarm(pattern);
+      playExtendedAlarm(pattern, getSoundRepeatCount());
       if (navigator.vibrate) navigator.vibrate([100, 50, 100, 50, 200]);
+    };
+
+    const playStartClick = () => {
+      if (!settings.soundEnabled) return;
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      const t = audioCtx.currentTime;
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(520, t);
+      osc.frequency.exponentialRampToValueAtTime(360, t + 0.08);
+      gain.gain.setValueAtTime(0.001, t);
+      gain.gain.linearRampToValueAtTime(0.08, t + 0.01);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.14);
+      osc.connect(gain).connect(audioCtx.destination);
+      osc.start(t);
+      osc.stop(t + 0.16);
     };
 
     const advance = (countFocus = false) => {
@@ -438,6 +482,18 @@ export function createPomodoro() {
     let pipAnimationFrame = null;
     let isPiPActive = false;
 
+    const setMiniVisible = (visible, forceButton = false) => {
+      const enabled = !!visible;
+      if (refs.miniToggle) refs.miniToggle.checked = enabled;
+      try {
+        localStorage.setItem(MINI_KEY, enabled ? 'true' : 'false');
+        localStorage.setItem(LEGACY_MINI_KEY, enabled ? 'true' : 'false');
+      } catch (e) { }
+      if (refs.mini) refs.mini.classList.toggle('visible', enabled);
+      const pipSupported = !!document.pictureInPictureEnabled;
+      if (refs.pipBtn) refs.pipBtn.classList.toggle('active', enabled && (forceButton || !pipSupported));
+    };
+
     const drawPiPCanvas = () => {
       if (!refs.pipCanvas) return;
       const canvas = refs.pipCanvas;
@@ -485,12 +541,12 @@ export function createPomodoro() {
     };
 
     const startPiP = async () => {
-      if (!refs.pipCanvas) return;
+      if (!refs.pipCanvas) return false;
 
       // Check if PiP is supported
       if (!document.pictureInPictureEnabled) {
         window.alert('Picture-in-Picture אינו נתמך בדפדפן זה.\nנסה Chrome, Edge, או Safari.');
-        return;
+        return false;
       }
 
       try {
@@ -540,10 +596,11 @@ export function createPomodoro() {
         };
 
         pipVideo.addEventListener('leavepictureinpicture', handleLeavePiP);
-
+        return true;
       } catch (error) {
         console.error('PiP error:', error);
         window.alert('שגיאה בהפעלת Picture-in-Picture: ' + error.message);
+        return false;
       }
     };
 
@@ -568,18 +625,14 @@ export function createPomodoro() {
 
       const pipSupported = !!document.pictureInPictureEnabled;
 
-      const setMiniVisible = (visible) => {
-        const enabled = !!visible;
-        if (refs.miniToggle) refs.miniToggle.checked = enabled;
-        try { localStorage.setItem('pomodoro-mini-enabled', enabled ? 'true' : 'false'); } catch (e) { }
-        if (refs.mini) refs.mini.classList.toggle('visible', enabled);
-        if (refs.pipBtn) refs.pipBtn.classList.toggle('active', enabled && !pipSupported);
-      };
-
-      refs.pipBtn.addEventListener('click', () => {
+      refs.pipBtn.addEventListener('click', async () => {
         if (pipSupported) {
-          if (isPiPActive) stopPiP();
-          else startPiP();
+          if (isPiPActive) {
+            await stopPiP();
+          } else {
+            const started = await startPiP();
+            if (!started) setMiniVisible(true, true);
+          }
           return;
         }
         // Fallback: show a draggable mini timer (works even when PiP isn't supported).
@@ -617,6 +670,14 @@ export function createPomodoro() {
         });
       }
 
+      if (refs.soundLengthSelect) {
+        refs.soundLengthSelect.value = String(normalizeSoundRepeat(settings.soundRepeat, 3));
+        refs.soundLengthSelect.addEventListener('change', () => {
+          settings.soundRepeat = normalizeSoundRepeat(refs.soundLengthSelect.value, 3);
+          saveSettings();
+        });
+      }
+
       // Sound enabled toggle
       if (refs.soundEnabled) {
         refs.soundEnabled.checked = settings.soundEnabled;
@@ -627,20 +688,24 @@ export function createPomodoro() {
           if (refs.soundSelect) {
             refs.soundSelect.style.opacity = settings.soundEnabled ? '1' : '0.5';
           }
+          if (refs.soundLengthSelect) {
+            refs.soundLengthSelect.style.opacity = settings.soundEnabled ? '1' : '0.5';
+          }
           if (refs.previewBtn) {
             refs.previewBtn.style.opacity = settings.soundEnabled ? '1' : '0.5';
           }
         });
         // Initial state
         if (refs.soundSelect) refs.soundSelect.style.opacity = settings.soundEnabled ? '1' : '0.5';
+        if (refs.soundLengthSelect) refs.soundLengthSelect.style.opacity = settings.soundEnabled ? '1' : '0.5';
         if (refs.previewBtn) refs.previewBtn.style.opacity = settings.soundEnabled ? '1' : '0.5';
       }
 
       if (refs.previewBtn) {
         refs.previewBtn.addEventListener('click', () => {
           const key = (refs.soundSelect && refs.soundSelect.value) || settings.sound || 'chime';
-          if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
-          playTonePattern(tonePatterns[key] || tonePatterns.chime);
+          const pattern = tonePatterns[key] || tonePatterns.chime;
+          playExtendedAlarm(pattern, getSoundRepeatCount());
         });
       }
 
@@ -652,40 +717,38 @@ export function createPomodoro() {
         input.addEventListener('input', () => state.preset = 'custom');
       });
 
-      if (refs.startBtn) refs.startBtn.onclick = () => { state.running ? pause() : start(); };
+      if (refs.startBtn) {
+        refs.startBtn.onclick = () => {
+          if (state.running) {
+            pause();
+            return;
+          }
+          playStartClick();
+          start();
+        };
+      }
       if (refs.skipBtn) refs.skipBtn.onclick = () => advance(false);
       if (refs.resetBtn) refs.resetBtn.onclick = reset;
 
       // Mini player setup
-      const MINI_KEY = 'pomodoro-mini-enabled-v2';
-      const MINI_POS_KEY = 'pomodoro-mini-pos-v1';
       let miniDragging = false;
       let miniDragged = false;
+      try {
+        const legacy = localStorage.getItem(LEGACY_MINI_KEY);
+        if (legacy !== null && localStorage.getItem(MINI_KEY) === null) {
+          localStorage.setItem(MINI_KEY, legacy);
+        }
+      } catch (e) { }
       const miniEnabled = localStorage.getItem(MINI_KEY) === 'true';
-      if (refs.miniToggle) {
-        refs.miniToggle.checked = miniEnabled;
-        if (refs.mini) refs.mini.classList.toggle('visible', miniEnabled);
-      }
+      setMiniVisible(miniEnabled);
       if (refs.miniToggle) {
         refs.miniToggle.addEventListener('change', () => {
-          const enabled = refs.miniToggle.checked;
-          console.log('[Pomodoro] Mini toggle changed:', enabled, 'refs.mini exists:', !!refs.mini);
-          localStorage.setItem(MINI_KEY, enabled ? 'true' : 'false');
-          if (refs.mini) {
-            refs.mini.classList.toggle('visible', enabled);
-            console.log('[Pomodoro] Mini visible class:', refs.mini.classList.contains('visible'));
-          } else {
-            console.warn('[Pomodoro] refs.mini is null!');
-          }
-          if (refs.pipBtn && !document.pictureInPictureEnabled) refs.pipBtn.classList.toggle('active', enabled);
+          setMiniVisible(refs.miniToggle.checked);
         });
       }
       if (refs.miniClose) {
         refs.miniClose.addEventListener('click', () => {
-          if (refs.miniToggle) refs.miniToggle.checked = false;
-          localStorage.setItem(MINI_KEY, 'false');
-          if (refs.mini) refs.mini.classList.remove('visible');
-          if (refs.pipBtn && !document.pictureInPictureEnabled) refs.pipBtn.classList.remove('active');
+          setMiniVisible(false, true);
         });
       }
       // Restore mini player position (if dragged previously)

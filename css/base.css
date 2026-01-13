@@ -3462,6 +3462,42 @@
       margin-top: 8px;
     }
 
+    .pomodoro-phase-row {
+      margin-top: 10px;
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .pomodoro-phase-chip {
+      font-size: 11px;
+      color: var(--muted);
+      padding: 6px 12px;
+      border-radius: 999px;
+      background: var(--btn-secondary-bg);
+      border: 1px solid var(--border);
+      letter-spacing: 0.3px;
+    }
+
+    .pomodoro-phase-row {
+      margin-top: 10px;
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .pomodoro-phase-chip {
+      font-size: 11px;
+      color: var(--muted);
+      padding: 6px 12px;
+      border-radius: 999px;
+      background: var(--btn-secondary-bg);
+      border: 1px solid var(--border);
+      letter-spacing: 0.3px;
+    }
+
     /* Controls */
     .pomodoro-controls {
       display: flex;
@@ -3587,6 +3623,12 @@
       color: var(--muted);
       text-transform: uppercase;
       letter-spacing: 0.5px;
+      min-height: 32px;
+      line-height: 1.2;
+      text-align: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
 
     .pomodoro-field input {
@@ -4310,6 +4352,12 @@
       color: var(--muted);
       text-transform: uppercase;
       letter-spacing: 0.5px;
+      min-height: 32px;
+      line-height: 1.2;
+      text-align: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
 
     .pomodoro-field input {
