@@ -482,6 +482,13 @@ export function createPomodoro() {
     let pipAnimationFrame = null;
     let isPiPActive = false;
 
+    const isPiPSupported = () => {
+      return !!document.pictureInPictureEnabled
+        && !!refs.pipCanvas
+        && typeof refs.pipCanvas.captureStream === 'function'
+        && typeof HTMLVideoElement.prototype.requestPictureInPicture === 'function';
+    };
+
     const setMiniVisible = (visible, forceButton = false) => {
       const enabled = !!visible;
       if (refs.miniToggle) refs.miniToggle.checked = enabled;
@@ -490,7 +497,7 @@ export function createPomodoro() {
         localStorage.setItem(LEGACY_MINI_KEY, enabled ? 'true' : 'false');
       } catch (e) { }
       if (refs.mini) refs.mini.classList.toggle('visible', enabled);
-      const pipSupported = !!document.pictureInPictureEnabled;
+      const pipSupported = isPiPSupported();
       if (refs.pipBtn) refs.pipBtn.classList.toggle('active', enabled && (forceButton || !pipSupported));
     };
 
@@ -541,10 +548,10 @@ export function createPomodoro() {
     };
 
     const startPiP = async () => {
-      if (!refs.pipCanvas) return false;
+      if (!refs.pipCanvas || typeof refs.pipCanvas.captureStream !== 'function') return false;
 
       // Check if PiP is supported
-      if (!document.pictureInPictureEnabled) {
+      if (!isPiPSupported()) {
         window.alert('Picture-in-Picture אינו נתמך בדפדפן זה.\nנסה Chrome, Edge, או Safari.');
         return false;
       }
@@ -553,11 +560,12 @@ export function createPomodoro() {
         // Create or reuse video element
         if (!pipVideo) {
           pipVideo = document.createElement('video');
-          pipVideo.muted = true;
-          pipVideo.autoplay = true;
-          pipVideo.loop = true;
-          pipVideo.style.display = 'none';
-          document.body.appendChild(pipVideo);
+        pipVideo.muted = true;
+        pipVideo.autoplay = true;
+        pipVideo.loop = true;
+        pipVideo.playsInline = true;
+        pipVideo.style.display = 'none';
+        document.body.appendChild(pipVideo);
         }
 
         // Get stream from canvas
@@ -623,7 +631,7 @@ export function createPomodoro() {
     const initPiP = () => {
       if (!refs.pipBtn) return;
 
-      const pipSupported = !!document.pictureInPictureEnabled;
+      const pipSupported = isPiPSupported();
 
       refs.pipBtn.addEventListener('click', async () => {
         if (pipSupported) {
@@ -631,7 +639,7 @@ export function createPomodoro() {
             await stopPiP();
           } else {
             const started = await startPiP();
-            if (!started) setMiniVisible(true, true);
+            if (!started || !document.pictureInPictureElement) setMiniVisible(true, true);
           }
           return;
         }
