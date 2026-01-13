@@ -8832,9 +8832,11 @@
       let blocksLoaded = false;
       let plannerReminderTickerHandle = null;
       let plannerReminderCheckInFlight = false;
+      let plannerUpdatedAt = 0;
 
       // Storage key
       const STORAGE_KEY = 'dailyPlannerBlocks';
+      const UPDATED_AT_KEY = 'dailyPlannerBlocksUpdatedAt';
 
       // DOM References
       const refs = {
@@ -8939,28 +8941,84 @@
         pruneNotifiedMap(NOTIFY_KEYS.PLANNER, notifiedPlannerBlocks, ids);
       };
 
+      const parseUpdatedAt = (value) => {
+        const num = Number.parseInt(value || '0', 10);
+        return Number.isFinite(num) ? num : 0;
+      };
+
+      const computePlannerBlockStartAt = (block) => {
+        if (!block || !block.date || !block.start) return null;
+        const parts = String(block.date).split('-').map(Number);
+        if (parts.length !== 3) return null;
+        const [year, month, day] = parts;
+        if (!year || !month || !day) return null;
+        const startMinutes = parseTime(block.start);
+        if (!Number.isFinite(startMinutes)) return null;
+        const hours = Math.floor(startMinutes / 60);
+        const minutes = startMinutes % 60;
+        const dt = new Date(year, month - 1, day, hours, minutes, 0, 0);
+        if (Number.isNaN(dt.getTime())) return null;
+        return dt.toISOString();
+      };
+
+      const normalizePlannerBlocks = () => {
+        plannerBlocks.forEach((block) => {
+          if (!block || typeof block !== 'object') return;
+          const startAtKey = block.date && block.start ? `${block.date}|${block.start}` : '';
+          if (!startAtKey) {
+            if (block.startAt) delete block.startAt;
+            if (block.startAtKey) delete block.startAtKey;
+            return;
+          }
+          if (!block.startAt || block.startAtKey !== startAtKey) {
+            const startAt = computePlannerBlockStartAt(block);
+            if (startAt) {
+              block.startAt = startAt;
+              block.startAtKey = startAtKey;
+            }
+          }
+        });
+      };
+
       // Load blocks from storage
       const loadBlocks = () => {
         try {
           const saved = localStorage.getItem(STORAGE_KEY);
           if (saved) {
-            plannerBlocks = JSON.parse(saved);
+            const parsed = JSON.parse(saved);
+            plannerBlocks = Array.isArray(parsed) ? parsed : [];
           }
+          plannerUpdatedAt = parseUpdatedAt(localStorage.getItem(UPDATED_AT_KEY));
           blocksLoaded = true;
           pruneNotifiedPlannerBlocks();
         } catch (e) {
           console.error('Error loading planner blocks:', e);
           plannerBlocks = [];
+          plannerUpdatedAt = 0;
           blocksLoaded = true;
           pruneNotifiedPlannerBlocks();
         }
       };
 
       // Save blocks to storage
-      const saveBlocks = () => {
+      const saveBlocksToCloud = (updatedAt) => {
+        if (!currentUser || typeof db === 'undefined') return;
+        if (typeof ref !== 'function' || typeof set !== 'function') return;
+        const payload = { updatedAt, items: plannerBlocks };
+        set(ref(db, `users/${currentUser}/plannerBlocks`), payload).catch((err) => {
+          console.warn('[Planner] Cloud save failed:', err);
+        });
+      };
+
+      const saveBlocks = (options = {}) => {
         try {
+          normalizePlannerBlocks();
+          const updatedAt = Number.isFinite(options.updatedAt) ? options.updatedAt : Date.now();
+          plannerUpdatedAt = updatedAt;
           localStorage.setItem(STORAGE_KEY, JSON.stringify(plannerBlocks));
+          localStorage.setItem(UPDATED_AT_KEY, String(updatedAt));
           blocksLoaded = true;
+          if (!options.skipCloud) saveBlocksToCloud(updatedAt);
         } catch (e) {
           console.error('Error saving planner blocks:', e);
         }
@@ -9011,8 +9069,46 @@
         if (!blocksLoaded) loadBlocks();
       };
 
+      let plannerCloudSyncStarted = false;
+
+      const startPlannerCloudSync = () => {
+        if (plannerCloudSyncStarted) return;
+        if (!currentUser || typeof db === 'undefined' || typeof ref !== 'function' || typeof onValue !== 'function') return;
+        plannerCloudSyncStarted = true;
+        const plannerRef = ref(db, `users/${currentUser}/plannerBlocks`);
+        onValue(plannerRef, (snap) => {
+          const data = snap.val();
+          if (!data) {
+            if (plannerBlocks.length > 0) {
+              saveBlocks();
+            }
+            return;
+          }
+          const items = Array.isArray(data) ? data : (Array.isArray(data.items) ? data.items : []);
+          if (!Array.isArray(items)) return;
+          const updatedAt = parseUpdatedAt(data.updatedAt);
+          const shouldApply = updatedAt > plannerUpdatedAt
+            || (updatedAt === 0 && plannerUpdatedAt === 0 && plannerBlocks.length === 0 && items.length > 0);
+          if (!shouldApply) return;
+          plannerBlocks = items;
+          if (updatedAt === 0) {
+            saveBlocks();
+          } else {
+            saveBlocks({ updatedAt, skipCloud: true });
+          }
+          render();
+        }, (error) => {
+          console.warn('[Planner] Cloud sync failed:', error);
+        });
+      };
+
       const parsePlannerBlockDateTime = (block) => {
-        if (!block || !block.date || !block.start) return null;
+        if (!block) return null;
+        if (block.startAt) {
+          const dt = new Date(block.startAt);
+          if (!Number.isNaN(dt.getTime())) return dt;
+        }
+        if (!block.date || !block.start) return null;
         const parts = String(block.date).split('-').map(Number);
         if (parts.length !== 3) return null;
         const [year, month, day] = parts;
@@ -9096,6 +9192,7 @@
       const startPlannerReminderTicker = () => {
         if (plannerReminderTickerHandle) return;
         ensureBlocksLoaded();
+        startPlannerCloudSync();
         void checkPlannerReminders();
         plannerReminderTickerHandle = setInterval(() => {
           void checkPlannerReminders();
@@ -10506,6 +10603,7 @@
 
         // Load saved blocks
         loadBlocks();
+        startPlannerCloudSync();
         pruneDeletedEventBlocks();
         startPlannerReminderTicker();
 

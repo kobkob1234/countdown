@@ -56,6 +56,38 @@ function parseIsoMillis(iso) {
   return Number.isFinite(t) ? t : null;
 }
 
+function parsePlannerStart(block) {
+  if (!block) return null;
+  if (block.startAt) {
+    const ts = parseIsoMillis(block.startAt);
+    if (Number.isFinite(ts)) return ts;
+  }
+  if (!block.date || !block.start) return null;
+  const parts = String(block.date).split('-').map(Number);
+  if (parts.length !== 3) return null;
+  const [year, month, day] = parts;
+  if (!year || !month || !day) return null;
+  const [h, m] = String(block.start).split(':').map(Number);
+  if (!Number.isFinite(h)) return null;
+  const dt = new Date(year, month - 1, day, h, Number.isFinite(m) ? m : 0, 0, 0);
+  return Number.isNaN(dt.getTime()) ? null : dt.getTime();
+}
+
+function formatPlannerWhen(startMs) {
+  if (!Number.isFinite(startMs)) return '';
+  try {
+    return new Date(startMs).toLocaleString('he-IL', {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  } catch {
+    return new Date(startMs).toISOString();
+  }
+}
+
 function isImportedEvent(evt) {
   if (!evt) return false;
   if (evt.externalId) return true;
@@ -190,6 +222,15 @@ async function loadTasksForUser(userId) {
   return Object.entries(data).map(([id, t]) => ({ id, ...(t || {}) }));
 }
 
+async function loadPlannerBlocksForUser(userId) {
+  const snap = await db.ref(`users/${userId}/plannerBlocks`).once('value');
+  const data = snap.val();
+  if (!data) return [];
+  if (Array.isArray(data)) return data;
+  if (Array.isArray(data.items)) return data.items;
+  return [];
+}
+
 async function loadSharedSubjects() {
   const snap = await db.ref('sharedSubjects').once('value');
   const data = snap.val() || {};
@@ -274,6 +315,50 @@ async function runCheck() {
           { action: 'view', title: 'View' },
           { action: 'complete', title: 'Done' }
         ]
+      };
+
+      const results = await Promise.allSettled(
+        subs.map(({ subKey, sub }) =>
+          sendToSubscription({ userId, subKey, subscription: sub, payload, dedupeKey })
+        )
+      );
+
+      for (const r of results) {
+        const v = r.status === 'fulfilled' ? r.value : null;
+        if (!v) { failed += 1; continue; }
+        if (v.skipped) skipped += 1;
+        else if (v.ok) sent += 1;
+        else failed += 1;
+      }
+    }
+  }
+
+  // Per-user planner blocks -> user subscriptions only
+  for (const { userId, subs } of users) {
+    const blocks = await loadPlannerBlocksForUser(userId);
+    for (const block of blocks) {
+      if (!block || block.completed) continue;
+      const reminderMinutes = Number.parseInt(block.reminder || '0', 10) || 0;
+      if (!reminderMinutes) continue;
+      const startMs = parsePlannerStart(block);
+      if (!shouldTrigger(nowMs, startMs, reminderMinutes)) continue;
+
+      const blockKey = block.id || hashKey(`${block.title || ''}|${block.date || ''}|${block.start || ''}`);
+      const whenStr = formatPlannerWhen(startMs);
+      const title = 'תזכורת יומן יומי 📅';
+      const body = whenStr
+        ? `${block.title || 'פעילות'} • ${whenStr}`
+        : `${block.title || 'פעילות'} מתחיל בקרוב`;
+      const dedupeKey = `planner|${userId}|${blockKey}|${block.startAt || block.date || ''}|${block.start || ''}|${reminderMinutes}`;
+      const payload = {
+        title,
+        body,
+        tag: `planner-${blockKey}`,
+        dedupeKey,
+        url: buildUrl('/', {}),
+        requireInteraction: true,
+        renotify: true,
+        actions: [{ action: 'view', title: 'View' }]
       };
 
       const results = await Promise.allSettled(
