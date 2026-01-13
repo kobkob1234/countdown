@@ -2289,8 +2289,10 @@
     const NOTIFY_KEYS = {
       EVENTS: 'countdown-notified-events-v1',
       TASKS: `countdown-notified-tasks-v1${taskNotifyScope}`,
+      PLANNER: `countdown-notified-planner-v1${taskNotifyScope}`,
       EVENTS_LAST_CHECK: 'countdown-last-event-check-v1',
-      TASKS_LAST_CHECK: `countdown-last-task-check-v1${taskNotifyScope}`
+      TASKS_LAST_CHECK: `countdown-last-task-check-v1${taskNotifyScope}`,
+      PLANNER_LAST_CHECK: `countdown-last-planner-check-v1${taskNotifyScope}`
     };
     const NOTIFY_TTL_MS = 1000 * 60 * 60 * 24 * 7;
     const NOTIFY_DEDUPE_CACHE = 'countdown-notify-dedupe-v1';
@@ -2402,9 +2404,11 @@
 
     const notifiedEvents = loadNotifiedMap(NOTIFY_KEYS.EVENTS);
     const notifiedTasks = loadNotifiedMap(NOTIFY_KEYS.TASKS);
+    const notifiedPlannerBlocks = loadNotifiedMap(NOTIFY_KEYS.PLANNER);
     const reminderCheckState = {
       events: { key: NOTIFY_KEYS.EVENTS_LAST_CHECK, lastCheck: loadLastCheck(NOTIFY_KEYS.EVENTS_LAST_CHECK), lastPersisted: 0 },
-      tasks: { key: NOTIFY_KEYS.TASKS_LAST_CHECK, lastCheck: loadLastCheck(NOTIFY_KEYS.TASKS_LAST_CHECK), lastPersisted: 0 }
+      tasks: { key: NOTIFY_KEYS.TASKS_LAST_CHECK, lastCheck: loadLastCheck(NOTIFY_KEYS.TASKS_LAST_CHECK), lastPersisted: 0 },
+      planner: { key: NOTIFY_KEYS.PLANNER_LAST_CHECK, lastCheck: loadLastCheck(NOTIFY_KEYS.PLANNER_LAST_CHECK), lastPersisted: 0 }
     };
     let eventReminderCheckInFlight = false;
     let taskReminderCheckInFlight = false;
@@ -2929,6 +2933,7 @@
       const now = Date.now();
       persistLastCheck(reminderCheckState.events, now, true);
       persistLastCheck(reminderCheckState.tasks, now, true);
+      persistLastCheck(reminderCheckState.planner, now, true);
     };
 
     document.addEventListener('visibilitychange', () => {
@@ -2942,6 +2947,9 @@
       }
       void checkEventReminders(Date.now());
       void checkTaskReminders();
+      if (typeof DailyPlanner !== 'undefined' && typeof DailyPlanner.checkReminders === 'function') {
+        void DailyPlanner.checkReminders();
+      }
       // Force Firebase reconnect when app becomes visible (fixes mobile sync issues)
       if (!document.hidden) {
         goOffline(db);
@@ -8783,6 +8791,9 @@
       let editingBlockId = null;
       let miniCalendarDate = new Date();
       let initialized = false;
+      let blocksLoaded = false;
+      let plannerReminderTickerHandle = null;
+      let plannerReminderCheckInFlight = false;
 
       // Storage key
       const STORAGE_KEY = 'dailyPlannerBlocks';
@@ -8885,6 +8896,11 @@
         ]
       };
 
+      const pruneNotifiedPlannerBlocks = () => {
+        const ids = new Set(plannerBlocks.map(b => b.id));
+        pruneNotifiedMap(NOTIFY_KEYS.PLANNER, notifiedPlannerBlocks, ids);
+      };
+
       // Load blocks from storage
       const loadBlocks = () => {
         try {
@@ -8892,9 +8908,13 @@
           if (saved) {
             plannerBlocks = JSON.parse(saved);
           }
+          blocksLoaded = true;
+          pruneNotifiedPlannerBlocks();
         } catch (e) {
           console.error('Error loading planner blocks:', e);
           plannerBlocks = [];
+          blocksLoaded = true;
+          pruneNotifiedPlannerBlocks();
         }
       };
 
@@ -8902,6 +8922,7 @@
       const saveBlocks = () => {
         try {
           localStorage.setItem(STORAGE_KEY, JSON.stringify(plannerBlocks));
+          blocksLoaded = true;
         } catch (e) {
           console.error('Error saving planner blocks:', e);
         }
@@ -8946,6 +8967,101 @@
         const h = Math.floor(minutes / 60);
         const m = minutes % 60;
         return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+      };
+
+      const ensureBlocksLoaded = () => {
+        if (!blocksLoaded) loadBlocks();
+      };
+
+      const parsePlannerBlockDateTime = (block) => {
+        if (!block || !block.date || !block.start) return null;
+        const parts = String(block.date).split('-').map(Number);
+        if (parts.length !== 3) return null;
+        const [year, month, day] = parts;
+        if (!year || !month || !day) return null;
+        const startMinutes = parseTime(block.start);
+        if (!Number.isFinite(startMinutes)) return null;
+        const hours = Math.floor(startMinutes / 60);
+        const minutes = startMinutes % 60;
+        const dt = new Date(year, month - 1, day, hours, minutes, 0, 0);
+        return Number.isNaN(dt.getTime()) ? null : dt;
+      };
+
+      const formatPlannerReminderMessage = (block) => {
+        const blockDate = parsePlannerBlockDateTime(block);
+        if (!blockDate) return 'מתחיל בקרוב';
+        const dateStr = blockDate.toLocaleDateString('he-IL', { weekday: 'long', month: 'short', day: 'numeric' });
+        const timeStr = blockDate.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });
+        return `מתחיל ב-${timeStr} • ${dateStr}`;
+      };
+
+      async function checkPlannerReminders(nowMs = Date.now()) {
+        if (plannerReminderCheckInFlight) return;
+        plannerReminderCheckInFlight = true;
+        try {
+          ensureBlocksLoaded();
+          pruneNotifiedPlannerBlocks();
+          const state = reminderCheckState.planner;
+          const { start, isCatchup } = getReminderWindow(state.lastCheck, nowMs);
+          const candidates = [];
+
+          plannerBlocks.forEach(block => {
+            if (!block || block.completed) return;
+            const reminderMinutes = parseInt(block.reminder, 10) || 0;
+            if (!reminderMinutes) return;
+            const blockTime = parsePlannerBlockDateTime(block);
+            if (!blockTime) return;
+            const reminderKey = `${block.date || ''}|${block.start || ''}|${reminderMinutes}`;
+            const entry = notifiedPlannerBlocks.get(block.id);
+            if (entry && entry.key === reminderKey) return;
+            const triggerTime = blockTime.getTime() - (reminderMinutes * 60000);
+            if (triggerTime < start || triggerTime > nowMs) return;
+            const dedupeKey = `planner|${currentUser || ''}|${block.id}|${block.date || ''}|${block.start || ''}|${reminderMinutes}`;
+            candidates.push({ block, reminderKey, triggerTime, dedupeKey });
+          });
+
+          if (candidates.length) {
+            if (isCatchup && candidates.length > REMINDER_CATCHUP_MAX_COUNT) {
+              candidates.sort((a, b) => b.triggerTime - a.triggerTime);
+              candidates.length = REMINDER_CATCHUP_MAX_COUNT;
+            } else {
+              candidates.sort((a, b) => a.triggerTime - b.triggerTime);
+            }
+            for (const item of candidates) {
+              if (item.dedupeKey && await wasDedupeKeySeen(item.dedupeKey, nowMs)) {
+                notifiedPlannerBlocks.set(item.block.id, { key: item.reminderKey, ts: nowMs });
+                continue;
+              }
+              if (item.dedupeKey) await markDedupeKeySeen(item.dedupeKey, nowMs);
+              const title = `📅 תזכורת יומן יומי: ${item.block.title || 'פעילות'}`;
+              const message = formatPlannerReminderMessage(item.block);
+              showSystemNotification(title, {
+                body: message,
+                tag: `planner-${item.block.id}`,
+                renotify: true
+              }).catch(() => { });
+              showEventAlert(title, message, true);
+              notifiedPlannerBlocks.set(item.block.id, { key: item.reminderKey, ts: nowMs });
+            }
+            persistNotifiedMap(NOTIFY_KEYS.PLANNER, notifiedPlannerBlocks);
+          }
+
+          state.lastCheck = nowMs;
+          persistLastCheck(state, nowMs);
+        } catch (e) {
+          console.warn('[Notifications] Planner reminder check failed:', e);
+        } finally {
+          plannerReminderCheckInFlight = false;
+        }
+      }
+
+      const startPlannerReminderTicker = () => {
+        if (plannerReminderTickerHandle) return;
+        ensureBlocksLoaded();
+        void checkPlannerReminders();
+        plannerReminderTickerHandle = setInterval(() => {
+          void checkPlannerReminders();
+        }, 10000);
       };
 
       // Ensure recurring blocks are instantiated for the target date
@@ -10332,6 +10448,7 @@
 
         // Load saved blocks
         loadBlocks();
+        startPlannerReminderTicker();
 
         // Set up event listeners
         if (refs.prevDay) refs.prevDay.onclick = () => navigateDate(-1);
@@ -10545,8 +10662,19 @@
         render();
       };
 
-      return { init, render, refreshTasks, addPlannerBlock };
+      return {
+        init,
+        render,
+        refreshTasks,
+        addPlannerBlock,
+        checkReminders: checkPlannerReminders,
+        startReminderTicker: startPlannerReminderTicker
+      };
     })();
+
+    if (typeof DailyPlanner !== 'undefined' && typeof DailyPlanner.startReminderTicker === 'function') {
+      DailyPlanner.startReminderTicker();
+    }
 
     // Handle Notification Actions (Complete Task)
     const handleCompleteTask = (taskId) => {
