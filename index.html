@@ -2294,14 +2294,14 @@
     const pendingDeletes = new Map();
     let lastDeletedId = null;
     const DELETE_TIMEOUT_MS = 10000;
-    const taskNotifyScope = currentUser ? `:${currentUser}` : '';
+    const notifyScope = currentUser ? `:${currentUser}` : '';
     const NOTIFY_KEYS = {
-      EVENTS: 'countdown-notified-events-v1',
-      TASKS: `countdown-notified-tasks-v1${taskNotifyScope}`,
-      PLANNER: `countdown-notified-planner-v1${taskNotifyScope}`,
-      EVENTS_LAST_CHECK: 'countdown-last-event-check-v1',
-      TASKS_LAST_CHECK: `countdown-last-task-check-v1${taskNotifyScope}`,
-      PLANNER_LAST_CHECK: `countdown-last-planner-check-v1${taskNotifyScope}`
+      EVENTS: `countdown-notified-events-v1${notifyScope}`,
+      TASKS: `countdown-notified-tasks-v1${notifyScope}`,
+      PLANNER: `countdown-notified-planner-v1${notifyScope}`,
+      EVENTS_LAST_CHECK: `countdown-last-event-check-v1${notifyScope}`,
+      TASKS_LAST_CHECK: `countdown-last-task-check-v1${notifyScope}`,
+      PLANNER_LAST_CHECK: `countdown-last-planner-check-v1${notifyScope}`
     };
     const NOTIFY_TTL_MS = 1000 * 60 * 60 * 24 * 7;
     const NOTIFY_DEDUPE_CACHE = 'countdown-notify-dedupe-v1';
@@ -3595,7 +3595,7 @@
           if (!Number.isFinite(eventTime)) return;
           const triggerTime = eventTime - (reminderMinutes * 60000);
           if (triggerTime < start || triggerTime > nowMs) return;
-          const dedupeKey = `event|${evt.id}|${evt.date || ''}|${reminderMinutes}`;
+          const dedupeKey = `event|${currentUser || ''}|${evt.id}|${evt.date || ''}|${reminderMinutes}`;
           candidates.push({ evt, reminderKey, triggerTime, dedupeKey });
         });
 
@@ -3768,6 +3768,7 @@
       focusQuickAdd,
       goToToday,
       openPomodoro,
+      closePomodoro,
       toggleCalendarSidebar,
       openTasksView,
       openCountdownView,
@@ -3787,6 +3788,7 @@
       focusQuickAdd,
       goToToday,
       openPomodoro,
+      closePomodoro,
       toggleCalendarSidebar,
       openTasksView,
       openCountdownView,
@@ -5974,6 +5976,10 @@
         currentTaskSort = sortType;
         localStorage.setItem('task-sort-preference', sortType);
 
+        if (typeof clearManualTaskOrder === 'function') {
+          clearManualTaskOrder();
+        }
+
         // Update UI
         if (taskSortLabel) taskSortLabel.textContent = SORT_LABELS[sortType] || sortType;
         taskSortMenu.querySelectorAll('.task-sort-option').forEach(opt => {
@@ -5993,6 +5999,22 @@
       // Don't initialize order for tasks - let sortTasks handle the default sorting
       // Only tasks that have been manually dragged will have manualOrder: true
       return;
+    }
+
+    function clearManualTaskOrder() {
+      const updates = [];
+      tasks.forEach(task => {
+        if (task.manualOrder === true || Number.isFinite(task.order)) {
+          task.manualOrder = false;
+          task.order = null;
+          updates.push(task);
+        }
+      });
+
+      updates.forEach(task => {
+        const { id, ...cleanTask } = task;
+        saveTask(task.id, cleanTask, task.subject);
+      });
     }
 
     function updateTaskOrderFromContainer(container) {

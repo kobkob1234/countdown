@@ -307,13 +307,12 @@ async function runCheck() {
 
       const offset = formatReminderOffset(reminderMinutes);
       const dueStr = task.dueDate ? new Date(dueMs).toLocaleString() : '';
-      const dedupeKey = `shared-task|${userId}|${subject.id}|${taskId}|${task.dueDate}|${reminderMinutes}`;
-
       // Send to each user who has access to this shared subject
       for (const userId of allUsers) {
         const userEntry = users.find(u => u.userId === userId);
         if (!userEntry) continue;
 
+        const dedupeKey = `shared-task|${userId}|${subject.id}|${taskId}|${task.dueDate}|${reminderMinutes}`;
         const payload = {
           title: `Shared Task Reminder 📋`,
           body: `${task.title || 'Task'} is due in ${offset}${dueStr ? ` (due: ${dueStr})` : ''}`,

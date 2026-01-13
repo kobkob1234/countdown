@@ -481,6 +481,24 @@ export function createPomodoro() {
     let pipVideo = null;
     let pipAnimationFrame = null;
     let isPiPActive = false;
+    let pipStarting = false;
+    let pipStream = null;
+
+    const waitForVideoReady = (video) => new Promise((resolve) => {
+      if (!video) return resolve();
+      if (video.readyState >= 2) return resolve();
+      let settled = false;
+      const done = () => {
+        if (settled) return;
+        settled = true;
+        video.removeEventListener('loadedmetadata', done);
+        video.removeEventListener('canplay', done);
+        resolve();
+      };
+      video.addEventListener('loadedmetadata', done);
+      video.addEventListener('canplay', done);
+      setTimeout(done, 250);
+    });
 
     const isPiPSupported = () => {
       return !!document.pictureInPictureEnabled
@@ -548,6 +566,7 @@ export function createPomodoro() {
     };
 
     const startPiP = async () => {
+      if (pipStarting || isPiPActive) return false;
       if (!refs.pipCanvas || typeof refs.pipCanvas.captureStream !== 'function') return false;
 
       // Check if PiP is supported
@@ -557,29 +576,33 @@ export function createPomodoro() {
       }
 
       try {
+        pipStarting = true;
         // Create or reuse video element
         if (!pipVideo) {
           pipVideo = document.createElement('video');
-        pipVideo.muted = true;
-        pipVideo.autoplay = true;
-        pipVideo.loop = true;
-        pipVideo.playsInline = true;
-        pipVideo.style.display = 'none';
-        document.body.appendChild(pipVideo);
+          pipVideo.muted = true;
+          pipVideo.autoplay = true;
+          pipVideo.loop = true;
+          pipVideo.playsInline = true;
+          pipVideo.style.display = 'none';
+          document.body.appendChild(pipVideo);
         }
 
-        // Get stream from canvas
-        const stream = refs.pipCanvas.captureStream(30); // 30 FPS
-        pipVideo.srcObject = stream;
+        if (!pipStream) pipStream = refs.pipCanvas.captureStream(30); // 30 FPS
+        if (pipVideo.srcObject !== pipStream) {
+          pipVideo.srcObject = pipStream;
+        }
 
         // Play the video
         // Play the video - handle "interrupted by a new load request" error
         try {
+          await waitForVideoReady(pipVideo);
           await pipVideo.play();
         } catch (err) {
           console.warn('PiP video play interrupted, retrying...', err);
           // Retry once after a short delay
           await new Promise(r => setTimeout(r, 50));
+          await waitForVideoReady(pipVideo);
           await pipVideo.play();
         }
 
@@ -604,10 +627,14 @@ export function createPomodoro() {
         };
 
         pipVideo.addEventListener('leavepictureinpicture', handleLeavePiP);
+        pipStarting = false;
         return true;
       } catch (error) {
         console.error('PiP error:', error);
-        window.alert('שגיאה בהפעלת Picture-in-Picture: ' + error.message);
+        if (error?.name !== 'AbortError') {
+          window.alert('שגיאה בהפעלת Picture-in-Picture: ' + error.message);
+        }
+        pipStarting = false;
         return false;
       }
     };

@@ -111,6 +111,10 @@ export function initUi() {
     if (typeof ctx.showView === 'function') ctx.showView('pomodoro');
   };
 
+  const closePomodoro = () => {
+    if (typeof ctx.showView === 'function') ctx.showView('countdown');
+  };
+
   const toggleCalendarSidebar = () => {
     if (typeof ctx.showView === 'function' && ctx.currentView !== 'countdown') ctx.showView('countdown');
     const toggleBtn = document.getElementById('toggleSidebar');
@@ -335,6 +339,7 @@ export function initUi() {
     focusQuickAdd,
     goToToday,
     openPomodoro,
+    closePomodoro,
     toggleCalendarSidebar,
     openTasksView,
     openCountdownView,
