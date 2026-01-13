@@ -10802,6 +10802,11 @@
 
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.addEventListener('message', (event) => {
+        if (event.data?.type === 'pushsubscriptionchange') {
+          syncExistingSubscriptionToCurrentUser().catch(() => { });
+          refreshNotifyButton().catch(() => { });
+          return;
+        }
         if (event.data && event.data.action === 'complete') {
           const url = new URL(event.data.url, window.location.origin);
           const tid = url.searchParams.get('completeTask');
