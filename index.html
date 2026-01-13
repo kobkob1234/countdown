@@ -2956,8 +2956,8 @@
       }
       void checkEventReminders(Date.now());
       void checkTaskReminders();
-      if (typeof DailyPlanner !== 'undefined' && typeof DailyPlanner.checkReminders === 'function') {
-        void DailyPlanner.checkReminders();
+      if (window.DailyPlanner && typeof window.DailyPlanner.checkReminders === 'function') {
+        void window.DailyPlanner.checkReminders();
       }
       // Force Firebase reconnect when app becomes visible (fixes mobile sync issues)
       if (!document.hidden) {
@@ -3074,8 +3074,8 @@
         render();
         scheduleCalendarRender();
         startTicker();
-        if (typeof DailyPlanner !== 'undefined' && typeof DailyPlanner.refreshEvents === 'function') {
-          DailyPlanner.refreshEvents();
+        if (window.DailyPlanner && typeof window.DailyPlanner.refreshEvents === 'function') {
+          window.DailyPlanner.refreshEvents();
         }
       },
       onEventsCacheLoaded: () => {
@@ -3083,8 +3083,8 @@
         render();
         scheduleCalendarRender();
         startTicker();
-        if (typeof DailyPlanner !== 'undefined' && typeof DailyPlanner.refreshEvents === 'function') {
-          DailyPlanner.refreshEvents();
+        if (window.DailyPlanner && typeof window.DailyPlanner.refreshEvents === 'function') {
+          window.DailyPlanner.refreshEvents();
         }
       }
     });
@@ -4959,8 +4959,8 @@
       } else if (view === 'planner') {
         if (plannerOverlay) {
           plannerOverlay.classList.add('open');
-          if (typeof DailyPlanner !== 'undefined' && DailyPlanner.init) {
-            DailyPlanner.init();
+          if (window.DailyPlanner && window.DailyPlanner.init) {
+            window.DailyPlanner.init();
           }
         }
       } else if (view === 'exam') {
@@ -6660,8 +6660,8 @@
         renderTasks();
       }
       // Update daily planner if open
-      if (typeof DailyPlanner !== 'undefined' && DailyPlanner.refreshTasks) {
-        DailyPlanner.refreshTasks();
+      if (window.DailyPlanner && window.DailyPlanner.refreshTasks) {
+        window.DailyPlanner.refreshTasks();
       }
       void checkTaskReminders();
     }
@@ -10395,6 +10395,11 @@
 
       // Main render function
       const render = () => {
+        if (typeof eventsLoaded !== 'undefined' && typeof hasEventsCache !== 'undefined') {
+          if (eventsLoaded || hasEventsCache) {
+            pruneDeletedEventBlocks();
+          }
+        }
         // Update date display
         if (refs.currentDate) {
           refs.currentDate.textContent = formatDate(currentDate);
@@ -10715,8 +10720,15 @@
       };
     })();
 
-    if (typeof DailyPlanner !== 'undefined' && typeof DailyPlanner.startReminderTicker === 'function') {
-      DailyPlanner.startReminderTicker();
+    window.DailyPlanner = DailyPlanner;
+    if (window.DailyPlanner && typeof window.DailyPlanner.refreshEvents === 'function') {
+      if (typeof eventsLoaded === 'undefined' || eventsLoaded || hasEventsCache) {
+        window.DailyPlanner.refreshEvents();
+      }
+    }
+
+    if (window.DailyPlanner && typeof window.DailyPlanner.startReminderTicker === 'function') {
+      window.DailyPlanner.startReminderTicker();
     }
 
     // Handle Notification Actions (Complete Task)
