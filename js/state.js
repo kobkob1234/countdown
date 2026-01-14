@@ -93,11 +93,29 @@ export const CACHE_KEYS = {
     SUBJECTS_PREFIX: 'countdown-subjects-cache-v1:'
 };
 
+// NOTIFY_KEYS factory - returns user-scoped storage keys
+export const getNotifyKeys = (currentUser) => {
+    const scope = currentUser ? `:${currentUser}` : '';
+    return {
+        EVENTS: `countdown-notified-events-v1${scope}`,
+        TASKS: `countdown-notified-tasks-v1${scope}`,
+        PLANNER: `countdown-notified-planner-v1${scope}`,
+        EVENTS_LAST_CHECK: `countdown-last-event-check-v1${scope}`,
+        TASKS_LAST_CHECK: `countdown-last-task-check-v1${scope}`,
+        PLANNER_LAST_CHECK: `countdown-last-planner-check-v1${scope}`,
+        LAST_ACTIVE: `countdown-last-active-v1${scope}`
+    };
+};
+
+// Legacy non-scoped keys (kept for backward compatibility with js/notifications.js)
 export const NOTIFY_KEYS = {
     EVENTS: 'countdown-notified-events-v1',
     TASKS: 'countdown-notified-tasks-v1',
     LAST_ACTIVE: 'countdown-last-active-v1'
 };
+
+// Validation constants
+export const MAX_REMINDER_MINUTES = 10080; // 1 week maximum
 
 // Timing constants
 export const NOTIFY_TTL_MS = 1000 * 60 * 60 * 24 * 7; // 7 days

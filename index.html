@@ -852,9 +852,11 @@
         <div class="task-edit-section-title">Recurrence</div>
         <div class="quick-recurrence-btns">
           <button type="button" class="quick-recurrence-btn" data-target="edit" data-recurrence="daily">יומי</button>
-          <button type="button" class="quick-recurrence-btn" data-target="edit" data-recurrence="weekdays">ימי חול</button>
+          <button type="button" class="quick-recurrence-btn" data-target="edit" data-recurrence="weekdays">ימי
+            חול</button>
           <button type="button" class="quick-recurrence-btn" data-target="edit" data-recurrence="weekly">שבועי</button>
-          <button type="button" class="quick-recurrence-btn" data-target="edit" data-recurrence="biweekly">דו-שבועי</button>
+          <button type="button" class="quick-recurrence-btn" data-target="edit"
+            data-recurrence="biweekly">דו-שבועי</button>
           <button type="button" class="quick-recurrence-btn" data-target="edit" data-recurrence="monthly">חודשי</button>
           <button type="button" class="quick-recurrence-btn" data-target="edit" data-recurrence="none">ללא חזרה</button>
         </div>
@@ -2422,9 +2424,19 @@
     let eventReminderCheckInFlight = false;
     let taskReminderCheckInFlight = false;
     let pendingEventAlert = null;
-    const reminderAudio = new Audio('https://assets.mixkit.co/sfx/preview/mixkit-software-interface-start-2574.mp3');
-    reminderAudio.preload = 'auto';
-    reminderAudio.volume = 0.6;
+    // Web Audio API for reminder sounds (works offline, no external dependency)
+    let audioContext = null;
+    const getAudioContext = () => {
+      if (!audioContext) {
+        try {
+          audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        } catch (e) {
+          console.warn('[Audio] Web Audio API not supported:', e);
+          return null;
+        }
+      }
+      return audioContext;
+    };
 
     const getActiveEvents = () => events.filter(evt => !pendingDeletes.has(evt.id));
     ctx.getActiveEvents = getActiveEvents;
@@ -2876,10 +2888,12 @@
       if (!Number.isFinite(value) || value <= 0) return null;
 
       const multipliers = { minutes: 1, hours: 60, days: 1440, weeks: 10080 };
+      const MAX_REMINDER_MINUTES = 10080; // 1 week maximum
       const mult = multipliers[unit] || 1;
       const minutes = value * mult;
       if (!Number.isFinite(minutes) || minutes <= 0) return null;
-      return minutes;
+      // Cap at maximum allowed value
+      return Math.min(minutes, MAX_REMINDER_MINUTES);
     };
 
     const setReminderUIFromMinutes = (minutes) => {
@@ -3114,11 +3128,36 @@
     Object.assign(ctx, { formatDate, formatReminderOffset });
 
     function playReminderSound() {
-      if (!reminderAudio) return;
-      reminderAudio.currentTime = 0;
-      reminderAudio.play().catch(() => {
-        console.log("Audio play failed (interaction needed)");
-      });
+      const ctx = getAudioContext();
+      if (!ctx) return;
+      try {
+        // Resume audio context if suspended (required after user interaction)
+        if (ctx.state === 'suspended') ctx.resume();
+        const now = ctx.currentTime;
+        const volume = 0.3;
+        // Create a pleasant two-tone notification sound
+        const frequencies = [830, 1046]; // G5, C6 - pleasing upward interval
+        const duration = 0.15;
+        const gap = 0.08;
+        frequencies.forEach((freq, i) => {
+          const oscillator = ctx.createOscillator();
+          const gainNode = ctx.createGain();
+          oscillator.connect(gainNode);
+          gainNode.connect(ctx.destination);
+          oscillator.type = 'sine';
+          oscillator.frequency.value = freq;
+          const startTime = now + i * (duration + gap);
+          // Envelope: quick attack, sustain, quick release
+          gainNode.gain.setValueAtTime(0, startTime);
+          gainNode.gain.linearRampToValueAtTime(volume, startTime + 0.01);
+          gainNode.gain.setValueAtTime(volume, startTime + duration - 0.02);
+          gainNode.gain.linearRampToValueAtTime(0, startTime + duration);
+          oscillator.start(startTime);
+          oscillator.stop(startTime + duration);
+        });
+      } catch (e) {
+        console.log('[Audio] Play failed:', e.message);
+      }
     }
 
     function showEventAlert(title, message, playSound = false) {
