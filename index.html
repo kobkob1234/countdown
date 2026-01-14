@@ -4822,46 +4822,62 @@
       const now = new Date();
       let base = baseIso ? new Date(baseIso) : new Date();
       if (Number.isNaN(base.getTime())) return null;
-      if (base < now) base = now;
-      const next = new Date(base);
-
-      switch (type) {
-        case 'daily':
-          next.setDate(next.getDate() + 1);
-          break;
-        case 'weekdays':
-          // Skip to next weekday (Sunday=0, Saturday=6)
-          do {
+      const advance = (date) => {
+        const next = new Date(date);
+        switch (type) {
+          case 'daily':
             next.setDate(next.getDate() + 1);
-          } while (next.getDay() === 5 || next.getDay() === 6);
-          break;
-        case 'weekly':
-          next.setDate(next.getDate() + 7);
-          break;
-        case 'biweekly':
-          next.setDate(next.getDate() + 14);
-          break;
-        case 'monthly':
-          next.setMonth(next.getMonth() + 1);
-          break;
-        case 'yearly':
-          next.setFullYear(next.getFullYear() + 1);
-          break;
-        case 'custom':
-          if (!parsedRecurrence.interval || !parsedRecurrence.unit) return null;
-          if (parsedRecurrence.unit === 'days') {
-            next.setDate(next.getDate() + parsedRecurrence.interval);
-          } else if (parsedRecurrence.unit === 'weeks') {
-            next.setDate(next.getDate() + (parsedRecurrence.interval * 7));
-          } else if (parsedRecurrence.unit === 'months') {
-            next.setMonth(next.getMonth() + parsedRecurrence.interval);
-          } else if (parsedRecurrence.unit === 'years') {
-            next.setFullYear(next.getFullYear() + parsedRecurrence.interval);
-          }
-          break;
-        default:
-          return null;
+            break;
+          case 'weekdays':
+            // Skip to next weekday (Sunday=0, Saturday=6)
+            do {
+              next.setDate(next.getDate() + 1);
+            } while (next.getDay() === 5 || next.getDay() === 6);
+            break;
+          case 'weekly':
+            next.setDate(next.getDate() + 7);
+            break;
+          case 'biweekly':
+            next.setDate(next.getDate() + 14);
+            break;
+          case 'monthly':
+            next.setMonth(next.getMonth() + 1);
+            break;
+          case 'yearly':
+            next.setFullYear(next.getFullYear() + 1);
+            break;
+          case 'custom':
+            if (!parsedRecurrence.interval || !parsedRecurrence.unit) return null;
+            if (parsedRecurrence.unit === 'days') {
+              next.setDate(next.getDate() + parsedRecurrence.interval);
+            } else if (parsedRecurrence.unit === 'weeks') {
+              next.setDate(next.getDate() + (parsedRecurrence.interval * 7));
+            } else if (parsedRecurrence.unit === 'months') {
+              next.setMonth(next.getMonth() + parsedRecurrence.interval);
+            } else if (parsedRecurrence.unit === 'years') {
+              next.setFullYear(next.getFullYear() + parsedRecurrence.interval);
+            } else {
+              return null;
+            }
+            break;
+          default:
+            return null;
+        }
+        return next;
+      };
+
+      let next = advance(base);
+      if (!next) return null;
+
+      const MAX_ITERATIONS = 10000;
+      let iterations = 0;
+      while (next <= now && iterations < MAX_ITERATIONS) {
+        next = advance(next);
+        if (!next) return null;
+        iterations++;
       }
+
+      if (iterations >= MAX_ITERATIONS) return null;
       return next;
     }
 
