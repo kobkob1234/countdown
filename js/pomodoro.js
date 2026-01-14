@@ -524,28 +524,46 @@ export function createPomodoro() {
       const canvas = refs.pipCanvas;
       const ctx = canvas.getContext('2d');
 
-      // Clear canvas with light background (matching mini timer card)
+      // Clear canvas with white background (matching mini timer card)
       ctx.fillStyle = '#ffffff';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      // Add subtle rounded rectangle appearance
+      // Draw rounded border to match mini timer's border-radius: 20px look
       ctx.strokeStyle = '#e5e7eb';
-      ctx.lineWidth = 2;
-      ctx.strokeRect(1, 1, canvas.width - 2, canvas.height - 2);
+      ctx.lineWidth = 1;
+      ctx.strokeRect(0, 0, canvas.width, canvas.height);
 
-      // Draw time with purple gradient color (matching mini timer)
-      const time = formatTime(state.remainingMs);
-      ctx.font = 'bold 42px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-      ctx.fillStyle = '#667eea'; // Purple accent color
+      // Close button circle on the left (matching mini timer layout with RTL)
+      const closeBtnX = 24;
+      const closeBtnY = canvas.height / 2;
+      const closeBtnRadius = 16;
+
+      // Draw close button background
+      ctx.fillStyle = '#f3f4f6';
+      ctx.beginPath();
+      ctx.arc(closeBtnX, closeBtnY, closeBtnRadius, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Draw × symbol
+      ctx.fillStyle = '#9ca3af';
+      ctx.font = '18px -apple-system, BlinkMacSystemFont, sans-serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText(time, canvas.width / 2, canvas.height / 2 - 8);
+      ctx.fillText('×', closeBtnX, closeBtnY);
 
-      // Draw mode label below time
+      // Draw time with purple color (matching mini timer: font-size 28px, font-weight 700)
+      const time = formatTime(state.remainingMs);
+      ctx.font = 'bold 28px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+      ctx.fillStyle = '#667eea'; // Purple accent color matching --accent
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(time, canvas.width / 2 + 10, canvas.height / 2 - 10);
+
+      // Draw mode label (matching mini timer: font-size 12px, uppercase, letter-spacing)
       const modeLabel = state.mode === 'focus' ? 'מיקוד' : (state.mode === 'long' ? 'הפסקה ארוכה' : 'הפסקה קצרה');
-      ctx.font = '14px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+      ctx.font = '12px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
       ctx.fillStyle = '#9ca3af'; // Muted gray color
-      ctx.fillText(modeLabel, canvas.width / 2, canvas.height / 2 + 24);
+      ctx.fillText(modeLabel, canvas.width / 2 + 10, canvas.height / 2 + 12);
     };
 
     const updatePiPCanvas = () => {
