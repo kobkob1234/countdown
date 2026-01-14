@@ -529,8 +529,8 @@ export function createPomodoro() {
           align-items: center;
           justify-content: center;
           height: 100vh;
-          padding: 12px 16px;
-          gap: 12px;
+          padding: 8px 12px;
+          gap: 8px;
           direction: rtl;
           cursor: pointer;
           user-select: none;
@@ -542,28 +542,28 @@ export function createPomodoro() {
           flex: 1;
         }
         .pip-time {
-          font-size: 28px;
+          font-size: 36px;
           font-weight: 700;
           font-variant-numeric: tabular-nums;
           background: linear-gradient(135deg, #667eea, #764ba2);
           -webkit-background-clip: text;
           -webkit-text-fill-color: transparent;
           background-clip: text;
-          line-height: 1.2;
+          line-height: 1;
         }
         .pip-mode {
-          font-size: 12px;
+          font-size: 10px;
           color: #9ca3af;
           text-transform: uppercase;
-          letter-spacing: 1px;
+          letter-spacing: 0.5px;
         }
         .pip-close {
           border: none;
           background: #f3f4f6;
           color: #9ca3af;
-          font-size: 18px;
-          width: 32px;
-          height: 32px;
+          font-size: 16px;
+          width: 28px;
+          height: 28px;
           border-radius: 50%;
           cursor: pointer;
           display: flex;
@@ -581,7 +581,7 @@ export function createPomodoro() {
 
       // Create content container
       const container = doc.createElement('div');
-      container.style.cssText = 'display: flex; align-items: center; gap: 12px; width: 100%;';
+      container.style.cssText = 'display: flex; align-items: center; gap: 8px; width: 100%;';
 
       // Close button
       const closeBtn = doc.createElement('button');
@@ -642,8 +642,8 @@ export function createPomodoro() {
 
         // Request a PiP window with specific dimensions matching mini timer
         pipWindow = await documentPictureInPicture.requestWindow({
-          width: 200,
-          height: 70
+          width: 180,
+          height: 63
         });
 
         // Create content in the PiP window
