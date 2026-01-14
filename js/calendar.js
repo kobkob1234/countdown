@@ -945,11 +945,34 @@ export function initCalendar() {
         byDay = days.map(d => dayMap[d.slice(-2)]).filter(d => d !== undefined);
       }
 
+      const MS_PER_DAY = 24 * 60 * 60 * 1000;
       let next = new Date(start);
       // Track occurrences
       let occurrences = 0;
       let attempts = 0;
-      const MAX_ATTEMPTS = 5000;
+      const MAX_ATTEMPTS = 200000;
+
+      if (fromDate && fromDate > next) {
+        if (freq === 'DAILY') {
+          const diffDays = Math.floor((fromDate - next) / MS_PER_DAY);
+          const steps = Math.floor(diffDays / interval);
+          if (steps > 0) next.setDate(next.getDate() + (steps * interval));
+        } else if (freq === 'WEEKLY') {
+          if (byDay.length === 0) {
+            const diffWeeks = Math.floor((fromDate - next) / (7 * MS_PER_DAY));
+            const steps = Math.floor(diffWeeks / interval);
+            if (steps > 0) next.setDate(next.getDate() + (steps * interval * 7));
+          } else {
+            const startWeekStart = new Date(next);
+            startWeekStart.setDate(startWeekStart.getDate() - startWeekStart.getDay());
+            const fromWeekStart = new Date(fromDate);
+            fromWeekStart.setDate(fromWeekStart.getDate() - fromWeekStart.getDay());
+            const diffWeeks = Math.floor((fromWeekStart - startWeekStart) / (7 * MS_PER_DAY));
+            const steps = Math.floor(diffWeeks / interval);
+            if (steps > 0) next.setDate(next.getDate() + (steps * interval * 7));
+          }
+        }
+      }
 
       while (attempts < MAX_ATTEMPTS) {
         attempts++;
