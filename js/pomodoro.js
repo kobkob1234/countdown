@@ -529,8 +529,8 @@ export function createPomodoro() {
           align-items: center;
           justify-content: center;
           height: 100vh;
-          padding: 8px 12px;
-          gap: 8px;
+          padding: 6px 10px;
+          gap: 6px;
           direction: rtl;
           cursor: pointer;
           user-select: none;
@@ -561,9 +561,9 @@ export function createPomodoro() {
           border: none;
           background: #f3f4f6;
           color: #9ca3af;
-          font-size: 16px;
-          width: 28px;
-          height: 28px;
+          font-size: 14px;
+          width: 24px;
+          height: 24px;
           border-radius: 50%;
           cursor: pointer;
           display: flex;
@@ -581,7 +581,7 @@ export function createPomodoro() {
 
       // Create content container
       const container = doc.createElement('div');
-      container.style.cssText = 'display: flex; align-items: center; gap: 8px; width: 100%;';
+      container.style.cssText = 'display: flex; align-items: center; gap: 6px; width: 100%;';
 
       // Close button
       const closeBtn = doc.createElement('button');
@@ -642,8 +642,8 @@ export function createPomodoro() {
 
         // Request a PiP window with specific dimensions matching mini timer
         pipWindow = await documentPictureInPicture.requestWindow({
-          width: 180,
-          height: 63
+          width: 162,
+          height: 57
         });
 
         // Create content in the PiP window
