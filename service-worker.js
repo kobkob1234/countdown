@@ -1,6 +1,8 @@
 const CACHE_NAME = 'countdown-push-v7';
 const NOTIFY_DEDUPE_CACHE = 'countdown-notify-dedupe-v1';
 const NOTIFY_DEDUPE_TTL_MS = 1000 * 60 * 60 * 24 * 7;
+const PENDING_SUB_DB = 'countdown-pending-sub';
+const PENDING_SUB_STORE = 'subscriptions';
 const CACHE_URLS = [
   './',
   './icon-192.png',
@@ -22,6 +24,59 @@ const CACHE_URLS = [
   './js/controllers/mobile.js'
 ];
 
+// ============================================
+// IndexedDB helpers for pending subscription sync
+// ============================================
+function openPendingSubDB() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(PENDING_SUB_DB, 1);
+    request.onerror = () => reject(request.error);
+    request.onsuccess = () => resolve(request.result);
+    request.onupgradeneeded = (event) => {
+      const db = event.target.result;
+      if (!db.objectStoreNames.contains(PENDING_SUB_STORE)) {
+        db.createObjectStore(PENDING_SUB_STORE, { keyPath: 'id' });
+      }
+    };
+  });
+}
+
+async function savePendingSubscription(subscription) {
+  try {
+    const db = await openPendingSubDB();
+    const tx = db.transaction(PENDING_SUB_STORE, 'readwrite');
+    const store = tx.objectStore(PENDING_SUB_STORE);
+    store.put({ id: 'pending', sub: subscription.toJSON(), ts: Date.now() });
+    await new Promise((resolve, reject) => {
+      tx.oncomplete = resolve;
+      tx.onerror = () => reject(tx.error);
+    });
+    db.close();
+    console.log('[SW] Saved pending subscription to IndexedDB');
+  } catch (e) {
+    console.warn('[SW] Failed to save pending subscription:', e);
+  }
+}
+
+async function clearPendingSubscription() {
+  try {
+    const db = await openPendingSubDB();
+    const tx = db.transaction(PENDING_SUB_STORE, 'readwrite');
+    const store = tx.objectStore(PENDING_SUB_STORE);
+    store.delete('pending');
+    await new Promise((resolve, reject) => {
+      tx.oncomplete = resolve;
+      tx.onerror = () => reject(tx.error);
+    });
+    db.close();
+  } catch (e) {
+    // Best effort
+  }
+}
+
+// ============================================
+// Dedupe helpers
+// ============================================
 function buildDedupeRequest(key) {
   const safeKey = encodeURIComponent(String(key || ''));
   const base = new URL('./', self.location.href);
@@ -49,6 +104,32 @@ async function markDedupeKeySeen(key, nowMs = Date.now()) {
   await cache.put(req, new Response(String(nowMs), { headers: { 'content-type': 'text/plain' } }));
 }
 
+// Fix #9: Batch cleanup of expired dedupe entries
+async function cleanupExpiredDedupeEntries() {
+  if (!self.caches) return;
+  try {
+    const cache = await caches.open(NOTIFY_DEDUPE_CACHE);
+    const keys = await cache.keys();
+    const nowMs = Date.now();
+    let cleaned = 0;
+    for (const req of keys) {
+      const res = await cache.match(req);
+      if (res) {
+        const ts = Number(await res.text()) || 0;
+        if (!ts || (nowMs - ts) > NOTIFY_DEDUPE_TTL_MS) {
+          await cache.delete(req);
+          cleaned++;
+        }
+      }
+    }
+    if (cleaned > 0) {
+      console.log(`[SW] Cleaned ${cleaned} expired dedupe entries`);
+    }
+  } catch (e) {
+    console.warn('[SW] Dedupe cleanup failed:', e);
+  }
+}
+
 self.addEventListener('install', (event) => {
   self.skipWaiting();
   // Pre-cache essential files
@@ -72,6 +153,8 @@ self.addEventListener('activate', (event) => {
           keys.filter((key) => !keepCaches.has(key)).map((key) => caches.delete(key))
         );
       }),
+      // Fix #9: Cleanup expired dedupe entries on activate
+      cleanupExpiredDedupeEntries(),
       // Register periodic sync if available (helps keep SW alive on Android)
       (async () => {
         if ('periodicSync' in self.registration) {
@@ -219,34 +302,47 @@ self.addEventListener('pushsubscriptionchange', (event) => {
     try {
       // Get the old subscription's application server key if available
       const oldSubscription = event.oldSubscription;
-      const newSubscription = event.newSubscription;
+      let newSubscription = event.newSubscription;
 
+      // If browser already created a new subscription, use it
       if (newSubscription) {
-        // Browser already created a new subscription, just notify the page
-        console.log('[SW] New subscription available, notifying page...');
+        console.log('[SW] New subscription available from browser');
       } else if (oldSubscription) {
         // Need to resubscribe with the same application server key
         const applicationServerKey = oldSubscription.options?.applicationServerKey;
         if (applicationServerKey) {
-          const newSub = await self.registration.pushManager.subscribe({
-            userVisibleOnly: true,
-            applicationServerKey: applicationServerKey
-          });
-          console.log('[SW] Resubscribed successfully');
+          try {
+            newSubscription = await self.registration.pushManager.subscribe({
+              userVisibleOnly: true,
+              applicationServerKey: applicationServerKey
+            });
+            console.log('[SW] Resubscribed successfully');
+          } catch (e) {
+            console.error('[SW] Resubscribe failed:', e);
+          }
         }
       }
 
       // Notify all open windows to sync the subscription with Firebase
       const allClients = await self.clients.matchAll({ type: 'window' });
+      let notifiedClient = false;
+
       for (const client of allClients) {
         try {
           client.postMessage({
             type: 'pushsubscriptionchange',
             reason: 'subscription_expired_or_changed'
           });
+          notifiedClient = true;
         } catch (e) {
           // Best-effort
         }
+      }
+
+      // Fix #5: If no windows are open, save subscription to IndexedDB for later sync
+      if (!notifiedClient && newSubscription) {
+        console.log('[SW] No windows open, saving subscription to IndexedDB for later sync');
+        await savePendingSubscription(newSubscription);
       }
     } catch (err) {
       console.error('[SW] Failed to handle subscription change:', err);

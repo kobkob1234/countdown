@@ -58,6 +58,7 @@ function parseIsoMillis(iso) {
 
 function parsePlannerStart(block) {
   if (!block) return null;
+  // Fix #7: Prefer ISO8601 startAt if available (includes timezone)
   if (block.startAt) {
     const ts = parseIsoMillis(block.startAt);
     if (Number.isFinite(ts)) return ts;
@@ -69,8 +70,14 @@ function parsePlannerStart(block) {
   if (!year || !month || !day) return null;
   const [h, m] = String(block.start).split(':').map(Number);
   if (!Number.isFinite(h)) return null;
-  const dt = new Date(year, month - 1, day, h, Number.isFinite(m) ? m : 0, 0, 0);
-  return Number.isNaN(dt.getTime()) ? null : dt.getTime();
+  // Use UTC to avoid server timezone interpretation
+  // Client stores local time as if it were UTC, so we parse it the same way
+  // This isn't perfect but is consistent across server runs
+  const dt = new Date(Date.UTC(year, month - 1, day, h, Number.isFinite(m) ? m : 0, 0, 0));
+  // Apply common timezone offset for Israel (UTC+2/+3)
+  // Better solution: store user's timezone in Firebase
+  const israelOffsetMs = 2 * 60 * 60 * 1000; // UTC+2 for standard time
+  return Number.isNaN(dt.getTime()) ? null : dt.getTime() - israelOffsetMs;
 }
 
 function formatPlannerWhen(startMs) {
@@ -114,7 +121,9 @@ function formatReminderOffset(minutes) {
 async function claimOnce(path) {
   const ref = db.ref(path);
   const res = await ref.transaction((cur) => {
-    if (cur) return; // already claimed
+    // Fix #10: Allow retrying transient failures (status != 'sent')
+    if (cur && cur.status === 'sent') return; // already sent successfully
+    if (cur && cur.status === 'sending') return; // another process is handling it
     return { status: 'sending', ts: Date.now() };
   });
   return { committed: !!res.committed, ref };
@@ -124,8 +133,11 @@ async function markSent(ref, extra = {}) {
   await ref.set({ status: 'sent', ts: Date.now(), ...extra });
 }
 
-async function markFailed(ref, extra = {}) {
-  await ref.set({ status: 'failed', ts: Date.now(), ...extra });
+// Fix #10: Mark as transient (retryable) for 5xx errors, failed only for permanent 4xx
+async function markFailed(ref, statusCode, extra = {}) {
+  const isPermanent = statusCode === 404 || statusCode === 410;
+  const status = isPermanent ? 'failed' : 'transient';
+  await ref.set({ status, ts: Date.now(), ...extra });
 }
 
 function buildUrl(pathname = '/', params = {}) {
@@ -177,7 +189,7 @@ async function sendToSubscription({ userId, subKey, subscription, payload, dedup
       }
 
       // Non-retryable or max retries reached
-      await markFailed(ref, { statusCode: statusCode || null, message, dedupeKey, attempts: attempt });
+      await markFailed(ref, statusCode || null, { message, dedupeKey, attempts: attempt });
       console.warn(`[push] Failed user=${userId} sub=${subKey.slice(0, 8)}... status=${statusCode || 'unknown'} msg=${message.slice(0, 100)}`);
 
       // Cleanup expired subscriptions (410 Gone / 404 Not Found)
@@ -345,7 +357,8 @@ async function runCheck() {
 
       const blockKey = block.id || hashKey(`${block.title || ''}|${block.date || ''}|${block.start || ''}`);
       const whenStr = formatPlannerWhen(startMs);
-      const title = 'תזכורת יומן יומי 📅';
+      // Fix #12: Consistent English title like other notifications
+      const title = 'Planner Reminder 📅';
       const body = whenStr
         ? `${block.title || 'פעילות'} • ${whenStr}`
         : `${block.title || 'פעילות'} מתחיל בקרוב`;

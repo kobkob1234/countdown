@@ -2579,9 +2579,64 @@
       await remove(ref(db, `users/${userId}/pushSubscriptions/${key}`));
     }
 
+    // Fix #5: Check for pending subscriptions saved by SW when no windows were open
+    async function syncPendingSubscriptionFromIndexedDB() {
+      const PENDING_SUB_DB = 'countdown-pending-sub';
+      const PENDING_SUB_STORE = 'subscriptions';
+
+      try {
+        const db = await new Promise((resolve, reject) => {
+          const request = indexedDB.open(PENDING_SUB_DB, 1);
+          request.onerror = () => reject(request.error);
+          request.onsuccess = () => resolve(request.result);
+          request.onupgradeneeded = (event) => {
+            const database = event.target.result;
+            if (!database.objectStoreNames.contains(PENDING_SUB_STORE)) {
+              database.createObjectStore(PENDING_SUB_STORE, { keyPath: 'id' });
+            }
+          };
+        });
+
+        const tx = db.transaction(PENDING_SUB_STORE, 'readwrite');
+        const store = tx.objectStore(PENDING_SUB_STORE);
+
+        const pending = await new Promise((resolve, reject) => {
+          const request = store.get('pending');
+          request.onsuccess = () => resolve(request.result);
+          request.onerror = () => reject(request.error);
+        });
+
+        if (pending && pending.sub) {
+          console.log('[Push] Found pending subscription from IndexedDB, syncing to Firebase...');
+          // Create a subscription-like object for savePushSubscriptionForUser
+          const subJson = pending.sub;
+          const subKey = await sha256Base64Url(subJson.endpoint);
+          const payload = {
+            sub: subJson,
+            ua: navigator.userAgent,
+            createdAt: Date.now()
+          };
+          await set(ref(window.db || db, `users/${currentUser}/pushSubscriptions/${subKey}`), payload);
+
+          // Clear the pending subscription
+          store.delete('pending');
+          console.log('[Push] Synced pending subscription to Firebase and cleared from IndexedDB');
+        }
+
+        db.close();
+      } catch (e) {
+        // Best effort - IndexedDB may not exist yet
+        console.log('[Push] No pending subscription to sync:', e.message);
+      }
+    }
+
     async function syncExistingSubscriptionToCurrentUser() {
       if (!isPushSupported()) return;
       if (!PUSH_VAPID_PUBLIC_KEY) return;
+
+      // First check for any pending subscriptions from SW
+      await syncPendingSubscriptionFromIndexedDB();
+
       try {
         const reg = await getPushRegistration();
         if (!reg) return;
@@ -10907,8 +10962,11 @@
     }
 
     // Handle Notification Actions (Complete Task)
-    const handleCompleteTask = (taskId) => {
+    // Supports both personal tasks and shared subject tasks
+    const handleCompleteTask = async (taskId, sharedSubjectId = null) => {
+      // First try to find in local tasks array
       const task = tasks.find(t => t.id === taskId);
+
       if (task && !task.completed) {
         console.log('Completing task from notification:', taskId);
         if (typeof maybeCreateRecurringTask === 'function') {
@@ -10920,7 +10978,31 @@
         if (typeof showToast === 'function') {
           showToast(`Task "${task.title}" completed!`);
         }
+        return true;
       }
+
+      // If not found in local tasks and sharedSubjectId provided, update directly in Firebase
+      if (sharedSubjectId && taskId) {
+        try {
+          const taskRef = ref(db, `sharedSubjects/${sharedSubjectId}/tasks/${taskId}`);
+          const snapshot = await get(taskRef);
+          if (snapshot.exists()) {
+            const taskData = snapshot.val();
+            if (!taskData.completed) {
+              await set(taskRef, { ...taskData, completed: true });
+              console.log('Completed shared task from notification:', taskId);
+              if (typeof showToast === 'function') {
+                showToast(`Task "${taskData.title || 'Task'}" completed!`);
+              }
+              return true;
+            }
+          }
+        } catch (e) {
+          console.warn('Failed to complete shared task:', e);
+        }
+      }
+
+      return false;
     };
     // Expose for mobile.js swipe gestures
     window.handleCompleteTask = handleCompleteTask;
@@ -10938,19 +11020,52 @@
 
     const urlParams = new URLSearchParams(window.location.search);
     const completeTaskId = urlParams.get('completeTask');
+    const completeTaskSharedSubject = urlParams.get('sharedSubject');
     if (completeTaskId) {
-      const checkData = setInterval(() => {
-        if (typeof tasks !== 'undefined' && tasks.length > 0) {
+      let taskCompleted = false;
+      const checkData = setInterval(async () => {
+        // For shared tasks, try immediately since we can query Firebase directly
+        if (completeTaskSharedSubject) {
           clearInterval(checkData);
-          handleCompleteTask(completeTaskId);
+          taskCompleted = await handleCompleteTask(completeTaskId, completeTaskSharedSubject);
           const url = new URL(window.location);
           url.searchParams.delete('completeTask');
           url.searchParams.delete('user');
           url.searchParams.delete('sharedSubject');
           window.history.replaceState({}, '', url);
+          if (!taskCompleted && typeof showToast === 'function') {
+            showToast('Could not complete task - it may have been deleted or already completed.');
+          }
+          return;
+        }
+        // For personal tasks, wait for tasks array to load
+        if (typeof tasks !== 'undefined' && tasks.length > 0) {
+          clearInterval(checkData);
+          taskCompleted = await handleCompleteTask(completeTaskId);
+          const url = new URL(window.location);
+          url.searchParams.delete('completeTask');
+          url.searchParams.delete('user');
+          url.searchParams.delete('sharedSubject');
+          window.history.replaceState({}, '', url);
+          if (!taskCompleted && typeof showToast === 'function') {
+            showToast('Task not found - it may have been deleted.');
+          }
         }
       }, 500);
-      setTimeout(() => clearInterval(checkData), 10000);
+      // Timeout with error feedback
+      setTimeout(() => {
+        clearInterval(checkData);
+        if (!taskCompleted) {
+          const url = new URL(window.location);
+          url.searchParams.delete('completeTask');
+          url.searchParams.delete('user');
+          url.searchParams.delete('sharedSubject');
+          window.history.replaceState({}, '', url);
+          if (typeof showToast === 'function') {
+            showToast('Could not complete task - please try again.');
+          }
+        }
+      }, 10000);
     }
 
     if ('serviceWorker' in navigator) {
