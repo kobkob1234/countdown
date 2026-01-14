@@ -128,11 +128,22 @@ function formatReminderOffset(minutes) {
 
 async function claimOnce(path) {
   const ref = db.ref(path);
+  const now = Date.now();
+  const SENDING_STALE_MS = 5 * 60 * 1000; // 5 minutes - allow takeover of stale claims
+
   const res = await ref.transaction((cur) => {
-    // Fix #10: Allow retrying transient failures (status != 'sent')
-    if (cur && cur.status === 'sent') return; // already sent successfully
-    if (cur && cur.status === 'sending') return; // another process is handling it
-    return { status: 'sending', ts: Date.now() };
+    // Already sent successfully - skip
+    if (cur && cur.status === 'sent') return;
+
+    // Another process claimed it - check if stale
+    if (cur && cur.status === 'sending') {
+      const ts = Number(cur.ts) || 0;
+      // If claim is recent, don't take over
+      if (ts && (now - ts) < SENDING_STALE_MS) return;
+      // Otherwise, take over the stale claim
+    }
+
+    return { status: 'sending', ts: now };
   });
   return { committed: !!res.committed, ref };
 }

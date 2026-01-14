@@ -2585,7 +2585,8 @@
       const PENDING_SUB_STORE = 'subscriptions';
 
       try {
-        const db = await new Promise((resolve, reject) => {
+        // NOTE: Use 'idb' to avoid shadowing the outer Firebase 'db'
+        const idb = await new Promise((resolve, reject) => {
           const request = indexedDB.open(PENDING_SUB_DB, 1);
           request.onerror = () => reject(request.error);
           request.onsuccess = () => resolve(request.result);
@@ -2597,10 +2598,10 @@
           };
         });
 
-        const tx = db.transaction(PENDING_SUB_STORE, 'readwrite');
-        const store = tx.objectStore(PENDING_SUB_STORE);
-
+        // Read pending subscription in a short-lived transaction
         const pending = await new Promise((resolve, reject) => {
+          const tx = idb.transaction(PENDING_SUB_STORE, 'readonly');
+          const store = tx.objectStore(PENDING_SUB_STORE);
           const request = store.get('pending');
           request.onsuccess = () => resolve(request.result);
           request.onerror = () => reject(request.error);
@@ -2616,14 +2617,24 @@
             ua: navigator.userAgent,
             createdAt: Date.now()
           };
-          await set(ref(window.db || db, `users/${currentUser}/pushSubscriptions/${subKey}`), payload);
 
-          // Clear the pending subscription
-          store.delete('pending');
+          // Sync to Firebase using the outer Firebase 'db' reference
+          await set(ref(db, `users/${currentUser}/pushSubscriptions/${subKey}`), payload);
+
+          // Clear the pending subscription in a SEPARATE transaction
+          // (IDB transactions auto-close when event loop is idle, so can't span await)
+          await new Promise((resolve, reject) => {
+            const tx = idb.transaction(PENDING_SUB_STORE, 'readwrite');
+            const store = tx.objectStore(PENDING_SUB_STORE);
+            const request = store.delete('pending');
+            request.onsuccess = () => resolve();
+            request.onerror = () => reject(request.error);
+          });
+
           console.log('[Push] Synced pending subscription to Firebase and cleared from IndexedDB');
         }
 
-        db.close();
+        idb.close();
       } catch (e) {
         // Best effort - IndexedDB may not exist yet
         console.log('[Push] No pending subscription to sync:', e.message);

@@ -1,13 +1,20 @@
-const CACHE_NAME = 'countdown-push-v7';
+// Bump cache version when precache list or fetch strategy changes
+const CACHE_NAME = 'countdown-push-v8';
 const NOTIFY_DEDUPE_CACHE = 'countdown-notify-dedupe-v1';
 const NOTIFY_DEDUPE_TTL_MS = 1000 * 60 * 60 * 24 * 7;
 const PENDING_SUB_DB = 'countdown-pending-sub';
 const PENDING_SUB_STORE = 'subscriptions';
 const CACHE_URLS = [
   './',
+  './manifest.webmanifest',
   './icon-192.png',
   './icon-512.png',
   './css/styles.css',
+  './css/base.css',
+  './css/pwa.css',
+  './css/mobile.css',
+  './css/exam.css',
+  './css/settings.css',
   './js/context.js',
   './js/events.js',
   './js/tasks.js',
@@ -132,14 +139,17 @@ async function cleanupExpiredDedupeEntries() {
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();
-  // Pre-cache essential files
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(CACHE_URLS).catch((err) => {
-        console.warn('[SW] Cache addAll failed:', err);
-      });
-    })
-  );
+  // Pre-cache essential files (per-file so one failure doesn't break all)
+  event.waitUntil((async () => {
+    const cache = await caches.open(CACHE_NAME);
+    const results = await Promise.allSettled(
+      CACHE_URLS.map((url) => cache.add(url))
+    );
+    const rejected = results.filter((r) => r.status === 'rejected');
+    if (rejected.length) {
+      console.warn(`[SW] Precache: ${rejected.length}/${results.length} requests failed`);
+    }
+  })());
 });
 
 self.addEventListener('activate', (event) => {
@@ -172,31 +182,64 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// Fetch handler - required to keep service worker alive on Android
+// Fetch handler - serve cached assets for offline support
 self.addEventListener('fetch', (event) => {
   // Only cache same-origin requests
   if (!event.request.url.startsWith(self.location.origin)) {
     return;
   }
 
-  // Network-first strategy for HTML, cache-first for assets
-  if (event.request.mode === 'navigate') {
-    event.respondWith(
-      fetch(event.request).catch(() => caches.match('./'))
-    );
-  } else if (event.request.destination === 'image') {
-    event.respondWith(
-      caches.match(event.request).then((cached) => {
-        return cached || fetch(event.request).then((response) => {
-          if (response.ok) {
-            const clone = response.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
-          }
-          return response;
-        });
-      })
-    );
-  }
+  event.respondWith((async () => {
+    const req = event.request;
+
+    // Network-first for navigations (keeps HTML fresh), with offline fallback
+    if (req.mode === 'navigate') {
+      try {
+        const res = await fetch(req);
+        if (res && res.ok) {
+          const cache = await caches.open(CACHE_NAME);
+          cache.put('./', res.clone()).catch(() => { });
+        }
+        return res;
+      } catch {
+        return (await caches.match(req)) || (await caches.match('./'));
+      }
+    }
+
+    // Cache-first for static assets (JS/CSS/manifest), with background refresh
+    const isStaticAsset =
+      req.destination === 'script' ||
+      req.destination === 'style' ||
+      req.destination === 'manifest';
+
+    if (isStaticAsset) {
+      const cached = await caches.match(req);
+      const fetchPromise = fetch(req).then(async (res) => {
+        if (res && res.ok) {
+          const cache = await caches.open(CACHE_NAME);
+          cache.put(req, res.clone()).catch(() => { });
+        }
+        return res;
+      }).catch(() => null);
+
+      return cached || (await fetchPromise);
+    }
+
+    // Cache-first for images
+    if (req.destination === 'image') {
+      const cached = await caches.match(req);
+      if (cached) return cached;
+      const res = await fetch(req);
+      if (res && res.ok) {
+        const cache = await caches.open(CACHE_NAME);
+        cache.put(req, res.clone()).catch(() => { });
+      }
+      return res;
+    }
+
+    // Default: just fetch (e.g., XHR to Firebase)
+    return fetch(req);
+  })());
 });
 
 // Periodic sync handler (Android background keepalive)
