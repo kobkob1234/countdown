@@ -577,6 +577,11 @@ export function createPomodoro() {
 
       try {
         pipStarting = true;
+
+        // IMPORTANT: Draw the canvas content BEFORE capturing the stream
+        // Otherwise the video will have no content to display
+        drawPiPCanvas();
+
         // Create or reuse video element
         if (!pipVideo) {
           pipVideo = document.createElement('video');
@@ -588,10 +593,13 @@ export function createPomodoro() {
           document.body.appendChild(pipVideo);
         }
 
-        if (!pipStream) pipStream = refs.pipCanvas.captureStream(30); // 30 FPS
-        if (pipVideo.srcObject !== pipStream) {
-          pipVideo.srcObject = pipStream;
+        // Create a fresh stream each time to ensure content is available
+        if (pipStream) {
+          // Stop old tracks to prevent leaks
+          pipStream.getTracks().forEach(track => track.stop());
         }
+        pipStream = refs.pipCanvas.captureStream(30); // 30 FPS
+        pipVideo.srcObject = pipStream;
 
         // Play the video
         // Play the video - handle "interrupted by a new load request" error
