@@ -524,39 +524,28 @@ export function createPomodoro() {
       const canvas = refs.pipCanvas;
       const ctx = canvas.getContext('2d');
 
-      // Clear canvas
-      ctx.fillStyle = '#1a1a2e';
+      // Clear canvas with light background (matching mini timer card)
+      ctx.fillStyle = '#ffffff';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      // Draw time
+      // Add subtle rounded rectangle appearance
+      ctx.strokeStyle = '#e5e7eb';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(1, 1, canvas.width - 2, canvas.height - 2);
+
+      // Draw time with purple gradient color (matching mini timer)
       const time = formatTime(state.remainingMs);
-      ctx.font = 'bold 72px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 42px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+      ctx.fillStyle = '#667eea'; // Purple accent color
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText(time, canvas.width / 2, canvas.height / 2 - 20);
+      ctx.fillText(time, canvas.width / 2, canvas.height / 2 - 8);
 
-      // Draw mode
+      // Draw mode label below time
       const modeLabel = state.mode === 'focus' ? 'מיקוד' : (state.mode === 'long' ? 'הפסקה ארוכה' : 'הפסקה קצרה');
-      ctx.font = '24px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-      ctx.fillStyle = state.mode === 'focus' ? '#00d4ff' : '#ff6b9d';
-      ctx.fillText(modeLabel, canvas.width / 2, canvas.height / 2 + 40);
-
-      // Draw progress bar
-      const totalMs = getDuration(state.mode) * 60000;
-      const progress = Math.max(0, Math.min(1, 1 - (state.remainingMs / totalMs)));
-      const barWidth = canvas.width * 0.8;
-      const barHeight = 6;
-      const barX = (canvas.width - barWidth) / 2;
-      const barY = canvas.height - 30;
-
-      // Background bar
-      ctx.fillStyle = '#2d2d44';
-      ctx.fillRect(barX, barY, barWidth, barHeight);
-
-      // Progress bar
-      ctx.fillStyle = state.mode === 'focus' ? '#00d4ff' : '#ff6b9d';
-      ctx.fillRect(barX, barY, barWidth * progress, barHeight);
+      ctx.font = '14px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+      ctx.fillStyle = '#9ca3af'; // Muted gray color
+      ctx.fillText(modeLabel, canvas.width / 2, canvas.height / 2 + 24);
     };
 
     const updatePiPCanvas = () => {
