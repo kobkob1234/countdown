@@ -478,33 +478,26 @@ export function createPomodoro() {
     };
 
     // ============ PICTURE-IN-PICTURE FUNCTIONALITY ============
-    let pipVideo = null;
-    let pipAnimationFrame = null;
+    let pipWindow = null;
+    let pipUpdateInterval = null;
     let isPiPActive = false;
     let pipStarting = false;
-    let pipStream = null;
 
-    const waitForVideoReady = (video) => new Promise((resolve) => {
-      if (!video) return resolve();
-      if (video.readyState >= 2) return resolve();
-      let settled = false;
-      const done = () => {
-        if (settled) return;
-        settled = true;
-        video.removeEventListener('loadedmetadata', done);
-        video.removeEventListener('canplay', done);
-        resolve();
-      };
-      video.addEventListener('loadedmetadata', done);
-      video.addEventListener('canplay', done);
-      setTimeout(done, 250);
-    });
+    // Check if Document PiP is supported (Chrome 116+)
+    const isDocumentPiPSupported = () => {
+      return 'documentPictureInPicture' in window;
+    };
 
-    const isPiPSupported = () => {
+    // Legacy video-based PiP support check
+    const isVideoPiPSupported = () => {
       return !!document.pictureInPictureEnabled
         && !!refs.pipCanvas
         && typeof refs.pipCanvas.captureStream === 'function'
         && typeof HTMLVideoElement.prototype.requestPictureInPicture === 'function';
+    };
+
+    const isPiPSupported = () => {
+      return isDocumentPiPSupported() || isVideoPiPSupported();
     };
 
     const setMiniVisible = (visible, forceButton = false) => {
@@ -519,50 +512,206 @@ export function createPomodoro() {
       if (refs.pipBtn) refs.pipBtn.classList.toggle('active', enabled && (forceButton || !pipSupported));
     };
 
+    // Create the PiP content HTML
+    const createPiPContent = (doc) => {
+      // Add styles to the PiP document
+      const style = doc.createElement('style');
+      style.textContent = `
+        * {
+          margin: 0;
+          padding: 0;
+          box-sizing: border-box;
+        }
+        body {
+          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+          background: #ffffff;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          height: 100vh;
+          padding: 12px 16px;
+          gap: 12px;
+          direction: rtl;
+          cursor: pointer;
+          user-select: none;
+        }
+        .pip-content {
+          display: flex;
+          flex-direction: column;
+          align-items: flex-end;
+          flex: 1;
+        }
+        .pip-time {
+          font-size: 28px;
+          font-weight: 700;
+          font-variant-numeric: tabular-nums;
+          background: linear-gradient(135deg, #667eea, #764ba2);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+          line-height: 1.2;
+        }
+        .pip-mode {
+          font-size: 12px;
+          color: #9ca3af;
+          text-transform: uppercase;
+          letter-spacing: 1px;
+        }
+        .pip-close {
+          border: none;
+          background: #f3f4f6;
+          color: #9ca3af;
+          font-size: 18px;
+          width: 32px;
+          height: 32px;
+          border-radius: 50%;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: all 0.2s;
+          flex-shrink: 0;
+        }
+        .pip-close:hover {
+          background: #ef4444;
+          color: white;
+        }
+      `;
+      doc.head.appendChild(style);
+
+      // Create content container
+      const container = doc.createElement('div');
+      container.style.cssText = 'display: flex; align-items: center; gap: 12px; width: 100%;';
+
+      // Close button
+      const closeBtn = doc.createElement('button');
+      closeBtn.className = 'pip-close';
+      closeBtn.textContent = '×';
+      closeBtn.onclick = () => stopPiP();
+
+      // Content div
+      const content = doc.createElement('div');
+      content.className = 'pip-content';
+
+      // Time display
+      const timeEl = doc.createElement('div');
+      timeEl.className = 'pip-time';
+      timeEl.id = 'pipTime';
+      timeEl.textContent = formatTime(state.remainingMs);
+
+      // Mode display
+      const modeEl = doc.createElement('div');
+      modeEl.className = 'pip-mode';
+      modeEl.id = 'pipMode';
+      modeEl.textContent = state.mode === 'focus' ? 'מיקוד' : (state.mode === 'long' ? 'הפסקה ארוכה' : 'הפסקה קצרה');
+
+      content.appendChild(timeEl);
+      content.appendChild(modeEl);
+      container.appendChild(closeBtn);
+      container.appendChild(content);
+      doc.body.appendChild(container);
+
+      // Click anywhere to open main overlay
+      doc.body.onclick = (e) => {
+        if (e.target !== closeBtn) {
+          const overlay = document.getElementById('pomodoroOverlay');
+          if (overlay) overlay.classList.add('open');
+          window.focus();
+        }
+      };
+
+      return { timeEl, modeEl };
+    };
+
+    // Update the PiP window content
+    const updatePiPContent = () => {
+      if (!pipWindow || pipWindow.closed) {
+        stopPiP();
+        return;
+      }
+      const timeEl = pipWindow.document.getElementById('pipTime');
+      const modeEl = pipWindow.document.getElementById('pipMode');
+      if (timeEl) timeEl.textContent = formatTime(state.remainingMs);
+      if (modeEl) modeEl.textContent = state.mode === 'focus' ? 'מיקוד' : (state.mode === 'long' ? 'הפסקה ארוכה' : 'הפסקה קצרה');
+    };
+
+    // Start Document PiP (modern approach)
+    const startDocumentPiP = async () => {
+      try {
+        pipStarting = true;
+
+        // Request a PiP window with specific dimensions matching mini timer
+        pipWindow = await documentPictureInPicture.requestWindow({
+          width: 200,
+          height: 70
+        });
+
+        // Create content in the PiP window
+        createPiPContent(pipWindow.document);
+
+        isPiPActive = true;
+        if (refs.pipBtn) refs.pipBtn.classList.add('active');
+
+        // Start update loop
+        pipUpdateInterval = setInterval(updatePiPContent, 100);
+
+        // Handle window close
+        pipWindow.addEventListener('pagehide', () => {
+          isPiPActive = false;
+          if (refs.pipBtn) refs.pipBtn.classList.remove('active');
+          if (pipUpdateInterval) {
+            clearInterval(pipUpdateInterval);
+            pipUpdateInterval = null;
+          }
+          pipWindow = null;
+        });
+
+        pipStarting = false;
+        return true;
+      } catch (error) {
+        console.error('Document PiP error:', error);
+        pipStarting = false;
+        return false;
+      }
+    };
+
+    // Legacy video-based PiP variables
+    let pipVideo = null;
+    let pipAnimationFrame = null;
+    let pipStream = null;
+
     const drawPiPCanvas = () => {
       if (!refs.pipCanvas) return;
       const canvas = refs.pipCanvas;
       const ctx = canvas.getContext('2d');
 
-      // Clear canvas with white background (matching mini timer card)
       ctx.fillStyle = '#ffffff';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      // Draw rounded border to match mini timer's border-radius: 20px look
       ctx.strokeStyle = '#e5e7eb';
       ctx.lineWidth = 1;
       ctx.strokeRect(0, 0, canvas.width, canvas.height);
 
-      // Close button circle on the left (matching mini timer layout with RTL)
       const closeBtnX = 24;
       const closeBtnY = canvas.height / 2;
-      const closeBtnRadius = 16;
-
-      // Draw close button background
       ctx.fillStyle = '#f3f4f6';
       ctx.beginPath();
-      ctx.arc(closeBtnX, closeBtnY, closeBtnRadius, 0, Math.PI * 2);
+      ctx.arc(closeBtnX, closeBtnY, 16, 0, Math.PI * 2);
       ctx.fill();
-
-      // Draw × symbol
       ctx.fillStyle = '#9ca3af';
       ctx.font = '18px -apple-system, BlinkMacSystemFont, sans-serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillText('×', closeBtnX, closeBtnY);
 
-      // Draw time with purple color (matching mini timer: font-size 28px, font-weight 700)
       const time = formatTime(state.remainingMs);
       ctx.font = 'bold 28px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-      ctx.fillStyle = '#667eea'; // Purple accent color matching --accent
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
+      ctx.fillStyle = '#667eea';
       ctx.fillText(time, canvas.width / 2 + 10, canvas.height / 2 - 10);
 
-      // Draw mode label (matching mini timer: font-size 12px, uppercase, letter-spacing)
       const modeLabel = state.mode === 'focus' ? 'מיקוד' : (state.mode === 'long' ? 'הפסקה ארוכה' : 'הפסקה קצרה');
       ctx.font = '12px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-      ctx.fillStyle = '#9ca3af'; // Muted gray color
+      ctx.fillStyle = '#9ca3af';
       ctx.fillText(modeLabel, canvas.width / 2 + 10, canvas.height / 2 + 12);
     };
 
@@ -572,24 +721,14 @@ export function createPomodoro() {
       pipAnimationFrame = requestAnimationFrame(updatePiPCanvas);
     };
 
-    const startPiP = async () => {
-      if (pipStarting || isPiPActive) return false;
+    // Legacy video-based PiP
+    const startVideoPiP = async () => {
       if (!refs.pipCanvas || typeof refs.pipCanvas.captureStream !== 'function') return false;
-
-      // Check if PiP is supported
-      if (!isPiPSupported()) {
-        window.alert('Picture-in-Picture אינו נתמך בדפדפן זה.\nנסה Chrome, Edge, או Safari.');
-        return false;
-      }
 
       try {
         pipStarting = true;
-
-        // IMPORTANT: Draw the canvas content BEFORE capturing the stream
-        // Otherwise the video will have no content to display
         drawPiPCanvas();
 
-        // Create or reuse video element
         if (!pipVideo) {
           pipVideo = document.createElement('video');
           pipVideo.muted = true;
@@ -600,37 +739,19 @@ export function createPomodoro() {
           document.body.appendChild(pipVideo);
         }
 
-        // Create a fresh stream each time to ensure content is available
         if (pipStream) {
-          // Stop old tracks to prevent leaks
           pipStream.getTracks().forEach(track => track.stop());
         }
-        pipStream = refs.pipCanvas.captureStream(30); // 30 FPS
+        pipStream = refs.pipCanvas.captureStream(30);
         pipVideo.srcObject = pipStream;
 
-        // Play the video
-        // Play the video - handle "interrupted by a new load request" error
-        try {
-          await waitForVideoReady(pipVideo);
-          await pipVideo.play();
-        } catch (err) {
-          console.warn('PiP video play interrupted, retrying...', err);
-          // Retry once after a short delay
-          await new Promise(r => setTimeout(r, 50));
-          await waitForVideoReady(pipVideo);
-          await pipVideo.play();
-        }
-
-        // Request PiP
+        await pipVideo.play();
         await pipVideo.requestPictureInPicture();
+
         isPiPActive = true;
-
         if (refs.pipBtn) refs.pipBtn.classList.add('active');
-
-        // Start animation loop
         updatePiPCanvas();
 
-        // Handle PiP close
         const handleLeavePiP = () => {
           isPiPActive = false;
           if (refs.pipBtn) refs.pipBtn.classList.remove('active');
@@ -645,16 +766,41 @@ export function createPomodoro() {
         pipStarting = false;
         return true;
       } catch (error) {
-        console.error('PiP error:', error);
-        if (error?.name !== 'AbortError') {
-          window.alert('שגיאה בהפעלת Picture-in-Picture: ' + error.message);
-        }
+        console.error('Video PiP error:', error);
         pipStarting = false;
         return false;
       }
     };
 
+    const startPiP = async () => {
+      if (pipStarting || isPiPActive) return false;
+
+      // Try Document PiP first (better quality)
+      if (isDocumentPiPSupported()) {
+        return await startDocumentPiP();
+      }
+
+      // Fall back to video-based PiP
+      if (isVideoPiPSupported()) {
+        return await startVideoPiP();
+      }
+
+      window.alert('Picture-in-Picture אינו נתמך בדפדפן זה.\nנסה Chrome, Edge, או Safari.');
+      return false;
+    };
+
     const stopPiP = async () => {
+      // Stop Document PiP
+      if (pipWindow && !pipWindow.closed) {
+        pipWindow.close();
+        pipWindow = null;
+      }
+      if (pipUpdateInterval) {
+        clearInterval(pipUpdateInterval);
+        pipUpdateInterval = null;
+      }
+
+      // Stop video-based PiP
       if (document.pictureInPictureElement) {
         try {
           await document.exitPictureInPicture();
@@ -662,12 +808,13 @@ export function createPomodoro() {
           console.error('PiP exit error:', e);
         }
       }
-      isPiPActive = false;
-      if (refs.pipBtn) refs.pipBtn.classList.remove('active');
       if (pipAnimationFrame) {
         cancelAnimationFrame(pipAnimationFrame);
         pipAnimationFrame = null;
       }
+
+      isPiPActive = false;
+      if (refs.pipBtn) refs.pipBtn.classList.remove('active');
     };
 
     const initPiP = () => {
