@@ -271,7 +271,7 @@ self.addEventListener('notificationclick', (event) => {
           await client.navigate(targetUrl);
           // Send message for in-page handling
           try {
-            client.postMessage({ type: 'notificationclick', action, url: targetUrl });
+            client.postMessage({ type: 'notificationclick', action, url: targetUrl, data: event.notification?.data });
           } catch (e) {
             // Best-effort, ignore errors
           }

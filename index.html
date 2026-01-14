@@ -2767,6 +2767,10 @@
 
       if (perm !== 'granted') {
         await refreshNotifyButton();
+        // User dismissed the permission dialog (didn't explicitly deny)
+        if (perm === 'default' && typeof showToast === 'function') {
+          showToast('Permission dismissed – tap the bell again when ready.');
+        }
         return;
       }
 
@@ -11075,11 +11079,16 @@
           refreshNotifyButton().catch(() => { });
           return;
         }
-        if (event.data && event.data.action === 'complete') {
-          const url = new URL(event.data.url, window.location.origin);
-          const tid = url.searchParams.get('completeTask');
-          if (tid) {
-            handleCompleteTask(tid);
+        // Handle notification click messages from SW
+        if (event.data?.type === 'notificationclick' && event.data?.action === 'complete') {
+          // Extract task ID from the complete URL in notification data
+          const completeUrl = event.data?.data?.completeUrl;
+          if (completeUrl) {
+            const tid = new URL(completeUrl, window.location.origin).searchParams.get('completeTask');
+            const sharedSubject = new URL(completeUrl, window.location.origin).searchParams.get('sharedSubject');
+            if (tid) {
+              handleCompleteTask(tid, sharedSubject || null);
+            }
           }
         }
       });
