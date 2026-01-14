@@ -11025,7 +11025,20 @@
     const urlParams = new URLSearchParams(window.location.search);
     const completeTaskId = urlParams.get('completeTask');
     const completeTaskSharedSubject = urlParams.get('sharedSubject');
-    if (completeTaskId) {
+    const completeTaskUser = urlParams.get('user');
+
+    // Security: Only process completeTask if user matches or no user specified
+    const shouldProcessComplete = !completeTaskUser || completeTaskUser === currentUser;
+    if (completeTaskId && !shouldProcessComplete) {
+      console.warn('[Task] Ignoring completeTask: user mismatch', { expected: completeTaskUser, actual: currentUser });
+      // Clean up URL params
+      const url = new URL(window.location);
+      url.searchParams.delete('completeTask');
+      url.searchParams.delete('user');
+      url.searchParams.delete('sharedSubject');
+      window.history.replaceState({}, '', url);
+    }
+    if (completeTaskId && shouldProcessComplete) {
       let taskCompleted = false;
       const checkData = setInterval(async () => {
         // For shared tasks, try immediately since we can query Firebase directly

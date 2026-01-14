@@ -262,34 +262,47 @@ self.addEventListener('notificationclick', (event) => {
 
     const allClients = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
 
-    // Try to find an existing window and navigate it
+    // Try to focus and navigate an existing window
+    let handled = false;
     for (const client of allClients) {
       try {
-        // First check if we can navigate this client
-        if ('navigate' in client) {
-          await client.focus();
-          await client.navigate(targetUrl);
-          // Send message for in-page handling
+        if ('focus' in client) {
+          try {
+            await client.focus();
+          } catch (e) {
+            console.warn('[SW] Client focus failed:', e);
+            continue;
+          }
+          // Try navigate if available
+          if ('navigate' in client) {
+            try {
+              await client.navigate(targetUrl);
+            } catch (e) {
+              console.warn('[SW] Client navigate failed, using postMessage:', e);
+            }
+          }
+          // Always send postMessage as backup for in-page handling
           try {
             client.postMessage({ type: 'notificationclick', action, url: targetUrl, data: event.notification?.data });
           } catch (e) {
             // Best-effort, ignore errors
           }
-          return; // Success - exit
-        } else if ('focus' in client) {
-          // Client exists but can't navigate - focus it and open new window
-          await client.focus();
-          // Fall through to openWindow below
+          handled = true;
           break;
         }
       } catch (e) {
-        // Focus or navigation failed, try next client or fall through to openWindow
         console.warn('[SW] Client focus/navigate failed:', e);
       }
     }
 
-    // No suitable client found or all navigation attempts failed - open new window
-    await self.clients.openWindow(targetUrl);
+    // Open new window if no existing client was used
+    if (!handled) {
+      try {
+        await self.clients.openWindow(targetUrl);
+      } catch (e) {
+        console.warn('[SW] openWindow failed:', e);
+      }
+    }
   })());
 });
 

@@ -1,3 +1,11 @@
+/**
+ * Push Notification Reminder Sender
+ * 
+ * TIMEZONE LIMITATION:
+ * This script uses a hardcoded Israel timezone offset (UTC+2) for planner blocks.
+ * Events and tasks with explicit datetime are processed in UTC as stored.
+ * To support multiple timezones, user timezone would need to be stored in Firebase.
+ */
 import admin from 'firebase-admin';
 import webpush from 'web-push';
 import crypto from 'crypto';
