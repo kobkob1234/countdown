@@ -2488,14 +2488,26 @@
 
     async function getPushRegistration() {
       if (!('serviceWorker' in navigator)) return null;
-      return await navigator.serviceWorker.getRegistration();
+      const reg = await navigator.serviceWorker.getRegistration();
+      if (reg) return reg;
+      return await waitForServiceWorkerReady(1500);
+    }
+
+    function waitForServiceWorkerReady(timeoutMs = 3000) {
+      if (!('serviceWorker' in navigator)) return Promise.resolve(null);
+      const timeout = new Promise((resolve) => {
+        setTimeout(() => resolve(null), timeoutMs);
+      });
+      return Promise.race([navigator.serviceWorker.ready, timeout]).catch(() => null);
     }
 
     async function ensurePushRegistration() {
       if (!('serviceWorker' in navigator)) return null;
       const existing = await getPushRegistration();
       if (existing) return existing;
-      return await navigator.serviceWorker.register('./service-worker.js', { scope: './' });
+      const reg = await navigator.serviceWorker.register('./service-worker.js', { scope: './' });
+      const readyReg = await waitForServiceWorkerReady(4000);
+      return readyReg || reg;
     }
 
     const NOTIFICATION_ICON = './icon-192.png';
@@ -2674,7 +2686,7 @@
       await syncPendingSubscriptionFromIndexedDB();
 
       try {
-        const reg = await getPushRegistration();
+        const reg = await ensurePushRegistration();
         if (!reg) return;
         let sub = await reg.pushManager.getSubscription();
 

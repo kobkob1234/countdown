@@ -19,16 +19,32 @@ const getScopedNotifyKeys = () => getNotifyKeys(AppState.currentUser);
 // Service Worker Registration
 // ============================================
 
+async function waitForServiceWorkerReady(timeoutMs = 3000) {
+    if (!('serviceWorker' in navigator)) return null;
+    try {
+        return await Promise.race([
+            navigator.serviceWorker.ready,
+            delay(timeoutMs).then(() => null)
+        ]);
+    } catch (e) {
+        return null;
+    }
+}
+
 export async function getPushRegistration() {
     if (!('serviceWorker' in navigator)) return null;
-    return await navigator.serviceWorker.getRegistration();
+    const reg = await navigator.serviceWorker.getRegistration();
+    if (reg) return reg;
+    return await waitForServiceWorkerReady(1500);
 }
 
 export async function ensurePushRegistration() {
     if (!('serviceWorker' in navigator)) return null;
     const existing = await getPushRegistration();
     if (existing) return existing;
-    return await navigator.serviceWorker.register('./service-worker.js', { scope: './' });
+    const reg = await navigator.serviceWorker.register('./service-worker.js', { scope: './' });
+    const readyReg = await waitForServiceWorkerReady(4000);
+    return readyReg || reg;
 }
 
 // ============================================
@@ -251,7 +267,7 @@ async function syncExistingSubscriptionToCurrentUser() {
     try {
         await syncPendingSubscriptionFromIndexedDB();
 
-        const reg = await getPushRegistration();
+        const reg = await ensurePushRegistration();
         if (!reg) return;
         let sub = await reg.pushManager.getSubscription();
 
