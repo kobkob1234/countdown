@@ -336,11 +336,10 @@ async function runCheck() {
       if (!shouldTrigger(nowMs, dueMs, reminderMinutes)) continue;
 
       const offset = formatReminderOffset(reminderMinutes);
-      const dueStr = task.dueDate ? new Date(dueMs).toLocaleString() : '';
       const dedupeKey = `task|${userId}|${task.id}|${task.dueDate}|${reminderMinutes}`;
       const payload = {
         title: `Task Reminder 📋`,
-        body: `${task.title || 'Task'} is due in ${offset}${dueStr ? ` (due: ${dueStr})` : ''}`,
+        body: `${task.title || 'Task'} is due in ${offset}`,
         tag: `task-${task.id}`,
         dedupeKey,
         url: buildUrl('/', {}),
@@ -428,7 +427,6 @@ async function runCheck() {
       if (!shouldTrigger(nowMs, dueMs, reminderMinutes)) continue;
 
       const offset = formatReminderOffset(reminderMinutes);
-      const dueStr = task.dueDate ? new Date(dueMs).toLocaleString() : '';
       // Send to each user who has access to this shared subject
       for (const userId of allUsers) {
         const userEntry = users.find(u => u.userId === userId);
@@ -437,7 +435,7 @@ async function runCheck() {
         const dedupeKey = `shared-task|${userId}|${subject.id}|${taskId}|${task.dueDate}|${reminderMinutes}`;
         const payload = {
           title: `Shared Task Reminder 📋`,
-          body: `${task.title || 'Task'} is due in ${offset}${dueStr ? ` (due: ${dueStr})` : ''}`,
+          body: `${task.title || 'Task'} is due in ${offset}`,
           tag: `shared-task-${taskId}`,
           dedupeKey,
           url: buildUrl('/', {}),

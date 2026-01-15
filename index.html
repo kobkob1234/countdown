@@ -2092,6 +2092,7 @@
       db,
       ref,
       set,
+      get,
       onValue,
       push,
       remove,
@@ -2624,6 +2625,12 @@
           request.onsuccess = () => resolve(request.result);
           request.onerror = () => reject(request.error);
         });
+
+        const storedUser = localStorage.getItem(PUSH_LOCAL_USER_KEY);
+        if (storedUser && storedUser !== currentUser) {
+          idb.close();
+          return;
+        }
 
         if (pending && pending.sub) {
           console.log('[Push] Found pending subscription from IndexedDB, syncing to Firebase...');
@@ -11055,7 +11062,12 @@
             if (!taskData.completed) {
               // Handle recurrence for shared tasks before completing
               if (typeof maybeCreateRecurringTask === 'function') {
-                maybeCreateRecurringTask({ ...taskData, id: taskId, subject: sharedSubjectId });
+                maybeCreateRecurringTask({
+                  ...taskData,
+                  id: taskId,
+                  subject: taskData.subject || sharedSubjectId,
+                  isShared: true
+                });
               }
               await set(taskRef, { ...taskData, completed: true });
               console.log('Completed shared task from notification:', taskId);

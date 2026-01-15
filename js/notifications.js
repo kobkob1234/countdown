@@ -2,7 +2,7 @@
 // Notifications Module
 // ============================================
 
-import { AppState, $, NOTIFY_KEYS, NOTIFY_TTL_MS } from './state.js';
+import { AppState, $, NOTIFY_TTL_MS, getNotifyKeys } from './state.js';
 import { db, ref, set, remove } from './firebase-config.js';
 import { delay, sha256Base64Url, isIOS, isStandalone, isPushSupported } from './utils.js';
 
@@ -12,6 +12,8 @@ const PUSH_LOCAL_USER_KEY = 'countdown_push_subscription_user';
 
 const NOTIFICATION_ICON = './icon-192.png';
 const NOTIFICATION_BADGE = './icon-192.png';
+
+const getScopedNotifyKeys = () => getNotifyKeys(AppState.currentUser);
 
 // ============================================
 // Service Worker Registration
@@ -52,6 +54,67 @@ async function savePushSubscriptionForUser(userId, subscription) {
         createdAt: Date.now()
     };
     await set(ref(db, `users/${userId}/pushSubscriptions/${key}`), payload);
+}
+
+// Sync pending subscription saved by SW when no windows were open
+async function syncPendingSubscriptionFromIndexedDB() {
+    const PENDING_SUB_DB = 'countdown-pending-sub';
+    const PENDING_SUB_STORE = 'subscriptions';
+    const currentUser = AppState.currentUser;
+
+    if (!currentUser) return;
+
+    try {
+        const idb = await new Promise((resolve, reject) => {
+            const request = indexedDB.open(PENDING_SUB_DB, 1);
+            request.onerror = () => reject(request.error);
+            request.onsuccess = () => resolve(request.result);
+            request.onupgradeneeded = (event) => {
+                const database = event.target.result;
+                if (!database.objectStoreNames.contains(PENDING_SUB_STORE)) {
+                    database.createObjectStore(PENDING_SUB_STORE, { keyPath: 'id' });
+                }
+            };
+        });
+
+        const pending = await new Promise((resolve, reject) => {
+            const tx = idb.transaction(PENDING_SUB_STORE, 'readonly');
+            const store = tx.objectStore(PENDING_SUB_STORE);
+            const request = store.get('pending');
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error);
+        });
+
+        const storedUser = localStorage.getItem(PUSH_LOCAL_USER_KEY);
+        if (storedUser && storedUser !== currentUser) {
+            idb.close();
+            return;
+        }
+
+        if (pending && pending.sub) {
+            const subJson = pending.sub;
+            const subKey = await sha256Base64Url(subJson.endpoint);
+            const payload = {
+                sub: subJson,
+                ua: navigator.userAgent,
+                createdAt: Date.now()
+            };
+
+            await set(ref(db, `users/${currentUser}/pushSubscriptions/${subKey}`), payload);
+
+            await new Promise((resolve, reject) => {
+                const tx = idb.transaction(PENDING_SUB_STORE, 'readwrite');
+                const store = tx.objectStore(PENDING_SUB_STORE);
+                const request = store.delete('pending');
+                request.onsuccess = () => resolve();
+                request.onerror = () => reject(request.error);
+            });
+        }
+
+        idb.close();
+    } catch (e) {
+        // Best effort - IndexedDB may not exist yet
+    }
 }
 
 async function removePushSubscriptionForUser(userId, subscription) {
@@ -186,6 +249,8 @@ async function syncExistingSubscriptionToCurrentUser() {
     const currentUser = AppState.currentUser;
 
     try {
+        await syncPendingSubscriptionFromIndexedDB();
+
         const reg = await getPushRegistration();
         if (!reg) return;
         let sub = await reg.pushManager.getSubscription();
@@ -432,7 +497,8 @@ export function syncNotifiedMapToIds(map, ids, storageKey) {
 // ============================================
 
 export function getLastActiveTimestamp() {
-    const raw = localStorage.getItem(NOTIFY_KEYS.LAST_ACTIVE);
+    const keys = getScopedNotifyKeys();
+    const raw = localStorage.getItem(keys.LAST_ACTIVE);
     const parsed = raw ? Number(raw) : NaN;
     return Number.isFinite(parsed) ? parsed : Date.now();
 }
@@ -440,7 +506,8 @@ export function getLastActiveTimestamp() {
 export function setLastActiveTimestamp(ts = Date.now()) {
     AppState.lastActiveTs = ts;
     try {
-        localStorage.setItem(NOTIFY_KEYS.LAST_ACTIVE, String(ts));
+        const keys = getScopedNotifyKeys();
+        localStorage.setItem(keys.LAST_ACTIVE, String(ts));
     } catch (e) { }
 }
 
@@ -452,8 +519,9 @@ export async function initNotifications() {
     console.log('[Notifications] Initializing...');
 
     // Load notification tracking maps
-    AppState.notifiedEvents = loadNotifiedMap(NOTIFY_KEYS.EVENTS);
-    AppState.notifiedTasks = loadNotifiedMap(NOTIFY_KEYS.TASKS);
+    const notifyKeys = getScopedNotifyKeys();
+    AppState.notifiedEvents = loadNotifiedMap(notifyKeys.EVENTS);
+    AppState.notifiedTasks = loadNotifiedMap(notifyKeys.TASKS);
     AppState.lastActiveTs = getLastActiveTimestamp();
 
     // Register service worker

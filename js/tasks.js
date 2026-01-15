@@ -87,10 +87,11 @@ export function initTasks(hooks = {}) {
   // Helper to save task to correct location
   function saveTask(taskId, taskData, subjectId) {
     const subject = (ctx.subjects || []).find(s => s.id === subjectId);
+    const { isShared, isOwn, ...cleanTask } = taskData || {};
     if (subject?.isShared) {
-      return ctx.set(ctx.ref(ctx.db, `sharedSubjects/${subjectId}/tasks/${taskId}`), taskData);
+      return ctx.set(ctx.ref(ctx.db, `sharedSubjects/${subjectId}/tasks/${taskId}`), cleanTask);
     }
-    return ctx.set(ctx.ref(ctx.db, `users/${ctx.currentUser}/tasks/${taskId}`), taskData);
+    return ctx.set(ctx.ref(ctx.db, `users/${ctx.currentUser}/tasks/${taskId}`), cleanTask);
   }
 
   // Helper to remove task from correct location
@@ -111,16 +112,14 @@ export function initTasks(hooks = {}) {
   function createTask(taskData) {
     const subjectId = taskData.subject;
     const subject = (ctx.subjects || []).find(s => s.id === subjectId);
+    const { isShared, isOwn, ...cleanTask } = taskData || {};
     // Check both subject lookup AND taskData.isShared flag (for cloned tasks)
-    if (subject?.isShared || taskData.isShared) {
-      const targetSubjectId = subjectId || taskData.subject;
-      if (targetSubjectId) {
-        const newTaskRef = ctx.push(ctx.ref(ctx.db, `sharedSubjects/${targetSubjectId}/tasks`));
-        return ctx.set(newTaskRef, taskData);
-      }
+    if ((subject?.isShared || isShared) && subjectId) {
+      const newTaskRef = ctx.push(ctx.ref(ctx.db, `sharedSubjects/${subjectId}/tasks`));
+      return ctx.set(newTaskRef, cleanTask);
     }
     const newTaskRef = ctx.push(ctx.tasksRef);
-    return ctx.set(newTaskRef, taskData);
+    return ctx.set(newTaskRef, cleanTask);
   }
 
   return {
