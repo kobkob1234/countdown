@@ -2816,6 +2816,17 @@
         await savePushSubscriptionForUser(currentUser, sub);
         localStorage.setItem(PUSH_LOCAL_USER_KEY, currentUser);
         showSystemNotification("Push enabled ✅", { body: `Push is enabled for "${currentUser}".`, requireInteraction: false }).catch(() => { });
+
+        // Verify sync completed successfully with a short delay
+        // This ensures subscription persists to Firebase before user closes app
+        setTimeout(async () => {
+          try {
+            await syncExistingSubscriptionToCurrentUser();
+            console.log('[Push] Subscription sync verified');
+          } catch (e) {
+            console.warn('[Push] Delayed sync verification failed:', e);
+          }
+        }, 1500);
       } catch (e) {
         console.warn('[Push] subscribe/save failed:', e);
         try { if (sub) await sub.unsubscribe(); } catch { }
@@ -11104,14 +11115,33 @@
           return;
         }
         // Handle notification click messages from SW
-        if (event.data?.type === 'notificationclick' && event.data?.action === 'complete') {
-          // Extract task ID from the complete URL in notification data
+        if (event.data?.type === 'notificationclick') {
+          const action = event.data?.action || 'view';
+          const notificationUrl = event.data?.url || event.data?.data?.url;
           const completeUrl = event.data?.data?.completeUrl;
-          if (completeUrl) {
+
+          // Handle 'complete' action - mark task as done
+          if (action === 'complete' && completeUrl) {
             const tid = new URL(completeUrl, window.location.origin).searchParams.get('completeTask');
             const sharedSubject = new URL(completeUrl, window.location.origin).searchParams.get('sharedSubject');
             if (tid) {
               handleCompleteTask(tid, sharedSubject || null);
+            }
+            return;
+          }
+
+          // Handle 'view' action - navigate to notification URL if different
+          if (action === 'view' && notificationUrl) {
+            try {
+              const targetUrl = new URL(notificationUrl, window.location.origin);
+              // Only navigate if URL is different from current (avoid reload loops)
+              if (targetUrl.pathname !== window.location.pathname ||
+                targetUrl.search !== window.location.search) {
+                console.log('[SW Message] Navigating to notification URL:', notificationUrl);
+                window.location.href = notificationUrl;
+              }
+            } catch (e) {
+              console.warn('[SW Message] Invalid notification URL:', notificationUrl);
             }
           }
         }
