@@ -282,6 +282,11 @@ async function runCheck() {
   const sharedEvents = await loadSharedEvents();
   const sharedSubjects = await loadSharedSubjects();
 
+  // Log subscription details for debugging
+  const totalSubs = users.reduce((sum, u) => sum + u.subs.length, 0);
+  console.log(`[push] Loaded ${users.length} users with ${totalSubs} total subscriptions`);
+  users.forEach(u => console.log(`[push]   - ${u.userId}: ${u.subs.length} subscription(s)`));
+
   let sent = 0;
   let skipped = 0;
   let failed = 0;
