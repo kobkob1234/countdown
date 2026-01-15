@@ -111,9 +111,13 @@ export function initTasks(hooks = {}) {
   function createTask(taskData) {
     const subjectId = taskData.subject;
     const subject = (ctx.subjects || []).find(s => s.id === subjectId);
-    if (subject?.isShared) {
-      const newTaskRef = ctx.push(ctx.ref(ctx.db, `sharedSubjects/${subjectId}/tasks`));
-      return ctx.set(newTaskRef, taskData);
+    // Check both subject lookup AND taskData.isShared flag (for cloned tasks)
+    if (subject?.isShared || taskData.isShared) {
+      const targetSubjectId = subjectId || taskData.subject;
+      if (targetSubjectId) {
+        const newTaskRef = ctx.push(ctx.ref(ctx.db, `sharedSubjects/${targetSubjectId}/tasks`));
+        return ctx.set(newTaskRef, taskData);
+      }
     }
     const newTaskRef = ctx.push(ctx.tasksRef);
     return ctx.set(newTaskRef, taskData);

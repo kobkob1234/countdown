@@ -5046,6 +5046,23 @@
       if (parsedRecurrence.type === 'none') return;
       const nextDate = getNextRecurrenceDate(task?.dueDate, task?.recurrence);
       if (!nextDate) return;
+
+      // Simple dedupe: track recently created recurrences to prevent duplicates
+      // This helps when multiple clients complete the same task close together
+      const dedupeKey = `recurrence-${task?.id}-${nextDate.toISOString().slice(0, 10)}`;
+      const recentRecurrences = JSON.parse(localStorage.getItem('countdown-recurrence-dedupe') || '{}');
+      const now = Date.now();
+      // Clean old entries (older than 1 hour)
+      Object.keys(recentRecurrences).forEach(k => {
+        if (now - recentRecurrences[k] > 3600000) delete recentRecurrences[k];
+      });
+      if (recentRecurrences[dedupeKey]) {
+        console.log('[Recurrence] Skipping duplicate recurrence for', task?.title);
+        return;
+      }
+      recentRecurrences[dedupeKey] = now;
+      localStorage.setItem('countdown-recurrence-dedupe', JSON.stringify(recentRecurrences));
+
       pushTaskClone(task, { dueDate: nextDate.toISOString(), completed: false });
     }
 
@@ -11036,6 +11053,10 @@
           if (snapshot.exists()) {
             const taskData = snapshot.val();
             if (!taskData.completed) {
+              // Handle recurrence for shared tasks before completing
+              if (typeof maybeCreateRecurringTask === 'function') {
+                maybeCreateRecurringTask({ ...taskData, id: taskId, subject: sharedSubjectId });
+              }
               await set(taskRef, { ...taskData, completed: true });
               console.log('Completed shared task from notification:', taskId);
               if (typeof showToast === 'function') {
