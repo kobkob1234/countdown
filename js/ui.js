@@ -142,6 +142,7 @@ export function initUi() {
   };
 
   document.addEventListener('keydown', (e) => {
+    if (!e.key) return; // Guard against undefined key
     if (e.key.toLowerCase() === 'h' && !isEditableTarget(e.target)) {
       e.preventDefault();
       toggleGuide();

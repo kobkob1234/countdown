@@ -11663,14 +11663,16 @@
       const storageKey = context.STORAGE_KEYS?.SETTINGS_AUTO_DELETE || 'countdown-settings-auto-delete';
       const isEnabled = localStorage.getItem(storageKey) === 'true';
 
-      if (!isEnabled || !tasks || tasks.length === 0) return;
+      // Use window.tasks to access the global tasks array
+      const tasksList = window.tasks || [];
+      if (!isEnabled || !tasksList || tasksList.length === 0) return;
 
       const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000;
       const now = Date.now();
       let deletedCount = 0;
 
       // Filter tasks to delete
-      const tasksToDelete = tasks.filter(t => {
+      const tasksToDelete = tasksList.filter(t => {
         if (!t.completed || !t.completedAt) return false;
         const completedTime = new Date(t.completedAt).getTime();
         if (isNaN(completedTime)) return false;
