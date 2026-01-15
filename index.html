@@ -2066,7 +2066,7 @@
 
     // ============ 1. FIREBASE INITIALIZATION ============
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getDatabase, ref, set, onValue, push, remove, onChildAdded, onChildChanged, onChildRemoved, goOnline, goOffline } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+    import { getDatabase, ref, set, get, onValue, push, remove, onChildAdded, onChildChanged, onChildRemoved, goOnline, goOffline } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
     import { ctx } from "./js/context.js";
     window.ctx = ctx; // Expose globally for auto-cleanup logic
     import { initEvents } from "./js/events.js";
@@ -2423,7 +2423,7 @@
     };
     let eventReminderCheckInFlight = false;
     let taskReminderCheckInFlight = false;
-    let pendingEventAlert = null;
+    let pendingEventAlerts = []; // Array to support multiple pending alerts
     // Web Audio API for reminder sounds (works offline, no external dependency)
     let audioContext = null;
     const getAudioContext = () => {
@@ -2513,7 +2513,7 @@
 
       const merged = {
         icon: NOTIFICATION_ICON,
-        badge: NOTIFICATION_BADGE,
+        // badge omitted to avoid Android white square issue (matches SW behavior)
         vibrate: [200, 100, 200],
         requireInteraction: true,
         silent: false,
@@ -3063,9 +3063,12 @@
         flushReminderChecks();
         return;
       }
-      if (!document.hidden && pendingEventAlert) {
-        showEventAlert(pendingEventAlert.title, pendingEventAlert.message, true);
-        pendingEventAlert = null;
+      if (!document.hidden && pendingEventAlerts.length > 0) {
+        // Show all pending alerts (FIFO order)
+        for (const alert of pendingEventAlerts) {
+          showEventAlert(alert.title, alert.message, true);
+        }
+        pendingEventAlerts = [];
       }
       void checkEventReminders(Date.now());
       void checkTaskReminders();
@@ -3294,7 +3297,7 @@
 
       // Show in-app alert if visible, or queue for later
       if (document.hidden) {
-        pendingEventAlert = { title: evt.name, message: inAppMsg };
+        pendingEventAlerts.push({ title: evt.name, message: inAppMsg });
       } else {
         showEventAlert(evt.name, inAppMsg, true);
       }
@@ -3733,7 +3736,8 @@
           if (!Number.isFinite(eventTime)) return;
           const triggerTime = eventTime - (reminderMinutes * 60000);
           if (triggerTime < start || triggerTime > nowMs) return;
-          const dedupeKey = `event|${currentUser || ''}|${evt.id}|${evt.date || ''}|${reminderMinutes}`;
+          // Dedupe key matches server format: event|id|date|reminder
+          const dedupeKey = `event|${evt.id}|${evt.date || ''}|${reminderMinutes}`;
           candidates.push({ evt, reminderKey, triggerTime, dedupeKey });
         });
 
@@ -6395,11 +6399,8 @@
       const title = `📋 תזכורת משימה: ${task.title}`;
       const message = `מועד יעד: ${dateStr}`;
 
-      // Play sound
-      if (reminderAudio) {
-        reminderAudio.currentTime = 0;
-        reminderAudio.play().catch(() => { });
-      }
+      // Play sound using Web Audio API (works offline)
+      playReminderSound();
 
       // Show browser notification if permitted - use Service Worker for mobile compatibility
       showSystemNotification(title, {
@@ -9304,7 +9305,9 @@
             if (entry && entry.key === reminderKey) return;
             const triggerTime = blockTime.getTime() - (reminderMinutes * 60000);
             if (triggerTime < start || triggerTime > nowMs) return;
-            const dedupeKey = `planner|${currentUser || ''}|${block.id}|${block.date || ''}|${block.start || ''}|${reminderMinutes}`;
+            // Dedupe key matches server format: planner|user|blockKey|startAt||date|start|reminder
+            const blockKey = block.id || `${block.title || ''}|${block.date || ''}|${block.start || ''}`;
+            const dedupeKey = `planner|${currentUser || ''}|${blockKey}|${block.startAt || block.date || ''}|${block.start || ''}|${reminderMinutes}`;
             candidates.push({ block, reminderKey, triggerTime, dedupeKey });
           });
 
