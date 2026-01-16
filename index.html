@@ -435,7 +435,7 @@
           </label>
           <div class="settings-label">
             <div class="settings-title">ניקוי אוטומטי</div>
-            <div class="settings-desc">מחק משימות שהושלמו לפני יותר ב-30 יום</div>
+            <div class="settings-desc">מחק משימות שעבר זמנן או שהושלמו לפני יותר מ-30 יום</div>
           </div>
         </div>
       </div>
@@ -5312,13 +5312,45 @@
 
             case 'dueDate':
             default:
-              // Due date (soonest first) - default
-              if (a.dueDate && !b.dueDate) return -1;
-              if (!a.dueDate && b.dueDate) return 1;
-              if (a.dueDate && b.dueDate) {
-                const dueDiff = new Date(a.dueDate) - new Date(b.dueDate);
-                if (dueDiff !== 0) return dueDiff;
+              // Custom Logic:
+              // 1. Future/Today Tasks (sorted by date ascending)
+              // 2. Overdue Tasks (sorted by date ascending) - effectively pushing them "after" future tasks in the visual list?
+              //    WAIT, user requirement: "tasks with no date will be in the end" and "overdue tasks are at the bottom"
+              //    Interpretation:
+              //    - Top: Future/Today (Soonest -> Furthest)
+              //    - Middle: Overdue (Oldest -> Newest? Or Newest -> Oldest? Usually overdue are "less important" so bottom, but if they are critical they should be top. 
+              //      User said "overdue tasks are at the bottom". So they should come after future tasks.
+              //    - Bottom: No Date.
+
+              // Let's refine the tier logic:
+              // Tier 1: Future/Today (dueDate >= Today 00:00)
+              // Tier 2: Overdue (dueDate < Today 00:00)
+              // Tier 3: No Date
+
+              const now = new Date();
+              now.setHours(0, 0, 0, 0); // Start of today for comparison
+
+              const getTier = (task) => {
+                if (!task.dueDate) return 3; // No Date -> Bottom
+                const due = new Date(task.dueDate);
+                if (due < now) return 2; // Overdue -> Middle (Bottom of dated list)
+                return 1; // Future/Today -> Top
+              };
+
+              const tierA = getTier(a);
+              const tierB = getTier(b);
+
+              if (tierA !== tierB) return tierA - tierB;
+
+              // Within tiers:
+              if (tierA === 1 || tierA === 2) {
+                // Determine sort within dated tiers
+                const dateA = new Date(a.dueDate);
+                const dateB = new Date(b.dueDate);
+                return dateA - dateB; // Ascending (Soonest first within group)
               }
+
+              // Local fallback for No Date tier or equal dates
               // Then by priority
               const prioA = PRIORITY_ORDER[a.priority || 'none'];
               const prioB = PRIORITY_ORDER[b.priority || 'none'];
@@ -11559,10 +11591,19 @@
 
       // Filter tasks to delete
       const tasksToDelete = tasksList.filter(t => {
-        if (!t.completed || !t.completedAt) return false;
-        const completedTime = new Date(t.completedAt).getTime();
-        if (isNaN(completedTime)) return false;
-        return (now - completedTime) > thirtyDaysMs;
+        // 1. Completed tasks older than 30 days
+        if (t.completed && t.completedAt) {
+          const completedTime = new Date(t.completedAt).getTime();
+          if (!isNaN(completedTime) && (now - completedTime) > thirtyDaysMs) return true;
+        }
+
+        // 2. Active tasks overdue by more than 30 days
+        if (!t.completed && t.dueDate) {
+          const dueTime = new Date(t.dueDate).getTime();
+          if (!isNaN(dueTime) && (now - dueTime) > thirtyDaysMs) return true;
+        }
+
+        return false;
       });
 
       if (tasksToDelete.length > 0) {
