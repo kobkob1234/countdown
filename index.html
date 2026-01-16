@@ -1344,9 +1344,28 @@
   <div class="app-layout">
     <div class="main-content">
       <div class="container">
-        <header class="header">
-          <h1>⏱️ Shared Event Countdowns</h1>
+        <header class="header" style="position: relative;">
+          <h1 style="margin-right: 40px; margin-left: 40px;">⏱️ Shared Event Countdowns</h1>
           <p>Events sync live across all devices</p>
+          <button id="countdownSettingsBtn" class="header-btn icon-only" title="הגדרות"
+            style="position: absolute; right: 0; top: 0; background: transparent; color: var(--text-muted);">
+            <span class="icon" aria-hidden="true" style="font-size: 20px;">settings</span>
+          </button>
+
+          <!-- Countdown Settings Popover -->
+          <div class="task-settings-popover" id="countdownSettingsPopover"
+            style="display: none; top: 40px; right: 0; width: 300px;">
+            <div class="settings-row">
+              <label class="settings-toggle">
+                <input type="checkbox" id="autoDeleteEventsToggle">
+                <span class="slider"></span>
+              </label>
+              <div class="settings-label">
+                <div class="settings-title">ניקוי אוטומטי</div>
+                <div class="settings-desc">מחק אירועים שעבר זמנם (לפני יותר מ-30 יום)</div>
+              </div>
+            </div>
+          </div>
         </header>
 
         <div class="input-panel" id="inputPanel">
@@ -3030,6 +3049,7 @@
         render();
         scheduleCalendarRender();
         startTicker();
+        if (typeof runAutoDeleteEventsCleanup === 'function') runAutoDeleteEventsCleanup();
         if (window.DailyPlanner && typeof window.DailyPlanner.refreshEvents === 'function') {
           window.DailyPlanner.refreshEvents();
         }
@@ -11620,6 +11640,84 @@
 
     // Expose cleanup to window so renderTasks can find it
     window.runAutoDeleteCleanup = runAutoDeleteCleanup;
+    window.runAutoDeleteEventsCleanup = runAutoDeleteEventsCleanup;
+
+    // --- Countdown Settings ---
+    function initCountdownSettings() {
+      const toggle = document.getElementById('autoDeleteEventsToggle');
+      const container = document.getElementById('countdownSettingsPopover');
+      const btn = document.getElementById('countdownSettingsBtn');
+
+      const context = (typeof ctx !== 'undefined') ? ctx : window.ctx;
+      const storageKey = context?.STORAGE_KEYS?.SETTINGS_AUTO_DELETE_EVENTS || 'countdown-settings-auto-delete-events';
+
+      if (!toggle || !container || !btn) return;
+
+      // Load initial state
+      const savedState = localStorage.getItem(storageKey);
+      toggle.checked = savedState === 'true';
+
+      // Toggle Listener
+      toggle.addEventListener('change', (e) => {
+        const isEnabled = e.target.checked;
+        localStorage.setItem(storageKey, isEnabled);
+        if (isEnabled) {
+          runAutoDeleteEventsCleanup();
+        }
+      });
+
+      // Popover Logic
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const isVisible = container.style.display === 'block';
+        container.style.display = isVisible ? 'none' : 'block';
+      });
+
+      // Close on outside click is handled by the global click listener
+      document.addEventListener('click', (e) => {
+        if (!container.contains(e.target) && !btn.contains(e.target)) {
+          container.style.display = 'none';
+        }
+      });
+    }
+
+    function runAutoDeleteEventsCleanup() {
+      const context = (typeof ctx !== 'undefined') ? ctx : window.ctx;
+      if (!context) return;
+
+      const storageKey = context.STORAGE_KEYS?.SETTINGS_AUTO_DELETE_EVENTS || 'countdown-settings-auto-delete-events';
+      const isEnabled = localStorage.getItem(storageKey) === 'true';
+
+      if (!isEnabled) return;
+
+      const eventsList = (typeof ctx.getActiveEvents === 'function') ? ctx.getActiveEvents() : (context.events || []);
+      if (!eventsList || eventsList.length === 0) return;
+
+      const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000;
+      const now = Date.now();
+      let deletedCount = 0;
+
+      const eventsToDelete = eventsList.filter(evt => {
+        if (!evt.date) return false;
+        const eventTime = new Date(evt.date).getTime();
+        if (isNaN(eventTime)) return false;
+        // Delete if event was more than 30 days ago
+        return (now - eventTime) > thirtyDaysMs;
+      });
+
+      if (eventsToDelete.length > 0) {
+        console.log(`[AutoDeleteEvents] Found ${eventsToDelete.length} events to delete.`);
+        eventsToDelete.forEach(evt => {
+          if (typeof ctx.deleteFromCloud === 'function') {
+            ctx.deleteFromCloud(evt.id);
+            deletedCount++;
+          }
+        });
+        if (deletedCount > 0) {
+          console.log(`[AutoDeleteEvents] Successfully deleted ${deletedCount} old events.`);
+        }
+      }
+    }
 
     // Initialize Settings
     // Initialize Settings with robust polling
@@ -11627,6 +11725,7 @@
       const checkCtx = (attempts = 0) => {
         if (typeof window.ctx !== 'undefined') {
           initAutoDeleteSettings();
+          initCountdownSettings();
         } else if (attempts < 20) {
           // Poll every 500ms for up to 10 seconds
           setTimeout(() => checkCtx(attempts + 1), 500);
