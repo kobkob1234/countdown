@@ -194,22 +194,7 @@
             btn.contentEditable = false;
             btn.onclick = (e) => {
                 e.stopPropagation();
-                const chip = document.createElement('div');
-                chip.className = `chip ${window.activeExamColor}`;
-                // Apply custom color if set from legend
-                if (window.activeExamCustomColor) {
-                    chip.style.background = window.activeExamCustomColor;
-                }
-                const label = document.createElement('span');
-                label.className = 'chip-label';
-                label.dataset.placeholder = 'הוסף אירוע';
-                chip.appendChild(label);
-
-                addChipControls(chip);
-
-                td.insertBefore(chip, btn);
-                startChipEdit(chip);
-                saveExamState(container);
+                showChipColorPicker(btn, td, container);
             };
             td.appendChild(btn);
 
@@ -603,6 +588,56 @@
 
         saveLegendConfig(legendBar);
         updateChipColorsFromLegend(tag.dataset.colorId, color);
+    }
+
+    function showChipColorPicker(btn, td, container) {
+        // Remove any existing palette
+        document.querySelectorAll('.chip-color-palette').forEach(p => p.remove());
+
+        const palette = document.createElement('div');
+        palette.className = 'chip-color-palette';
+
+        PRESET_COLORS.forEach(color => {
+            const colorBtn = document.createElement('div');
+            colorBtn.className = 'palette-color';
+            colorBtn.style.background = color;
+            colorBtn.onclick = (e) => {
+                e.stopPropagation();
+                createChipWithColor(td, container, btn, color);
+                palette.remove();
+            };
+            palette.appendChild(colorBtn);
+        });
+
+        // Position the palette near the button
+        btn.style.position = 'relative';
+        btn.appendChild(palette);
+
+        // Close palette on outside click
+        const closeHandler = (e) => {
+            if (!palette.contains(e.target) && e.target !== btn) {
+                palette.remove();
+                document.removeEventListener('click', closeHandler);
+            }
+        };
+        setTimeout(() => document.addEventListener('click', closeHandler), 10);
+    }
+
+    function createChipWithColor(td, container, btn, color) {
+        const chip = document.createElement('div');
+        chip.className = 'chip';
+        chip.style.background = color;
+
+        const label = document.createElement('span');
+        label.className = 'chip-label';
+        label.dataset.placeholder = 'הוסף אירוע';
+        chip.appendChild(label);
+
+        addChipControls(chip);
+
+        td.insertBefore(chip, btn);
+        startChipEdit(chip);
+        saveExamState(container);
     }
 
     function saveLegendConfig(legendBar) {
