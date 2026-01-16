@@ -973,13 +973,27 @@
         const palette = document.createElement('div');
         palette.className = 'chip-color-palette exam-color-palette';
 
+        const hexToRgba = (hex, alpha) => {
+            const r = parseInt(hex.slice(1, 3), 16);
+            const g = parseInt(hex.slice(3, 5), 16);
+            const b = parseInt(hex.slice(5, 7), 16);
+            return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+        };
+
         PRESET_COLORS.forEach(color => {
             const colorBtn = document.createElement('div');
             colorBtn.className = 'palette-color';
             colorBtn.style.background = color;
             colorBtn.onclick = (e) => {
                 e.stopPropagation();
-                banner.style.background = color;
+                // Apply transparent background
+                banner.style.setProperty('background', hexToRgba(color, 0.1), 'important');
+                // Apply solid border
+                banner.style.setProperty('border', `2px solid ${hexToRgba(color, 0.3)}`, 'important');
+                // Apply solid text color (so it's readable)
+                banner.style.setProperty('color', color, 'important');
+                banner.style.setProperty('font-weight', 'bold', 'important');
+
                 saveExamState(container);
                 palette.remove();
             };
