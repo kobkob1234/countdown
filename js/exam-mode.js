@@ -61,7 +61,8 @@
         label.spellcheck = false;
         label.focus();
 
-        const selectAll = () => {
+        // For empty labels, select all. For existing text, put cursor at end
+        if (!prevText || prevText.trim() === '') {
             const range = document.createRange();
             range.selectNodeContents(label);
             const selection = window.getSelection();
@@ -69,8 +70,17 @@
                 selection.removeAllRanges();
                 selection.addRange(range);
             }
-        };
-        selectAll();
+        } else {
+            // Put cursor at end
+            const range = document.createRange();
+            range.selectNodeContents(label);
+            range.collapse(false); // false = collapse to end
+            const selection = window.getSelection();
+            if (selection) {
+                selection.removeAllRanges();
+                selection.addRange(range);
+            }
+        }
 
         const finishEdit = (shouldSave) => {
             label.contentEditable = 'false';
@@ -115,8 +125,19 @@
         drag.textContent = '⋮⋮';
         drag.contentEditable = false;
 
+        const colorSwatch = document.createElement('span');
+        colorSwatch.className = 'chip-color-swatch';
+        colorSwatch.textContent = '🎨';
+        colorSwatch.contentEditable = false;
+        colorSwatch.title = 'שנה צבע';
+        colorSwatch.addEventListener('click', (e) => {
+            e.stopPropagation();
+            showChipColorChange(e, chip);
+        });
+
         chip.appendChild(check);
         chip.appendChild(del);
+        chip.appendChild(colorSwatch);
         chip.appendChild(drag);
     };
 
@@ -258,7 +279,7 @@
             chip.draggable = true;
             chip.spellcheck = false;
 
-            chip.querySelectorAll('.chip-check, .chip-delete, .chip-drag-handle').forEach(el => el.remove());
+            chip.querySelectorAll('.chip-check, .chip-delete, .chip-drag-handle, .chip-color-swatch').forEach(el => el.remove());
             ensureChipLabel(chip);
             addChipControls(chip);
         });
@@ -640,6 +661,52 @@
         saveExamState(container);
     }
 
+    function showChipColorChange(e, chip) {
+        // Remove any existing palette
+        document.querySelectorAll('.chip-color-palette').forEach(p => p.remove());
+
+        const palette = document.createElement('div');
+        palette.className = 'chip-color-palette chip-inline-palette';
+
+        PRESET_COLORS.forEach(color => {
+            const colorBtn = document.createElement('div');
+            colorBtn.className = 'palette-color';
+            colorBtn.style.background = color;
+            colorBtn.onclick = (ev) => {
+                ev.stopPropagation();
+                chip.style.background = color;
+                // Remove any class-based colors
+                PRESET_COLORS.forEach(() => {
+                    chip.className = chip.className.split(' ').filter(c =>
+                        !['stat-new', 'stat-review', 'stat-test', 'econ', 'game', 'vacation', 'rest', 'focus', 'deadline', 'project', 'admin'].includes(c)
+                    ).join(' ');
+                });
+                const container = chip.closest('.container');
+                if (container) saveExamState(container);
+                palette.remove();
+            };
+            palette.appendChild(colorBtn);
+        });
+
+        // Position near the swatch
+        const swatch = chip.querySelector('.chip-color-swatch');
+        if (swatch) {
+            swatch.style.position = 'relative';
+            swatch.appendChild(palette);
+        } else {
+            chip.appendChild(palette);
+        }
+
+        // Close palette on outside click
+        const closeHandler = (ev) => {
+            if (!palette.contains(ev.target)) {
+                palette.remove();
+                document.removeEventListener('click', closeHandler);
+            }
+        };
+        setTimeout(() => document.addEventListener('click', closeHandler), 10);
+    }
+
     function saveLegendConfig(legendBar) {
         const config = [];
         legendBar.querySelectorAll('.legend-tag').forEach(tag => {
@@ -736,28 +803,79 @@
         if (isExamDay) {
             // Add exam banner if not exists
             if (!td.querySelector('.exam-banner')) {
+                const bannerWrapper = document.createElement('div');
+                bannerWrapper.className = 'exam-banner-wrapper';
+
                 const banner = document.createElement('div');
                 banner.className = 'exam-banner';
                 banner.contentEditable = 'true';
                 banner.spellcheck = false;
                 banner.dataset.placeholder = 'שם מבחן...';
                 banner.addEventListener('blur', () => saveExamState(container));
+
+                const colorBtn = document.createElement('span');
+                colorBtn.className = 'exam-banner-color-btn';
+                colorBtn.textContent = '🎨';
+                colorBtn.title = 'שנה צבע';
+                colorBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    showExamBannerColorPicker(colorBtn, banner, container);
+                };
+
+                bannerWrapper.appendChild(banner);
+                bannerWrapper.appendChild(colorBtn);
+
                 // Insert after date span
                 const dateSpan = td.querySelector('.date');
                 if (dateSpan && dateSpan.nextSibling) {
-                    td.insertBefore(banner, dateSpan.nextSibling);
+                    td.insertBefore(bannerWrapper, dateSpan.nextSibling);
                 } else {
-                    td.appendChild(banner);
+                    td.appendChild(bannerWrapper);
                 }
                 banner.focus();
             }
         } else {
             // Remove exam banner when unchecking
+            const bannerWrapper = td.querySelector('.exam-banner-wrapper');
+            if (bannerWrapper) bannerWrapper.remove();
             const banner = td.querySelector('.exam-banner');
             if (banner) banner.remove();
         }
 
         saveExamState(container);
+    }
+
+    function showExamBannerColorPicker(btn, banner, container) {
+        // Remove any existing palette
+        document.querySelectorAll('.exam-color-palette').forEach(p => p.remove());
+
+        const palette = document.createElement('div');
+        palette.className = 'chip-color-palette exam-color-palette';
+
+        PRESET_COLORS.forEach(color => {
+            const colorBtn = document.createElement('div');
+            colorBtn.className = 'palette-color';
+            colorBtn.style.background = color;
+            colorBtn.onclick = (e) => {
+                e.stopPropagation();
+                banner.style.background = color;
+                saveExamState(container);
+                palette.remove();
+            };
+            palette.appendChild(colorBtn);
+        });
+
+        btn.style.position = 'relative';
+        btn.appendChild(palette);
+
+        // Close palette on outside click
+        const closeHandler = (e) => {
+            if (!palette.contains(e.target) && e.target !== btn) {
+                palette.remove();
+                document.removeEventListener('click', closeHandler);
+            }
+        };
+        setTimeout(() => document.addEventListener('click', closeHandler), 10);
     }
 
     function saveExamState(container) {
@@ -789,7 +907,7 @@
             banner.removeAttribute('spellcheck');
         });
 
-        clone.querySelectorAll('.add-tile-btn, .chip-check, .chip-delete, .chip-drag-handle, .day-passed-toggle, .day-passed-x, .exam-day-toggle').forEach(el => el.remove());
+        clone.querySelectorAll('.add-tile-btn, .chip-check, .chip-delete, .chip-drag-handle, .chip-color-swatch, .day-passed-toggle, .day-passed-x, .exam-day-toggle, .exam-banner-color-btn').forEach(el => el.remove());
         localStorage.setItem('examModeContent', clone.innerHTML);
     }
 

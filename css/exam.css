@@ -421,9 +421,46 @@
 
 #examModeOverlay .chip.editing .chip-check,
 #examModeOverlay .chip.editing .chip-delete,
-#examModeOverlay .chip.editing .chip-drag-handle {
+#examModeOverlay .chip.editing .chip-drag-handle,
+#examModeOverlay .chip.editing .chip-color-swatch {
     opacity: 0.3;
     pointer-events: none;
+}
+
+/* Chip Color Swatch */
+#examModeOverlay .chip-color-swatch {
+    position: absolute;
+    right: 22px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 14px;
+    height: 14px;
+    cursor: pointer;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    line-height: 1;
+    z-index: 10;
+}
+
+#examModeOverlay .chip:hover .chip-color-swatch {
+    display: flex;
+}
+
+#examModeOverlay .chip-color-swatch:hover {
+    transform: translateY(-50%) scale(1.2);
+}
+
+/* Inline palette for chip color change */
+.chip-inline-palette {
+    bottom: auto;
+    top: 100%;
+    right: auto;
+    left: 50%;
+    transform: translateX(-50%);
+    margin-top: 4px;
+    margin-bottom: 0;
 }
 
 /* Completion Checkbox */
@@ -741,4 +778,52 @@
 #examModeOverlay .exam-banner:focus {
     outline: 2px dashed rgba(255, 255, 255, 0.6);
     outline-offset: 2px;
+}
+
+/* Exam Banner Wrapper */
+#examModeOverlay .exam-banner-wrapper {
+    position: relative;
+    margin: 6px 0;
+}
+
+#examModeOverlay .exam-banner-wrapper .exam-banner {
+    margin: 0;
+}
+
+/* Exam Banner Color Button */
+#examModeOverlay .exam-banner-color-btn {
+    position: absolute;
+    right: -8px;
+    top: -8px;
+    width: 20px;
+    height: 20px;
+    background: white;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    opacity: 0;
+    transition: opacity 0.2s;
+    z-index: 10;
+}
+
+#examModeOverlay .exam-banner-wrapper:hover .exam-banner-color-btn {
+    opacity: 1;
+}
+
+#examModeOverlay .exam-banner-color-btn:hover {
+    transform: scale(1.1);
+}
+
+/* Exam Color Palette */
+.exam-color-palette {
+    bottom: auto;
+    top: 100%;
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
+    margin-top: 4px;
 }
