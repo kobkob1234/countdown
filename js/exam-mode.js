@@ -983,14 +983,21 @@
         const palette = document.createElement('div');
         palette.className = 'chip-color-palette exam-tile-palette';
 
+        const hexToRgba = (hex, alpha) => {
+            const r = parseInt(hex.slice(1, 3), 16);
+            const g = parseInt(hex.slice(3, 5), 16);
+            const b = parseInt(hex.slice(5, 7), 16);
+            return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+        };
+
         PRESET_COLORS.forEach(color => {
             const colorBtn = document.createElement('div');
             colorBtn.className = 'palette-color';
             colorBtn.style.background = color;
             colorBtn.onclick = (e) => {
                 e.stopPropagation();
-                td.style.setProperty('background', color, 'important');
-                td.style.setProperty('border-color', color, 'important');
+                td.style.setProperty('background', hexToRgba(color, 0.1), 'important');
+                td.style.setProperty('border', `1px solid ${color}`, 'important');
                 saveExamState(container);
                 palette.remove();
             };
