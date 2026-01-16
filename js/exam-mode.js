@@ -986,13 +986,13 @@
             colorBtn.style.background = color;
             colorBtn.onclick = (e) => {
                 e.stopPropagation();
-                // Apply transparent background
-                banner.style.setProperty('background', hexToRgba(color, 0.1), 'important');
-                // Apply solid border
-                banner.style.setProperty('border', `2px solid ${hexToRgba(color, 0.3)}`, 'important');
-                // Apply solid text color (so it's readable)
-                banner.style.setProperty('color', color, 'important');
-                banner.style.setProperty('font-weight', 'bold', 'important');
+                // Apply solid background (like the image)
+                banner.style.setProperty('background', color, 'important');
+                // Remove specific border (let default shadow/border handle it)
+                banner.style.removeProperty('border');
+                // White text for contrast on dark/vibrant colors
+                banner.style.setProperty('color', 'white', 'important');
+                banner.style.removeProperty('font-weight'); // Default is fine, or keep bold if needed
 
                 saveExamState(container);
                 palette.remove();
