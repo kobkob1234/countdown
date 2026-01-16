@@ -525,7 +525,11 @@
 
             if (container) {
                 const saved = localStorage.getItem('examModeContent');
-                if (saved) container.innerHTML = saved;
+                if (saved) {
+                    container.innerHTML = saved;
+                    // Cleanup legacy exam divs (hardcoded ones)
+                    container.querySelectorAll('.exam').forEach(el => el.remove());
+                }
 
                 container.setAttribute('spellcheck', 'false');
 
@@ -985,8 +989,8 @@
             colorBtn.style.background = color;
             colorBtn.onclick = (e) => {
                 e.stopPropagation();
-                td.style.background = color;
-                td.style.borderColor = color;
+                td.style.setProperty('background', color, 'important');
+                td.style.setProperty('border-color', color, 'important');
                 saveExamState(container);
                 palette.remove();
             };
