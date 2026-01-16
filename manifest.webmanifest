@@ -1,6 +1,7 @@
 {
   "name": "Shared Event Countdowns",
   "short_name": "Countdowns",
+  "gcm_sender_id": "103953800507",
   "start_url": ".",
   "scope": ".",
   "display": "standalone",
