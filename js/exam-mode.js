@@ -311,6 +311,19 @@
                     };
                     bannerWrapper.appendChild(colorBtn);
                 }
+
+                // Add tile color button if not present
+                if (!bannerWrapper.querySelector('.exam-tile-color-btn')) {
+                    const tileColorBtn = document.createElement('span');
+                    tileColorBtn.className = 'exam-tile-color-btn';
+                    tileColorBtn.textContent = '🖼️';
+                    tileColorBtn.title = 'שנה צבע תא';
+                    tileColorBtn.onclick = (e) => {
+                        e.stopPropagation();
+                        showExamTileColorPicker(tileColorBtn, td, container);
+                    };
+                    bannerWrapper.appendChild(tileColorBtn);
+                }
             }
         });
 
@@ -709,6 +722,20 @@
         const palette = document.createElement('div');
         palette.className = 'chip-color-palette chip-inline-palette';
 
+        // Add remove button first
+        const removeBtn = document.createElement('div');
+        removeBtn.className = 'palette-color palette-remove';
+        removeBtn.innerHTML = '×';
+        removeBtn.title = 'מחק אירוע';
+        removeBtn.onclick = (ev) => {
+            ev.stopPropagation();
+            const container = chip.closest('.container');
+            chip.remove();
+            if (container) saveExamState(container);
+            palette.remove();
+        };
+        palette.appendChild(removeBtn);
+
         PRESET_COLORS.forEach(color => {
             const colorBtn = document.createElement('div');
             colorBtn.className = 'palette-color';
@@ -876,9 +903,19 @@
                     updateExamCountdowns(container);
                 };
 
+                const tileColorBtn = document.createElement('span');
+                tileColorBtn.className = 'exam-tile-color-btn';
+                tileColorBtn.textContent = '🖼️';
+                tileColorBtn.title = 'שנה צבע תא';
+                tileColorBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    showExamTileColorPicker(tileColorBtn, td, container);
+                };
+
                 bannerWrapper.appendChild(banner);
                 bannerWrapper.appendChild(colorBtn);
                 bannerWrapper.appendChild(countdownBtn);
+                bannerWrapper.appendChild(tileColorBtn);
 
                 // Insert after date span
                 const dateSpan = td.querySelector('.date');
@@ -916,6 +953,40 @@
             colorBtn.onclick = (e) => {
                 e.stopPropagation();
                 banner.style.background = color;
+                saveExamState(container);
+                palette.remove();
+            };
+            palette.appendChild(colorBtn);
+        });
+
+        btn.style.position = 'relative';
+        btn.appendChild(palette);
+
+        // Close palette on outside click
+        const closeHandler = (e) => {
+            if (!palette.contains(e.target) && e.target !== btn) {
+                palette.remove();
+                document.removeEventListener('click', closeHandler);
+            }
+        };
+        setTimeout(() => document.addEventListener('click', closeHandler), 10);
+    }
+
+    function showExamTileColorPicker(btn, td, container) {
+        // Remove any existing palette
+        document.querySelectorAll('.exam-tile-palette').forEach(p => p.remove());
+
+        const palette = document.createElement('div');
+        palette.className = 'chip-color-palette exam-tile-palette';
+
+        PRESET_COLORS.forEach(color => {
+            const colorBtn = document.createElement('div');
+            colorBtn.className = 'palette-color';
+            colorBtn.style.background = color;
+            colorBtn.onclick = (e) => {
+                e.stopPropagation();
+                td.style.background = color;
+                td.style.borderColor = color;
                 saveExamState(container);
                 palette.remove();
             };
@@ -1085,7 +1156,7 @@
             banner.removeAttribute('spellcheck');
         });
 
-        clone.querySelectorAll('.add-tile-btn, .chip-check, .chip-delete, .chip-drag-handle, .chip-color-swatch, .day-passed-toggle, .day-passed-x, .exam-day-toggle, .exam-banner-color-btn, .exam-countdown-toggle, .countdown-badge').forEach(el => el.remove());
+        clone.querySelectorAll('.add-tile-btn, .chip-check, .chip-delete, .chip-drag-handle, .chip-color-swatch, .day-passed-toggle, .day-passed-x, .exam-day-toggle, .exam-banner-color-btn, .exam-tile-color-btn, .exam-countdown-toggle, .countdown-badge').forEach(el => el.remove());
         localStorage.setItem('examModeContent', clone.innerHTML);
     }
 

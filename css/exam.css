@@ -877,3 +877,57 @@
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
     white-space: nowrap;
 }
+
+/* Tile Color Button */
+#examModeOverlay .exam-tile-color-btn {
+    position: absolute;
+    right: 16px;
+    top: -8px;
+    width: 20px;
+    height: 20px;
+    background: white;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    opacity: 0;
+    transition: opacity 0.2s;
+    z-index: 10;
+}
+
+#examModeOverlay .exam-banner-wrapper:hover .exam-tile-color-btn {
+    opacity: 1;
+}
+
+#examModeOverlay .exam-tile-color-btn:hover {
+    transform: scale(1.1);
+}
+
+/* Tile Color Palette */
+.exam-tile-palette {
+    bottom: auto;
+    top: 100%;
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
+    margin-top: 4px;
+}
+
+/* Palette Remove Button */
+.palette-remove {
+    background: #fee2e2 !important;
+    color: #ef4444;
+    font-size: 16px;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.palette-remove:hover {
+    background: #ef4444 !important;
+    color: white;
+}
