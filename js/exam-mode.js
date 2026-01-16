@@ -231,6 +231,40 @@
                 xOverlay.className = 'day-passed-x';
                 td.appendChild(xOverlay);
             }
+
+            // Add exam day toggle button if not present
+            if (!td.querySelector('.exam-day-toggle')) {
+                const examToggle = document.createElement('div');
+                examToggle.className = 'exam-day-toggle';
+                examToggle.title = 'סמן כיום מבחן';
+                examToggle.innerHTML = '🎨';
+                examToggle.onclick = (e) => {
+                    e.stopPropagation();
+                    toggleExamDay(td, container);
+                };
+                td.appendChild(examToggle);
+            }
+
+            // Add exam banner if it has exam-day class but no banner
+            if (td.classList.contains('exam-day') && !td.querySelector('.exam-banner')) {
+                const banner = document.createElement('div');
+                banner.className = 'exam-banner';
+                banner.contentEditable = 'true';
+                banner.spellcheck = false;
+                banner.dataset.placeholder = 'שם מבחן...';
+                banner.addEventListener('blur', () => saveExamState(container));
+                td.appendChild(banner);
+            }
+
+            // Ensure exam banner is interactive
+            const existingBanner = td.querySelector('.exam-banner');
+            if (existingBanner) {
+                existingBanner.contentEditable = 'true';
+                existingBanner.spellcheck = false;
+                if (!existingBanner.dataset.placeholder) {
+                    existingBanner.dataset.placeholder = 'שם מבחן...';
+                }
+            }
         });
 
         container.querySelectorAll('.chip').forEach(chip => {
@@ -604,6 +638,36 @@
         saveExamState(container);
     }
 
+    function toggleExamDay(td, container) {
+        const isExamDay = td.classList.toggle('exam-day');
+
+        if (isExamDay) {
+            // Add exam banner if not exists
+            if (!td.querySelector('.exam-banner')) {
+                const banner = document.createElement('div');
+                banner.className = 'exam-banner';
+                banner.contentEditable = 'true';
+                banner.spellcheck = false;
+                banner.dataset.placeholder = 'שם מבחן...';
+                banner.addEventListener('blur', () => saveExamState(container));
+                // Insert after date span
+                const dateSpan = td.querySelector('.date');
+                if (dateSpan && dateSpan.nextSibling) {
+                    td.insertBefore(banner, dateSpan.nextSibling);
+                } else {
+                    td.appendChild(banner);
+                }
+                banner.focus();
+            }
+        } else {
+            // Remove exam banner when unchecking
+            const banner = td.querySelector('.exam-banner');
+            if (banner) banner.remove();
+        }
+
+        saveExamState(container);
+    }
+
     function saveExamState(container) {
         if (!container) return;
         updateWeekProgress(container);
@@ -628,7 +692,12 @@
             node.removeAttribute('spellcheck');
         });
 
-        clone.querySelectorAll('.add-tile-btn, .chip-check, .chip-delete, .chip-drag-handle, .day-passed-toggle, .day-passed-x').forEach(el => el.remove());
+        clone.querySelectorAll('.exam-banner').forEach(banner => {
+            banner.removeAttribute('contenteditable');
+            banner.removeAttribute('spellcheck');
+        });
+
+        clone.querySelectorAll('.add-tile-btn, .chip-check, .chip-delete, .chip-drag-handle, .day-passed-toggle, .day-passed-x, .exam-day-toggle').forEach(el => el.remove());
         localStorage.setItem('examModeContent', clone.innerHTML);
     }
 
