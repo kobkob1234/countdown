@@ -126,11 +126,6 @@
 
 /* Color Palette Popup */
 .color-palette-popup {
-    position: absolute;
-    top: 100%;
-    left: 50%;
-    transform: translateX(-50%);
-    margin-top: 8px;
     background: white;
     border-radius: 8px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
@@ -157,10 +152,6 @@
 
 /* Chip Color Palette (for adding new events) */
 .chip-color-palette {
-    position: absolute;
-    bottom: 100%;
-    right: 0;
-    margin-bottom: 8px;
     background: white;
     border-radius: 8px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
@@ -452,16 +443,7 @@
     transform: translateY(-50%) scale(1.2);
 }
 
-/* Inline palette for chip color change */
-.chip-inline-palette {
-    bottom: auto;
-    top: 100%;
-    right: auto;
-    left: 50%;
-    transform: translateX(-50%);
-    margin-top: 4px;
-    margin-bottom: 0;
-}
+
 
 /* Completion Checkbox */
 #examModeOverlay .chip-check {

@@ -643,6 +643,51 @@
         '#f472b6'  // Pink
     ];
 
+    const hexToRgba = (hex, alpha) => {
+        const r = parseInt(hex.slice(1, 3), 16);
+        const g = parseInt(hex.slice(3, 5), 16);
+        const b = parseInt(hex.slice(5, 7), 16);
+        return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+    };
+
+    function showPopup(popup, targetEl, onRemove) {
+        // Append to body to ensure it's on top of everything
+        document.body.appendChild(popup);
+
+        const rect = targetEl.getBoundingClientRect();
+        const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+        const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
+
+        const width = popup.offsetWidth;
+        const height = popup.offsetHeight;
+
+        let top = rect.bottom + scrollTop + 6;
+        let left = rect.left + scrollLeft + (rect.width / 2) - (width / 2);
+
+        // Screen edges
+        const viewportWidth = window.visualViewport ? window.visualViewport.width : window.innerWidth;
+        if (left < 10) left = 10;
+        if (left + width > viewportWidth - 10) {
+            left = viewportWidth - width - 10;
+        }
+
+        popup.style.position = 'absolute';
+        popup.style.top = `${top}px`;
+        popup.style.left = `${left}px`;
+        popup.style.zIndex = '10001';
+        popup.style.margin = '0';
+        popup.style.transform = 'none';
+
+        const closeHandler = (e) => {
+            if (!popup.contains(e.target) && e.target !== targetEl && !targetEl.contains(e.target)) {
+                popup.remove();
+                document.removeEventListener('mousedown', closeHandler);
+                if (onRemove) onRemove();
+            }
+        };
+        setTimeout(() => document.addEventListener('mousedown', closeHandler), 10);
+    }
+
     function showColorPalette(swatch, tag, legendBar) {
         // Remove any existing palette
         document.querySelectorAll('.color-palette-popup').forEach(p => p.remove());
@@ -662,18 +707,7 @@
             palette.appendChild(colorBtn);
         });
 
-        // Position the palette
-        swatch.style.position = 'relative';
-        swatch.appendChild(palette);
-
-        // Close palette on outside click
-        const closeHandler = (e) => {
-            if (!palette.contains(e.target) && e.target !== swatch) {
-                palette.remove();
-                document.removeEventListener('click', closeHandler);
-            }
-        };
-        setTimeout(() => document.addEventListener('click', closeHandler), 10);
+        showPopup(palette, swatch);
     }
 
     function applyColorToTag(tag, color, legendBar) {
@@ -711,18 +745,7 @@
             palette.appendChild(colorBtn);
         });
 
-        // Position the palette near the button
-        btn.style.position = 'relative';
-        btn.appendChild(palette);
-
-        // Close palette on outside click
-        const closeHandler = (e) => {
-            if (!palette.contains(e.target) && e.target !== btn) {
-                palette.remove();
-                document.removeEventListener('click', closeHandler);
-            }
-        };
-        setTimeout(() => document.addEventListener('click', closeHandler), 10);
+        showPopup(palette, btn);
     }
 
     function createChipWithColor(td, container, btn, color) {
@@ -783,23 +806,10 @@
             palette.appendChild(colorBtn);
         });
 
-        // Position near the swatch
         const swatch = chip.querySelector('.chip-color-swatch');
-        if (swatch) {
-            swatch.style.position = 'relative';
-            swatch.appendChild(palette);
-        } else {
-            chip.appendChild(palette);
-        }
+        const target = swatch || chip;
 
-        // Close palette on outside click
-        const closeHandler = (ev) => {
-            if (!palette.contains(ev.target)) {
-                palette.remove();
-                document.removeEventListener('click', closeHandler);
-            }
-        };
-        setTimeout(() => document.addEventListener('click', closeHandler), 10);
+        showPopup(palette, target);
     }
 
     function saveLegendConfig(legendBar) {
@@ -973,13 +983,6 @@
         const palette = document.createElement('div');
         palette.className = 'chip-color-palette exam-color-palette';
 
-        const hexToRgba = (hex, alpha) => {
-            const r = parseInt(hex.slice(1, 3), 16);
-            const g = parseInt(hex.slice(3, 5), 16);
-            const b = parseInt(hex.slice(5, 7), 16);
-            return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-        };
-
         PRESET_COLORS.forEach(color => {
             const colorBtn = document.createElement('div');
             colorBtn.className = 'palette-color';
@@ -1000,17 +1003,7 @@
             palette.appendChild(colorBtn);
         });
 
-        btn.style.position = 'relative';
-        btn.appendChild(palette);
-
-        // Close palette on outside click
-        const closeHandler = (e) => {
-            if (!palette.contains(e.target) && e.target !== btn) {
-                palette.remove();
-                document.removeEventListener('click', closeHandler);
-            }
-        };
-        setTimeout(() => document.addEventListener('click', closeHandler), 10);
+        showPopup(palette, btn);
     }
 
     function showExamTileColorPicker(btn, td, container) {
@@ -1019,13 +1012,6 @@
 
         const palette = document.createElement('div');
         palette.className = 'chip-color-palette exam-tile-palette';
-
-        const hexToRgba = (hex, alpha) => {
-            const r = parseInt(hex.slice(1, 3), 16);
-            const g = parseInt(hex.slice(3, 5), 16);
-            const b = parseInt(hex.slice(5, 7), 16);
-            return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-        };
 
         PRESET_COLORS.forEach(color => {
             const colorBtn = document.createElement('div');
@@ -1041,17 +1027,7 @@
             palette.appendChild(colorBtn);
         });
 
-        btn.style.position = 'relative';
-        btn.appendChild(palette);
-
-        // Close palette on outside click
-        const closeHandler = (e) => {
-            if (!palette.contains(e.target) && e.target !== btn) {
-                palette.remove();
-                document.removeEventListener('click', closeHandler);
-            }
-        };
-        setTimeout(() => document.addEventListener('click', closeHandler), 10);
+        showPopup(palette, btn);
     }
 
     function updateExamCountdowns(container) {
