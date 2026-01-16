@@ -1,0 +1,15 @@
+{
+    "name": "countdown-pwa",
+    "version": "1.0.0",
+    "private": true,
+    "description": "Countdown PWA with FCM Notifications",
+    "scripts": {
+        "test": "echo \"No tests configured\" && exit 0"
+    },
+    "dependencies": {
+        "firebase-admin": "^12.0.0"
+    },
+    "engines": {
+        "node": "18.x"
+    }
+}

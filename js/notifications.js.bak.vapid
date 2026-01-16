@@ -6,28 +6,12 @@ import { AppState, $, NOTIFY_TTL_MS, getNotifyKeys } from './state.js';
 import { db, ref, set, remove } from './firebase-config.js';
 import { delay, sha256Base64Url, isIOS, isStandalone, isPushSupported } from './utils.js';
 
-// Firebase Messaging imports
-import { getMessaging, getToken, deleteToken, isSupported as isMessagingSupported } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging.js";
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-
-// VAPID public key for web push (legacy, kept for backward compatibility)
+// VAPID public key for web push
 const PUSH_VAPID_PUBLIC_KEY = "BL-m24SrurFUNIQxH7S77r1yYShIiCibpw2CbtK8FwYATHzYiR0kQGKzWilEGRHyRK2jxqRPUR_RJoAVUgrO-24";
 const PUSH_LOCAL_USER_KEY = 'countdown_push_subscription_user';
-const FCM_LOCAL_TOKEN_KEY = 'countdown_fcm_token';
 
 const NOTIFICATION_ICON = './icon-192.png';
 const NOTIFICATION_BADGE = './icon-192.png';
-
-// FCM Configuration (same project as firebase-config.js)
-const FCM_CONFIG = {
-    apiKey: "AIzaSyB_IflOD8CwVLQQjqtz_ZKWzbfgCiOm2Js",
-    authDomain: "countdown-463de.firebaseapp.com",
-    projectId: "countdown-463de",
-    messagingSenderId: "1016385864732",
-    appId: "1:1016385864732:web:8a82e771e1f4be567a8bd9"
-};
-
-let fcmMessaging = null;
 
 const getScopedNotifyKeys = () => getNotifyKeys(AppState.currentUser);
 
@@ -86,68 +70,6 @@ async function savePushSubscriptionForUser(userId, subscription) {
         createdAt: Date.now()
     };
     await set(ref(db, `users/${userId}/pushSubscriptions/${key}`), payload);
-}
-
-// ============================================
-// FCM Token Management (New - Primary Method)
-// ============================================
-
-async function initFCMMessaging() {
-    if (fcmMessaging) return fcmMessaging;
-    try {
-        const supported = await isMessagingSupported();
-        if (!supported) {
-            console.log('[FCM] Messaging not supported in this browser');
-            return null;
-        }
-        const app = initializeApp(FCM_CONFIG, 'fcm-notifications');
-        fcmMessaging = getMessaging(app);
-        return fcmMessaging;
-    } catch (e) {
-        console.warn('[FCM] Init failed:', e);
-        return null;
-    }
-}
-
-async function saveFCMTokenForUser(userId, token) {
-    if (!userId || !token) return;
-    const payload = {
-        ua: navigator.userAgent,
-        createdAt: Date.now()
-    };
-    await set(ref(db, `users/${userId}/fcmTokens/${token}`), payload);
-    localStorage.setItem(FCM_LOCAL_TOKEN_KEY, token);
-    console.log('[FCM] Token saved for user:', userId);
-}
-
-async function removeFCMTokenForUser(userId, token) {
-    if (!userId || !token) return;
-    await remove(ref(db, `users/${userId}/fcmTokens/${token}`));
-    localStorage.removeItem(FCM_LOCAL_TOKEN_KEY);
-    console.log('[FCM] Token removed for user:', userId);
-}
-
-async function getFCMToken() {
-    try {
-        const messaging = await initFCMMessaging();
-        if (!messaging) return null;
-
-        const reg = await ensurePushRegistration();
-        if (!reg) return null;
-
-        const token = await getToken(messaging, {
-            vapidKey: PUSH_VAPID_PUBLIC_KEY,
-            serviceWorkerRegistration: reg
-        });
-        return token;
-    } catch (e) {
-        console.warn('[FCM] getToken failed:', e);
-        return null;
-    }
-}
-
-async function hasFCMToken() {
-    return !!localStorage.getItem(FCM_LOCAL_TOKEN_KEY);
 }
 
 // Sync pending subscription saved by SW when no windows were open
@@ -368,21 +290,10 @@ async function syncExistingSubscriptionToCurrentUser() {
         }
         await savePushSubscriptionForUser(currentUser, sub);
         localStorage.setItem(PUSH_LOCAL_USER_KEY, currentUser);
-
-        // Also sync FCM token
-        try {
-            const fcmToken = await getFCMToken();
-            if (fcmToken) {
-                await saveFCMTokenForUser(currentUser, fcmToken);
-            }
-        } catch (e) {
-            console.warn('[FCM] Token sync failed:', e);
-        }
     } catch (e) {
         console.warn('[Push] Sync failed:', e);
     }
 }
-
 
 export async function refreshNotifyButton() {
     const notifyBtn = $('notifyBtn');
@@ -433,8 +344,7 @@ export async function refreshNotifyButton() {
         try {
             const reg = await getPushRegistration();
             const sub = reg ? await reg.pushManager.getSubscription() : null;
-            const hasFCM = await hasFCMToken();
-            if ((sub || hasFCM) && perm === 'granted') {
+            if (sub && perm === 'granted') {
                 notifyBtn.textContent = "🔔";
                 notifyBtn.title = `✅ Push enabled for "${currentUser}" (works when closed) - click to disable`;
                 notifyBtn.setAttribute('aria-pressed', 'true');
@@ -442,7 +352,6 @@ export async function refreshNotifyButton() {
                 return;
             }
         } catch { }
-
 
         notifyBtn.textContent = "🔕";
         notifyBtn.title = perm === 'granted'
@@ -510,49 +419,22 @@ async function toggleNotificationsFromUser() {
 
     const reg = await ensurePushRegistration();
     const existing = await reg.pushManager.getSubscription();
-    const existingFCMToken = localStorage.getItem(FCM_LOCAL_TOKEN_KEY);
-
-    if (existing || existingFCMToken) {
+    if (existing) {
         const ok = confirm(`Push is enabled for "${currentUser}".\n\nDisable it on this device?`);
         if (!ok) return;
-
-        // Remove VAPID subscription
-        if (existing) {
-            await removePushSubscriptionForUser(currentUser, existing).catch(() => { });
-            await existing.unsubscribe().catch(() => { });
-        }
+        await removePushSubscriptionForUser(currentUser, existing).catch(() => { });
+        await existing.unsubscribe().catch(() => { });
         localStorage.removeItem(PUSH_LOCAL_USER_KEY);
-
-        // Remove FCM token
-        if (existingFCMToken) {
-            await removeFCMTokenForUser(currentUser, existingFCMToken).catch(() => { });
-            try {
-                const messaging = await initFCMMessaging();
-                if (messaging) await deleteToken(messaging);
-            } catch (e) {
-                console.warn('[FCM] deleteToken failed:', e);
-            }
-        }
-
         await refreshNotifyButton();
         return;
     }
 
-    // Subscribe to VAPID (legacy) + FCM (new)
     const appServerKey = urlBase64ToUint8Array(PUSH_VAPID_PUBLIC_KEY);
     let sub = null;
     try {
-        // VAPID subscription (kept for backward compatibility)
         sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: appServerKey });
         await savePushSubscriptionForUser(currentUser, sub);
         localStorage.setItem(PUSH_LOCAL_USER_KEY, currentUser);
-
-        // FCM token (primary for Vercel serverless)
-        const fcmToken = await getFCMToken();
-        if (fcmToken) {
-            await saveFCMTokenForUser(currentUser, fcmToken);
-        }
-
         showSystemNotification("Push enabled ✅", { body: `Push is enabled for "${currentUser}".`, requireInteraction: false }).catch(() => { });
     } catch (e) {
         console.warn('[Push] subscribe/save failed:', e);
@@ -561,7 +443,6 @@ async function toggleNotificationsFromUser() {
     }
     await refreshNotifyButton();
 }
-
 
 // ============================================
 // Notification Tracking (prevent duplicates)
