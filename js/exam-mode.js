@@ -400,20 +400,29 @@
 
             // Inject Controls if not present
             if (!overlay.querySelector('.exam-controls')) {
+                // Preset color palette (8 colors)
+                const PRESET_COLORS = [
+                    '#0ea5e9', // Sky blue
+                    '#f97316', // Orange
+                    '#22c55e', // Green
+                    '#ef4444', // Red
+                    '#a855f7', // Purple
+                    '#eab308', // Yellow
+                    '#64748b', // Slate
+                    '#f472b6'  // Pink
+                ];
+
                 // Load saved legend colors and names
                 const savedLegend = JSON.parse(localStorage.getItem('examLegendConfig') || 'null');
                 const defaultLegend = [
                     { id: 'stat-new', color: '#0ea5e9', name: 'סטטיסטיקה חדש' },
                     { id: 'stat-review', color: '#f97316', name: 'חזרה' },
-                    { id: 'stat-test', color: '#0284c7', name: 'מבחן' },
+                    { id: 'stat-test', color: '#22c55e', name: 'מבחן' },
                     { id: 'econ', color: '#eab308', name: 'כלכלה' },
                     { id: 'game', color: '#a855f7', name: 'משחקים' },
-                    { id: 'vacation', color: '#22c55e', name: 'חופש' },
+                    { id: 'vacation', color: '#ef4444', name: 'דדליין' },
                     { id: 'rest', color: '#64748b', name: 'מנוחה' },
-                    { id: 'focus', color: '#0f766e', name: 'פוקוס' },
-                    { id: 'deadline', color: '#ef4444', name: 'דדליין' },
-                    { id: 'project', color: '#f472b6', name: 'פרויקט' },
-                    { id: 'admin', color: '#6366f1', name: 'סידורים' }
+                    { id: 'focus', color: '#f472b6', name: 'פרויקט' }
                 ];
                 const legendConfig = savedLegend || defaultLegend;
 
@@ -431,8 +440,8 @@
 
                 legendConfig.forEach(item => {
                     legendHTML += `
-                        <div class="legend-tag" data-color-id="${item.id}">
-                            <input type="color" class="legend-color-input" value="${item.color}" title="שנה צבע">
+                        <div class="legend-tag" data-color-id="${item.id}" data-color="${item.color}">
+                            <div class="legend-color-swatch" style="background:${item.color};" title="שנה צבע"></div>
                             <span class="legend-tag-text" style="background:${item.color};" contenteditable="true" spellcheck="false">${item.name}</span>
                         </div>
                     `;
@@ -510,8 +519,12 @@
             const tag = e.target.closest('.legend-tag');
             if (!tag) return;
 
-            // Don't select when clicking color input
-            if (e.target.classList.contains('legend-color-input')) return;
+            // Handle color swatch click - show palette
+            if (e.target.classList.contains('legend-color-swatch')) {
+                e.stopPropagation();
+                showColorPalette(e.target, tag, legendBar);
+                return;
+            }
 
             // Select this tag
             legendBar.querySelectorAll('.legend-tag').forEach(t => t.classList.remove('selected'));
@@ -523,22 +536,6 @@
             }
         });
 
-        // Color input change
-        legendBar.addEventListener('input', (e) => {
-            if (e.target.classList.contains('legend-color-input')) {
-                const tag = e.target.closest('.legend-tag');
-                const tagText = tag?.querySelector('.legend-tag-text');
-                if (tagText) {
-                    tagText.style.background = e.target.value;
-                    if (tag.classList.contains('selected')) {
-                        window.activeExamCustomColor = e.target.value;
-                    }
-                }
-                saveLegendConfig(legendBar);
-                updateChipColorsFromLegend(tag.dataset.colorId, e.target.value);
-            }
-        });
-
         // Text change
         legendBar.addEventListener('blur', (e) => {
             if (e.target.classList.contains('legend-tag-text')) {
@@ -547,14 +544,74 @@
         }, true);
     }
 
+    // Preset colors for the palette
+    const PRESET_COLORS = [
+        '#0ea5e9', // Sky blue
+        '#f97316', // Orange
+        '#22c55e', // Green
+        '#ef4444', // Red
+        '#a855f7', // Purple
+        '#eab308', // Yellow
+        '#64748b', // Slate
+        '#f472b6'  // Pink
+    ];
+
+    function showColorPalette(swatch, tag, legendBar) {
+        // Remove any existing palette
+        document.querySelectorAll('.color-palette-popup').forEach(p => p.remove());
+
+        const palette = document.createElement('div');
+        palette.className = 'color-palette-popup';
+
+        PRESET_COLORS.forEach(color => {
+            const colorBtn = document.createElement('div');
+            colorBtn.className = 'palette-color';
+            colorBtn.style.background = color;
+            colorBtn.onclick = (e) => {
+                e.stopPropagation();
+                applyColorToTag(tag, color, legendBar);
+                palette.remove();
+            };
+            palette.appendChild(colorBtn);
+        });
+
+        // Position the palette
+        swatch.style.position = 'relative';
+        swatch.appendChild(palette);
+
+        // Close palette on outside click
+        const closeHandler = (e) => {
+            if (!palette.contains(e.target) && e.target !== swatch) {
+                palette.remove();
+                document.removeEventListener('click', closeHandler);
+            }
+        };
+        setTimeout(() => document.addEventListener('click', closeHandler), 10);
+    }
+
+    function applyColorToTag(tag, color, legendBar) {
+        const swatch = tag.querySelector('.legend-color-swatch');
+        const tagText = tag.querySelector('.legend-tag-text');
+
+        if (swatch) swatch.style.background = color;
+        if (tagText) tagText.style.background = color;
+        tag.dataset.color = color;
+
+        if (tag.classList.contains('selected')) {
+            window.activeExamCustomColor = color;
+        }
+
+        saveLegendConfig(legendBar);
+        updateChipColorsFromLegend(tag.dataset.colorId, color);
+    }
+
     function saveLegendConfig(legendBar) {
         const config = [];
         legendBar.querySelectorAll('.legend-tag').forEach(tag => {
-            const colorInput = tag.querySelector('.legend-color-input');
             const textEl = tag.querySelector('.legend-tag-text');
             config.push({
                 id: tag.dataset.colorId,
-                color: colorInput?.value || '#888888',
+                color: tag.dataset.color || '#888888',
                 name: textEl?.textContent || ''
             });
         });
