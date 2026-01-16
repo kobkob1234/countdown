@@ -449,6 +449,27 @@
     };
 
     // Initialize the Exam Mode
+    function formatExamDates(container) {
+        if (container.dataset.datesFormatted) return;
+
+        const months = [1, 2, 3]; // Jan, Feb, Mar (approximate, based on table order)
+        const tables = container.querySelectorAll('table');
+
+        tables.forEach((table, index) => {
+            if (index >= months.length) return;
+            const monthNum = months[index];
+            table.querySelectorAll('.date').forEach(dateSpan => {
+                const dayText = dateSpan.textContent.trim();
+                // Avoid double formatting
+                if (!dayText.includes('/')) {
+                    dateSpan.textContent = `${dayText}/${monthNum}`;
+                }
+            });
+        });
+
+        container.dataset.datesFormatted = 'true';
+    }
+
     window.initExamMode = () => {
         overlay = document.getElementById('examModeOverlay');
         if (!overlay) return;
@@ -534,7 +555,9 @@
                 container.setAttribute('spellcheck', 'false');
 
                 // Enhance cells with functionality
+                // Enhance cells with functionality
                 setupExamInteractions(container);
+                formatExamDates(container);
 
                 overlay.addEventListener('input', () => {
                     saveExamState(container);
