@@ -79,6 +79,72 @@
     cursor: pointer;
 }
 
+/* Legend Bar */
+.exam-legend-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+    min-width: 200px;
+}
+
+.legend-tag {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 8px;
+    border-radius: 6px;
+    border: 2px solid transparent;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.legend-tag:hover {
+    border-color: #94a3b8;
+}
+
+.legend-tag.selected {
+    border-color: #0284c7;
+    box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.2);
+}
+
+.legend-color-input {
+    width: 20px;
+    height: 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    padding: 0;
+    background: transparent;
+}
+
+.legend-color-input::-webkit-color-swatch-wrapper {
+    padding: 0;
+}
+
+.legend-color-input::-webkit-color-swatch {
+    border-radius: 4px;
+    border: 1px solid rgba(0, 0, 0, 0.15);
+}
+
+.legend-tag-text {
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 0.85em;
+    font-weight: 500;
+    color: white;
+    min-width: 30px;
+    outline: none;
+}
+
+.legend-tag-text:focus {
+    outline: 2px dashed rgba(255, 255, 255, 0.6);
+    outline-offset: 2px;
+}
+
+
 /* Scoped styles based on user request */
 #examModeOverlay .container {
     max-width: 1400px;

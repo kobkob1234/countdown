@@ -196,6 +196,10 @@
                 e.stopPropagation();
                 const chip = document.createElement('div');
                 chip.className = `chip ${window.activeExamColor}`;
+                // Apply custom color if set from legend
+                if (window.activeExamCustomColor) {
+                    chip.style.background = window.activeExamCustomColor;
+                }
                 const label = document.createElement('span');
                 label.className = 'chip-label';
                 label.dataset.placeholder = 'הוסף אירוע';
@@ -362,32 +366,58 @@
 
             // Inject Controls if not present
             if (!overlay.querySelector('.exam-controls')) {
+                // Load saved legend colors and names
+                const savedLegend = JSON.parse(localStorage.getItem('examLegendConfig') || 'null');
+                const defaultLegend = [
+                    { id: 'stat-new', color: '#0ea5e9', name: 'סטטיסטיקה חדש' },
+                    { id: 'stat-review', color: '#f97316', name: 'חזרה' },
+                    { id: 'stat-test', color: '#0284c7', name: 'מבחן' },
+                    { id: 'econ', color: '#eab308', name: 'כלכלה' },
+                    { id: 'game', color: '#a855f7', name: 'משחקים' },
+                    { id: 'vacation', color: '#22c55e', name: 'חופש' },
+                    { id: 'rest', color: '#64748b', name: 'מנוחה' },
+                    { id: 'focus', color: '#0f766e', name: 'פוקוס' },
+                    { id: 'deadline', color: '#ef4444', name: 'דדליין' },
+                    { id: 'project', color: '#f472b6', name: 'פרויקט' },
+                    { id: 'admin', color: '#6366f1', name: 'סידורים' }
+                ];
+                const legendConfig = savedLegend || defaultLegend;
+
                 const controls = document.createElement('div');
                 controls.className = 'exam-controls';
-                controls.innerHTML = `
+
+                // Build legend HTML
+                let legendHTML = `
                     <button class="exam-btn active" onclick="setExamView(3)">3 חודשים</button>
                     <button class="exam-btn" onclick="setExamView(2)">חודשיים</button>
                     <button class="exam-btn" onclick="setExamView(1)">חודש הנוכחי</button>
                     <div class="exam-divider" aria-hidden="true"></div>
-                    <div class="color-picker-btn" style="background: #0ea5e9;" onclick="setActiveColor('stat-new', this)" title="חומר חדש"></div>
-                    <div class="color-picker-btn" style="background: #f97316;" onclick="setActiveColor('stat-review', this)" title="חזרה"></div>
-                    <div class="color-picker-btn" style="background: #0284c7;" onclick="setActiveColor('stat-test', this)" title="מבחן"></div>
-                    <div class="color-picker-btn" style="background: #eab308;" onclick="setActiveColor('econ', this)" title="כלכלה"></div>
-                    <div class="color-picker-btn" style="background: #a855f7;" onclick="setActiveColor('game', this)" title="משחקים"></div>
-                    <div class="color-picker-btn" style="background: #22c55e;" onclick="setActiveColor('vacation', this)" title="חופש"></div>
-                    <div class="color-picker-btn" style="background: #64748b;" onclick="setActiveColor('rest', this)" title="מנוחה"></div>
-                    <div class="color-picker-btn" style="background: #0f766e;" onclick="setActiveColor('focus', this)" title="פוקוס"></div>
-                    <div class="color-picker-btn" style="background: #ef4444;" onclick="setActiveColor('deadline', this)" title="דדליין"></div>
-                    <div class="color-picker-btn" style="background: #f472b6;" onclick="setActiveColor('project', this)" title="פרויקט"></div>
-                    <div class="color-picker-btn" style="background: #6366f1;" onclick="setActiveColor('admin', this)" title="סידורים"></div>
-                    <div class="exam-hint">לחיצה כפולה לעריכה • לחיצה לצביעה • גרירה לסידור מחדש</div>
+                    <div class="exam-legend-bar">
                 `;
+
+                legendConfig.forEach(item => {
+                    legendHTML += `
+                        <div class="legend-tag" data-color-id="${item.id}">
+                            <input type="color" class="legend-color-input" value="${item.color}" title="שנה צבע">
+                            <span class="legend-tag-text" style="background:${item.color};" contenteditable="true" spellcheck="false">${item.name}</span>
+                        </div>
+                    `;
+                });
+
+                legendHTML += `
+                    </div>
+                    <div class="exam-hint">לחיצה על תג לבחירה • לחיצה כפולה לעריכה • ניתן לשנות צבע וטקסט</div>
+                `;
+
+                controls.innerHTML = legendHTML;
+
                 // Insert before container
                 if (container) {
                     overlay.insertBefore(controls, container);
                 }
-                const firstColorBtn = controls.querySelector('.color-picker-btn');
-                if (firstColorBtn) setActiveColor(window.activeExamColor, firstColorBtn);
+
+                // Setup legend interactions
+                setupLegendInteractions(controls);
             }
 
             if (container) {
@@ -425,11 +455,100 @@
 
     // Global Interaction Helper
     window.activeExamColor = 'stat-new';
+    window.activeExamCustomColor = null; // For custom colors from legend
+
+    function setupLegendInteractions(controls) {
+        const legendBar = controls.querySelector('.exam-legend-bar');
+        if (!legendBar) return;
+
+        // Select first tag by default
+        const firstTag = legendBar.querySelector('.legend-tag');
+        if (firstTag) {
+            firstTag.classList.add('selected');
+            window.activeExamColor = firstTag.dataset.colorId;
+            const tagText = firstTag.querySelector('.legend-tag-text');
+            if (tagText) {
+                window.activeExamCustomColor = tagText.style.background;
+            }
+        }
+
+        legendBar.addEventListener('click', (e) => {
+            const tag = e.target.closest('.legend-tag');
+            if (!tag) return;
+
+            // Don't select when clicking color input
+            if (e.target.classList.contains('legend-color-input')) return;
+
+            // Select this tag
+            legendBar.querySelectorAll('.legend-tag').forEach(t => t.classList.remove('selected'));
+            tag.classList.add('selected');
+            window.activeExamColor = tag.dataset.colorId;
+            const tagText = tag.querySelector('.legend-tag-text');
+            if (tagText) {
+                window.activeExamCustomColor = tagText.style.background;
+            }
+        });
+
+        // Color input change
+        legendBar.addEventListener('input', (e) => {
+            if (e.target.classList.contains('legend-color-input')) {
+                const tag = e.target.closest('.legend-tag');
+                const tagText = tag?.querySelector('.legend-tag-text');
+                if (tagText) {
+                    tagText.style.background = e.target.value;
+                    if (tag.classList.contains('selected')) {
+                        window.activeExamCustomColor = e.target.value;
+                    }
+                }
+                saveLegendConfig(legendBar);
+                updateChipColorsFromLegend(tag.dataset.colorId, e.target.value);
+            }
+        });
+
+        // Text change
+        legendBar.addEventListener('blur', (e) => {
+            if (e.target.classList.contains('legend-tag-text')) {
+                saveLegendConfig(legendBar);
+            }
+        }, true);
+    }
+
+    function saveLegendConfig(legendBar) {
+        const config = [];
+        legendBar.querySelectorAll('.legend-tag').forEach(tag => {
+            const colorInput = tag.querySelector('.legend-color-input');
+            const textEl = tag.querySelector('.legend-tag-text');
+            config.push({
+                id: tag.dataset.colorId,
+                color: colorInput?.value || '#888888',
+                name: textEl?.textContent || ''
+            });
+        });
+        localStorage.setItem('examLegendConfig', JSON.stringify(config));
+    }
+
+    function updateChipColorsFromLegend(colorId, newColor) {
+        // Update existing chips with this color class to use the new custom color
+        const container = document.querySelector('#examModeOverlay .container');
+        if (!container) return;
+        container.querySelectorAll(`.chip.${colorId}`).forEach(chip => {
+            chip.style.background = newColor;
+        });
+        saveExamState(container);
+    }
 
     window.setActiveColor = (colorClass, btn) => {
         window.activeExamColor = colorClass;
-        document.querySelectorAll('.color-picker-btn').forEach(b => b.style.boxShadow = '0 0 0 1px #cbd5e1');
-        if (btn) btn.style.boxShadow = '0 0 0 3px #94a3b8';
+        window.activeExamCustomColor = null;
+        document.querySelectorAll('.legend-tag').forEach(t => t.classList.remove('selected'));
+        const tag = document.querySelector(`.legend-tag[data-color-id="${colorClass}"]`);
+        if (tag) {
+            tag.classList.add('selected');
+            const tagText = tag.querySelector('.legend-tag-text');
+            if (tagText) {
+                window.activeExamCustomColor = tagText.style.background;
+            }
+        }
     };
 
     window.setExamView = (months) => {
