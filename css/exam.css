@@ -499,3 +499,75 @@
     opacity: 0.5;
     border: 2px dashed #94a3b8;
 }
+
+/* Day Passed Feature */
+#examModeOverlay td .day-passed-toggle {
+    position: absolute;
+    bottom: 5px;
+    left: 5px;
+    width: 18px;
+    height: 18px;
+    border: 2px solid #cbd5e1;
+    border-radius: 4px;
+    background: white;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.2s, background 0.2s;
+    z-index: 10;
+}
+
+#examModeOverlay td:hover .day-passed-toggle {
+    opacity: 1;
+}
+
+#examModeOverlay td.day-passed .day-passed-toggle {
+    opacity: 1;
+    background: #fee2e2;
+    border-color: #ef4444;
+}
+
+#examModeOverlay td.day-passed .day-passed-toggle::after {
+    content: '✓';
+    color: #ef4444;
+    font-weight: bold;
+    font-size: 12px;
+}
+
+/* Red X Overlay */
+#examModeOverlay td .day-passed-x {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    pointer-events: none;
+    z-index: 5;
+    display: none;
+}
+
+#examModeOverlay td.day-passed .day-passed-x {
+    display: block;
+}
+
+#examModeOverlay td .day-passed-x::before,
+#examModeOverlay td .day-passed-x::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 100%;
+    height: 4px;
+    background: rgba(239, 68, 68, 0.5);
+    border-radius: 2px;
+}
+
+#examModeOverlay td .day-passed-x::before {
+    transform: translate(-50%, -50%) rotate(45deg);
+}
+
+#examModeOverlay td .day-passed-x::after {
+    transform: translate(-50%, -50%) rotate(-45deg);
+}

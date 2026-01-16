@@ -208,6 +208,25 @@
                 saveExamState(container);
             };
             td.appendChild(btn);
+
+            // Add day passed toggle checkbox if not present
+            if (!td.querySelector('.day-passed-toggle')) {
+                const passedToggle = document.createElement('div');
+                passedToggle.className = 'day-passed-toggle';
+                passedToggle.title = 'סמן יום שעבר';
+                passedToggle.onclick = (e) => {
+                    e.stopPropagation();
+                    toggleDayPassed(td, container);
+                };
+                td.appendChild(passedToggle);
+            }
+
+            // Add red X overlay if not present
+            if (!td.querySelector('.day-passed-x')) {
+                const xOverlay = document.createElement('div');
+                xOverlay.className = 'day-passed-x';
+                td.appendChild(xOverlay);
+            }
         });
 
         container.querySelectorAll('.chip').forEach(chip => {
@@ -461,6 +480,11 @@
         saveExamState(container);
     }
 
+    function toggleDayPassed(td, container) {
+        td.classList.toggle('day-passed');
+        saveExamState(container);
+    }
+
     function saveExamState(container) {
         if (!container) return;
         updateWeekProgress(container);
@@ -485,7 +509,7 @@
             node.removeAttribute('spellcheck');
         });
 
-        clone.querySelectorAll('.add-tile-btn, .chip-check, .chip-delete, .chip-drag-handle').forEach(el => el.remove());
+        clone.querySelectorAll('.add-tile-btn, .chip-check, .chip-delete, .chip-drag-handle, .day-passed-toggle, .day-passed-x').forEach(el => el.remove());
         localStorage.setItem('examModeContent', clone.innerHTML);
     }
 
