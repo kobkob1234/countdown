@@ -1291,6 +1291,11 @@
         font-size: 20px;
         border-radius: 12px;
         background: var(--day-other);
+        /* Fix mobile tap issues */
+        touch-action: manipulation;
+        -webkit-tap-highlight-color: rgba(0, 0, 0, 0.1);
+        position: relative;
+        z-index: 50;
       }
 
       .task-reminder-btn {
@@ -1299,12 +1304,24 @@
         font-size: 20px;
         border-radius: 12px;
         background: var(--day-other);
+        /* Fix mobile tap issues */
+        touch-action: manipulation;
+        -webkit-tap-highlight-color: rgba(0, 0, 0, 0.1);
+        position: relative;
+        z-index: 50;
       }
 
       .task-action-btn:active,
       .task-reminder-btn:active {
         transform: scale(0.92);
         background: var(--day-hover);
+      }
+
+      /* Ensure task-actions container allows clicks through */
+      .task-actions {
+        position: relative;
+        z-index: 40;
+        overflow: visible !important;
       }
 
 
