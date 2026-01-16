@@ -1,5 +1,5 @@
 // Bump cache version when precache list or fetch strategy changes
-const CACHE_NAME = 'countdown-push-v9';
+const CACHE_NAME = 'countdown-push-v10';
 const NOTIFY_DEDUPE_CACHE = 'countdown-notify-dedupe-v1';
 const NOTIFY_DEDUPE_TTL_MS = 1000 * 60 * 60 * 24 * 7;
 const PENDING_SUB_DB = 'countdown-pending-sub';
@@ -271,7 +271,7 @@ self.addEventListener('push', (event) => {
     const title = data.title || 'Task Reminder';
     const options = {
       body: data.body || '',
-      icon: data.icon || './icon-192.png',
+      icon: data.icon || new URL('./icon-192.png', self.location.origin).href,
       // badge: data.badge || './icon-192.png', // Removed to fix Android white square issue
       vibrate: data.vibrate || [200, 100, 200, 100, 200],
       tag: data.tag || 'reminder',

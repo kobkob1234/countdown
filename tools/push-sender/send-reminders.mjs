@@ -189,7 +189,11 @@ async function sendToSubscription({ userId, subKey, subscription, payload, dedup
 
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
     try {
-      await webpush.sendNotification(subscription, JSON.stringify(payload));
+      await webpush.sendNotification(subscription, JSON.stringify(payload), {
+        headers: {
+          'Urgency': 'high'
+        }
+      });
       await markSent(ref, { dedupeKey, attempt });
       if (attempt > 1) {
         console.log(`[push] Success on attempt ${attempt} for user=${userId}`);
