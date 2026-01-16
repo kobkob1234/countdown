@@ -270,6 +270,47 @@
                 if (!existingBanner.dataset.placeholder) {
                     existingBanner.dataset.placeholder = 'שם מבחן...';
                 }
+
+                // Ensure banner wrapper exists for controls
+                let bannerWrapper = existingBanner.closest('.exam-banner-wrapper');
+                if (!bannerWrapper) {
+                    bannerWrapper = document.createElement('div');
+                    bannerWrapper.className = 'exam-banner-wrapper';
+                    existingBanner.parentNode.insertBefore(bannerWrapper, existingBanner);
+                    bannerWrapper.appendChild(existingBanner);
+                }
+
+                // Add countdown toggle if not present
+                if (!bannerWrapper.querySelector('.exam-countdown-toggle')) {
+                    const countdownBtn = document.createElement('span');
+                    countdownBtn.className = 'exam-countdown-toggle';
+                    if (td.classList.contains('countdown-enabled')) {
+                        countdownBtn.classList.add('active');
+                    }
+                    countdownBtn.textContent = '⏰';
+                    countdownBtn.title = 'הפעל ספירה לאחור';
+                    countdownBtn.onclick = (e) => {
+                        e.stopPropagation();
+                        td.classList.toggle('countdown-enabled');
+                        countdownBtn.classList.toggle('active');
+                        saveExamState(container);
+                        updateExamCountdowns(container);
+                    };
+                    bannerWrapper.appendChild(countdownBtn);
+                }
+
+                // Add color button if not present
+                if (!bannerWrapper.querySelector('.exam-banner-color-btn')) {
+                    const colorBtn = document.createElement('span');
+                    colorBtn.className = 'exam-banner-color-btn';
+                    colorBtn.textContent = '🎨';
+                    colorBtn.title = 'שנה צבע';
+                    colorBtn.onclick = (e) => {
+                        e.stopPropagation();
+                        showExamBannerColorPicker(colorBtn, existingBanner, container);
+                    };
+                    bannerWrapper.appendChild(colorBtn);
+                }
             }
         });
 
@@ -770,6 +811,7 @@
         refreshExamCells(container);
         updateWeekProgress(container);
         setupDragAndDrop(container);
+        updateExamCountdowns(container);
 
         if (container.dataset.examHandlers !== 'true') {
             container.dataset.examHandlers = 'true';
@@ -822,8 +864,21 @@
                     showExamBannerColorPicker(colorBtn, banner, container);
                 };
 
+                const countdownBtn = document.createElement('span');
+                countdownBtn.className = 'exam-countdown-toggle';
+                countdownBtn.textContent = '⏰';
+                countdownBtn.title = 'הפעל ספירה לאחור';
+                countdownBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    td.classList.toggle('countdown-enabled');
+                    countdownBtn.classList.toggle('active');
+                    saveExamState(container);
+                    updateExamCountdowns(container);
+                };
+
                 bannerWrapper.appendChild(banner);
                 bannerWrapper.appendChild(colorBtn);
+                bannerWrapper.appendChild(countdownBtn);
 
                 // Insert after date span
                 const dateSpan = td.querySelector('.date');
@@ -840,9 +895,11 @@
             if (bannerWrapper) bannerWrapper.remove();
             const banner = td.querySelector('.exam-banner');
             if (banner) banner.remove();
+            td.classList.remove('countdown-enabled');
         }
 
         saveExamState(container);
+        updateExamCountdowns(container);
     }
 
     function showExamBannerColorPicker(btn, banner, container) {
@@ -878,6 +935,127 @@
         setTimeout(() => document.addEventListener('click', closeHandler), 10);
     }
 
+    function updateExamCountdowns(container) {
+        if (!container) return;
+
+        // Remove all existing countdown badges
+        container.querySelectorAll('.countdown-badge').forEach(b => b.remove());
+
+        // Find all exams with countdown enabled and parse their dates
+        const examsWithCountdown = [];
+        container.querySelectorAll('td.exam-day.countdown-enabled').forEach(examTd => {
+            const dateSpan = examTd.querySelector('.date');
+            if (!dateSpan) return;
+
+            const dayNum = parseInt(dateSpan.textContent.trim(), 10);
+            if (isNaN(dayNum)) return;
+
+            // Find month/year from table header
+            const table = examTd.closest('table');
+            if (!table) return;
+
+            const h2 = table.previousElementSibling;
+            if (!h2 || h2.tagName !== 'H2') return;
+
+            const monthYearText = h2.textContent.trim();
+            const examDate = parseHebrewDate(monthYearText, dayNum);
+            if (examDate) {
+                examsWithCountdown.push({ td: examTd, date: examDate });
+            }
+        });
+
+        if (examsWithCountdown.length === 0) return;
+
+        // Sort exams by date (closest first)
+        examsWithCountdown.sort((a, b) => a.date - b.date);
+
+        // For each day tile, find the closest upcoming exam and show countdown
+        container.querySelectorAll('td').forEach(td => {
+            if (td.closest('.week-goal-row')) return;
+
+            const dateSpan = td.querySelector('.date');
+            if (!dateSpan) return;
+
+            const dayNum = parseInt(dateSpan.textContent.trim(), 10);
+            if (isNaN(dayNum)) return;
+
+            const table = td.closest('table');
+            if (!table) return;
+
+            const h2 = table.previousElementSibling;
+            if (!h2 || h2.tagName !== 'H2') return;
+
+            const monthYearText = h2.textContent.trim();
+            const cellDate = parseHebrewDate(monthYearText, dayNum);
+            if (!cellDate) return;
+
+            // Find closest upcoming exam for this cell
+            let closestExam = null;
+            let minDays = Infinity;
+
+            for (const exam of examsWithCountdown) {
+                if (exam.date > cellDate) {
+                    const diffDays = Math.ceil((exam.date - cellDate) / (1000 * 60 * 60 * 24));
+                    if (diffDays < minDays) {
+                        minDays = diffDays;
+                        closestExam = exam;
+                    }
+                }
+            }
+
+            // Don't show badge on the exam day itself or days after
+            if (closestExam && minDays > 0) {
+                const badge = document.createElement('div');
+                badge.className = 'countdown-badge';
+                badge.textContent = minDays === 1 ? 'מחר יום' : `${minDays} ימים`;
+                td.appendChild(badge);
+            }
+        });
+    }
+
+    function parseHebrewDate(monthYearText, day) {
+        const hebrewMonths = {
+            'ינואר': 0, 'פברואר': 1, 'מרץ': 2, 'אפריל': 3,
+            'מאי': 4, 'יוני': 5, 'יולי': 6, 'אוגוסט': 7,
+            'ספטמבר': 8, 'אוקטובר': 9, 'נובמבר': 10, 'דצמבר': 11
+        };
+
+        const englishMonths = {
+            'january': 0, 'february': 1, 'march': 2, 'april': 3,
+            'may': 4, 'june': 5, 'july': 6, 'august': 7,
+            'september': 8, 'october': 9, 'november': 10, 'december': 11
+        };
+
+        const text = monthYearText.toLowerCase();
+        let month = -1;
+        let year = new Date().getFullYear();
+
+        for (const [name, idx] of Object.entries(hebrewMonths)) {
+            if (monthYearText.includes(name)) {
+                month = idx;
+                break;
+            }
+        }
+
+        if (month === -1) {
+            for (const [name, idx] of Object.entries(englishMonths)) {
+                if (text.includes(name)) {
+                    month = idx;
+                    break;
+                }
+            }
+        }
+
+        const yearMatch = monthYearText.match(/\d{4}/);
+        if (yearMatch) {
+            year = parseInt(yearMatch[0], 10);
+        }
+
+        if (month === -1) return null;
+
+        return new Date(year, month, day);
+    }
+
     function saveExamState(container) {
         if (!container) return;
         updateWeekProgress(container);
@@ -907,7 +1085,7 @@
             banner.removeAttribute('spellcheck');
         });
 
-        clone.querySelectorAll('.add-tile-btn, .chip-check, .chip-delete, .chip-drag-handle, .chip-color-swatch, .day-passed-toggle, .day-passed-x, .exam-day-toggle, .exam-banner-color-btn').forEach(el => el.remove());
+        clone.querySelectorAll('.add-tile-btn, .chip-check, .chip-delete, .chip-drag-handle, .chip-color-swatch, .day-passed-toggle, .day-passed-x, .exam-day-toggle, .exam-banner-color-btn, .exam-countdown-toggle, .countdown-badge').forEach(el => el.remove());
         localStorage.setItem('examModeContent', clone.innerHTML);
     }
 
