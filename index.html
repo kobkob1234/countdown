@@ -773,182 +773,6 @@
   </div>
 
   <!-- Task Edit Modal -->
-  <div class="task-edit-modal" id="taskEditModal">
-    <div class="task-edit-card" id="taskEditCard">
-      <input type="text" id="editTaskTitle" placeholder="Task title..." />
-      <textarea id="editTaskContent" placeholder="Add notes..."></textarea>
-
-      <div class="task-edit-section">
-        <div class="task-edit-section-title">Subject</div>
-        <select id="editTaskSubject"
-          style="padding: 12px 14px; border: 2px solid var(--border); border-radius: 10px; font-size: 14px; background: var(--input-bg); color: var(--text); outline: none; width: 100%; max-width: 250px; cursor: pointer;">
-          <option value="">No Subject</option>
-        </select>
-      </div>
-
-      <div class="task-edit-section">
-        <div class="task-edit-section-title">Priority</div>
-        <div class="priority-selector" id="editTaskPriority">
-          <div class="priority-option" data-priority="urgent">🔴 Urgent</div>
-          <div class="priority-option" data-priority="high">🟠 High</div>
-          <div class="priority-option" data-priority="medium">🟡 Medium</div>
-          <div class="priority-option" data-priority="low">🟢 Low</div>
-          <div class="priority-option" data-priority="none">⚪ None</div>
-        </div>
-      </div>
-
-      <div class="task-edit-section">
-        <div class="task-edit-section-title">Color <span
-            style="font-weight: 400; color: var(--muted); font-size: 12px;">(אופציונלי)</span></div>
-        <div class="task-color-picker" id="taskColorPicker">
-          <div class="task-color-option none selected" data-color="" title="ללא צבע - רק עדיפות">–</div>
-          <div class="task-color-option subject disabled" data-color="subject" title="צבע נושא">S</div>
-          <div class="task-color-option" data-color="#667eea" style="background: #667eea;" title="סגול"></div>
-          <div class="task-color-option" data-color="#ef4444" style="background: #ef4444;" title="אדום"></div>
-          <div class="task-color-option" data-color="#f97316" style="background: #f97316;" title="כתום"></div>
-          <div class="task-color-option" data-color="#eab308" style="background: #eab308;" title="צהוב"></div>
-          <div class="task-color-option" data-color="#22c55e" style="background: #22c55e;" title="ירוק"></div>
-          <div class="task-color-option" data-color="#06b6d4" style="background: #06b6d4;" title="ציאן"></div>
-          <div class="task-color-option" data-color="#8b5cf6" style="background: #8b5cf6;" title="סגול כהה"></div>
-          <div class="task-color-option" data-color="#ec4899" style="background: #ec4899;" title="ורוד"></div>
-        </div>
-      </div>
-
-      <div class="task-edit-section">
-        <div class="task-edit-section-title">Due Date</div>
-        <input type="datetime-local" id="editTaskDue"
-          style="padding: 12px 14px; border: 2px solid var(--border); border-radius: 10px; font-size: 14px; background: var(--input-bg); color: var(--text); outline: none; width: 100%;" />
-        <div class="quick-date-options">
-          <button class="quick-date-btn" data-action="today">היום</button>
-          <button class="quick-date-btn" data-action="tomorrow">מחר</button>
-          <button class="quick-date-btn" data-action="nextWeek">שבוע הבא</button>
-          <button class="quick-date-btn" data-action="clear"
-            style="margin-right: auto; color: var(--danger); border-color: var(--danger);">נקה</button>
-        </div>
-      </div>
-
-      <div class="task-edit-section">
-        <div class="task-edit-section-title">⏱️ Duration</div>
-        <select id="editTaskDuration"
-          style="padding: 12px 14px; border: 2px solid var(--border); border-radius: 10px; font-size: 14px; background: var(--input-bg); color: var(--text); outline: none; width: 100%; max-width: 250px; cursor: pointer;">
-          <option value="0">ללא משך</option>
-          <option value="15">15 דק׳</option>
-          <option value="30">30 דק׳</option>
-          <option value="45">45 דק׳</option>
-          <option value="60">שעה</option>
-          <option value="90">1.5 שעות</option>
-          <option value="120">שעתיים</option>
-          <option value="180">3 שעות</option>
-          <option value="240">4 שעות</option>
-          <option value="360">6 שעות</option>
-          <option value="480">8 שעות</option>
-        </select>
-      </div>
-
-      <div class="task-edit-section">
-        <div class="task-edit-section-title">Recurrence</div>
-        <div class="quick-recurrence-btns">
-          <button type="button" class="quick-recurrence-btn" data-target="edit" data-recurrence="daily">יומי</button>
-          <button type="button" class="quick-recurrence-btn" data-target="edit" data-recurrence="weekdays">ימי
-            חול</button>
-          <button type="button" class="quick-recurrence-btn" data-target="edit" data-recurrence="weekly">שבועי</button>
-          <button type="button" class="quick-recurrence-btn" data-target="edit"
-            data-recurrence="biweekly">דו-שבועי</button>
-          <button type="button" class="quick-recurrence-btn" data-target="edit" data-recurrence="monthly">חודשי</button>
-          <button type="button" class="quick-recurrence-btn" data-target="edit" data-recurrence="none">ללא חזרה</button>
-        </div>
-        <select id="editTaskRecurrence"
-          style="padding: 12px 14px; border: 2px solid var(--border); border-radius: 10px; font-size: 14px; background: var(--input-bg); color: var(--text); outline: none; width: 100%; max-width: 250px; cursor: pointer;">
-          <option value="none">ללא חזרה</option>
-          <option value="daily">יומי</option>
-          <option value="weekdays">ימי חול (א׳-ה׳)</option>
-          <option value="weekly">שבועי</option>
-          <option value="biweekly">דו-שבועי</option>
-          <option value="monthly">חודשי</option>
-          <option value="yearly">שנתי</option>
-          <option value="custom">⚙️ מותאם אישית...</option>
-        </select>
-        <div class="task-recurrence-custom hidden" id="editTaskRecurrenceCustomWrap"
-          style="display: flex; gap: 8px; margin-top: 10px;">
-          <input type="number" id="editTaskRecurrenceCustomValue" min="1" step="1"
-            style="width: 80px; padding: 10px 12px; border: 2px solid var(--border); border-radius: 10px; font-size: 14px; background: var(--input-bg); color: var(--text);"
-            placeholder="מספר" />
-          <select id="editTaskRecurrenceCustomUnit"
-            style="padding: 10px 12px; border: 2px solid var(--border); border-radius: 10px; font-size: 14px; background: var(--input-bg); color: var(--text);">
-            <option value="days">ימים</option>
-            <option value="weeks">שבועות</option>
-            <option value="months">חודשים</option>
-            <option value="years">שנים</option>
-          </select>
-        </div>
-      </div>
-
-      <div class="task-edit-section">
-        <div class="task-edit-section-title">Reminder</div>
-        <div class="quick-reminder-btns">
-          <button type="button" class="quick-reminder-btn" data-minutes="1">1
-            דקה</button>
-          <button type="button" class="quick-reminder-btn" data-minutes="5">5
-            דקות</button>
-          <button type="button" class="quick-reminder-btn" data-minutes="10">10
-            דקות</button>
-          <button type="button" class="quick-reminder-btn" data-minutes="15">15
-            דקות</button>
-          <button type="button" class="quick-reminder-btn" data-minutes="60">שעה</button>
-        </div>
-        <select id="editTaskReminder"
-          style="padding: 12px 14px; border: 2px solid var(--border); border-radius: 10px; font-size: 14px; background: var(--input-bg); color: var(--text); outline: none; width: 100%; max-width: 250px; cursor: pointer;">
-          <option value="0">🔕 ללא תזכורת</option>
-          <option value="1">🔔 דקה לפני</option>
-          <option value="5">🔔 5 דקות לפני</option>
-          <option value="10">🔔 10 דקות לפני</option>
-          <option value="15">🔔 15 דקות לפני</option>
-          <option value="30">🔔 30 דקות לפני</option>
-          <option value="60">🔔 שעה לפני</option>
-          <option value="1440">🔔 יום לפני</option>
-          <option value="custom">⚙️ מותאם אישית...</option>
-        </select>
-        <div class="task-reminder-custom hidden" id="editTaskReminderCustomWrap"
-          style="display: flex; gap: 8px; margin-top: 10px;">
-          <input type="number" id="editTaskReminderCustomValue" min="1" step="1"
-            style="width: 80px; padding: 10px 12px; border: 2px solid var(--border); border-radius: 10px; font-size: 14px; background: var(--input-bg); color: var(--text);"
-            placeholder="מספר" />
-          <select id="editTaskReminderCustomUnit"
-            style="padding: 10px 12px; border: 2px solid var(--border); border-radius: 10px; font-size: 14px; background: var(--input-bg); color: var(--text);">
-            <option value="minutes">דקות</option>
-            <option value="hours">שעות</option>
-            <option value="days">ימים</option>
-          </select>
-        </div>
-      </div>
-
-      <div class="task-edit-section">
-        <div class="task-edit-section-title">
-          Subtasks / Checklist
-        </div>
-        <div class="task-checklist" id="editTaskChecklist"></div>
-        <div class="checklist-add">
-          <input type="text" id="newChecklistItem" placeholder="Add subtask..." />
-          <button class="btn btn-primary" id="addChecklistItem" style="padding: 10px 16px;"
-            aria-label="הוסף פריט">+</button>
-        </div>
-      </div>
-
-      <div class="task-edit-footer">
-        <div style="display: flex; gap: 8px;">
-          <button class="task-action-btn" id="duplicateTaskBtn" title="Duplicate" aria-label="שכפל משימה">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
-              stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
-              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-            </svg>
-          </button>
-          <button class="task-action-btn delete" id="deleteTaskBtn" title="Delete" aria-label="מחק משימה">🗑️</button>
-        </div>
-        <button class="btn btn-primary" id="saveTaskBtn">Save</button>
-      </div>
-    </div>
-  </div>
 
   <!-- Pomodoro Overlay -->
   <div class="pomodoro-overlay" id="pomodoroOverlay">
@@ -11905,6 +11729,185 @@
       console.log('[Pull-to-Refresh] Initialized');
     })();
   </script>
+
+
+  <!-- Moved Task Edit Modal -->
+  <div class="task-edit-modal" id="taskEditModal">
+    <div class="task-edit-card" id="taskEditCard">
+      <input type="text" id="editTaskTitle" placeholder="Task title..." />
+      <textarea id="editTaskContent" placeholder="Add notes..."></textarea>
+
+      <div class="task-edit-section">
+        <div class="task-edit-section-title">Subject</div>
+        <select id="editTaskSubject"
+          style="padding: 12px 14px; border: 2px solid var(--border); border-radius: 10px; font-size: 14px; background: var(--input-bg); color: var(--text); outline: none; width: 100%; max-width: 250px; cursor: pointer;">
+          <option value="">No Subject</option>
+        </select>
+      </div>
+
+      <div class="task-edit-section">
+        <div class="task-edit-section-title">Priority</div>
+        <div class="priority-selector" id="editTaskPriority">
+          <div class="priority-option" data-priority="urgent">🔴 Urgent</div>
+          <div class="priority-option" data-priority="high">🟠 High</div>
+          <div class="priority-option" data-priority="medium">🟡 Medium</div>
+          <div class="priority-option" data-priority="low">🟢 Low</div>
+          <div class="priority-option" data-priority="none">⚪ None</div>
+        </div>
+      </div>
+
+      <div class="task-edit-section">
+        <div class="task-edit-section-title">Color <span
+            style="font-weight: 400; color: var(--muted); font-size: 12px;">(אופציונלי)</span></div>
+        <div class="task-color-picker" id="taskColorPicker">
+          <div class="task-color-option none selected" data-color="" title="ללא צבע - רק עדיפות">–</div>
+          <div class="task-color-option subject disabled" data-color="subject" title="צבע נושא">S</div>
+          <div class="task-color-option" data-color="#667eea" style="background: #667eea;" title="סגול"></div>
+          <div class="task-color-option" data-color="#ef4444" style="background: #ef4444;" title="אדום"></div>
+          <div class="task-color-option" data-color="#f97316" style="background: #f97316;" title="כתום"></div>
+          <div class="task-color-option" data-color="#eab308" style="background: #eab308;" title="צהוב"></div>
+          <div class="task-color-option" data-color="#22c55e" style="background: #22c55e;" title="ירוק"></div>
+          <div class="task-color-option" data-color="#06b6d4" style="background: #06b6d4;" title="ציאן"></div>
+          <div class="task-color-option" data-color="#8b5cf6" style="background: #8b5cf6;" title="סגול כהה"></div>
+          <div class="task-color-option" data-color="#ec4899" style="background: #ec4899;" title="ורוד"></div>
+        </div>
+      </div>
+
+      <div class="task-edit-section">
+        <div class="task-edit-section-title">Due Date</div>
+        <input type="datetime-local" id="editTaskDue"
+          style="padding: 12px 14px; border: 2px solid var(--border); border-radius: 10px; font-size: 14px; background: var(--input-bg); color: var(--text); outline: none; width: 100%;" />
+        <div class="quick-date-options">
+          <button class="quick-date-btn" data-action="today">היום</button>
+          <button class="quick-date-btn" data-action="tomorrow">מחר</button>
+          <button class="quick-date-btn" data-action="nextWeek">שבוע הבא</button>
+          <button class="quick-date-btn" data-action="clear"
+            style="margin-right: auto; color: var(--danger); border-color: var(--danger);">נקה</button>
+        </div>
+      </div>
+
+      <div class="task-edit-section">
+        <div class="task-edit-section-title">⏱️ Duration</div>
+        <select id="editTaskDuration"
+          style="padding: 12px 14px; border: 2px solid var(--border); border-radius: 10px; font-size: 14px; background: var(--input-bg); color: var(--text); outline: none; width: 100%; max-width: 250px; cursor: pointer;">
+          <option value="0">ללא משך</option>
+          <option value="15">15 דק׳</option>
+          <option value="30">30 דק׳</option>
+          <option value="45">45 דק׳</option>
+          <option value="60">שעה</option>
+          <option value="90">1.5 שעות</option>
+          <option value="120">שעתיים</option>
+          <option value="180">3 שעות</option>
+          <option value="240">4 שעות</option>
+          <option value="360">6 שעות</option>
+          <option value="480">8 שעות</option>
+        </select>
+      </div>
+
+      <div class="task-edit-section">
+        <div class="task-edit-section-title">Recurrence</div>
+        <div class="quick-recurrence-btns">
+          <button type="button" class="quick-recurrence-btn" data-target="edit" data-recurrence="daily">יומי</button>
+          <button type="button" class="quick-recurrence-btn" data-target="edit" data-recurrence="weekdays">ימי
+            חול</button>
+          <button type="button" class="quick-recurrence-btn" data-target="edit" data-recurrence="weekly">שבועי</button>
+          <button type="button" class="quick-recurrence-btn" data-target="edit"
+            data-recurrence="biweekly">דו-שבועי</button>
+          <button type="button" class="quick-recurrence-btn" data-target="edit" data-recurrence="monthly">חודשי</button>
+          <button type="button" class="quick-recurrence-btn" data-target="edit" data-recurrence="none">ללא חזרה</button>
+        </div>
+        <select id="editTaskRecurrence"
+          style="padding: 12px 14px; border: 2px solid var(--border); border-radius: 10px; font-size: 14px; background: var(--input-bg); color: var(--text); outline: none; width: 100%; max-width: 250px; cursor: pointer;">
+          <option value="none">ללא חזרה</option>
+          <option value="daily">יומי</option>
+          <option value="weekdays">ימי חול (א׳-ה׳)</option>
+          <option value="weekly">שבועי</option>
+          <option value="biweekly">דו-שבועי</option>
+          <option value="monthly">חודשי</option>
+          <option value="yearly">שנתי</option>
+          <option value="custom">⚙️ מותאם אישית...</option>
+        </select>
+        <div class="task-recurrence-custom hidden" id="editTaskRecurrenceCustomWrap"
+          style="display: flex; gap: 8px; margin-top: 10px;">
+          <input type="number" id="editTaskRecurrenceCustomValue" min="1" step="1"
+            style="width: 80px; padding: 10px 12px; border: 2px solid var(--border); border-radius: 10px; font-size: 14px; background: var(--input-bg); color: var(--text);"
+            placeholder="מספר" />
+          <select id="editTaskRecurrenceCustomUnit"
+            style="padding: 10px 12px; border: 2px solid var(--border); border-radius: 10px; font-size: 14px; background: var(--input-bg); color: var(--text);">
+            <option value="days">ימים</option>
+            <option value="weeks">שבועות</option>
+            <option value="months">חודשים</option>
+            <option value="years">שנים</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="task-edit-section">
+        <div class="task-edit-section-title">Reminder</div>
+        <div class="quick-reminder-btns">
+          <button type="button" class="quick-reminder-btn" data-minutes="1">1
+            דקה</button>
+          <button type="button" class="quick-reminder-btn" data-minutes="5">5
+            דקות</button>
+          <button type="button" class="quick-reminder-btn" data-minutes="10">10
+            דקות</button>
+          <button type="button" class="quick-reminder-btn" data-minutes="15">15
+            דקות</button>
+          <button type="button" class="quick-reminder-btn" data-minutes="60">שעה</button>
+        </div>
+        <select id="editTaskReminder"
+          style="padding: 12px 14px; border: 2px solid var(--border); border-radius: 10px; font-size: 14px; background: var(--input-bg); color: var(--text); outline: none; width: 100%; max-width: 250px; cursor: pointer;">
+          <option value="0">🔕 ללא תזכורת</option>
+          <option value="1">🔔 דקה לפני</option>
+          <option value="5">🔔 5 דקות לפני</option>
+          <option value="10">🔔 10 דקות לפני</option>
+          <option value="15">🔔 15 דקות לפני</option>
+          <option value="30">🔔 30 דקות לפני</option>
+          <option value="60">🔔 שעה לפני</option>
+          <option value="1440">🔔 יום לפני</option>
+          <option value="custom">⚙️ מותאם אישית...</option>
+        </select>
+        <div class="task-reminder-custom hidden" id="editTaskReminderCustomWrap"
+          style="display: flex; gap: 8px; margin-top: 10px;">
+          <input type="number" id="editTaskReminderCustomValue" min="1" step="1"
+            style="width: 80px; padding: 10px 12px; border: 2px solid var(--border); border-radius: 10px; font-size: 14px; background: var(--input-bg); color: var(--text);"
+            placeholder="מספר" />
+          <select id="editTaskReminderCustomUnit"
+            style="padding: 10px 12px; border: 2px solid var(--border); border-radius: 10px; font-size: 14px; background: var(--input-bg); color: var(--text);">
+            <option value="minutes">דקות</option>
+            <option value="hours">שעות</option>
+            <option value="days">ימים</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="task-edit-section">
+        <div class="task-edit-section-title">
+          Subtasks / Checklist
+        </div>
+        <div class="task-checklist" id="editTaskChecklist"></div>
+        <div class="checklist-add">
+          <input type="text" id="newChecklistItem" placeholder="Add subtask..." />
+          <button class="btn btn-primary" id="addChecklistItem" style="padding: 10px 16px;"
+            aria-label="הוסף פריט">+</button>
+        </div>
+      </div>
+
+      <div class="task-edit-footer">
+        <div style="display: flex; gap: 8px;">
+          <button class="task-action-btn" id="duplicateTaskBtn" title="Duplicate" aria-label="שכפל משימה">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+              stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+            </svg>
+          </button>
+          <button class="task-action-btn delete" id="deleteTaskBtn" title="Delete" aria-label="מחק משימה">🗑️</button>
+        </div>
+        <button class="btn btn-primary" id="saveTaskBtn">Save</button>
+      </div>
+    </div>
+  </div>
 
   <!-- Mobile Enhancements: Swipe Gestures, Haptic Feedback, Toast Notifications -->
   <script type="module">
