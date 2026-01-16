@@ -3283,7 +3283,7 @@
       if (alertTitle) alertTitle.textContent = title;
       if (alertMessage) alertMessage.textContent = message;
       eventAlertModal.classList.add('open');
-      if (playSound) playReminderSound();
+      // Native notification sound is used instead of custom playReminderSound()
     }
 
     async function triggerAlert(evt, nowMs = Date.now()) {
@@ -6432,8 +6432,7 @@
       const title = `📋 תזכורת משימה: ${task.title}`;
       const message = `מועד יעד: ${dateStr}`;
 
-      // Play sound using Web Audio API (works offline)
-      playReminderSound();
+      // Native notification sound is used instead of custom playReminderSound()
 
       // Show browser notification if permitted - use Service Worker for mobile compatibility
       showSystemNotification(title, {
