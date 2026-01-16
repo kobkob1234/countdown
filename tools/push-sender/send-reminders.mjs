@@ -64,6 +64,20 @@ function parseIsoMillis(iso) {
   return Number.isFinite(t) ? t : null;
 }
 
+// Helper to get offset for a specific date in a specific timezone
+function getZoneOffsetMs(dateObj, timeZone = 'Asia/Jerusalem') {
+  try {
+    const str = dateObj.toLocaleString('en-US', { timeZone, timeZoneName: 'longOffset' });
+    const match = str.match(/GMT([+-]\d+)(?::(\d+))?/);
+    if (!match) return 0;
+    const hours = Number(match[1]);
+    const minutes = Number(match[2] || 0);
+    return (hours * 60 + (hours < 0 ? -minutes : minutes)) * 60 * 1000;
+  } catch (e) {
+    return 2 * 60 * 60 * 1000; // Fallback to UTC+2 if something fails
+  }
+}
+
 function parsePlannerStart(block) {
   if (!block) return null;
   // Fix #7: Prefer ISO8601 startAt if available (includes timezone)
@@ -78,14 +92,16 @@ function parsePlannerStart(block) {
   if (!year || !month || !day) return null;
   const [h, m] = String(block.start).split(':').map(Number);
   if (!Number.isFinite(h)) return null;
-  // Use UTC to avoid server timezone interpretation
-  // Client stores local time as if it were UTC, so we parse it the same way
-  // This isn't perfect but is consistent across server runs
-  const dt = new Date(Date.UTC(year, month - 1, day, h, Number.isFinite(m) ? m : 0, 0, 0));
-  // Apply common timezone offset for Israel (UTC+2/+3)
-  // Better solution: store user's timezone in Firebase
-  const israelOffsetMs = 2 * 60 * 60 * 1000; // UTC+2 for standard time
-  return Number.isNaN(dt.getTime()) ? null : dt.getTime() - israelOffsetMs;
+
+  // We interpret the planner date/time to be in Israel Time (Wall Time).
+  // First, construct a UTC date with these exact components.
+  const wallDate = new Date(Date.UTC(year, month - 1, day, h, Number.isFinite(m) ? m : 0, 0, 0));
+
+  // Find the offset of this time in Israel
+  const israelOffsetMs = getZoneOffsetMs(wallDate);
+
+  // Subtract offset to get the actual UTC timestamp
+  return Number.isNaN(wallDate.getTime()) ? null : wallDate.getTime() - israelOffsetMs;
 }
 
 function formatPlannerWhen(startMs) {
