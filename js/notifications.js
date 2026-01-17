@@ -497,7 +497,7 @@ async function toggleNotificationsFromUser() {
     }
 
     if (!isPushSupported()) {
-        showSystemNotification("Notifications enabled ✅", { body: "You'll get reminders while this app is open.", requireInteraction: false }).catch(() => { });
+        showSystemNotification("Notifications enabled ✅", { body: "You'll get reminders while this app is open.", requireInteraction: false }).catch(e => console.warn('[Notification] Enable confirmation failed:', e.message));
         await refreshNotifyButton();
         return;
     }

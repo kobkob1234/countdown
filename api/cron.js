@@ -52,7 +52,11 @@ function getZoneOffsetMs(dateObj, timeZone = 'Asia/Jerusalem') {
         const minutes = Number(match[2] || 0);
         return (hours * 60 + (hours < 0 ? -minutes : minutes)) * 60 * 1000;
     } catch (e) {
-        return 2 * 60 * 60 * 1000; // Fallback to UTC+2
+        // DST-aware fallback for Israel: UTC+2 in winter, UTC+3 in summer
+        // Israel DST roughly runs from last Friday of March to last Sunday of October
+        const month = dateObj.getMonth(); // 0-indexed
+        const isLikelySummer = month >= 3 && month <= 9; // April (3) through October (9)
+        return isLikelySummer ? 3 * 60 * 60 * 1000 : 2 * 60 * 60 * 1000;
     }
 }
 
