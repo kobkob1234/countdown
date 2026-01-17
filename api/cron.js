@@ -122,6 +122,135 @@ function shouldTrigger(nowMs, targetMs, reminderMinutes) {
 }
 
 // ============================================
+// Recurrence Expansion (for recurring tasks)
+// ============================================
+
+/**
+ * Parse recurrence value into normalized format.
+ * Handles:
+ *   - String: "daily", "weekly", "biweekly", "monthly", "yearly", "weekdays"
+ *   - Object: { type: 'custom', interval: 3, unit: 'days' }
+ */
+function parseRecurrence(recurrence) {
+    if (!recurrence) return null;
+
+    // Handle custom object format
+    if (typeof recurrence === 'object' && recurrence.type === 'custom') {
+        const interval = parseInt(recurrence.interval, 10);
+        const unit = recurrence.unit;
+        if (Number.isFinite(interval) && interval > 0 && unit) {
+            return { type: 'custom', interval, unit };
+        }
+        return null;
+    }
+
+    // Handle string formats
+    if (typeof recurrence === 'string' && recurrence !== 'none') {
+        return { type: recurrence };
+    }
+
+    return null;
+}
+
+/**
+ * Advance a date by one recurrence interval.
+ */
+function advanceByRecurrence(date, parsed) {
+    const next = new Date(date);
+
+    switch (parsed.type) {
+        case 'daily':
+            next.setDate(next.getDate() + 1);
+            break;
+        case 'weekdays':
+            // Skip to next weekday (Sunday=0, Saturday=6 in Israel: Fri=5, Sat=6 are weekend)
+            do {
+                next.setDate(next.getDate() + 1);
+            } while (next.getDay() === 5 || next.getDay() === 6);
+            break;
+        case 'weekly':
+            next.setDate(next.getDate() + 7);
+            break;
+        case 'biweekly':
+            next.setDate(next.getDate() + 14);
+            break;
+        case 'monthly':
+            next.setMonth(next.getMonth() + 1);
+            break;
+        case 'yearly':
+            next.setFullYear(next.getFullYear() + 1);
+            break;
+        case 'custom':
+            if (!parsed.interval || !parsed.unit) return null;
+            switch (parsed.unit) {
+                case 'days':
+                    next.setDate(next.getDate() + parsed.interval);
+                    break;
+                case 'weeks':
+                    next.setDate(next.getDate() + (parsed.interval * 7));
+                    break;
+                case 'months':
+                    next.setMonth(next.getMonth() + parsed.interval);
+                    break;
+                case 'years':
+                    next.setFullYear(next.getFullYear() + parsed.interval);
+                    break;
+                default:
+                    return null;
+            }
+            break;
+        default:
+            return null;
+    }
+
+    return next;
+}
+
+/**
+ * Get all upcoming occurrences of a recurring task within the look-ahead window.
+ * @param {number} baseDateMs - Original due date in milliseconds
+ * @param {string|object} recurrence - Recurrence rule
+ * @param {number} fromMs - Start checking from this time
+ * @param {number} lookAheadDays - How many days ahead to look (default: 7)
+ * @returns {Date[]} Array of occurrence dates within the window
+ */
+function getUpcomingOccurrences(baseDateMs, recurrence, fromMs, lookAheadDays = 7) {
+    const parsed = parseRecurrence(recurrence);
+    if (!parsed || !Number.isFinite(baseDateMs)) return [];
+
+    const occurrences = [];
+    const maxMs = fromMs + (lookAheadDays * 24 * 60 * 60 * 1000);
+    let current = new Date(baseDateMs);
+
+    // Fast-forward past dates before the check window
+    // (but we need to account for reminder offset, so start from a bit earlier)
+    const earliestTrigger = fromMs - (lookAheadDays * 24 * 60 * 60 * 1000);
+    let iterations = 0;
+    const MAX_ITERATIONS = 10000; // Safety limit
+
+    while (current.getTime() < earliestTrigger && iterations < MAX_ITERATIONS) {
+        const next = advanceByRecurrence(current, parsed);
+        if (!next) break;
+        current = next;
+        iterations++;
+    }
+
+    // Collect occurrences within the look-ahead window
+    iterations = 0;
+    while (current.getTime() <= maxMs && iterations < MAX_ITERATIONS) {
+        if (current.getTime() >= earliestTrigger) {
+            occurrences.push(new Date(current));
+        }
+        const next = advanceByRecurrence(current, parsed);
+        if (!next) break;
+        current = next;
+        iterations++;
+    }
+
+    return occurrences;
+}
+
+// ============================================
 // Deduplication (using Firebase)
 // ============================================
 
@@ -307,28 +436,44 @@ async function runCheck() {
         }
     }
 
-    // Per-user tasks
+    // Per-user tasks (with recurring task support)
     for (const { userId, tokens } of users) {
         const tasks = await loadTasksForUser(userId);
         for (const task of tasks) {
-            if (task.completed) continue;
+            // For recurring tasks: always check (each occurrence is independent)
+            // For non-recurring tasks: skip if completed
+            if (task.completed && !task.recurrence) continue;
+
             const reminderMinutes = Number.parseInt(task.reminder || '0', 10) || 0;
-            const dueMs = parseIsoMillis(task.dueDate);
-            if (!shouldTrigger(nowMs, dueMs, reminderMinutes)) continue;
+            if (!reminderMinutes) continue;
 
-            const offset = formatReminderOffset(reminderMinutes);
-            const dedupeKey = `task|${userId}|${task.id}|${task.dueDate}|${reminderMinutes}`;
-            const payload = {
-                title: 'Task Reminder 📋',
-                body: `${task.title || 'Task'} is due in ${offset}`,
-                tag: `task-${task.id}`,
-                url: APP_URL,
-                completeUrl: `${APP_URL}?completeTask=${task.id}&user=${userId}`,
-            };
+            const baseDueMs = parseIsoMillis(task.dueDate);
+            if (!Number.isFinite(baseDueMs)) continue;
 
-            const result = await sendFCMToUser(userId, tokens, payload, dedupeKey);
-            if (result.skipped) skipped++;
-            else { sent += result.sent; failed += result.failed; }
+            // Get occurrences to check (single date for non-recurring, expanded for recurring)
+            const occurrences = task.recurrence
+                ? getUpcomingOccurrences(baseDueMs, task.recurrence, nowMs, 7)
+                : [new Date(baseDueMs)];
+
+            for (const occurrence of occurrences) {
+                const occurrenceMs = occurrence.getTime();
+                if (!shouldTrigger(nowMs, occurrenceMs, reminderMinutes)) continue;
+
+                const occurrenceKey = occurrence.toISOString();
+                const offset = formatReminderOffset(reminderMinutes);
+                const dedupeKey = `task|${userId}|${task.id}|${occurrenceKey}|${reminderMinutes}`;
+                const payload = {
+                    title: task.recurrence ? 'Recurring Task Reminder 🔄' : 'Task Reminder 📋',
+                    body: `${task.title || 'Task'} is due in ${offset}`,
+                    tag: `task-${task.id}-${occurrenceKey.slice(0, 10)}`,
+                    url: APP_URL,
+                    completeUrl: `${APP_URL}?completeTask=${task.id}&user=${userId}&occurrence=${encodeURIComponent(occurrenceKey)}`,
+                };
+
+                const result = await sendFCMToUser(userId, tokens, payload, dedupeKey);
+                if (result.skipped) skipped++;
+                else { sent += result.sent; failed += result.failed; }
+            }
         }
     }
 
@@ -359,7 +504,7 @@ async function runCheck() {
         }
     }
 
-    // Shared subject tasks
+    // Shared subject tasks (with recurring task support)
     for (const subject of sharedSubjects) {
         const subjectTasks = subject.tasks || {};
         const owner = subject.owner;
@@ -367,29 +512,45 @@ async function runCheck() {
         const allUserIds = [owner, ...Object.keys(members)].filter(Boolean);
 
         for (const [taskId, task] of Object.entries(subjectTasks)) {
-            if (!task || task.completed) continue;
+            // For recurring tasks: always check (each occurrence is independent)
+            // For non-recurring tasks: skip if completed
+            if (!task || (task.completed && !task.recurrence)) continue;
+
             const reminderMinutes = Number.parseInt(task.reminder || '0', 10) || 0;
-            const dueMs = parseIsoMillis(task.dueDate);
-            if (!shouldTrigger(nowMs, dueMs, reminderMinutes)) continue;
+            if (!reminderMinutes) continue;
 
-            const offset = formatReminderOffset(reminderMinutes);
+            const baseDueMs = parseIsoMillis(task.dueDate);
+            if (!Number.isFinite(baseDueMs)) continue;
 
-            for (const userId of allUserIds) {
-                const userEntry = users.find(u => u.userId === userId);
-                if (!userEntry) continue;
+            // Get occurrences to check (single date for non-recurring, expanded for recurring)
+            const occurrences = task.recurrence
+                ? getUpcomingOccurrences(baseDueMs, task.recurrence, nowMs, 7)
+                : [new Date(baseDueMs)];
 
-                const dedupeKey = `shared-task|${userId}|${subject.id}|${taskId}|${task.dueDate}|${reminderMinutes}`;
-                const payload = {
-                    title: 'Shared Task Reminder 📋',
-                    body: `${task.title || 'Task'} is due in ${offset}`,
-                    tag: `shared-task-${taskId}`,
-                    url: APP_URL,
-                    completeUrl: `${APP_URL}?completeTask=${taskId}&user=${userId}&sharedSubject=${subject.id}`,
-                };
+            for (const occurrence of occurrences) {
+                const occurrenceMs = occurrence.getTime();
+                if (!shouldTrigger(nowMs, occurrenceMs, reminderMinutes)) continue;
 
-                const result = await sendFCMToUser(userId, userEntry.tokens, payload, dedupeKey);
-                if (result.skipped) skipped++;
-                else { sent += result.sent; failed += result.failed; }
+                const occurrenceKey = occurrence.toISOString();
+                const offset = formatReminderOffset(reminderMinutes);
+
+                for (const userId of allUserIds) {
+                    const userEntry = users.find(u => u.userId === userId);
+                    if (!userEntry) continue;
+
+                    const dedupeKey = `shared-task|${userId}|${subject.id}|${taskId}|${occurrenceKey}|${reminderMinutes}`;
+                    const payload = {
+                        title: task.recurrence ? 'Shared Recurring Task 🔄' : 'Shared Task Reminder 📋',
+                        body: `${task.title || 'Task'} is due in ${offset}`,
+                        tag: `shared-task-${taskId}-${occurrenceKey.slice(0, 10)}`,
+                        url: APP_URL,
+                        completeUrl: `${APP_URL}?completeTask=${taskId}&user=${userId}&sharedSubject=${subject.id}&occurrence=${encodeURIComponent(occurrenceKey)}`,
+                    };
+
+                    const result = await sendFCMToUser(userId, userEntry.tokens, payload, dedupeKey);
+                    if (result.skipped) skipped++;
+                    else { sent += result.sent; failed += result.failed; }
+                }
             }
         }
     }
