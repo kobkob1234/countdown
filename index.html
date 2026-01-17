@@ -10918,10 +10918,41 @@
 
     // Handle Notification Actions (Complete Task)
     // Supports both personal tasks and shared subject tasks
-    const handleCompleteTask = async (taskId, sharedSubjectId = null) => {
+    // For recurring tasks with occurrenceDate: tracks per-instance completion instead of marking entire task complete
+    const handleCompleteTask = async (taskId, sharedSubjectId = null, occurrenceDate = null) => {
       // First try to find in local tasks array
       const task = tasks.find(t => t.id === taskId);
 
+      // Case 1: Recurring task with occurrence date - use per-instance tracking
+      if (task && task.recurrence && occurrenceDate) {
+        console.log('Completing recurring task occurrence:', taskId, occurrenceDate);
+        const completedOccurrences = task.completedOccurrences || [];
+
+        // Check if this occurrence is already completed
+        if (completedOccurrences.includes(occurrenceDate)) {
+          console.log('Occurrence already completed:', occurrenceDate);
+          if (typeof showToast === 'function') {
+            showToast('This occurrence was already completed');
+          }
+          return false;
+        }
+
+        // Add occurrence to completed list
+        completedOccurrences.push(occurrenceDate);
+        const { id, isOwn, isShared, ...cleanTask } = task;
+        saveTask(taskId, {
+          ...cleanTask,
+          completedOccurrences,
+          completed: false  // Never mark recurring task as fully complete
+        }, task.subject);
+
+        if (typeof showToast === 'function') {
+          showToast(`Occurrence completed!`);
+        }
+        return true;
+      }
+
+      // Case 2: Non-recurring task or no occurrence date - original behavior
       if (task && !task.completed) {
         console.log('Completing task from notification:', taskId);
         if (typeof maybeCreateRecurringTask === 'function') {
@@ -10936,15 +10967,38 @@
         return true;
       }
 
-      // If not found in local tasks and sharedSubjectId provided, update directly in Firebase
+      // Case 3: Shared task not in local array - query Firebase directly
       if (sharedSubjectId && taskId) {
         try {
           const taskRef = ref(db, `sharedSubjects/${sharedSubjectId}/tasks/${taskId}`);
           const snapshot = await get(taskRef);
           if (snapshot.exists()) {
             const taskData = snapshot.val();
+
+            // Shared recurring task with occurrence date
+            if (taskData.recurrence && occurrenceDate) {
+              const completedOccurrences = taskData.completedOccurrences || [];
+              if (completedOccurrences.includes(occurrenceDate)) {
+                if (typeof showToast === 'function') {
+                  showToast('This occurrence was already completed');
+                }
+                return false;
+              }
+              completedOccurrences.push(occurrenceDate);
+              await set(taskRef, {
+                ...taskData,
+                completedOccurrences,
+                completed: false
+              });
+              console.log('Completed shared recurring task occurrence:', taskId, occurrenceDate);
+              if (typeof showToast === 'function') {
+                showToast(`Occurrence completed!`);
+              }
+              return true;
+            }
+
+            // Shared non-recurring task
             if (!taskData.completed) {
-              // Handle recurrence for shared tasks before completing
               if (typeof maybeCreateRecurringTask === 'function') {
                 maybeCreateRecurringTask({
                   ...taskData,
@@ -10986,6 +11040,7 @@
     const completeTaskId = urlParams.get('completeTask');
     const completeTaskSharedSubject = urlParams.get('sharedSubject');
     const completeTaskUser = urlParams.get('user');
+    const completeTaskOccurrence = urlParams.get('occurrence');
 
     // Security: Only process completeTask if user matches or no user specified
     const shouldProcessComplete = !completeTaskUser || completeTaskUser === currentUser;
@@ -11004,11 +11059,12 @@
         // For shared tasks, try immediately since we can query Firebase directly
         if (completeTaskSharedSubject) {
           clearInterval(checkData);
-          taskCompleted = await handleCompleteTask(completeTaskId, completeTaskSharedSubject);
+          taskCompleted = await handleCompleteTask(completeTaskId, completeTaskSharedSubject, completeTaskOccurrence);
           const url = new URL(window.location);
           url.searchParams.delete('completeTask');
           url.searchParams.delete('user');
           url.searchParams.delete('sharedSubject');
+          url.searchParams.delete('occurrence');
           window.history.replaceState({}, '', url);
           if (!taskCompleted && typeof showToast === 'function') {
             showToast('Could not complete task - it may have been deleted or already completed.');
@@ -11018,11 +11074,12 @@
         // For personal tasks, wait for tasks array to load
         if (typeof tasks !== 'undefined' && tasks.length > 0) {
           clearInterval(checkData);
-          taskCompleted = await handleCompleteTask(completeTaskId);
+          taskCompleted = await handleCompleteTask(completeTaskId, null, completeTaskOccurrence);
           const url = new URL(window.location);
           url.searchParams.delete('completeTask');
           url.searchParams.delete('user');
           url.searchParams.delete('sharedSubject');
+          url.searchParams.delete('occurrence');
           window.history.replaceState({}, '', url);
           if (!taskCompleted && typeof showToast === 'function') {
             showToast('Task not found - it may have been deleted.');
@@ -11037,6 +11094,7 @@
           url.searchParams.delete('completeTask');
           url.searchParams.delete('user');
           url.searchParams.delete('sharedSubject');
+          url.searchParams.delete('occurrence');
           window.history.replaceState({}, '', url);
           if (typeof showToast === 'function') {
             showToast('Could not complete task - please try again.');
@@ -11060,10 +11118,12 @@
 
           // Handle 'complete' action - mark task as done
           if (action === 'complete' && completeUrl) {
-            const tid = new URL(completeUrl, window.location.origin).searchParams.get('completeTask');
-            const sharedSubject = new URL(completeUrl, window.location.origin).searchParams.get('sharedSubject');
+            const parsedUrl = new URL(completeUrl, window.location.origin);
+            const tid = parsedUrl.searchParams.get('completeTask');
+            const sharedSubject = parsedUrl.searchParams.get('sharedSubject');
+            const occurrence = parsedUrl.searchParams.get('occurrence');
             if (tid) {
-              handleCompleteTask(tid, sharedSubject || null);
+              handleCompleteTask(tid, sharedSubject || null, occurrence || null);
             }
             return;
           }
