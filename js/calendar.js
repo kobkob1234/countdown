@@ -1,4 +1,5 @@
 import { ctx } from './context.js';
+import { toDateKey } from './utils.js';
 
 export function initCalendar() {
   const calendarGrid = document.getElementById('calendarGrid');
@@ -73,12 +74,12 @@ export function initCalendar() {
   function renderCalendar() {
     if (!calendarGrid || !calendarTitle) return;
     const today = new Date();
-    const todayKey = ctx.toDateKey ? ctx.toDateKey(today) : today.toISOString().slice(0, 10);
+    const todayKey = toDateKey(today);
 
     // Build event map by date
     const eventsByDate = {};
     getActiveEvents().forEach(evt => {
-      const key = ctx.toDateKey ? ctx.toDateKey(evt.date) : new Date(evt.date).toISOString().slice(0, 10);
+      const key = toDateKey(evt.date);
       if (!eventsByDate[key]) eventsByDate[key] = [];
       eventsByDate[key].push(evt);
     });
@@ -171,7 +172,7 @@ export function initCalendar() {
       for (let i = 0; i < 7; i++) {
         const dayDate = new Date(start);
         dayDate.setDate(start.getDate() + i);
-        const dateKey = ctx.toDateKey ? ctx.toDateKey(dayDate) : dayDate.toISOString().slice(0, 10);
+        const dateKey = toDateKey(dayDate);
         const dayEvents = eventsByDate[dateKey] || [];
         const isToday = dateKey === todayKey;
         let classes = 'calendar-day';
@@ -198,7 +199,7 @@ export function initCalendar() {
       }
     } else if (view === 'day') {
       const focus = getEventCalendarFocusDate() || new Date();
-      const dateKey = ctx.toDateKey ? ctx.toDateKey(focus) : focus.toISOString().slice(0, 10);
+      const dateKey = toDateKey(focus);
       const dayEvents = eventsByDate[dateKey] || [];
       const dayOfWeek = focus.getDay();
       const hebrewDayNames = ['יום ראשון', 'יום שני', 'יום שלישי', 'יום רביעי', 'יום חמישי', 'יום שישי', 'שבת'];
@@ -264,14 +265,14 @@ export function initCalendar() {
     dayDrawerSubtitle.textContent = `${day} ב${ctx.HEBREW_MONTHS[month - 1]} ${year}`;
 
     // Get events for this day
-    const dayEvents = getActiveEvents().filter(evt => (ctx.toDateKey ? ctx.toDateKey(evt.date) : new Date(evt.date).toISOString().slice(0, 10)) === dateKey)
+    const dayEvents = getActiveEvents().filter(evt => toDateKey(evt.date) === dateKey)
       .sort((a, b) => new Date(a.date) - new Date(b.date));
 
     // Get tasks due this day
     const allTasks = Array.isArray(ctx.tasks) ? ctx.tasks : [];
     const dayTasks = allTasks.filter(task => {
       if (!task.dueDate) return false;
-      return (ctx.toDateKey ? ctx.toDateKey(task.dueDate) : new Date(task.dueDate).toISOString().slice(0, 10)) === dateKey;
+      return toDateKey(task.dueDate) === dateKey;
     }).sort((a, b) => {
       // Sort by completed, then priority
       if (a.completed !== b.completed) return a.completed ? 1 : -1;

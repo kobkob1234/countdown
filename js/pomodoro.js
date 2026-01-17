@@ -71,7 +71,10 @@ export function createPomodoro() {
       return fallback;
     };
 
-    const getTodayKey = () => new Date().toISOString().slice(0, 10);
+    const getTodayKey = () => {
+      const d = new Date();
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    };
     const daysBetween = (a, b) => Math.round((new Date(b) - new Date(a)) / 86400000);
 
     const loadCustom = () => {
