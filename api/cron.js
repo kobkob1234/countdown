@@ -14,6 +14,17 @@
 
 const admin = require('firebase-admin');
 const crypto = require('crypto');
+const webPush = require('web-push');
+
+// VAPID keys for web-push fallback (same keys as frontend)
+const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY || 'BKjozBDUJiKcBJEb6V3bFYhJkvCHPIhB4z0Sl_cAyNEWf53aTxG4VoFKs3VZDf1MV_e8u6FV2JNDIqb_mZv99xA';
+const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY || '';
+const VAPID_SUBJECT = process.env.VAPID_SUBJECT || 'mailto:kobeamit1@gmail.com';
+
+// Configure web-push if VAPID private key is available
+if (VAPID_PRIVATE_KEY) {
+    webPush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
+}
 
 // Initialize Firebase Admin (only once)
 if (!admin.apps.length) {
@@ -399,6 +410,85 @@ async function sendFCMToUser(userId, tokens, payload, dedupeKey) {
 }
 
 // ============================================
+// VAPID Web Push Sending (Fallback for legacy subscriptions)
+// ============================================
+
+async function sendVAPIDPush(userId, pushSubs, payload, dedupeKey) {
+    if (!VAPID_PRIVATE_KEY) {
+        console.warn('[VAPID] No private key configured - cannot send');
+        return { sent: 0, failed: 0 };
+    }
+
+    const subscriptions = Object.values(pushSubs || {});
+    if (subscriptions.length === 0) return { sent: 0, failed: 0 };
+
+    const sentHash = hashKey(dedupeKey);
+    const sentPath = `users/${userId}/pushSent/${sentHash}`;
+
+    const { committed, ref } = await claimOnce(sentPath);
+    if (!committed) return { skipped: true };
+
+    const pushPayload = JSON.stringify({
+        title: payload.title,
+        body: payload.body,
+        icon: `${APP_URL}icon-192.png`,
+        badge: `${APP_URL}icon-192.png`,
+        tag: payload.tag || 'reminder',
+        data: {
+            url: payload.url || APP_URL,
+            completeUrl: payload.completeUrl || '',
+            dedupeKey: dedupeKey
+        },
+        actions: payload.actions || [
+            { action: 'view', title: 'View' },
+            { action: 'complete', title: 'Done' }
+        ]
+    });
+
+    let sent = 0;
+    let failed = 0;
+
+    for (const entry of subscriptions) {
+        const sub = entry.sub || entry; // Handle wrapped or raw subscription
+        if (!sub || !sub.endpoint) continue;
+
+        try {
+            await webPush.sendNotification(sub, pushPayload);
+            sent++;
+        } catch (err) {
+            failed++;
+            // Remove expired subscriptions
+            if (err.statusCode === 410 || err.statusCode === 404) {
+                const key = Object.keys(pushSubs).find(k =>
+                    (pushSubs[k].sub?.endpoint || pushSubs[k].endpoint) === sub.endpoint
+                );
+                if (key) {
+                    db.ref(`users/${userId}/pushSubscriptions/${key}`).remove().catch(() => { });
+                }
+            }
+        }
+    }
+
+    await markSent(ref, { dedupeKey, successCount: sent });
+    return { sent, failed };
+}
+
+// Combined notification sender - tries FCM first, falls back to VAPID
+async function sendNotificationToUser(userId, tokens, pushSubs, payload, dedupeKey) {
+    // Try FCM first if tokens are available
+    if (tokens && tokens.length > 0) {
+        return sendFCMToUser(userId, tokens, payload, dedupeKey);
+    }
+
+    // Fall back to VAPID push if no FCM tokens but has push subscriptions
+    if (pushSubs && Object.keys(pushSubs).length > 0) {
+        return sendVAPIDPush(userId, pushSubs, payload, dedupeKey);
+    }
+
+    return { sent: 0, failed: 0 };
+}
+
+// ============================================
 // Main Handler
 // ============================================
 
@@ -433,15 +523,15 @@ async function runCheck() {
             actions: [{ action: 'view', title: 'View' }]
         };
 
-        for (const { userId, tokens } of users) {
-            const result = await sendFCMToUser(userId, tokens, payload, dedupeKey);
+        for (const { userId, tokens, pushSubs } of users) {
+            const result = await sendNotificationToUser(userId, tokens, pushSubs, payload, dedupeKey);
             if (result.skipped) skipped++;
             else { sent += result.sent; failed += result.failed; }
         }
     }
 
     // Per-user tasks (with recurring task support)
-    for (const { userId, tokens } of users) {
+    for (const { userId, tokens, pushSubs } of users) {
         const tasks = await loadTasksForUser(userId);
         for (const task of tasks) {
             // For recurring tasks: always check (each occurrence is independent)
@@ -474,7 +564,7 @@ async function runCheck() {
                     completeUrl: `${APP_URL}?completeTask=${task.id}&user=${userId}&occurrence=${encodeURIComponent(occurrenceKey)}`,
                 };
 
-                const result = await sendFCMToUser(userId, tokens, payload, dedupeKey);
+                const result = await sendNotificationToUser(userId, tokens, pushSubs, payload, dedupeKey);
                 if (result.skipped) skipped++;
                 else { sent += result.sent; failed += result.failed; }
             }
@@ -482,7 +572,7 @@ async function runCheck() {
     }
 
     // Per-user planner blocks
-    for (const { userId, tokens } of users) {
+    for (const { userId, tokens, pushSubs } of users) {
         const blocks = await loadPlannerBlocksForUser(userId);
         for (const block of blocks) {
             if (!block || block.completed) continue;
@@ -502,7 +592,7 @@ async function runCheck() {
                 actions: [{ action: 'view', title: 'View' }]
             };
 
-            const result = await sendFCMToUser(userId, tokens, payload, dedupeKey);
+            const result = await sendNotificationToUser(userId, tokens, pushSubs, payload, dedupeKey);
             if (result.skipped) skipped++;
             else { sent += result.sent; failed += result.failed; }
         }
@@ -551,7 +641,7 @@ async function runCheck() {
                         completeUrl: `${APP_URL}?completeTask=${taskId}&user=${userId}&sharedSubject=${subject.id}&occurrence=${encodeURIComponent(occurrenceKey)}`,
                     };
 
-                    const result = await sendFCMToUser(userId, userEntry.tokens, payload, dedupeKey);
+                    const result = await sendNotificationToUser(userId, userEntry.tokens, userEntry.pushSubs, payload, dedupeKey);
                     if (result.skipped) skipped++;
                     else { sent += result.sent; failed += result.failed; }
                 }
