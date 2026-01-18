@@ -16,8 +16,8 @@ const admin = require('firebase-admin');
 const crypto = require('crypto');
 const webPush = require('web-push');
 
-// VAPID keys for web-push fallback (same keys as frontend)
-const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY || 'BKjozBDUJiKcBJEb6V3bFYhJkvCHPIhB4z0Sl_cAyNEWf53aTxG4VoFKs3VZDf1MV_e8u6FV2JNDIqb_mZv99xA';
+// VAPID keys for web-push fallback (must match frontend notifications.js)
+const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY || 'BL-m24SrurFUNIQxH7S77r1yYShIiCibpw2CbtK8FwYATHzYiR0kQGKzWilEGRHyRK2jxqRPUR_RJoAVUgrO-24';
 const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY || '';
 const VAPID_SUBJECT = process.env.VAPID_SUBJECT || 'mailto:kobeamit1@gmail.com';
 
