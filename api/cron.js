@@ -275,8 +275,8 @@ async function claimOnce(path) {
     const SENDING_STALE_MS = 5 * 60 * 1000;
 
     const res = await ref.transaction((cur) => {
-        if (cur && cur.status === 'sent') return;
-        if (cur && cur.status === 'sending') {
+        if (cur?.status === 'sent') return;
+        if (cur?.status === 'sending') {
             const ts = Number(cur.ts) || 0;
             if (ts && (now - ts) < SENDING_STALE_MS) return;
         }
@@ -397,7 +397,9 @@ async function sendFCMToUser(userId, tokens, payload, dedupeKey) {
             response.responses.forEach((resp, idx) => {
                 if (!resp.success && resp.error?.code === 'messaging/registration-token-not-registered') {
                     const badToken = tokens[idx];
-                    db.ref(`users/${userId}/fcmTokens/${badToken}`).remove().catch(() => { });
+                    db.ref(`users/${userId}/fcmTokens/${badToken}`).remove().catch((err) => {
+                        console.warn('[FCM] Failed to remove invalid token:', badToken, err.message);
+                    });
                 }
             });
         }
@@ -450,7 +452,7 @@ async function sendVAPIDPush(userId, pushSubs, payload, dedupeKey) {
 
     for (const entry of subscriptions) {
         const sub = entry.sub || entry; // Handle wrapped or raw subscription
-        if (!sub || !sub.endpoint) continue;
+        if (!sub?.endpoint) continue;
 
         try {
             await webPush.sendNotification(sub, pushPayload);
@@ -463,7 +465,9 @@ async function sendVAPIDPush(userId, pushSubs, payload, dedupeKey) {
                     (pushSubs[k].sub?.endpoint || pushSubs[k].endpoint) === sub.endpoint
                 );
                 if (key) {
-                    db.ref(`users/${userId}/pushSubscriptions/${key}`).remove().catch(() => { });
+                    db.ref(`users/${userId}/pushSubscriptions/${key}`).remove().catch((err) => {
+                        console.warn('[VAPID] Failed to remove expired subscription:', key, err.message);
+                    });
                 }
             }
         }
