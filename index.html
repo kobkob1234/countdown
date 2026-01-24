@@ -5525,58 +5525,101 @@
     }
     ctx.renderTasks = renderTasks;
 
+    // Helper functions for renderTaskItem
+    function renderTaskDueDate(task, countdown) {
+      if (!task.dueDate) return `<span class="task-due add" data-due-iso="">+ תאריך</span>`;
+      const dueDate = new Date(task.dueDate);
+      const day = dueDate.getDate();
+      const month = dueDate.toLocaleString('he-IL', { month: 'short' });
+      const weekday = dueDate.toLocaleString('he-IL', { weekday: 'short' });
+      const time = dueDate.toLocaleString('he-IL', { hour: '2-digit', minute: '2-digit' });
+      const dateStr = `${weekday}, ${day} ${month}, ${time}`;
+      const urgencyClass = countdown?.overdue ? 'overdue' : (countdown?.urgency === 'soon' ? 'soon' : '');
+      return `<span class="task-due ${urgencyClass}" data-due-iso="${task.dueDate}">📅 ${dateStr}</span>`;
+    }
+
+    function renderTaskCountdown(task, countdown) {
+      if (!countdown) return '';
+      const countdownClass = countdown.overdue ? 'overdue' : (countdown.urgency === 'soon' ? 'soon' : '');
+      return `<span class="task-countdown ${countdownClass}" data-due="${task.dueDate}">${countdown.text}</span>`;
+    }
+
+    function renderTaskRecurrence(task) {
+      const recurrenceLabel = formatRecurrenceLabel(task.recurrence);
+      if (!recurrenceLabel) return '';
+      // Clear two-arrow repeat icon for better small-size rendering
+      const icon = `<svg viewBox="0 0 24 24" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" style="width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"></path><path d="M21 3v5h-5"></path><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"></path><path d="M8 16H3v5"></path></svg>`;
+      return `<span class="task-recurrence">${icon}${recurrenceLabel}</span>`;
+    }
+
+    function renderTaskReminder(task) {
+      const reminderMinutes = Number.parseInt(task.reminder, 10) || 0;
+      if (reminderMinutes <= 0) return '';
+      const reminderLabel = formatReminderOffset(reminderMinutes);
+      return `<span class="task-reminder">🔔 ${reminderLabel}</span>`;
+    }
+
+    function renderTaskDuration(task) {
+      const durationMinutes = Number.parseInt(task.duration, 10) || 0;
+      if (durationMinutes <= 0) return '';
+      const hours = Math.floor(durationMinutes / 60);
+      const mins = durationMinutes % 60;
+      let durationLabel = '';
+      if (hours > 0 && mins > 0) {
+        durationLabel = `${hours}:${mins.toString().padStart(2, '0')} שעות`;
+      } else if (hours > 0) {
+        durationLabel = `${hours} שעות`;
+      } else {
+        durationLabel = `${mins} דקות`;
+      }
+      return `<span class="task-duration">⏱️ ${durationLabel}</span>`;
+    }
+
+    function renderTaskSubjectBadge(task, showSubjectTag) {
+      const subjectData = task.subject ? subjects.find(s => s.id === task.subject) : null;
+      if (!subjectData) return '';
+      const shouldShow = (currentSubject === 'all') || showSubjectTag;
+      if (!shouldShow) return '';
+
+      // If it's a sub-subject and showing tag, show parent > child
+      let displayName = subjectData.name;
+      if (showSubjectTag && subjectData.parentId) {
+        const parent = subjects.find(s => s.id === subjectData.parentId);
+        if (parent) {
+          displayName = `${parent.name} › ${subjectData.name}`;
+        }
+      }
+      return `<span class="task-subject-badge" style="--subject-color: ${subjectData.color};">${escapeHtml(displayName)}</span>`;
+    }
+
+    function renderTaskSubtasks(task) {
+      if (!task.checklist || task.checklist.length === 0) return '';
+      const checked = task.checklist.filter(c => c.checked).length;
+      const total = task.checklist.length;
+      const maxShow = 3;
+      const items = task.checklist.slice(0, maxShow);
+
+      return `
+        <div class="task-subtasks">
+          <div class="task-subtask-progress">${checked}/${total} completed</div>
+          ${items.map((item, i) => `
+            <div class="task-subtask ${item.checked ? 'checked' : ''}">
+              <input type="checkbox" ${item.checked ? 'checked' : ''} data-index="${i}" />
+              <span>${escapeHtml(item.text)}</span>
+            </div>
+          `).join('')}
+          ${task.checklist.length > maxShow ? `<div style="font-size: 12px; color: var(--muted);">+${task.checklist.length - maxShow} more</div>` : ''}
+        </div>
+      `;
+    }
+
+    function renderTaskPriorityBadge(priority) {
+      return `<span class="task-priority-badge ${priority === 'none' ? 'muted' : ''}" data-priority="${priority}">${priority === 'none' ? 'קבע עדיפות' : PRIORITY_LABELS[priority]}</span>`;
+    }
+
     function renderTaskItem(task, showSubjectTag = false) {
       const priority = task.priority || 'none';
       const countdown = calcTaskCountdown(task.dueDate);
-
-      let dueDateHtml = `<span class="task-due add" data-due-iso="">+ תאריך</span>`;
-      if (task.dueDate) {
-        const dueDate = new Date(task.dueDate);
-        const day = dueDate.getDate();
-        const month = dueDate.toLocaleString('he-IL', { month: 'short' });
-        const weekday = dueDate.toLocaleString('he-IL', { weekday: 'short' });
-        const time = dueDate.toLocaleString('he-IL', { hour: '2-digit', minute: '2-digit' });
-        const dateStr = `${weekday}, ${day} ${month}, ${time}`;
-        const urgencyClass = countdown?.overdue ? 'overdue' : (countdown?.urgency === 'soon' ? 'soon' : '');
-        dueDateHtml = `<span class="task-due ${urgencyClass}" data-due-iso="${task.dueDate}">📅 ${dateStr}</span>`;
-      }
-
-      let countdownHtml = '';
-      if (countdown) {
-        const countdownClass = countdown.overdue ? 'overdue' : (countdown.urgency === 'soon' ? 'soon' : '');
-        countdownHtml = `<span class="task-countdown ${countdownClass}" data-due="${task.dueDate}">${countdown.text}</span>`;
-      }
-
-      let recurrenceHtml = '';
-      const recurrenceLabel = formatRecurrenceLabel(task.recurrence);
-      if (recurrenceLabel) {
-        // Clear two-arrow repeat icon for better small-size rendering
-        const icon = `<svg viewBox="0 0 24 24" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" style="width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"></path><path d="M21 3v5h-5"></path><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"></path><path d="M8 16H3v5"></path></svg>`;
-        recurrenceHtml = `<span class="task-recurrence">${icon}${recurrenceLabel}</span>`;
-      }
-
-      let reminderHtml = '';
-      const reminderMinutes = Number.parseInt(task.reminder, 10) || 0;
-      if (reminderMinutes > 0) {
-        const reminderLabel = formatReminderOffset(reminderMinutes);
-        reminderHtml = `<span class="task-reminder">🔔 ${reminderLabel}</span>`;
-      }
-
-      let durationHtml = '';
-      const durationMinutes = Number.parseInt(task.duration, 10) || 0;
-      if (durationMinutes > 0) {
-        const hours = Math.floor(durationMinutes / 60);
-        const mins = durationMinutes % 60;
-        let durationLabel = '';
-        if (hours > 0 && mins > 0) {
-          durationLabel = `${hours}:${mins.toString().padStart(2, '0')} שעות`;
-        } else if (hours > 0) {
-          durationLabel = `${hours} שעות`;
-        } else {
-          durationLabel = `${mins} דקות`;
-        }
-        durationHtml = `<span class="task-duration">⏱️ ${durationLabel}</span>`;
-      }
 
       const subjectData = task.subject ? subjects.find(s => s.id === task.subject) : null;
       const subjectColor = subjectData ? subjectData.color : '';
@@ -5593,46 +5636,6 @@
       const taskStyle = styleParts.length ? ` style="${styleParts.join(' ')}"` : '';
       const taskColorDot = resolvedTaskColor ? `<span class="task-color-dot" style="background: ${resolvedTaskColor};"></span>` : '';
 
-      // Subject badge - show when viewing "all" OR when explicitly requested (suggested tasks)
-      let subjectHtml = '';
-      if (subjectData) {
-        const shouldShow = (currentSubject === 'all') || showSubjectTag;
-        if (shouldShow) {
-          // If it's a sub-subject and showing tag, show parent > child
-          let displayName = subjectData.name;
-          if (showSubjectTag && subjectData.parentId) {
-            const parent = subjects.find(s => s.id === subjectData.parentId);
-            if (parent) {
-              displayName = `${parent.name} › ${subjectData.name}`;
-            }
-          }
-          subjectHtml = `<span class="task-subject-badge" style="--subject-color: ${subjectData.color};">${escapeHtml(displayName)}</span>`;
-        }
-      }
-
-      let subtasksHtml = '';
-      if (task.checklist && task.checklist.length > 0) {
-        const checked = task.checklist.filter(c => c.checked).length;
-        const total = task.checklist.length;
-        const maxShow = 3;
-        const items = task.checklist.slice(0, maxShow);
-
-        subtasksHtml = `
-        <div class="task-subtasks">
-          <div class="task-subtask-progress">${checked}/${total} completed</div>
-          ${items.map((item, i) => `
-            <div class="task-subtask ${item.checked ? 'checked' : ''}">
-              <input type="checkbox" ${item.checked ? 'checked' : ''} data-index="${i}" />
-              <span>${escapeHtml(item.text)}</span>
-            </div>
-          `).join('')}
-          ${task.checklist.length > maxShow ? `<div style="font-size: 12px; color: var(--muted);">+${task.checklist.length - maxShow} more</div>` : ''}
-        </div>
-      `;
-      }
-
-      const priorityBadge = `<span class="task-priority-badge ${priority === 'none' ? 'muted' : ''}" data-priority="${priority}">${priority === 'none' ? 'קבע עדיפות' : PRIORITY_LABELS[priority]}</span>`;
-
       return `
       <div class="task-item priority-${priority} ${task.completed ? 'completed' : ''}" data-id="${task.id}" draggable="true"${taskStyle}>
         <div class="task-checkbox" data-action="toggle">${task.completed ? '✓' : ''}</div>
@@ -5640,20 +5643,19 @@
           <div class="task-title-row">
             <span class="task-title">${escapeHtml(task.title)}</span>
             ${taskColorDot}
-            ${subjectHtml}
-            ${priorityBadge}
+            ${renderTaskSubjectBadge(task, showSubjectTag)}
+            ${renderTaskPriorityBadge(priority)}
           </div>
           <div class="task-meta">
-            ${dueDateHtml}
-            ${countdownHtml}
-            ${recurrenceHtml}
-            ${reminderHtml}
-            ${durationHtml}
+            ${renderTaskDueDate(task, countdown)}
+            ${renderTaskCountdown(task, countdown)}
+            ${renderTaskRecurrence(task)}
+            ${renderTaskReminder(task)}
+            ${renderTaskDuration(task)}
           </div>
-          ${subtasksHtml}
+          ${renderTaskSubtasks(task)}
         </div>
         <div class="task-actions">
-
           <div class="task-reminder-wrap">
             <button class="task-reminder-btn ${task.reminder ? 'has-reminder' : ''}" data-action="reminder" title="${task.reminder ? `תזכורת ${task.reminder} דקות לפני` : 'הגדר תזכורת'}">🔔</button>
             <div class="task-reminder-dropdown" data-task-id="${task.id}">
