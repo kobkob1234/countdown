@@ -835,19 +835,19 @@
           <!-- Settings Panel -->
           <div class="pomodoro-settings-panel">
             <div class="pomodoro-field">
-              <label>זמן מיקוד</label>
+              <label for="pomodoroFocus">זמן מיקוד</label>
               <input type="number" min="5" max="240" id="pomodoroFocus" value="25" />
             </div>
             <div class="pomodoro-field">
-              <label>הפסקה קצרה</label>
+              <label for="pomodoroBreak">הפסקה קצרה</label>
               <input type="number" min="3" max="60" id="pomodoroBreak" value="5" />
             </div>
             <div class="pomodoro-field">
-              <label>הפסקה ארוכה</label>
+              <label for="pomodoroLong">הפסקה ארוכה</label>
               <input type="number" min="5" max="90" id="pomodoroLong" value="15" />
             </div>
             <div class="pomodoro-field">
-              <label>הפסקה ארוכה כל כמה מחזורים</label>
+              <label for="pomodoroLongEvery">הפסקה ארוכה כל כמה מחזורים</label>
               <input type="number" min="1" max="8" id="pomodoroLongEvery" value="4" />
             </div>
           </div>
@@ -1083,24 +1083,24 @@
       <div class="planner-add-title" id="plannerModalTitle">➕ הוסף פעילות</div>
 
       <div class="planner-add-field">
-        <label class="planner-add-label">שם הפעילות *</label>
+        <label for="plannerBlockTitle" class="planner-add-label">שם הפעילות *</label>
         <input type="text" class="planner-add-input" id="plannerBlockTitle" placeholder="מה אתה מתכנן לעשות?"
           dir="auto" />
       </div>
 
       <div class="planner-add-row">
         <div class="planner-add-field">
-          <label class="planner-add-label">שעת התחלה</label>
+          <label for="plannerBlockStart" class="planner-add-label">שעת התחלה</label>
           <input type="time" class="planner-add-input" id="plannerBlockStart" style="direction: ltr;" />
         </div>
         <div class="planner-add-field">
-          <label class="planner-add-label">שעת סיום</label>
+          <label for="plannerBlockEnd" class="planner-add-label">שעת סיום</label>
           <input type="time" class="planner-add-input" id="plannerBlockEnd" style="direction: ltr;" />
         </div>
       </div>
 
       <div class="planner-add-field">
-        <label class="planner-add-label">משך זמן מהיר</label>
+        <div class="planner-add-label">משך זמן מהיר</div>
         <div class="planner-add-duration-presets">
           <button class="planner-duration-btn" data-duration="15">15 דק׳</button>
           <button class="planner-duration-btn" data-duration="30">30 דק׳</button>
@@ -1112,7 +1112,7 @@
       </div>
 
       <div class="planner-add-field">
-        <label class="planner-add-label">צבע (אופציונלי)</label>
+        <div class="planner-add-label">צבע (אופציונלי)</div>
         <div class="planner-color-picker" id="plannerColorPicker">
           <div class="planner-color-option selected" style="background: transparent; border: 2px dashed var(--border);"
             data-color="">✕</div>
@@ -1131,7 +1131,7 @@
       </div>
 
       <div class="planner-add-field">
-        <label class="planner-add-label">עדיפות</label>
+        <div class="planner-add-label">עדיפות</div>
         <div class="planner-add-priority" id="plannerPriorityPicker">
           <button class="planner-priority-option" data-priority="urgent">🔴 דחוף</button>
           <button class="planner-priority-option" data-priority="high">🟠 גבוהה</button>
@@ -1142,7 +1142,7 @@
       </div>
 
       <div class="planner-add-field">
-        <label class="planner-add-label">קטגוריה (אופציונלי)</label>
+        <label for="plannerBlockCategory" class="planner-add-label">קטגוריה (אופציונלי)</label>
         <select class="planner-add-input" id="plannerBlockCategory">
           <option value="">ללא קטגוריה</option>
           <option value="work">💼 עבודה</option>
@@ -1156,13 +1156,13 @@
       </div>
 
       <div class="planner-add-field">
-        <label class="planner-add-label">הערות (אופציונלי)</label>
+        <label for="plannerBlockNotes" class="planner-add-label">הערות (אופציונלי)</label>
         <textarea class="planner-add-input" id="plannerBlockNotes" rows="2" placeholder="הוסף פרטים נוספים..."
           dir="auto"></textarea>
       </div>
 
       <div class="planner-add-field">
-        <label class="planner-add-label">תזכורת</label>
+        <label for="plannerBlockReminder" class="planner-add-label">תזכורת</label>
         <select class="planner-add-input" id="plannerBlockReminder">
           <option value="0">ללא תזכורת</option>
           <option value="5">5 דקות לפני</option>

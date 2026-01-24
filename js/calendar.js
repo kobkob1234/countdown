@@ -843,7 +843,8 @@ export function initCalendar() {
     const lines = icsText.split(/\r?\n/);
     let currentEvent = null;
 
-    for (let i = 0; i < lines.length; i++) {
+    let i = 0;
+    while (i < lines.length) {
       let line = lines[i].trim();
 
       while (i + 1 < lines.length && /^[ \t]/.test(lines[i + 1])) {
@@ -886,6 +887,7 @@ export function initCalendar() {
           }
         }
       }
+      i++;
     }
 
     return events;
