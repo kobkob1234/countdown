@@ -555,7 +555,7 @@ export function initCalendar() {
   let pendingCalendarEvents = [];
 
   // Google Calendar API Configuration
-  const GOOGLE_API_KEY_DEFAULT = 'AIzaSyBH6g_Wz_RJKmEZL9xYWB6J2QaQ5f8z7hY';
+  const GOOGLE_API_KEY_DEFAULT = ''; // Set via UI Settings or Config
   const GOOGLE_CLIENT_ID_DEFAULT = '';
   const GOOGLE_SCOPES = 'https://www.googleapis.com/auth/calendar.readonly';
 
