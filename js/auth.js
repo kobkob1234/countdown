@@ -6,7 +6,7 @@ import { AppState, $ } from './state.js';
 
 // Function to sanitize username (remove special chars)
 export const cleanUsername = (name) => {
-    return (name || '').trim().toLowerCase().replace(/[^a-z0-9_-]/g, '');
+    return (name || '').trim().toLowerCase().replaceAll(/[^a-z0-9_-]/g, '');
 };
 
 // Initialize authentication

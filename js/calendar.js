@@ -862,7 +862,7 @@ export function initCalendar() {
       } else if (currentEvent) {
         const match = line.match(/^([^:;]+)(?:;([^:]+))?:(.+)$/);
         if (match) {
-          const [, key, params, value] = match;
+          const [, key, , value] = match;
 
           if (key === 'SUMMARY') {
             currentEvent.summary = value;
@@ -871,7 +871,7 @@ export function initCalendar() {
           } else if (key === 'DTEND') {
             currentEvent.end = parseICalDate(value);
           } else if (key === 'DESCRIPTION') {
-            currentEvent.description = value.replace(/\\n/g, '\n');
+            currentEvent.description = value.replaceAll('\\n', '\n');
           } else if (key === 'UID') {
             currentEvent.uid = value;
           } else if (key === 'RRULE') {

@@ -26,7 +26,7 @@ export const PRIORITY_LABELS_HE = { urgent: 'דחוף', high: 'גבוה', medium
 // String Utilities
 // ============================================
 
-export const escapeHtml = (str) => String(str || '').replace(/[&<>"']/g, (c) => ({
+export const escapeHtml = (str) => String(str || '').replaceAll(/[&<>"']/g, (c) => ({
     '&': '&amp;',
     '<': '&lt;',
     '>': '&gt;',
@@ -166,7 +166,7 @@ export const writeCache = (key, items, limit = 300) => {
 // ============================================
 
 export function getEventColor(id) {
-    const charCode = id.charCodeAt(id.length - 1);
+    const charCode = id.codePointAt(id.length - 1);
     return COLORS[charCode % COLORS.length];
 }
 
@@ -178,8 +178,8 @@ export async function sha256Base64Url(input) {
     const data = new TextEncoder().encode(String(input || ''));
     const digest = await crypto.subtle.digest('SHA-256', data);
     const bytes = Array.from(new Uint8Array(digest));
-    const b64 = btoa(String.fromCharCode(...bytes));
-    return b64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
+    const b64 = btoa(String.fromCodePoint(...bytes));
+    return b64.replaceAll('+', '-').replaceAll('/', '_').replaceAll(/=+$/g, '');
 }
 
 // ============================================
