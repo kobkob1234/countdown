@@ -523,45 +523,54 @@ async function processSharedEvents(sharedEvents, users, nowMs) {
     return { sent, skipped, failed };
 }
 
+async function processSingleTask(task, user, nowMs) {
+    let sent = 0, skipped = 0, failed = 0;
+    // For recurring tasks: always check (each occurrence is independent)
+    // For non-recurring tasks: skip if completed
+    if (task.completed && !task.recurrence) return { sent, skipped, failed };
+
+    const reminderMinutes = Number.parseInt(task.reminder || '0', 10) || 0;
+    if (!reminderMinutes) return { sent, skipped, failed };
+
+    const baseDueMs = parseIsoMillis(task.dueDate);
+    if (!Number.isFinite(baseDueMs)) return { sent, skipped, failed };
+
+    // Get occurrences to check (single date for non-recurring, expanded for recurring)
+    const occurrences = task.recurrence
+        ? getUpcomingOccurrences(baseDueMs, task.recurrence, nowMs, 7)
+        : [new Date(baseDueMs)];
+
+    for (const occurrence of occurrences) {
+        const occurrenceMs = occurrence.getTime();
+        if (!shouldTrigger(nowMs, occurrenceMs, reminderMinutes)) continue;
+
+        const occurrenceKey = occurrence.toISOString();
+        const offset = formatReminderOffset(reminderMinutes);
+        const dedupeKey = `task|${user.userId}|${task.id}|${occurrenceKey}|${reminderMinutes}`;
+        const payload = {
+            title: task.recurrence ? 'Recurring Task Reminder 🔄' : 'Task Reminder 📋',
+            body: `${task.title || 'Task'} is due in ${offset}`,
+            tag: `task-${task.id}-${occurrenceKey.slice(0, 10)}`,
+            url: APP_URL,
+            completeUrl: `${APP_URL}?completeTask=${task.id}&user=${user.userId}&occurrence=${encodeURIComponent(occurrenceKey)}`,
+        };
+
+        const result = await sendNotificationToUser(user.userId, user.tokens, user.pushSubs, payload, dedupeKey);
+        if (result.skipped) skipped++;
+        else { sent += result.sent; failed += result.failed; }
+    }
+    return { sent, skipped, failed };
+}
+
 async function processUserTasks(users, nowMs) {
     let sent = 0, skipped = 0, failed = 0;
-    for (const { userId, tokens, pushSubs } of users) {
-        const tasks = await loadTasksForUser(userId);
+    for (const user of users) {
+        const tasks = await loadTasksForUser(user.userId);
         for (const task of tasks) {
-            // For recurring tasks: always check (each occurrence is independent)
-            // For non-recurring tasks: skip if completed
-            if (task.completed && !task.recurrence) continue;
-
-            const reminderMinutes = Number.parseInt(task.reminder || '0', 10) || 0;
-            if (!reminderMinutes) continue;
-
-            const baseDueMs = parseIsoMillis(task.dueDate);
-            if (!Number.isFinite(baseDueMs)) continue;
-
-            // Get occurrences to check (single date for non-recurring, expanded for recurring)
-            const occurrences = task.recurrence
-                ? getUpcomingOccurrences(baseDueMs, task.recurrence, nowMs, 7)
-                : [new Date(baseDueMs)];
-
-            for (const occurrence of occurrences) {
-                const occurrenceMs = occurrence.getTime();
-                if (!shouldTrigger(nowMs, occurrenceMs, reminderMinutes)) continue;
-
-                const occurrenceKey = occurrence.toISOString();
-                const offset = formatReminderOffset(reminderMinutes);
-                const dedupeKey = `task|${userId}|${task.id}|${occurrenceKey}|${reminderMinutes}`;
-                const payload = {
-                    title: task.recurrence ? 'Recurring Task Reminder 🔄' : 'Task Reminder 📋',
-                    body: `${task.title || 'Task'} is due in ${offset}`,
-                    tag: `task-${task.id}-${occurrenceKey.slice(0, 10)}`,
-                    url: APP_URL,
-                    completeUrl: `${APP_URL}?completeTask=${task.id}&user=${userId}&occurrence=${encodeURIComponent(occurrenceKey)}`,
-                };
-
-                const result = await sendNotificationToUser(userId, tokens, pushSubs, payload, dedupeKey);
-                if (result.skipped) skipped++;
-                else { sent += result.sent; failed += result.failed; }
-            }
+            const result = await processSingleTask(task, user, nowMs);
+            sent += result.sent;
+            skipped += result.skipped;
+            failed += result.failed;
         }
     }
     return { sent, skipped, failed };
