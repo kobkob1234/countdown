@@ -1950,7 +1950,7 @@
 
     // Function to sanitize username (remove special chars)
     const cleanUsername = (name) => {
-      return (name || '').trim().toLowerCase().replace(/[^a-z0-9_-]/g, '');
+      return (name || '').trim().toLowerCase().replaceAll(/[^a-z0-9_-]/g, '');
     };
 
     // Login Process
@@ -1994,7 +1994,7 @@
     const HEBREW_DAYS = ['א׳', 'ב׳', 'ג׳', 'ד׳', 'ה׳', 'ו׳', 'ש׳'];
     const HEBREW_MONTHS = ['ינואר', 'פברואר', 'מרץ', 'אפריל', 'מאי', 'יוני', 'יולי', 'אוגוסט', 'ספטמבר', 'אוקטובר', 'נובמבר', 'דצמבר'];
 
-    const escapeHtml = (str) => String(str || '').replace(/[&<>"']/g, (c) => ({
+    const escapeHtml = (str) => String(str || '').replaceAll(/[&<>"']/g, (c) => ({
       '&': '&amp;',
       '<': '&lt;',
       '>': '&gt;',
@@ -2319,10 +2319,10 @@
 
     const urlBase64ToUint8Array = (base64String) => {
       const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
-      const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+      const base64 = (base64String + padding).replaceAll('-', '+').replaceAll('_', '/');
       const rawData = atob(base64);
       const outputArray = new Uint8Array(rawData.length);
-      for (let i = 0; i < rawData.length; ++i) outputArray[i] = rawData.charCodeAt(i);
+      for (let i = 0; i < rawData.length; ++i) outputArray[i] = rawData.codePointAt(i);
       return outputArray;
     };
 
@@ -2409,8 +2409,8 @@
       const data = new TextEncoder().encode(String(input || ''));
       const digest = await crypto.subtle.digest('SHA-256', data);
       const bytes = Array.from(new Uint8Array(digest));
-      const b64 = btoa(String.fromCharCode(...bytes));
-      return b64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
+      const b64 = btoa(String.fromCodePoint(...bytes));
+      return b64.replaceAll('+', '-').replaceAll('/', '_').replaceAll(/=+$/g, '');
     }
 
     async function savePushSubscriptionForUser(userId, subscription) {
@@ -8209,7 +8209,7 @@
       let recurrence = null;
 
       // Helper: Normalize text by removing ALL spaces and converting to lowercase
-      const normalize = (str) => str.replace(/\s+/g, '').toLowerCase();
+      const normalize = (str) => str.replaceAll(/\s+/g, '').toLowerCase();
 
       // ============ STEP 1: EXTRACT & REMOVE PRIORITY (Hebrew only) ============
       const priorityPatterns = [
@@ -8513,9 +8513,9 @@
       // METHOD 1: Hashtag with hierarchy #parent/child or #parent/child/grandchild
       const hierarchyMatch = title.match(/#([^#\s]+)\/([^#\s\/]+)(?:\/([^#\s\/]+))?/);
       if (hierarchyMatch) {
-        const parentSearch = normalize(hierarchyMatch[1].replace(/_/g, ' '));
-        const childSearch = normalize(hierarchyMatch[2].replace(/_/g, ' '));
-        const grandchildSearch = hierarchyMatch[3] ? normalize(hierarchyMatch[3].replace(/_/g, ' ')) : null;
+        const parentSearch = normalize(hierarchyMatch[1].replaceAll('_', ' '));
+        const childSearch = normalize(hierarchyMatch[2].replaceAll('_', ' '));
+        const grandchildSearch = hierarchyMatch[3] ? normalize(hierarchyMatch[3].replaceAll('_', ' ')) : null;
 
         // Find parent
         const parent = sortedSubjects.find(s =>
@@ -8570,7 +8570,7 @@
           if (!matchedSubject) {
             const underscoreMatch = afterHash.match(/^([^\s]+)/);
             if (underscoreMatch) {
-              const searchText = underscoreMatch[1].replace(/_/g, ' ');
+              const searchText = underscoreMatch[1].replaceAll('_', ' ');
               const searchNorm = normalize(searchText);
               // Search in ALL subjects (including children)
               matchedSubject = sortedSubjects.find(s => normalize(s.name) === searchNorm);
@@ -8594,7 +8594,7 @@
                 // Calculate exact length to remove
                 let matchLength = 0;
                 let subjectCharIdx = 0;
-                const subjectNoSpaces = subject.name.replace(/\s+/g, '').toLowerCase();
+                const subjectNoSpaces = subject.name.replaceAll(/\s+/g, '').toLowerCase();
 
                 for (let i = 0; i < afterHash.length; i++) {
                   const char = afterHash[i].toLowerCase();
@@ -8626,7 +8626,7 @@
           // Create flexible regex that allows optional spaces between letters
           const words = subject.name.split(/\s+/);
           const pattern = words.map(w =>
-            w.split('').map(c => c.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('\\s*')
+            w.split('').map(c => c.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('\\s*')
           ).join('\\s+');
           const boundary = "(?:^|\\s|[\\.,!\\?;:\\-\\(\\)\\[\\]{}\"'])";
           const regex = new RegExp(`${boundary}(${pattern})(?=$|\\s|[\\.,!\\?;:\\-\\(\\)\\[\\]{}\"'])`, 'i');
@@ -8649,8 +8649,8 @@
       }
 
       // ============ STEP 5: FINAL CLEANUP ============
-      title = title.replace(/#\s*/g, ' ');
-      title = title.replace(/\s+/g, ' ').trim();
+      title = title.replaceAll(/#\s*/g, ' ');
+      title = title.replaceAll(/\s+/g, ' ').trim();
       title = title.replace(/^[,.:;\-]+\s*/, '').replace(/\s*[,.:;\-]+$/, '').trim();
 
       return { title, dueDate, priority, subjectId, reminderMinutes, recurrence };
@@ -8658,12 +8658,12 @@
 
     // Legacy helper - kept for compatibility
     function normalizeForComparison(text) {
-      return text.toLowerCase().replace(/\s+/g, '').trim();
+      return text.toLowerCase().replaceAll(/\s+/g, '').trim();
     }
 
     // Helper function to find best matching subject (used by some methods)
     function findBestSubjectMatch(searchTerm, sortedSubjects) {
-      const normalize = (str) => str.replace(/\s+/g, '').toLowerCase();
+      const normalize = (str) => str.replaceAll(/\s+/g, '').toLowerCase();
       const searchNorm = normalize(searchTerm);
       const searchLower = searchTerm.toLowerCase().trim(); // Define searchLower for fuzzy matching
 

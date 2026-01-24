@@ -1064,7 +1064,7 @@ export function initCalendar() {
             : new Date(originalStart.getTime() + 60 * 60 * 1000);
 
           const duration = Math.max(15, Math.round((originalEnd - originalStart) / (1000 * 60)));
-          const dateSuffix = occStart.toISOString().split('T')[0].replace(/-/g, '');
+          const dateSuffix = occStart.toISOString().split('T')[0].replaceAll('-', '');
           const eventColor = evt.color || stringToColor(evt.summary || 'event');
 
           expandedEvents.push({
