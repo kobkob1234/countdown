@@ -634,7 +634,7 @@ export function syncNotifiedMapToIds(map, ids, storageKey) {
 export function getLastActiveTimestamp() {
     const keys = getScopedNotifyKeys();
     const raw = localStorage.getItem(keys.LAST_ACTIVE);
-    const parsed = raw ? Number(raw) : NaN;
+    const parsed = raw ? Number(raw) : Number.NaN;
     return Number.isFinite(parsed) ? parsed : Date.now();
 }
 

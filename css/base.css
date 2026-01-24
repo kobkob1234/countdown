@@ -84,7 +84,7 @@
     }
 
     .icon {
-      font-family: "Material Symbols Rounded";
+      font-family: "Material Symbols Rounded", sans-serif;
       font-style: normal;
       font-weight: 500;
       font-size: 20px;

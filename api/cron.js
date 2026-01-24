@@ -151,7 +151,7 @@ function parseRecurrence(recurrence) {
 
     // Handle custom object format
     if (typeof recurrence === 'object' && recurrence.type === 'custom') {
-        const interval = parseInt(recurrence.interval, 10);
+        const interval = Number.parseInt(recurrence.interval, 10);
         const unit = recurrence.unit;
         if (Number.isFinite(interval) && interval > 0 && unit) {
             return { type: 'custom', interval, unit };

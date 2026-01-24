@@ -847,7 +847,8 @@ export function initCalendar() {
       let line = lines[i].trim();
 
       while (i + 1 < lines.length && /^[ \t]/.test(lines[i + 1])) {
-        line += lines[++i].trim();
+        i++;
+        line += lines[i].trim();
       }
 
       if (line === 'BEGIN:VEVENT') {
@@ -926,7 +927,7 @@ export function initCalendar() {
       // Parse COUNT
       let count = -1;
       const countPart = parts.find(p => p.startsWith('COUNT='));
-      if (countPart) count = parseInt(countPart.split('=')[1], 10);
+      if (countPart) count = Number.parseInt(countPart.split('=')[1], 10);
 
       const freqPart = parts.find(p => p.startsWith('FREQ='));
       if (!freqPart) return null;
@@ -934,7 +935,7 @@ export function initCalendar() {
 
       let interval = 1;
       const intervalPart = parts.find(p => p.startsWith('INTERVAL='));
-      if (intervalPart) interval = parseInt(intervalPart.split('=')[1], 10);
+      if (intervalPart) interval = Number.parseInt(intervalPart.split('=')[1], 10);
 
       // Parse BYDAY (Example: MO,TU)
       let byDay = [];
@@ -1136,7 +1137,7 @@ export function initCalendar() {
     importCalendarEventsBtn.onclick = async () => {
       if (!calendarEventsContent) return;
       const checkboxes = calendarEventsContent.querySelectorAll('input[type="checkbox"]:checked');
-      const selectedIndices = Array.from(checkboxes).map(cb => parseInt(cb.dataset.eventIdx, 10));
+      const selectedIndices = Array.from(checkboxes).map(cb => Number.parseInt(cb.dataset.eventIdx, 10));
 
       if (selectedIndices.length === 0) {
         showCalendarStatus('Please select at least one event to import', 'error');

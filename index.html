@@ -500,11 +500,11 @@
       <div class="task-manager-body">
         <div class="quick-add-task" id="quickAddTask">
           <input type="text" id="newTaskTitle" placeholder="הוסף משימה... (לדוגמה: להגיש תרגיל מחר 23:00 #מתמטיקה דחוף)"
-            dir="auto" />
+            dir="auto" aria-label="הוסף משימה חדשה" />
           <div class="nl-hint">
             💡 <strong>קצרת דרך:</strong> כתוב בשפה טבעית ולחץ Enter!
-            <span class="nl-hint-toggle"
-              onclick="document.getElementById('nlExamples').classList.toggle('show')">דוגמאות ▼</span>
+            <button type="button" class="nl-hint-toggle"
+              onclick="document.getElementById('nlExamples').classList.toggle('show')">דוגמאות ▼</button>
             <div class="nl-hint-examples" id="nlExamples">
               <div style="border-bottom: 2px solid var(--accent); padding-bottom: 12px; margin-bottom: 12px;">
                 <strong style="color: var(--accent); font-size: 13px;">📅 תאריכים ושעות:</strong>
@@ -2839,9 +2839,9 @@
     const getReminderMinutesFromUI = () => {
       if (!eventReminder) return 0;
       const raw = eventReminder.value;
-      if (raw !== 'custom') return parseInt(raw, 10) || 0;
+      if (raw !== 'custom') return Number.parseInt(raw, 10) || 0;
 
-      const value = parseInt(eventReminderCustomValue?.value, 10);
+      const value = Number.parseInt(eventReminderCustomValue?.value, 10);
       const unit = eventReminderCustomUnit?.value || 'minutes';
       if (!Number.isFinite(value) || value <= 0) return null;
 
@@ -2856,7 +2856,7 @@
 
     const setReminderUIFromMinutes = (minutes) => {
       if (!eventReminder) return;
-      const min = parseInt(minutes, 10) || 0;
+      const min = Number.parseInt(minutes, 10) || 0;
       const optionExists = Array.from(eventReminder.options).some(o => o.value === String(min));
 
       if (min > 0 && !optionExists) {
@@ -3564,7 +3564,7 @@
         onSave: (val, original) => {
           const parsed = parseLocal(val);
           const evt = events.find(e => e.id === eventId);
-          if (!evt || !parsed || isNaN(parsed.getTime())) {
+          if (!evt || !parsed || Number.isNaN(parsed.getTime())) {
             el.textContent = original;
             return;
           }
@@ -3587,7 +3587,7 @@
         getActiveEvents().forEach(evt => {
           const isImported = evt.externalId || (evt.notes && evt.notes.includes('[Imported'));
           if (isImported && !evt.reminderUserSet) return;
-          const reminderMinutes = parseInt(evt.reminder, 10) || 0;
+          const reminderMinutes = Number.parseInt(evt.reminder, 10) || 0;
           if (!reminderMinutes) return;
           const reminderKey = `${evt.date || ''}|${reminderMinutes}`;
           const entry = notifiedEvents.get(evt.id);
@@ -3680,7 +3680,7 @@
       }
 
       const parsedDate = parseLocal(dateValue);
-      if (!parsedDate || isNaN(parsedDate.getTime())) {
+      if (!parsedDate || Number.isNaN(parsedDate.getTime())) {
         alert("Invalid date");
         return;
       }
@@ -4540,19 +4540,19 @@
     function getTaskReminderMinutes(selectEl, customValueEl, customUnitEl) {
       if (!selectEl) return 0;
       if (selectEl.value === 'custom') {
-        const val = parseInt(customValueEl?.value, 10) || 0;
+        const val = Number.parseInt(customValueEl?.value, 10) || 0;
         const unit = customUnitEl?.value || 'minutes';
         if (unit === 'hours') return val * 60;
         if (unit === 'days') return val * 1440;
         return val;
       }
-      return parseInt(selectEl.value, 10) || 0;
+      return Number.parseInt(selectEl.value, 10) || 0;
     }
 
     // Set reminder UI from minutes value
     function setTaskReminderUI(selectEl, customWrapEl, customValueEl, customUnitEl, minutes) {
       if (!selectEl) return;
-      const min = parseInt(minutes, 10) || 0;
+      const min = Number.parseInt(minutes, 10) || 0;
       const optionExists = Array.from(selectEl.options).some(o => o.value === String(min) && o.value !== 'custom');
 
       if (min > 0 && !optionExists) {
@@ -4585,7 +4585,7 @@
         if (value === 'none') return { type: 'none' };
         if (value.startsWith('custom:')) {
           const parts = value.split(':');
-          const interval = parseInt(parts[1], 10);
+          const interval = Number.parseInt(parts[1], 10);
           const unit = parts[2];
           if (Number.isFinite(interval) && interval > 0 && RECURRENCE_UNIT_LABELS[unit]) {
             return { type: 'custom', interval, unit };
@@ -4595,7 +4595,7 @@
         return { type: value };
       }
       if (typeof value === 'object' && value.type === 'custom') {
-        const interval = parseInt(value.interval, 10);
+        const interval = Number.parseInt(value.interval, 10);
         const unit = value.unit;
         if (Number.isFinite(interval) && interval > 0 && RECURRENCE_UNIT_LABELS[unit]) {
           return { type: 'custom', interval, unit };
@@ -4634,7 +4634,7 @@
         const val = selectEl.value && selectEl.value !== 'none' ? selectEl.value : null;
         return { value: val };
       }
-      const interval = parseInt(customValueEl?.value, 10);
+      const interval = Number.parseInt(customValueEl?.value, 10);
       const unit = customUnitEl?.value || 'days';
       if (!Number.isFinite(interval) || interval < 1 || !RECURRENCE_UNIT_LABELS[unit]) {
         return { value: null, error: 'אנא הזן מרווח חזרה מותאם אישית (מספר חיובי).' };
@@ -4701,7 +4701,7 @@
     // Quick reminder button handlers
     document.querySelectorAll('.quick-reminder-btn').forEach(btn => {
       btn.addEventListener('click', () => {
-        const minutes = parseInt(btn.dataset.minutes, 10) || 0;
+        const minutes = Number.parseInt(btn.dataset.minutes, 10) || 0;
         if (editTaskReminder) {
           setTaskReminderUI(editTaskReminder, editTaskReminderCustomWrap, editTaskReminderCustomValue, editTaskReminderCustomUnit, minutes);
         }
@@ -5097,7 +5097,7 @@
       const recurrence = recurrenceResult.value;
       const reminder = getTaskReminderMinutes(newTaskReminder, newTaskReminderCustomValue, newTaskReminderCustomUnit);
       const durationEl = document.getElementById('newTaskDuration');
-      const duration = durationEl ? parseInt(durationEl.value, 10) || 0 : 0;
+      const duration = durationEl ? Number.parseInt(durationEl.value, 10) || 0 : 0;
 
       const defaultSubjectId = getDefaultSubjectId();
       const selectedSubjectId = newTaskSubject ? (newTaskSubject.value || defaultSubjectId) : defaultSubjectId;
@@ -5556,14 +5556,14 @@
       }
 
       let reminderHtml = '';
-      const reminderMinutes = parseInt(task.reminder, 10) || 0;
+      const reminderMinutes = Number.parseInt(task.reminder, 10) || 0;
       if (reminderMinutes > 0) {
         const reminderLabel = formatReminderOffset(reminderMinutes);
         reminderHtml = `<span class="task-reminder">🔔 ${reminderLabel}</span>`;
       }
 
       let durationHtml = '';
-      const durationMinutes = parseInt(task.duration, 10) || 0;
+      const durationMinutes = Number.parseInt(task.duration, 10) || 0;
       if (durationMinutes > 0) {
         const hours = Math.floor(durationMinutes / 60);
         const mins = durationMinutes % 60;
@@ -5735,7 +5735,7 @@
           let newDue = null;
           if (input.value) {
             const parsed = parseLocal(input.value);
-            if (parsed && !isNaN(parsed.getTime())) {
+            if (parsed && !Number.isNaN(parsed.getTime())) {
               newDue = parsed.toISOString();
             } else {
               // invalid -> keep original display
@@ -5990,7 +5990,7 @@
           } else if (isSubtaskCheckbox) {
             // Subtask checkbox
             e.stopPropagation();
-            const idx = parseInt(isSubtaskCheckbox.dataset.index);
+            const idx = Number.parseInt(isSubtaskCheckbox.dataset.index);
             if (task.checklist && task.checklist[idx] !== undefined) {
               task.checklist[idx].checked = isSubtaskCheckbox.checked;
               const { id, isOwn, isShared, ...cleanTask } = task;
@@ -6250,7 +6250,7 @@
 
         tasks.forEach(task => {
           if (task.completed) return;
-          const reminderMinutes = parseInt(task.reminder, 10) || 0;
+          const reminderMinutes = Number.parseInt(task.reminder, 10) || 0;
           if (!reminderMinutes) return;
           if (!task.dueDate) return;
           const reminderKey = `${task.dueDate}|${reminderMinutes}`;
@@ -6454,7 +6454,7 @@
       // Add handlers
       editTaskChecklist.querySelectorAll('input[type="checkbox"]').forEach(cb => {
         cb.addEventListener('change', () => {
-          const idx = parseInt(cb.dataset.index);
+          const idx = Number.parseInt(cb.dataset.index);
           editingTask.checklist[idx].checked = cb.checked;
           renderEditChecklist();
         });
@@ -6462,7 +6462,7 @@
 
       editTaskChecklist.querySelectorAll('.task-action-btn.delete').forEach(btn => {
         btn.addEventListener('click', () => {
-          const idx = parseInt(btn.dataset.index);
+          const idx = Number.parseInt(btn.dataset.index);
           editingTask.checklist.splice(idx, 1);
           renderEditChecklist();
         });
@@ -6537,7 +6537,7 @@
 
       // Update duration
       if (editTaskDuration) {
-        const durationValue = parseInt(editTaskDuration.value, 10) || 0;
+        const durationValue = Number.parseInt(editTaskDuration.value, 10) || 0;
         if (durationValue > 0) {
           editingTask.duration = durationValue;
         } else {
@@ -7850,7 +7850,7 @@
       // Add remove handlers
       sharedWithList.querySelectorAll('.remove-share').forEach(btn => {
         btn.onclick = () => {
-          const idx = parseInt(btn.dataset.idx);
+          const idx = Number.parseInt(btn.dataset.idx);
           pendingSharedUsers.splice(idx, 1);
           renderSharedUsersList();
         };
@@ -8281,8 +8281,8 @@
             const firstMatch = match[0];
             const timeMatch = firstMatch.match(/(\d{1,2})[:](\d{2})/);
             if (timeMatch) {
-              hours = parseInt(timeMatch[1]);
-              minutes = parseInt(timeMatch[2]);
+              hours = Number.parseInt(timeMatch[1]);
+              minutes = Number.parseInt(timeMatch[2]);
 
               // Validate time
               if (hours >= 0 && hours < 24 && minutes >= 0 && minutes < 60) {
@@ -8375,7 +8375,7 @@
             const firstMatch = match[0];
             const dayMatch = firstMatch.match(/(\d{1,2})/);
             if (dayMatch) {
-              const day = parseInt(dayMatch[1]);
+              const day = Number.parseInt(dayMatch[1]);
               if (day >= 1 && day <= 31) {
                 dueDate = new Date(today.getFullYear(), monthIdx, day, hours, minutes, 0, 0);
 
@@ -8399,8 +8399,8 @@
         if (match) {
           const firstMatch = match[0];
           const parts = firstMatch.split(/[\/\.]/);
-          const day = parseInt(parts[0]);
-          const month = parseInt(parts[1]) - 1; // JS months are 0-indexed
+          const day = Number.parseInt(parts[0]);
+          const month = Number.parseInt(parts[1]) - 1; // JS months are 0-indexed
 
           if (day >= 1 && day <= 31 && month >= 0 && month <= 11) {
             dueDate = new Date(today.getFullYear(), month, day, hours, minutes, 0, 0);
@@ -8429,7 +8429,7 @@
         const reminderPattern = new RegExp(`${reminderWordPattern}\\s*[:：-]?\\s*(?:בעוד\\s*)?(\\d+)?\\s*(דק(?:ות)?['׳]?|דקה|דקות|שעה|שעות|יום|ימים)\\s*(?:לפני|מראש)?`, 'i');
         const reminderMatch = title.match(reminderPattern);
         if (reminderMatch) {
-          const value = parseInt(reminderMatch[1], 10) || 1;
+          const value = Number.parseInt(reminderMatch[1], 10) || 1;
           const unitRaw = (reminderMatch[2] || '').replace(/[׳']/g, '');
           if (unitRaw.startsWith('דק')) {
             reminderMinutes = value;
@@ -8446,7 +8446,7 @@
       const customRecurrencePattern = /כל\s*(\d+)\s*(ימים|יום|שבועות|שבוע|חודשים|חודש|שנים|שנה)/i;
       const customMatch = title.match(customRecurrencePattern);
       if (customMatch) {
-        const interval = parseInt(customMatch[1], 10);
+        const interval = Number.parseInt(customMatch[1], 10);
         const unitRaw = customMatch[2];
         let unit = null;
         if (unitRaw.startsWith('יום')) unit = 'days';
@@ -9204,7 +9204,7 @@
 
           plannerBlocks.forEach(block => {
             if (!block || block.completed) return;
-            const reminderMinutes = parseInt(block.reminder, 10) || 0;
+            const reminderMinutes = Number.parseInt(block.reminder, 10) || 0;
             if (!reminderMinutes) return;
             const blockTime = parsePlannerBlockDateTime(block);
             if (!blockTime) return;
@@ -9371,7 +9371,7 @@
           el.addEventListener('click', (e) => {
             if (Date.now() < suppressBlockClickUntil) return;
             if (e.target.closest('.planner-block')) return;
-            const hour = parseInt(el.dataset.hour);
+            const hour = Number.parseInt(el.dataset.hour);
             openAddModal(hour);
           });
 
@@ -9388,7 +9388,7 @@
             el.classList.remove('drop-target');
             const taskId = e.dataTransfer.getData('text/plain');
             if (taskId) {
-              handleTaskDrop(taskId, parseInt(el.dataset.hour));
+              handleTaskDrop(taskId, Number.parseInt(el.dataset.hour));
             }
           });
         });
@@ -10472,7 +10472,7 @@
         const notes = blockNotes ? blockNotes.value.trim() : '';
         const repeat = blockRepeat ? blockRepeat.checked : false;
         const blockReminder = modal.querySelector('#plannerBlockReminder');
-        const reminder = blockReminder ? parseInt(blockReminder.value) || 0 : 0;
+        const reminder = blockReminder ? Number.parseInt(blockReminder.value) || 0 : 0;
         const selectedPriority = priorityPicker ? priorityPicker.querySelector('.selected') : null;
         const priority = selectedPriority ? selectedPriority.dataset.priority : 'medium';
         const colorPicker = modal.querySelector('#plannerColorPicker');
@@ -10808,7 +10808,7 @@
               durationBtns.forEach(b => b.classList.remove('active'));
               btn.classList.add('active');
 
-              const duration = parseInt(btn.dataset.duration);
+              const duration = Number.parseInt(btn.dataset.duration);
               const startInput = refs.addModal.querySelector('#plannerBlockStart');
               const endInput = refs.addModal.querySelector('#plannerBlockEnd');
 
@@ -10864,13 +10864,13 @@
         if (!initialized) init();
 
         const dateObj = new Date(date);
-        if (isNaN(dateObj.getTime())) throw new Error('Invalid date');
+        if (Number.isNaN(dateObj.getTime())) throw new Error('Invalid date');
         const dateKey = getDateKey(dateObj);
 
         const startMinutes = parseTime(start);
         if (!Number.isFinite(startMinutes)) throw new Error('Invalid start time');
 
-        const duration = Math.min(240, Math.max(15, parseInt(durationMinutes || 60, 10) || 60));
+        const duration = Math.min(240, Math.max(15, Number.parseInt(durationMinutes || 60, 10) || 60));
 
         const newBlock = {
           id: generateId(),
@@ -11206,7 +11206,7 @@
         const dismissed = localStorage.getItem('pwaInstallDismissed');
         if (!dismissed) return false;
         // Re-show after 7 days
-        const dismissedDate = new Date(parseInt(dismissed));
+        const dismissedDate = new Date(Number.parseInt(dismissed));
         const now = new Date();
         const daysDiff = (now - dismissedDate) / (1000 * 60 * 60 * 24);
         return daysDiff < 7;
@@ -11533,8 +11533,8 @@
                 ...existingEvent,
                 name: name,
                 date: new Date(dateValue).toISOString(),
-                reminder: parseInt(reminder) || null,
-                reminderUserSet: (parseInt(reminder) || 0) > 0,
+                reminder: Number.parseInt(reminder) || null,
+                reminderUserSet: (Number.parseInt(reminder) || 0) > 0,
                 notes: notes
               });
             }
@@ -11674,13 +11674,13 @@
         // 1. Completed tasks older than 30 days
         if (t.completed && t.completedAt) {
           const completedTime = new Date(t.completedAt).getTime();
-          if (!isNaN(completedTime) && (now - completedTime) > thirtyDaysMs) return true;
+          if (!Number.isNaN(completedTime) && (now - completedTime) > thirtyDaysMs) return true;
         }
 
         // 2. Active tasks overdue by more than 30 days
         if (!t.completed && t.dueDate) {
           const dueTime = new Date(t.dueDate).getTime();
-          if (!isNaN(dueTime) && (now - dueTime) > thirtyDaysMs) return true;
+          if (!Number.isNaN(dueTime) && (now - dueTime) > thirtyDaysMs) return true;
         }
 
         return false;
@@ -11760,7 +11760,7 @@
       const eventsToDelete = eventsList.filter(evt => {
         if (!evt.date) return false;
         const eventTime = new Date(evt.date).getTime();
-        if (isNaN(eventTime)) return false;
+        if (Number.isNaN(eventTime)) return false;
         // Delete if event was more than 30 days ago
         return (now - eventTime) > thirtyDaysMs;
       });
