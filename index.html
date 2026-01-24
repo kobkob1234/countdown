@@ -9627,7 +9627,7 @@
 
         // Force re-layout for smooth transition
         ghost.style.display = 'block';
-        ghost.offsetHeight; // Force reflow
+        ghost.dataset.forceReflow = ghost.offsetHeight; // Force reflow
 
         ghost.style.top = `${startMinutes - DAY_START_MINUTES}px`;
         ghost.style.height = `${Math.max(15, durationMinutes)}px`;
