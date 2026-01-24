@@ -576,31 +576,43 @@ async function processUserTasks(users, nowMs) {
     return { sent, skipped, failed };
 }
 
+async function processSinglePlannerBlock(block, user, nowMs) {
+    let sent = 0, skipped = 0, failed = 0;
+    if (!block || block.completed) return { sent, skipped, failed };
+
+    const reminderMinutes = Number.parseInt(block.reminder || '0', 10) || 0;
+    if (!reminderMinutes) return { sent, skipped, failed };
+
+    const startMs = parsePlannerStart(block);
+    if (!shouldTrigger(nowMs, startMs, reminderMinutes)) return { sent, skipped, failed };
+
+    const blockKey = block.id || hashKey(`${block.title || ''}|${block.date || ''}|${block.start || ''}`);
+    const whenStr = formatPlannerWhen(startMs);
+    const dedupeKey = `planner|${user.userId}|${blockKey}|${block.startAt || block.date || ''}|${block.start || ''}|${reminderMinutes}`;
+    const payload = {
+        title: 'Planner Reminder 📅',
+        body: whenStr ? `${block.title || 'Activity'} • ${whenStr}` : `${block.title || 'Activity'} starting soon`,
+        tag: `planner-${blockKey}`,
+        url: APP_URL,
+        actions: [{ action: 'view', title: 'View' }]
+    };
+
+    const result = await sendNotificationToUser(user.userId, user.tokens, user.pushSubs, payload, dedupeKey);
+    if (result.skipped) skipped++;
+    else { sent += result.sent; failed += result.failed; }
+
+    return { sent, skipped, failed };
+}
+
 async function processPlannerBlocks(users, nowMs) {
     let sent = 0, skipped = 0, failed = 0;
-    for (const { userId, tokens, pushSubs } of users) {
-        const blocks = await loadPlannerBlocksForUser(userId);
+    for (const user of users) {
+        const blocks = await loadPlannerBlocksForUser(user.userId);
         for (const block of blocks) {
-            if (!block || block.completed) continue;
-            const reminderMinutes = Number.parseInt(block.reminder || '0', 10) || 0;
-            if (!reminderMinutes) continue;
-            const startMs = parsePlannerStart(block);
-            if (!shouldTrigger(nowMs, startMs, reminderMinutes)) continue;
-
-            const blockKey = block.id || hashKey(`${block.title || ''}|${block.date || ''}|${block.start || ''}`);
-            const whenStr = formatPlannerWhen(startMs);
-            const dedupeKey = `planner|${userId}|${blockKey}|${block.startAt || block.date || ''}|${block.start || ''}|${reminderMinutes}`;
-            const payload = {
-                title: 'Planner Reminder 📅',
-                body: whenStr ? `${block.title || 'Activity'} • ${whenStr}` : `${block.title || 'Activity'} starting soon`,
-                tag: `planner-${blockKey}`,
-                url: APP_URL,
-                actions: [{ action: 'view', title: 'View' }]
-            };
-
-            const result = await sendNotificationToUser(userId, tokens, pushSubs, payload, dedupeKey);
-            if (result.skipped) skipped++;
-            else { sent += result.sent; failed += result.failed; }
+            const result = await processSinglePlannerBlock(block, user, nowMs);
+            sent += result.sent;
+            skipped += result.skipped;
+            failed += result.failed;
         }
     }
     return { sent, skipped, failed };

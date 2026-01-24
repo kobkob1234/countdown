@@ -2929,10 +2929,10 @@
         }
         pendingEventAlerts = [];
       }
-      void checkEventReminders(Date.now());
-      void checkTaskReminders();
+      checkEventReminders(Date.now());
+      checkTaskReminders();
       if (window.DailyPlanner && typeof window.DailyPlanner.checkReminders === 'function') {
-        void window.DailyPlanner.checkReminders();
+        window.DailyPlanner.checkReminders();
       }
       // Force Firebase reconnect when app becomes visible (fixes mobile sync issues)
       if (!document.hidden) {
@@ -3651,7 +3651,7 @@
       });
 
       const nowMs = now;
-      void checkEventReminders(nowMs);
+      checkEventReminders(nowMs);
     }
 
     function startTicker() {
@@ -6296,9 +6296,9 @@
 
     function startTaskReminderTicker() {
       if (taskReminderTickerHandle) return;
-      void checkTaskReminders();
+      checkTaskReminders();
       taskReminderTickerHandle = setInterval(() => {
-        void checkTaskReminders();
+        checkTaskReminders();
       }, 10000);
     }
 
@@ -6748,7 +6748,7 @@
       if (window.DailyPlanner && window.DailyPlanner.refreshTasks) {
         window.DailyPlanner.refreshTasks();
       }
-      void checkTaskReminders();
+      checkTaskReminders();
     }
     ctx.mergeTasks = mergeTasks;
 
@@ -7101,7 +7101,7 @@
       let rangeStart;
       let rangeEnd;
       let titleText = '';
-      let emptyText = 'אין משימות בטווח';
+      let emptyText;
 
       if (taskCalendarView === 'month') {
         const year = currentTaskMonth.getFullYear();
@@ -9258,9 +9258,9 @@
         if (plannerReminderTickerHandle) return;
         ensureBlocksLoaded();
         startPlannerCloudSync();
-        void checkPlannerReminders();
+        checkPlannerReminders();
         plannerReminderTickerHandle = setInterval(() => {
-          void checkPlannerReminders();
+          checkPlannerReminders();
         }, 10000);
       };
 
@@ -9627,7 +9627,7 @@
 
         // Force re-layout for smooth transition
         ghost.style.display = 'block';
-        void ghost.offsetHeight; // Force reflow
+        ghost.offsetHeight; // Force reflow
 
         ghost.style.top = `${startMinutes - DAY_START_MINUTES}px`;
         ghost.style.height = `${Math.max(15, durationMinutes)}px`;
