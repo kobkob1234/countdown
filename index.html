@@ -2955,7 +2955,7 @@
 
     function getEventColor(id) {
 
-      const charCode = id.charCodeAt(id.length - 1);
+      const charCode = id.codePointAt(id.length - 1);
 
       return COLORS[charCode % COLORS.length];
 
@@ -8430,7 +8430,7 @@
         const reminderMatch = title.match(reminderPattern);
         if (reminderMatch) {
           const value = Number.parseInt(reminderMatch[1], 10) || 1;
-          const unitRaw = (reminderMatch[2] || '').replace(/[׳']/g, '');
+          const unitRaw = (reminderMatch[2] || '').replaceAll(/[׳']/g, '');
           if (unitRaw.startsWith('דק')) {
             reminderMinutes = value;
           } else if (unitRaw.startsWith('שעה') || unitRaw.startsWith('שעות')) {
