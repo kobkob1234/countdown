@@ -13,7 +13,7 @@
  */
 
 const admin = require('firebase-admin');
-const crypto = require('crypto');
+const crypto = require('node:crypto');
 const webPush = require('web-push');
 
 // VAPID keys for web-push fallback (must match frontend notifications.js)
@@ -496,21 +496,8 @@ async function sendNotificationToUser(userId, tokens, pushSubs, payload, dedupeK
 // Main Handler
 // ============================================
 
-async function runCheck() {
-    const nowMs = Date.now();
-    console.log(`[${new Date(nowMs).toISOString()}] Checking...`);
-
-    const users = await loadUsersWithFCMTokens();
-    const sharedEvents = await loadSharedEvents();
-    const sharedSubjects = await loadSharedSubjects();
-
-    console.log(`[FCM] Loaded ${users.length} users with tokens`);
-
-    let sent = 0;
-    let skipped = 0;
-    let failed = 0;
-
-    // Shared events -> all users
+async function processSharedEvents(sharedEvents, users, nowMs) {
+    let sent = 0, skipped = 0, failed = 0;
     for (const evt of sharedEvents) {
         if (isImportedEvent(evt) && !evt.reminderUserSet) continue;
         const reminderMinutes = Number.parseInt(evt.reminder || '0', 10) || 0;
@@ -533,8 +520,11 @@ async function runCheck() {
             else { sent += result.sent; failed += result.failed; }
         }
     }
+    return { sent, skipped, failed };
+}
 
-    // Per-user tasks (with recurring task support)
+async function processUserTasks(users, nowMs) {
+    let sent = 0, skipped = 0, failed = 0;
     for (const { userId, tokens, pushSubs } of users) {
         const tasks = await loadTasksForUser(userId);
         for (const task of tasks) {
@@ -574,8 +564,11 @@ async function runCheck() {
             }
         }
     }
+    return { sent, skipped, failed };
+}
 
-    // Per-user planner blocks
+async function processPlannerBlocks(users, nowMs) {
+    let sent = 0, skipped = 0, failed = 0;
     for (const { userId, tokens, pushSubs } of users) {
         const blocks = await loadPlannerBlocksForUser(userId);
         for (const block of blocks) {
@@ -601,8 +594,11 @@ async function runCheck() {
             else { sent += result.sent; failed += result.failed; }
         }
     }
+    return { sent, skipped, failed };
+}
 
-    // Shared subject tasks (with recurring task support)
+async function processSharedSubjects(sharedSubjects, users, nowMs) {
+    let sent = 0, skipped = 0, failed = 0;
     for (const subject of sharedSubjects) {
         const subjectTasks = subject.tasks || {};
         const owner = subject.owner;
@@ -652,9 +648,34 @@ async function runCheck() {
             }
         }
     }
-
-    console.log(`[${new Date().toISOString()}] Result: Sent ${sent}, Skipped ${skipped}, Failed ${failed}`);
     return { sent, skipped, failed };
+}
+
+async function runCheck() {
+    const nowMs = Date.now();
+    console.log(`[${new Date(nowMs).toISOString()}] Checking...`);
+
+    const users = await loadUsersWithFCMTokens();
+    const sharedEvents = await loadSharedEvents();
+    const sharedSubjects = await loadSharedSubjects();
+
+    console.log(`[FCM] Loaded ${users.length} users with tokens`);
+
+    const results = [
+        await processSharedEvents(sharedEvents, users, nowMs),
+        await processUserTasks(users, nowMs),
+        await processPlannerBlocks(users, nowMs),
+        await processSharedSubjects(sharedSubjects, users, nowMs)
+    ];
+
+    const final = results.reduce((acc, curr) => ({
+        sent: acc.sent + curr.sent,
+        skipped: acc.skipped + curr.skipped,
+        failed: acc.failed + curr.failed
+    }), { sent: 0, skipped: 0, failed: 0 });
+
+    console.log(`[${new Date().toISOString()}] Result: Sent ${final.sent}, Skipped ${final.skipped}, Failed ${final.failed}`);
+    return final;
 }
 
 // ============================================
