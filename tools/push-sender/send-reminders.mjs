@@ -238,7 +238,9 @@ async function sendToSubscription({ userId, subKey, subscription, payload, dedup
       // Cleanup expired subscriptions (410 Gone / 404 Not Found)
       if (statusCode === 410 || statusCode === 404) {
         console.log(`[push] Removing expired subscription for user=${userId}`);
-        await db.ref(`users/${userId}/pushSubscriptions/${subKey}`).remove().catch(() => { });
+        await db.ref(`users/${userId}/pushSubscriptions/${subKey}`).remove().catch((e) => {
+          console.warn('[push] Failed to remove expired sub:', e.message);
+        });
       }
       return { ok: false, statusCode, message };
     }
@@ -506,7 +508,9 @@ async function cleanupOldPushSent() {
       for (const [subKey, records] of Object.entries(pushSent)) {
         for (const [recordKey, record] of Object.entries(records || {})) {
           if (record?.ts && record.ts < cutoffTs) {
-            await db.ref(`users/${userId}/pushSent/${subKey}/${recordKey}`).remove().catch(() => { });
+            await db.ref(`users/${userId}/pushSent/${subKey}/${recordKey}`).remove().catch((e) => {
+              console.warn('[cleanup] Failed to remove sent record:', e.message);
+            });
             cleaned++;
           }
         }
@@ -556,10 +560,14 @@ async function main() {
   // Cleanup Firebase connection
   try {
     if (typeof db.goOffline === 'function') db.goOffline();
-  } catch { }
+  } catch (e) {
+    console.warn('[cleanup] goOffline failed:', e.message);
+  }
   try {
     await admin.app().delete();
-  } catch { }
+  } catch (e) {
+    console.warn('[cleanup] app.delete failed:', e.message);
+  }
 }
 
 main().catch(err => {
