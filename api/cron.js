@@ -606,6 +606,51 @@ async function processPlannerBlocks(users, nowMs) {
     return { sent, skipped, failed };
 }
 
+async function processSharedSubjectTask(taskId, task, subjectId, allUserIds, users, nowMs) {
+    let sent = 0, skipped = 0, failed = 0;
+    // For recurring tasks: always check (each occurrence is independent)
+    // For non-recurring tasks: skip if completed
+    if (!task || (task.completed && !task.recurrence)) return { sent, skipped, failed };
+
+    const reminderMinutes = Number.parseInt(task.reminder || '0', 10) || 0;
+    if (!reminderMinutes) return { sent, skipped, failed };
+
+    const baseDueMs = parseIsoMillis(task.dueDate);
+    if (!Number.isFinite(baseDueMs)) return { sent, skipped, failed };
+
+    // Get occurrences to check (single date for non-recurring, expanded for recurring)
+    const occurrences = task.recurrence
+        ? getUpcomingOccurrences(baseDueMs, task.recurrence, nowMs, 7)
+        : [new Date(baseDueMs)];
+
+    for (const occurrence of occurrences) {
+        const occurrenceMs = occurrence.getTime();
+        if (!shouldTrigger(nowMs, occurrenceMs, reminderMinutes)) continue;
+
+        const occurrenceKey = occurrence.toISOString();
+        const offset = formatReminderOffset(reminderMinutes);
+
+        for (const userId of allUserIds) {
+            const userEntry = users.find(u => u.userId === userId);
+            if (!userEntry) continue;
+
+            const dedupeKey = `shared-task|${userId}|${subjectId}|${taskId}|${occurrenceKey}|${reminderMinutes}`;
+            const payload = {
+                title: task.recurrence ? 'Shared Recurring Task 🔄' : 'Shared Task Reminder 📋',
+                body: `${task.title || 'Task'} is due in ${offset}`,
+                tag: `shared-task-${taskId}-${occurrenceKey.slice(0, 10)}`,
+                url: APP_URL,
+                completeUrl: `${APP_URL}?completeTask=${taskId}&user=${userId}&sharedSubject=${subjectId}&occurrence=${encodeURIComponent(occurrenceKey)}`,
+            };
+
+            const result = await sendNotificationToUser(userId, userEntry.tokens, userEntry.pushSubs, payload, dedupeKey);
+            if (result.skipped) skipped++;
+            else { sent += result.sent; failed += result.failed; }
+        }
+    }
+    return { sent, skipped, failed };
+}
+
 async function processSharedSubjects(sharedSubjects, users, nowMs) {
     let sent = 0, skipped = 0, failed = 0;
     for (const subject of sharedSubjects) {
@@ -615,46 +660,10 @@ async function processSharedSubjects(sharedSubjects, users, nowMs) {
         const allUserIds = [owner, ...Object.keys(members)].filter(Boolean);
 
         for (const [taskId, task] of Object.entries(subjectTasks)) {
-            // For recurring tasks: always check (each occurrence is independent)
-            // For non-recurring tasks: skip if completed
-            if (!task || (task.completed && !task.recurrence)) continue;
-
-            const reminderMinutes = Number.parseInt(task.reminder || '0', 10) || 0;
-            if (!reminderMinutes) continue;
-
-            const baseDueMs = parseIsoMillis(task.dueDate);
-            if (!Number.isFinite(baseDueMs)) continue;
-
-            // Get occurrences to check (single date for non-recurring, expanded for recurring)
-            const occurrences = task.recurrence
-                ? getUpcomingOccurrences(baseDueMs, task.recurrence, nowMs, 7)
-                : [new Date(baseDueMs)];
-
-            for (const occurrence of occurrences) {
-                const occurrenceMs = occurrence.getTime();
-                if (!shouldTrigger(nowMs, occurrenceMs, reminderMinutes)) continue;
-
-                const occurrenceKey = occurrence.toISOString();
-                const offset = formatReminderOffset(reminderMinutes);
-
-                for (const userId of allUserIds) {
-                    const userEntry = users.find(u => u.userId === userId);
-                    if (!userEntry) continue;
-
-                    const dedupeKey = `shared-task|${userId}|${subject.id}|${taskId}|${occurrenceKey}|${reminderMinutes}`;
-                    const payload = {
-                        title: task.recurrence ? 'Shared Recurring Task 🔄' : 'Shared Task Reminder 📋',
-                        body: `${task.title || 'Task'} is due in ${offset}`,
-                        tag: `shared-task-${taskId}-${occurrenceKey.slice(0, 10)}`,
-                        url: APP_URL,
-                        completeUrl: `${APP_URL}?completeTask=${taskId}&user=${userId}&sharedSubject=${subject.id}&occurrence=${encodeURIComponent(occurrenceKey)}`,
-                    };
-
-                    const result = await sendNotificationToUser(userId, userEntry.tokens, userEntry.pushSubs, payload, dedupeKey);
-                    if (result.skipped) skipped++;
-                    else { sent += result.sent; failed += result.failed; }
-                }
-            }
+            const result = await processSharedSubjectTask(taskId, task, subject.id, allUserIds, users, nowMs);
+            sent += result.sent;
+            skipped += result.skipped;
+            failed += result.failed;
         }
     }
     return { sent, skipped, failed };
