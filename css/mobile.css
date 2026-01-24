@@ -1178,7 +1178,6 @@
         border-radius: var(--mobile-radius);
         gap: var(--mobile-spacing-sm);
         flex-wrap: wrap;
-        border-left-width: 4px;
         box-shadow: var(--mobile-card-shadow);
         border: none;
         border-left: 4px solid var(--task-color, var(--priority-color, var(--border)));

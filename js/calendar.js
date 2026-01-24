@@ -865,9 +865,9 @@ export function initCalendar() {
           if (key === 'SUMMARY') {
             currentEvent.summary = value;
           } else if (key === 'DTSTART') {
-            currentEvent.start = parseICalDate(value, params);
+            currentEvent.start = parseICalDate(value);
           } else if (key === 'DTEND') {
-            currentEvent.end = parseICalDate(value, params);
+            currentEvent.end = parseICalDate(value);
           } else if (key === 'DESCRIPTION') {
             currentEvent.description = value.replace(/\\n/g, '\n');
           } else if (key === 'UID') {
@@ -875,7 +875,7 @@ export function initCalendar() {
           } else if (key === 'RRULE') {
             currentEvent.rrule = value;
           } else if (key === 'EXDATE') {
-            const ex = parseICalDate(value, params);
+            const ex = parseICalDate(value);
             if (ex) {
               if (!currentEvent.exdates) currentEvent.exdates = [];
               currentEvent.exdates.push(ex.toISOString().split('T')[0]);
