@@ -591,8 +591,24 @@
                         const examRef = ref(db, `users/${currentUser}/examMode`);
                         let isInitialSync = true;
 
+                        // Add Sync Indicator to Header
+                        const header = overlay.querySelector('h1');
+                        let syncBadge = header.querySelector('.sync-status');
+                        if (!syncBadge) {
+                            syncBadge = document.createElement('span');
+                            syncBadge.className = 'sync-status';
+                            syncBadge.style.fontSize = '0.5em';
+                            syncBadge.style.verticalAlign = 'middle';
+                            syncBadge.style.marginLeft = '10px';
+                            header.appendChild(syncBadge);
+                        }
+                        syncBadge.textContent = '⏳'; // Connecting
+
                         // Listen for Real-time Updates
                         onValue(examRef, (snapshot) => {
+                            syncBadge.textContent = '🟢'; // Connected
+                            syncBadge.title = 'Sync Active';
+
                             const remoteContent = snapshot.val();
 
                             // MIGRATION Logic: If Cloud is empty AND Local has data -> Upload Local
@@ -621,6 +637,13 @@
                     }
                 } catch (err) {
                     console.error('[ExamMode] Failed to initialize Firebase sync:', err);
+                    const header = overlay.querySelector('h1');
+                    if (header) {
+                        const syncBadge = document.createElement('span');
+                        syncBadge.textContent = '🔴';
+                        syncBadge.title = 'Sync Failed';
+                        header.appendChild(syncBadge);
+                    }
                 }
             }
         }
