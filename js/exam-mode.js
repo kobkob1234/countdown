@@ -97,6 +97,17 @@
             if (e.key === 'Enter') {
                 e.preventDefault();
                 finishEdit(true);
+
+                // Rapid Entry: Create new sibling chip
+                const currentText = label.textContent.trim();
+                const container = chip.closest('.container');
+                if (currentText && container) {
+                    const parentTd = chip.parentElement;
+                    const addBtn = parentTd.querySelector('.add-tile-btn');
+                    // Clone color from current chip
+                    const color = chip.style.background;
+                    createChipWithColor(parentTd, container, addBtn, color);
+                }
             } else if (e.key === 'Escape') {
                 e.preventDefault();
                 finishEdit(false);
@@ -838,7 +849,6 @@
         chip.appendChild(label);
 
         addChipControls(chip);
-
         td.insertBefore(chip, btn);
         startChipEdit(chip);
         saveExamState(container);
