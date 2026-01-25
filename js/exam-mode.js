@@ -578,6 +578,17 @@
                     }
                 });
 
+                // Track if user is currently editing to preventing sync conflicts
+                let isUserEditing = false;
+                container.addEventListener('focusin', (e) => {
+                    if (e.target.isContentEditable || e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+                        isUserEditing = true;
+                    }
+                });
+                container.addEventListener('focusout', () => {
+                    isUserEditing = false;
+                });
+
                 // ==========================================
                 // FIREBASE SYNC INTEGRATION (Dynamic Import)
                 // ==========================================
@@ -619,7 +630,8 @@
                                 });
                             }
                             // NORMAL SYNC: Cloud has data -> Update Local
-                            else if (remoteContent && remoteContent !== container.innerHTML) {
+                            // BLOCK if user is editing to prevent "jump" / focus loss
+                            else if (remoteContent && remoteContent !== container.innerHTML && !isUserEditing) {
                                 console.log('[ExamMode] Syncing from cloud...');
                                 container.innerHTML = remoteContent;
                                 // Re-apply interactions after innerHTML replacement
