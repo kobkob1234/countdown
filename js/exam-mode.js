@@ -583,8 +583,9 @@
                 // ==========================================
                 try {
                     const { db, ref, set, onValue } = await import('./firebase-config.js');
-                    const { getCurrentUser } = await import('./auth.js');
-                    const currentUser = getCurrentUser();
+                    const { initAuth } = await import('./auth.js');
+                    // Initialize module-scope auth (reads from shared localStorage)
+                    const currentUser = initAuth();
 
                     if (currentUser) {
                         const examRef = ref(db, `users/${currentUser}/examMode`);
@@ -1232,6 +1233,13 @@
                 console.error('[ExamMode] Failed to sync to cloud:', err);
             });
         }
+    }
+
+    // Auto-initialize on load to ensure sync runs immediately
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => window.initExamMode());
+    } else {
+        window.initExamMode();
     }
 
 })();
