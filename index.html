@@ -6205,7 +6205,7 @@
           if (afterElement == null) {
             container.appendChild(draggingEl);
           } else if (afterElement !== draggingEl) {
-            container.insertBefore(draggingEl, afterElement);
+            afterElement.before(draggingEl);
           }
         });
 

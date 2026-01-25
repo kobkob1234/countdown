@@ -276,7 +276,7 @@
                 if (!bannerWrapper) {
                     bannerWrapper = document.createElement('div');
                     bannerWrapper.className = 'exam-banner-wrapper';
-                    existingBanner.parentNode.insertBefore(bannerWrapper, existingBanner);
+                    existingBanner.before(bannerWrapper);
                     bannerWrapper.appendChild(existingBanner);
                 }
 
@@ -412,7 +412,7 @@
             } else {
                 const btn = targetTd.querySelector('.add-tile-btn');
                 if (btn) {
-                    targetTd.insertBefore(draggedItem, btn);
+                    btn.before(draggedItem);
                 } else {
                     targetTd.appendChild(draggedItem);
                 }
