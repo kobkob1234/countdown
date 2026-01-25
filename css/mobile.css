@@ -1,4 +1,10 @@
-    @media (max-width: 640px) and (pointer: coarse) {
+/* Default state: Hide mobile-only elements on desktop */
+.mobile-event-sheet,
+.mobile-event-sheet-backdrop {
+  display: none;
+}
+
+@media (max-width: 640px) and (pointer: coarse) {
       .shortcuts-grid {
         grid-template-columns: 1fr;
       }

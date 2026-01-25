@@ -717,6 +717,11 @@
     };
 
     function showPopup(popup, targetEl, onRemove) {
+        popup.style.position = 'absolute';
+        popup.style.zIndex = '10001';
+        popup.style.margin = '0';
+        popup.style.transform = 'none';
+
         // Append to body to ensure it's on top of everything
         document.body.appendChild(popup);
 
@@ -732,17 +737,13 @@
 
         // Screen edges
         const viewportWidth = window.visualViewport ? window.visualViewport.width : window.innerWidth;
-        if (left < 10) left = 10;
         if (left + width > viewportWidth - 10) {
             left = viewportWidth - width - 10;
         }
+        if (left < 10) left = 10;
 
-        popup.style.position = 'absolute';
         popup.style.top = `${top}px`;
         popup.style.left = `${left}px`;
-        popup.style.zIndex = '10001';
-        popup.style.margin = '0';
-        popup.style.transform = 'none';
 
         const closeHandler = (e) => {
             if (!popup.contains(e.target) && e.target !== targetEl && !targetEl.contains(e.target)) {
