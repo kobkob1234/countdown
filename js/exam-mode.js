@@ -470,7 +470,8 @@
         container.dataset.datesFormatted = 'true';
     }
 
-    window.initExamMode = () => {
+    // Initialize the Exam Mode
+    window.initExamMode = async () => {
         overlay = document.getElementById('examModeOverlay');
         if (!overlay) return;
 
@@ -545,16 +546,15 @@
             }
 
             if (container) {
+                // Initial Load from Local Storage (Instant UX)
                 const saved = localStorage.getItem('examModeContent');
                 if (saved) {
                     container.innerHTML = saved;
-                    // Cleanup legacy exam divs (hardcoded ones)
                     container.querySelectorAll('.exam').forEach(el => el.remove());
                 }
 
                 container.setAttribute('spellcheck', 'false');
 
-                // Enhance cells with functionality
                 // Enhance cells with functionality
                 setupExamInteractions(container);
                 formatExamDates(container);
@@ -563,7 +563,6 @@
                     saveExamState(container);
                 });
 
-                // Re-run on hover to heal any persistence issues or structural changes
                 container.addEventListener('mouseenter', () => {
                     enableExamTextEditing(container);
                     ensureWeeklyGoals(container);
@@ -571,7 +570,6 @@
                     updateWeekProgress(container);
                 });
 
-                // Ensure we don't start editing when clicking controls
                 container.addEventListener('mousedown', (e) => {
                     if (e.target.classList.contains('chip-delete') ||
                         e.target.classList.contains('chip-check') ||
@@ -579,6 +577,50 @@
                         e.preventDefault();
                     }
                 });
+
+                // ==========================================
+                // FIREBASE SYNC INTEGRATION (Dynamic Import)
+                // ==========================================
+                try {
+                    const { db, ref, set, onValue } = await import('./firebase-config.js');
+                    const { getCurrentUser } = await import('./auth.js');
+                    const currentUser = getCurrentUser();
+
+                    if (currentUser) {
+                        const examRef = ref(db, `users/${currentUser}/examMode`);
+                        let isInitialSync = true;
+
+                        // Listen for Real-time Updates
+                        onValue(examRef, (snapshot) => {
+                            const remoteContent = snapshot.val();
+
+                            // MIGRATION Logic: If Cloud is empty AND Local has data -> Upload Local
+                            if (remoteContent === null && saved && isInitialSync) {
+                                console.log('[ExamMode] Migrating local data to cloud...');
+                                set(examRef, saved).then(() => {
+                                    console.log('[ExamMode] Migration complete.');
+                                });
+                            }
+                            // NORMAL SYNC: Cloud has data -> Update Local
+                            else if (remoteContent && remoteContent !== container.innerHTML) {
+                                console.log('[ExamMode] Syncing from cloud...');
+                                container.innerHTML = remoteContent;
+                                // Re-apply interactions after innerHTML replacement
+                                setupExamInteractions(container);
+                                formatExamDates(container);
+                            }
+                            isInitialSync = false;
+                        });
+
+                        // Hook saving to Firebase
+                        // We wrap the original save function to also write to Firebase
+                        container.dataset.firebaseSync = 'true';
+                        container.currentExamRef = examRef;
+                        container.firebaseSet = set;
+                    }
+                } catch (err) {
+                    console.error('[ExamMode] Failed to initialize Firebase sync:', err);
+                }
             }
         }
     };
@@ -1181,7 +1223,15 @@
         });
 
         clone.querySelectorAll('.add-tile-btn, .chip-check, .chip-delete, .chip-drag-handle, .chip-color-swatch, .day-passed-toggle, .day-passed-x, .exam-day-toggle, .exam-banner-color-btn, .exam-tile-color-btn, .exam-countdown-toggle, .countdown-badge').forEach(el => el.remove());
-        localStorage.setItem('examModeContent', clone.innerHTML);
+        const htmlContent = clone.innerHTML;
+        localStorage.setItem('examModeContent', htmlContent);
+
+        // Sync to Firebase if initialized
+        if (container.dataset.firebaseSync === 'true' && container.currentExamRef && container.firebaseSet) {
+            container.firebaseSet(container.currentExamRef, htmlContent).catch(err => {
+                console.error('[ExamMode] Failed to sync to cloud:', err);
+            });
+        }
     }
 
 })();

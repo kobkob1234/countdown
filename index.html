@@ -8202,18 +8202,15 @@
      * @param {string} input - Raw user input text
      * @returns {Object} - {title, dueDate, priority, subjectId, reminderMinutes, recurrence}
      */
-    function parseNaturalLanguage(input) {
-      let title = input;
-      let dueDate = null;
+
+
+    // Helper: Normalize text by removing ALL spaces and converting to lowercase
+    const normalize = (str) => str.replaceAll(/\s+/g, '').toLowerCase();
+
+    function extractPriority(text) {
       let priority = 'medium';
-      let subjectId = '';
-      let reminderMinutes = 0;
-      let recurrence = null;
+      let cleanText = text;
 
-      // Helper: Normalize text by removing ALL spaces and converting to lowercase
-      const normalize = (str) => str.replaceAll(/\s+/g, '').toLowerCase();
-
-      // ============ STEP 1: EXTRACT & REMOVE PRIORITY (Hebrew only) ============
       const priorityPatterns = [
         { level: 'urgent', patterns: [/(דחוף|מיידי|!!!|!!)/gi] },
         { level: 'high', patterns: [/(גבוה|חשוב|!)/gi] },
@@ -8222,20 +8219,34 @@
       ];
 
       for (const { level, patterns } of priorityPatterns) {
+        let matched = false;
         for (const pattern of patterns) {
-          const matches = title.match(pattern);
+          const matches = cleanText.match(pattern);
           if (matches) {
             priority = level;
             // Remove all matches
             matches.forEach(match => {
-              title = title.replace(match, ' ');
+              cleanText = cleanText.replace(match, ' ');
             });
+            matched = true;
             break;
           }
         }
-        if (priority !== 'medium') break;
+        if (matched) break;
       }
-      title = title.trim();
+      return { priority, text: cleanText.trim() };
+    }
+
+    function parseNaturalLanguage(input) {
+      // ============ STEP 1: EXTRACT & REMOVE PRIORITY (Hebrew only) ============
+      const pResult = extractPriority(input);
+      let title = pResult.text;
+      let priority = pResult.priority;
+
+      let dueDate = null;
+      let subjectId = '';
+      let reminderMinutes = 0;
+      let recurrence = null;
 
       // ============ STEP 2: EXTRACT & REMOVE TIME (Hebrew only) ============
       const now = new Date();
