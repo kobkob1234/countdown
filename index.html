@@ -5643,9 +5643,7 @@
           <div class="task-title-row">
             <span class="task-title">${escapeHtml(task.title)}</span>
             ${taskColorDot}
-            ${taskColorDot}
             ${renderTaskSubjectBadge(task, showSubjectTag)}
-            ${renderSharedFailureBadge(task)}
             ${renderTaskPriorityBadge(priority)}
           </div>
           <div class="task-meta">
@@ -6244,47 +6242,6 @@
     }
     ctx.startTaskTicker = startTaskTicker;
 
-    // ==========================================
-    // Recurrence Helpers (Israel Locale)
-    // ==========================================
-    function getUpcomingOccurrences(baseDueMs, recurrence, nowMs, lookAheadDays) {
-      if (!recurrence || recurrence === 'none') {
-        return [new Date(baseDueMs)];
-      }
-      const hits = [];
-      // Start checking slightly in the past to catch late reminders (e.g. up to 1 day back)
-      // Server uses strict 'since' logic. Here we iterate from base date until max window.
-      let current = new Date(baseDueMs);
-      const maxMs = nowMs + (lookAheadDays * 24 * 60 * 60 * 1000);
-      // Optimization: if base is ancient, we might want to fast-forward, but simple iteration is safer for accuracy
-      // unless it's years ago. Let's cap iteration.
-      let limit = 500;
-
-      while (current.getTime() <= maxMs && limit-- > 0) {
-        // If current instance is relevant (e.g. in future or recent past)
-        const time = current.getTime();
-        if (time >= nowMs - (24 * 3600 * 1000)) { // Include up to 24h past
-          hits.push(new Date(time));
-        }
-
-        // Advance
-        switch (recurrence) {
-          case 'daily': current.setDate(current.getDate() + 1); break;
-          case 'weekly': current.setDate(current.getDate() + 7); break;
-          case 'biweekly': current.setDate(current.getDate() + 14); break;
-          case 'monthly': current.setMonth(current.getMonth() + 1); break;
-          case 'weekdays':
-            // Israel Work Week: Sun-Thu. Skip Fri (5), Sat (6).
-            do {
-              current.setDate(current.getDate() + 1);
-            } while (current.getDay() === 5 || current.getDay() === 6);
-            break;
-          default: limit = 0; break;
-        }
-      }
-      return hits;
-    }
-
     async function checkTaskReminders(nowMs = Date.now()) {
       if (taskReminderCheckInFlight) return;
       taskReminderCheckInFlight = true;
@@ -6294,43 +6251,31 @@
         const candidates = [];
 
         tasks.forEach(task => {
+          // For recurring tasks: notifications fire regardless of completion status
+          // Each occurrence is independent - completion doesn't affect future reminders
+          // For non-recurring tasks: skip if completed
           if (task.completed && !task.recurrence) return;
-
+          
           const reminderMinutes = Number.parseInt(task.reminder, 10) || 0;
           if (!reminderMinutes) return;
           if (!task.dueDate) return;
-
-          const baseDueMs = new Date(task.dueDate).getTime();
-          if (!Number.isFinite(baseDueMs)) return;
-
-          // Expand recurrence (or single)
-          const occurrences = getUpcomingOccurrences(baseDueMs, task.recurrence, nowMs, 7);
-
-          for (const occ of occurrences) {
-            const occIso = occ.toISOString();
-            // Check completion of specific occurrence
-            if (task.completedOccurrences && task.completedOccurrences[occIso]) continue;
-
-            const triggerTime = occ.getTime() - (reminderMinutes * 60000);
-            const reminderKey = `${occIso}|${reminderMinutes}`;
-
-            const entry = notifiedTasks.get(task.id);
-            // Note: notifiedTasks map is simplistic (taskId -> lastKey). 
-            // For recurring, we really need (taskId + occurrence) -> notified.
-            // Logic Update: We will check if THIS occurrence key matches the last notified one?
-            // Or better, rely on dedupeKey log.
-
-            if (triggerTime < start || triggerTime > nowMs) continue;
-
-            // Match Server Dedupe Key Format for consistency
-            const dedupeKey = task.isShared
-              ? `shared-task|${currentUser || ''}|${task.subject || ''}|${task.id}|${occIso}|${reminderMinutes}`
-              : `task|${currentUser || ''}|${task.id}|${occIso}|${reminderMinutes}`;
-
-            candidates.push({ task, reminderKey, triggerTime, dedupeKey, occurrenceText: occ.toLocaleDateString() });
-          }
+          
+          // Convert dueDate to ISO string for consistent dedupe key format with server
+          const dueDateIso = new Date(task.dueDate).toISOString();
+          const reminderKey = `${dueDateIso}|${reminderMinutes}`;
+          const entry = notifiedTasks.get(task.id);
+          if (entry && entry.key === reminderKey) return;
+          const taskTime = new Date(task.dueDate).getTime();
+          if (!Number.isFinite(taskTime)) return;
+          const triggerTime = taskTime - (reminderMinutes * 60000);
+          if (triggerTime < start || triggerTime > nowMs) return;
+          
+          // Use ISO format for dedupe key to match server-side format exactly
+          const dedupeKey = task.isShared
+            ? `shared-task|${currentUser || ''}|${task.subject || ''}|${task.id}|${dueDateIso}|${reminderMinutes}`
+            : `task|${currentUser || ''}|${task.id}|${dueDateIso}|${reminderMinutes}`;
+          candidates.push({ task, reminderKey, triggerTime, dedupeKey });
         });
-
 
         if (candidates.length) {
           if (isCatchup && candidates.length > REMINDER_CATCHUP_MAX_COUNT) {
@@ -6795,55 +6740,10 @@
         sharedTasksListeners.push(unsubscribe);
       });
 
+      // If no shared subjects, just merge
       if (sharedSubjects.length === 0) {
         mergeTasks();
       }
-
-      syncSharedTaskStatus();
-    }
-
-    // Shared Status Sync
-    let sharedStatusListeners = [];
-    ctx.sharedTaskFailures = {};
-
-    function syncSharedTaskStatus() {
-      sharedStatusListeners.forEach(unsub => unsub());
-      sharedStatusListeners = [];
-      ctx.sharedTaskFailures = {};
-
-      sharedSubjects.forEach(subject => {
-        const statusRef = ref(db, `sharedTaskStatus/${subject.id}`);
-        const unsub = onValue(statusRef, (snap) => {
-          const data = snap.val();
-          if (data) {
-            ctx.sharedTaskFailures[subject.id] = data;
-          } else {
-            delete ctx.sharedTaskFailures[subject.id];
-          }
-          // Only re-render if we are viewing tasks to avoid perf hit?
-          // Or just call render() which is debounced usually?
-          // Assuming render() is main render loop.
-          render();
-        });
-        sharedStatusListeners.push(unsub);
-      });
-    }
-
-    function renderSharedFailureBadge(task) {
-      if (!task.isShared || !task.subject) return '';
-      const failures = ctx.sharedTaskFailures?.[task.subject]?.[task.id];
-      if (!failures) return '';
-
-      const failedUsers = Object.entries(failures)
-        .filter(([uid, info]) => info.status === 'no_device' || info.status === 'delivery_failed')
-        .map(([uid]) => uid);
-
-      if (failedUsers.length === 0) return '';
-
-      const count = failedUsers.length;
-      const title = `Notification failed for ${count} member${count > 1 ? 's' : ''} (No device or delivery error)`;
-
-      return `<span class="task-shared-failure" title="${title}" style="margin-inline-start: 4px; cursor: help;">⚠️</span>`;
     }
 
     // Own tasks storage
@@ -9376,22 +9276,10 @@
         }
       }
 
-      const ensureRecurringForUpcomingDays = (days = 14) => {
-        const now = new Date();
-        for (let i = 0; i < days; i++) {
-          const target = new Date(now);
-          target.setDate(now.getDate() + i);
-          ensureRecurringForDate(target);
-        }
-      };
-
       const startPlannerReminderTicker = () => {
         if (plannerReminderTickerHandle) return;
         ensureBlocksLoaded();
         startPlannerCloudSync();
-        // Aggressive Pre-generation on startup
-        setTimeout(() => ensureRecurringForUpcomingDays(14), 2000);
-
         checkPlannerReminders();
         plannerReminderTickerHandle = setInterval(() => {
           checkPlannerReminders();
@@ -9409,24 +9297,16 @@
             const baseDate = new Date(base.date);
             // Only create occurrences after (or same as) the base date
             if (baseDate > date || isSameDay(baseDate, date)) return;
-
-            // Deterministic ID generation: rec_ORIGIN_DATE_START
-            // This ensures uniqueness across devices
-            const originId = base.originId || base.id;
-            const startStr = (base.start || '00:00').replace(':', '');
-            const deterministicId = `rec_${originId}_${dateKey}_${startStr}`;
-
-            // Avoid duplicate clones (Check ID instead of soft matching)
-            const alreadyExists = plannerBlocks.some(b => b.id === deterministicId);
+            // Avoid duplicate clones
+            const alreadyExists = plannerBlocks.some(b => b.originId === (base.originId || base.id) && b.date === dateKey);
             if (alreadyExists) return;
-
             const clone = {
               ...base,
-              id: deterministicId,
+              id: generateId(),
               date: dateKey,
               completed: false,
               repeat: false, // clones themselves do not auto-repeat; the base drives future creation
-              originId: originId,
+              originId: base.originId || base.id,
               createdAt: new Date().toISOString()
             };
             plannerBlocks.push(clone);

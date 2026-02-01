@@ -16,10 +16,6 @@ const admin = require('firebase-admin');
 const crypto = require('node:crypto');
 const webPush = require('web-push');
 
-// Precise Timezone handling
-const { formatInTimeZone, toZonedTime } = require('date-fns-tz');
-const ISRAEL_TZ = 'Asia/Jerusalem';
-
 // VAPID keys for web-push fallback (must match frontend notifications.js)
 const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY || 'BL-m24SrurFUNIQxH7S77r1yYShIiCibpw2CbtK8FwYATHzYiR0kQGKzWilEGRHyRK2jxqRPUR_RJoAVUgrO-24';
 const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY || '';
@@ -42,7 +38,7 @@ if (!admin.apps.length) {
 const db = admin.database();
 
 // Configuration
-const LATE_CAP_MS = 24 * 60 * 60 * 1000; // Drop reminders older than 24 hours (prevents flood after downtime)
+const WINDOW_MS = 90000; // 90 seconds late-allowed window
 const APP_URL = process.env.APP_URL || 'https://kobkob1234.github.io/countdown/';
 
 // ============================================
@@ -58,6 +54,23 @@ function parseIsoMillis(iso) {
     return Number.isFinite(t) ? t : null;
 }
 
+function getZoneOffsetMs(dateObj, timeZone = 'Asia/Jerusalem') {
+    try {
+        const str = dateObj.toLocaleString('en-US', { timeZone, timeZoneName: 'longOffset' });
+        const match = str.match(/GMT([+-]\d+)(?::(\d+))?/);
+        if (!match) return 0;
+        const hours = Number(match[1]);
+        const minutes = Number(match[2] || 0);
+        return (hours * 60 + (hours < 0 ? -minutes : minutes)) * 60 * 1000;
+    } catch (e) {
+        // DST-aware fallback for Israel: UTC+2 in winter, UTC+3 in summer
+        // Israel DST roughly runs from last Friday of March to last Sunday of October
+        const month = dateObj.getMonth(); // 0-indexed
+        const isLikelySummer = month >= 3 && month <= 9; // April (3) through October (9)
+        return isLikelySummer ? 3 * 60 * 60 * 1000 : 2 * 60 * 60 * 1000;
+    }
+}
+
 function parsePlannerStart(block) {
     if (!block) return null;
     if (block.startAt) {
@@ -65,24 +78,28 @@ function parsePlannerStart(block) {
         if (Number.isFinite(ts)) return ts;
     }
     if (!block.date || !block.start) return null;
+    const parts = String(block.date).split('-').map(Number);
+    if (parts.length !== 3) return null;
+    const [year, month, day] = parts;
+    if (!year || !month || !day) return null;
+    const [h, m] = String(block.start).split(':').map(Number);
+    if (!Number.isFinite(h)) return null;
 
-    // Use date-fns-tz to interpret "YYYY-MM-DD HH:mm" strictly in Israel Time
-    try {
-        const dateTimeStr = `${block.date} ${block.start}`;
-        const zonedDate = toZonedTime(dateTimeStr, ISRAEL_TZ);
-        if (!Number.isNaN(zonedDate.getTime())) {
-            return zonedDate.getTime();
-        }
-    } catch (e) {
-        console.warn('Failed to parse zoned time:', block.date, block.start);
-    }
-    return null;
+    const wallDate = new Date(Date.UTC(year, month - 1, day, h, Number.isFinite(m) ? m : 0, 0, 0));
+    const israelOffsetMs = getZoneOffsetMs(wallDate);
+    return Number.isNaN(wallDate.getTime()) ? null : wallDate.getTime() - israelOffsetMs;
 }
 
 function formatPlannerWhen(startMs) {
     if (!Number.isFinite(startMs)) return '';
     try {
-        return formatInTimeZone(startMs, ISRAEL_TZ, 'EEE, MMM d, HH:mm');
+        return new Date(startMs).toLocaleString('he-IL', {
+            weekday: 'short',
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
     } catch {
         return new Date(startMs).toISOString();
     }
@@ -111,26 +128,12 @@ function formatReminderOffset(minutes) {
     return m === 1 ? '1 minute' : `${m} minutes`;
 }
 
-/**
- * Trigger Check: State-Based
- * - Triggers if TIME_REACHED (now >= target)
- * - Skips if TOO_LATE (now > target + 24h) - Cap for downtime
- * - Idempotency is handled by `claimOnce` in DB
- */
 function shouldTrigger(nowMs, targetMs, reminderMinutes) {
     const rem = Number.parseInt(reminderMinutes || '0', 10) || 0;
     if (!rem) return false;
     if (!Number.isFinite(targetMs)) return false;
-    
     const triggerAt = targetMs - rem * 60000;
-
-    // Too early?
-    if (nowMs < triggerAt) return false;
-
-    // Too late? (Hard Cap to prevent spamming old reminders)
-    if (nowMs > triggerAt + LATE_CAP_MS) return false;
-
-    return true; // Checks passed, proceed to DB claim
+    return nowMs >= triggerAt && nowMs < triggerAt + WINDOW_MS;
 }
 
 // ============================================
@@ -290,20 +293,22 @@ async function markSent(ref, extra = {}) {
 // Data Loading
 // ============================================
 
-// Load ALL users to detect those without tokens
-async function loadAllUsers() {
+async function loadUsersWithFCMTokens() {
     const snap = await db.ref('users').once('value');
     const users = snap.val() || {};
-    const map = new Map();
-    
+    const out = [];
     for (const [userId, userData] of Object.entries(users)) {
+        // Support both new FCM tokens and legacy VAPID subscriptions
         const fcmTokens = userData?.fcmTokens || {};
         const tokens = Object.keys(fcmTokens).filter(t => t && t.length > 20);
+
+        // Also check legacy pushSubscriptions for backward compatibility
         const pushSubs = userData?.pushSubscriptions || {};
-        
-        map.set(userId, { userId, tokens, pushSubs });
+
+        if (tokens.length === 0 && Object.keys(pushSubs).length === 0) continue;
+        out.push({ userId, tokens, pushSubs });
     }
-    return map;
+    return out;
 }
 
 async function loadTasksForUser(userId) {
@@ -331,6 +336,24 @@ async function loadSharedEvents() {
     const snap = await db.ref('events').once('value');
     const data = snap.val() || {};
     return Object.entries(data).map(([id, e]) => ({ id, ...(e || {}) }));
+}
+
+// Load tokens for a specific user by ID (for shared subjects where user might not be in main list)
+async function loadUserTokensById(userId) {
+    try {
+        const snap = await db.ref(`users/${userId}`).once('value');
+        const userData = snap.val();
+        if (!userData) return { userId, tokens: [], pushSubs: {} };
+        
+        const fcmTokens = userData.fcmTokens || {};
+        const tokens = Object.keys(fcmTokens).filter(t => t && t.length > 20);
+        const pushSubs = userData.pushSubscriptions || {};
+        
+        return { userId, tokens, pushSubs };
+    } catch (err) {
+        console.warn(`[FCM] Failed to load tokens for user ${userId}:`, err.message);
+        return { userId, tokens: [], pushSubs: {} };
+    }
 }
 
 // ============================================
@@ -484,22 +507,19 @@ async function sendNotificationToUser(userId, tokens, pushSubs, payload, dedupeK
         return sendVAPIDPush(userId, pushSubs, payload, dedupeKey);
     }
 
-    return { sent: 0, failed: 0 };
+    // Log when user has no notification tokens at all
+    console.warn(`[Notify] User ${userId.slice(0, 8)}... has no FCM tokens or VAPID subscriptions - cannot send notification`);
+    return { sent: 0, failed: 0, noTokens: true };
 }
 
 // ============================================
 // Main Handler
 // ============================================
 
-async function processSharedEvents(sharedEvents, userMap, nowMs) {
+async function processSharedEvents(sharedEvents, users, nowMs) {
     let sent = 0, skipped = 0, failed = 0;
     for (const evt of sharedEvents) {
-        // Allow imported events if they have a reminder set explicitly
-        if (isImportedEvent(evt)) {
-             const reminder = Number.parseInt(evt.reminder || '0', 10);
-             if (reminder <= 0) continue; 
-        }
-
+        if (isImportedEvent(evt) && !evt.reminderUserSet) continue;
         const reminderMinutes = Number.parseInt(evt.reminder || '0', 10) || 0;
         const eventTimeMs = parseIsoMillis(evt.date);
         if (!shouldTrigger(nowMs, eventTimeMs, reminderMinutes)) continue;
@@ -514,15 +534,8 @@ async function processSharedEvents(sharedEvents, userMap, nowMs) {
             actions: [{ action: 'view', title: 'View' }]
         };
 
-        // For shared events in this system, typically everyone gets it. 
-        // We iterate all known users (this might be inefficient if 'events' are global? 
-        // Assuming sharedEvents are small or system-wide).
-        for (const user of userMap.values()) {
-            // Optimization: Maybe only send to users who have access? 
-            // Current legacy code sent to ALL valid tokens. We keep that behavior for 'events'
-            // unless there is an ACL. (Legacy code iterated `users` list).
-            
-            const result = await sendNotificationToUser(user.userId, user.tokens, user.pushSubs, payload, dedupeKey);
+        for (const { userId, tokens, pushSubs } of users) {
+            const result = await sendNotificationToUser(userId, tokens, pushSubs, payload, dedupeKey);
             if (result.skipped) skipped++;
             else { sent += result.sent; failed += result.failed; }
         }
@@ -548,16 +561,10 @@ async function processSingleTask(task, user, nowMs) {
         : [new Date(baseDueMs)];
 
     for (const occurrence of occurrences) {
-        // Check if this specific occurrence is already completed
-        const occurrenceIso = occurrence.toISOString();
-        if (task.completedOccurrences && task.completedOccurrences[occurrenceIso]) {
-            continue; // Skip completed instance
-        }
-
         const occurrenceMs = occurrence.getTime();
         if (!shouldTrigger(nowMs, occurrenceMs, reminderMinutes)) continue;
-        
-        const occurrenceKey = occurrenceIso;
+
+        const occurrenceKey = occurrence.toISOString();
         const offset = formatReminderOffset(reminderMinutes);
         const dedupeKey = `task|${user.userId}|${task.id}|${occurrenceKey}|${reminderMinutes}`;
         const payload = {
@@ -575,9 +582,9 @@ async function processSingleTask(task, user, nowMs) {
     return { sent, skipped, failed };
 }
 
-async function processUserTasks(userMap, nowMs) {
+async function processUserTasks(users, nowMs) {
     let sent = 0, skipped = 0, failed = 0;
-    for (const user of userMap.values()) {
+    for (const user of users) {
         const tasks = await loadTasksForUser(user.userId);
         for (const task of tasks) {
             const result = await processSingleTask(task, user, nowMs);
@@ -617,9 +624,9 @@ async function processSinglePlannerBlock(block, user, nowMs) {
     return { sent, skipped, failed };
 }
 
-async function processPlannerBlocks(userMap, nowMs) {
+async function processPlannerBlocks(users, nowMs) {
     let sent = 0, skipped = 0, failed = 0;
-    for (const user of userMap.values()) {
+    for (const user of users) {
         const blocks = await loadPlannerBlocksForUser(user.userId);
         for (const block of blocks) {
             const result = await processSinglePlannerBlock(block, user, nowMs);
@@ -631,43 +638,41 @@ async function processPlannerBlocks(userMap, nowMs) {
     return { sent, skipped, failed };
 }
 
-async function processSharedSubjectTask(taskId, task, subjectId, allUserIds, userMap, nowMs) {
-    let sent = 0, skipped = 0, failed = 0;
-    if (!task || (task.completed && !task.recurrence)) return { sent, skipped, failed };
+async function processSharedSubjectTask(taskId, task, subjectId, allUserIds, usersCache, nowMs) {
+    let sent = 0, skipped = 0, failed = 0, noTokensCount = 0;
+    
+    // For recurring tasks: ALWAYS check (notifications are independent of completion)
+    // Recurring task reminders fire regardless of whether any occurrence is completed
+    // For non-recurring tasks: skip if completed
+    if (!task) return { sent, skipped, failed, noTokensCount };
+    if (task.completed && !task.recurrence) return { sent, skipped, failed, noTokensCount };
 
     const reminderMinutes = Number.parseInt(task.reminder || '0', 10) || 0;
-    // Don't skip if no reminder, because we might need to check other things? 
-    // Actually, logic says return if no reminder.
-    if (!reminderMinutes) return { sent, skipped, failed };
+    if (!reminderMinutes) return { sent, skipped, failed, noTokensCount };
 
     const baseDueMs = parseIsoMillis(task.dueDate);
-    if (!Number.isFinite(baseDueMs)) return { sent, skipped, failed };
+    if (!Number.isFinite(baseDueMs)) return { sent, skipped, failed, noTokensCount };
 
+    // Get occurrences to check (single date for non-recurring, expanded for recurring)
     const occurrences = task.recurrence
         ? getUpcomingOccurrences(baseDueMs, task.recurrence, nowMs, 7)
         : [new Date(baseDueMs)];
 
     for (const occurrence of occurrences) {
-        const occurrenceIso = occurrence.toISOString();
-        if (task.completedOccurrences && task.completedOccurrences[occurrenceIso]) continue;
-
         const occurrenceMs = occurrence.getTime();
         if (!shouldTrigger(nowMs, occurrenceMs, reminderMinutes)) continue;
 
-        const occurrenceKey = occurrenceIso;
+        const occurrenceKey = occurrence.toISOString();
         const offset = formatReminderOffset(reminderMinutes);
 
         for (const userId of allUserIds) {
-            const userEntry = userMap.get(userId);
-            const statusRef = db.ref(`sharedTaskStatus/${subjectId}/${taskId}/${userId}`);
-
-            // Case 1: User not found or No Tokens (Unreachable)
-            if (!userEntry || (!userEntry.tokens.length && !Object.keys(userEntry.pushSubs).length)) {
-                // Determine if we need to write "no_device" status
-                // We only write if it's not already written (optimization?)
-                // Or just blindly write (simple)
-                await statusRef.set({ status: 'no_device', ts: Date.now() });
-                continue;
+            // First try to find user in pre-loaded cache
+            let userEntry = usersCache.find(u => u.userId === userId);
+            
+            // If not in cache, load tokens on-demand for this specific user
+            // This ensures shared subject members without pre-loaded tokens still get checked
+            if (!userEntry) {
+                userEntry = await loadUserTokensById(userId);
             }
 
             const dedupeKey = `shared-task|${userId}|${subjectId}|${taskId}|${occurrenceKey}|${reminderMinutes}`;
@@ -680,26 +685,16 @@ async function processSharedSubjectTask(taskId, task, subjectId, allUserIds, use
             };
 
             const result = await sendNotificationToUser(userId, userEntry.tokens, userEntry.pushSubs, payload, dedupeKey);
-            
-            if (result.skipped) {
-                skipped++;
-            } else if (result.failed > 0 && result.sent === 0) {
-                 // Total failure
-                 failed += result.failed;
-                 await statusRef.set({ status: 'delivery_failed', ts: Date.now() });
-            } else {
-                 // Success (at least partially)
-                 sent += result.sent;
-                 // Self-Healing: Remove the error status
-                 await statusRef.remove();
-            }
+            if (result.skipped) skipped++;
+            else if (result.noTokens) noTokensCount++;
+            else { sent += result.sent; failed += result.failed; }
         }
     }
-    return { sent, skipped, failed };
+    return { sent, skipped, failed, noTokensCount };
 }
 
-async function processSharedSubjects(sharedSubjects, userMap, nowMs) {
-    let sent = 0, skipped = 0, failed = 0;
+async function processSharedSubjects(sharedSubjects, users, nowMs) {
+    let sent = 0, skipped = 0, failed = 0, noTokensCount = 0;
     for (const subject of sharedSubjects) {
         const subjectTasks = subject.tasks || {};
         const owner = subject.owner;
@@ -707,12 +702,18 @@ async function processSharedSubjects(sharedSubjects, userMap, nowMs) {
         const allUserIds = [owner, ...Object.keys(members)].filter(Boolean);
 
         for (const [taskId, task] of Object.entries(subjectTasks)) {
-            const result = await processSharedSubjectTask(taskId, task, subject.id, allUserIds, userMap, nowMs);
+            const result = await processSharedSubjectTask(taskId, task, subject.id, allUserIds, users, nowMs);
             sent += result.sent;
             skipped += result.skipped;
             failed += result.failed;
+            noTokensCount += result.noTokensCount || 0;
         }
     }
+    
+    if (noTokensCount > 0) {
+        console.log(`[Shared] ${noTokensCount} notification(s) could not be sent - users have no registered tokens`);
+    }
+    
     return { sent, skipped, failed };
 }
 
@@ -720,17 +721,17 @@ async function runCheck() {
     const nowMs = Date.now();
     console.log(`[${new Date(nowMs).toISOString()}] Checking...`);
 
-    const userMap = await loadAllUsers();
+    const users = await loadUsersWithFCMTokens();
     const sharedEvents = await loadSharedEvents();
     const sharedSubjects = await loadSharedSubjects();
 
-    console.log(`[FCM] Loaded ${userMap.size} users`);
+    console.log(`[FCM] Loaded ${users.length} users with tokens`);
 
     const results = [
-        await processSharedEvents(sharedEvents, userMap, nowMs),
-        await processUserTasks(userMap, nowMs),
-        await processPlannerBlocks(userMap, nowMs),
-        await processSharedSubjects(sharedSubjects, userMap, nowMs)
+        await processSharedEvents(sharedEvents, users, nowMs),
+        await processUserTasks(users, nowMs),
+        await processPlannerBlocks(users, nowMs),
+        await processSharedSubjects(sharedSubjects, users, nowMs)
     ];
 
     const final = results.reduce((acc, curr) => ({
