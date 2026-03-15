@@ -21,6 +21,11 @@
     let examModeInitialized = false;
     let overlay = null;
     let colorClickTimer = null;
+    const EXAM_VIEW_STATE_KEY = 'examModeWindowState';
+    let examViewState = {
+        anchorMonthIndex: new Date().getFullYear() * 12 + new Date().getMonth(),
+        showHistory: true
+    };
 
     const clearColorClickTimer = () => {
         if (colorClickTimer) {
@@ -459,17 +464,196 @@
         startChipEdit(chip);
     };
 
+    const parseMonthYear = (monthYearText) => {
+        const hebrewMonths = {
+            'ינואר': 0, 'פברואר': 1, 'מרץ': 2, 'אפריל': 3,
+            'מאי': 4, 'יוני': 5, 'יולי': 6, 'אוגוסט': 7,
+            'ספטמבר': 8, 'אוקטובר': 9, 'נובמבר': 10, 'דצמבר': 11
+        };
+
+        const englishMonths = {
+            'january': 0, 'february': 1, 'march': 2, 'april': 3,
+            'may': 4, 'june': 5, 'july': 6, 'august': 7,
+            'september': 8, 'october': 9, 'november': 10, 'december': 11
+        };
+
+        const raw = (monthYearText || '').trim();
+        const text = raw.toLowerCase();
+        let month = -1;
+
+        for (const [name, idx] of Object.entries(hebrewMonths)) {
+            if (raw.includes(name)) {
+                month = idx;
+                break;
+            }
+        }
+
+        if (month === -1) {
+            for (const [name, idx] of Object.entries(englishMonths)) {
+                if (text.includes(name)) {
+                    month = idx;
+                    break;
+                }
+            }
+        }
+
+        const yearMatch = raw.match(/\d{4}/);
+        const year = yearMatch ? parseInt(yearMatch[0], 10) : null;
+        return {
+            month: month === -1 ? null : month,
+            year
+        };
+    };
+
+    const getExamMonthSections = (container) => {
+        if (!container) return [];
+
+        const currentDate = new Date();
+        const nowMonth = currentDate.getMonth();
+        let inferredYear = currentDate.getFullYear();
+        let previousMonth = null;
+
+        return Array.from(container.querySelectorAll('h2')).map(h2 => {
+            let table = h2.nextElementSibling;
+            while (table && table.tagName !== 'TABLE') {
+                table = table.nextElementSibling;
+            }
+            if (!table) return null;
+
+            const parsed = parseMonthYear(h2.textContent || '');
+            let month = parsed.month;
+            if (month === null) {
+                month = previousMonth !== null ? (previousMonth + 1) % 12 : nowMonth;
+            }
+
+            let year = parsed.year;
+            if (year === null) {
+                if (previousMonth !== null && month < previousMonth) {
+                    inferredYear += 1;
+                }
+                year = inferredYear;
+            } else {
+                inferredYear = year;
+            }
+
+            previousMonth = month;
+            const monthIndex = (year * 12) + month;
+
+            h2.dataset.examMonthIndex = String(monthIndex);
+            table.dataset.examMonthIndex = String(monthIndex);
+
+            return {
+                title: h2,
+                table,
+                month,
+                year,
+                monthIndex
+            };
+        }).filter(Boolean);
+    };
+
+    const saveExamViewState = () => {
+        localStorage.setItem(EXAM_VIEW_STATE_KEY, JSON.stringify(examViewState));
+    };
+
+    const loadExamViewState = () => {
+        const currentMonthIndex = new Date().getFullYear() * 12 + new Date().getMonth();
+        let parsed = null;
+        try {
+            parsed = JSON.parse(localStorage.getItem(EXAM_VIEW_STATE_KEY) || 'null');
+        } catch {
+            parsed = null;
+        }
+
+        examViewState = {
+            anchorMonthIndex: Number.isFinite(parsed?.anchorMonthIndex) ? parsed.anchorMonthIndex : currentMonthIndex,
+            showHistory: typeof parsed?.showHistory === 'boolean' ? parsed.showHistory : true
+        };
+    };
+
+    const monthFormatter = new Intl.DateTimeFormat('he-IL', { month: 'long', year: 'numeric' });
+
+    const formatMonthIndex = (monthIndex) => {
+        const year = Math.floor(monthIndex / 12);
+        const month = monthIndex % 12;
+        return monthFormatter.format(new Date(year, month, 1));
+    };
+
+    const updateExamWindowControls = () => {
+        if (!overlay) return;
+        const controls = overlay.querySelector('.exam-controls');
+        if (!controls) return;
+
+        const label = controls.querySelector('[data-exam-window-label]');
+        if (label) {
+            const start = formatMonthIndex(examViewState.anchorMonthIndex);
+            const end = formatMonthIndex(examViewState.anchorMonthIndex + 2);
+            label.textContent = `חלון פעיל: ${start} → ${end}`;
+        }
+
+        const historyBtn = controls.querySelector('[data-exam-action="toggle-history"]');
+        if (historyBtn) {
+            historyBtn.classList.toggle('active', examViewState.showHistory);
+            historyBtn.textContent = examViewState.showHistory ? 'הסתר היסטוריה (3)' : 'הצג היסטוריה (3)';
+        }
+    };
+
+    const applyExamWindow = (container) => {
+        const sections = getExamMonthSections(container);
+        const activeStart = examViewState.anchorMonthIndex;
+        const activeEnd = examViewState.anchorMonthIndex + 2;
+        const historyStart = examViewState.anchorMonthIndex - 3;
+        const historyEnd = examViewState.anchorMonthIndex - 1;
+
+        sections.forEach(section => {
+            const isActive = section.monthIndex >= activeStart && section.monthIndex <= activeEnd;
+            const isHistory = examViewState.showHistory && section.monthIndex >= historyStart && section.monthIndex <= historyEnd;
+            const stateClass = isActive ? 'exam-month-active' : (isHistory ? 'exam-month-history' : 'exam-month-hidden');
+            const hidden = !isActive && !isHistory;
+
+            [section.title, section.table].forEach(el => {
+                el.classList.remove('exam-month-active', 'exam-month-history', 'exam-month-hidden');
+                el.classList.add(stateClass);
+                el.dataset.examSection = 'true';
+                el.hidden = hidden;
+            });
+        });
+
+        updateExamWindowControls();
+    };
+
+    const setupExamWindowControls = (controls, container) => {
+        if (!controls || !container || controls.dataset.windowHandlers === 'true') return;
+        controls.dataset.windowHandlers = 'true';
+
+        controls.addEventListener('click', (e) => {
+            const btn = e.target.closest('[data-exam-action]');
+            if (!btn) return;
+
+            const action = btn.dataset.examAction;
+            const currentMonthIndex = new Date().getFullYear() * 12 + new Date().getMonth();
+
+            if (action === 'prev-window') {
+                examViewState.anchorMonthIndex -= 3;
+            } else if (action === 'next-window') {
+                examViewState.anchorMonthIndex += 3;
+            } else if (action === 'current-window') {
+                examViewState.anchorMonthIndex = currentMonthIndex;
+            } else if (action === 'toggle-history') {
+                examViewState.showHistory = !examViewState.showHistory;
+            }
+
+            saveExamViewState();
+            applyExamWindow(container);
+        });
+    };
+
     // Initialize the Exam Mode
     function formatExamDates(container) {
-        if (container.dataset.datesFormatted) return;
-
-        const months = [1, 2, 3]; // Jan, Feb, Mar (approximate, based on table order)
-        const tables = container.querySelectorAll('table');
-
-        tables.forEach((table, index) => {
-            if (index >= months.length) return;
-            const monthNum = months[index];
-            table.querySelectorAll('.date').forEach(dateSpan => {
+        const sections = getExamMonthSections(container);
+        sections.forEach(section => {
+            const monthNum = section.month + 1;
+            section.table.querySelectorAll('.date').forEach(dateSpan => {
                 const dayText = dateSpan.textContent.trim();
                 // Avoid double formatting
                 if (!dayText.includes('/')) {
@@ -477,8 +661,6 @@
                 }
             });
         });
-
-        container.dataset.datesFormatted = 'true';
     }
 
     // Initialize the Exam Mode
@@ -524,9 +706,11 @@
 
                 // Build legend HTML
                 let legendHTML = `
-                    <button class="exam-btn active" onclick="setExamView(3)">3 חודשים</button>
-                    <button class="exam-btn" onclick="setExamView(2)">חודשיים</button>
-                    <button class="exam-btn" onclick="setExamView(1)">חודש הנוכחי</button>
+                    <button class="exam-btn" data-exam-action="prev-window">← 3 חודשים קודמים</button>
+                    <button class="exam-btn" data-exam-action="current-window">חלון נוכחי</button>
+                    <button class="exam-btn" data-exam-action="next-window">3 חודשים הבאים →</button>
+                    <button class="exam-btn active" data-exam-action="toggle-history">הסתר היסטוריה (3)</button>
+                    <span class="exam-window-label" data-exam-window-label></span>
                     <div class="exam-divider" aria-hidden="true"></div>
                     <div class="exam-legend-bar">
                 `;
@@ -568,7 +752,14 @@
 
                 // Enhance cells with functionality
                 setupExamInteractions(container);
+                loadExamViewState();
                 formatExamDates(container);
+                applyExamWindow(container);
+
+                const controls = overlay.querySelector('.exam-controls');
+                if (controls) {
+                    setupExamWindowControls(controls, container);
+                }
 
                 overlay.addEventListener('input', () => {
                     saveExamState(container);
@@ -648,6 +839,7 @@
                                 // Re-apply interactions after innerHTML replacement
                                 setupExamInteractions(container);
                                 formatExamDates(container);
+                                applyExamWindow(container);
                             }
                             isInitialSync = false;
                         });
@@ -938,23 +1130,10 @@
         }
     };
 
-    window.setExamView = (months) => {
-        const tables = document.querySelectorAll('#examModeOverlay table');
-        const titles = document.querySelectorAll('#examModeOverlay h2');
-        const btns = document.querySelectorAll('.exam-btn');
-
-        btns.forEach(b => b.classList.remove('active'));
-        if (event && event.target) event.target.classList.add('active');
-
-        // Reset display
-        tables.forEach(t => t.style.display = 'none');
-        titles.forEach(t => t.style.display = 'none');
-
-        // Show based on selection
-        for (let i = 0; i < months; i++) {
-            if (tables[i]) tables[i].style.display = '';
-            if (titles[i]) titles[i].style.display = '';
-        }
+    window.setExamView = () => {
+        const container = document.querySelector('#examModeOverlay .container');
+        if (!container) return;
+        applyExamWindow(container);
     };
 
     window.setupExamInteractions = (container) => {
@@ -1267,6 +1446,14 @@
         clone.querySelectorAll('.exam-banner').forEach(banner => {
             banner.removeAttribute('contenteditable');
             banner.removeAttribute('spellcheck');
+        });
+
+        // Do not transfer UI window state between devices/sync payload
+        clone.querySelectorAll('[data-exam-section="true"]').forEach(node => {
+            node.classList.remove('exam-month-active', 'exam-month-history', 'exam-month-hidden');
+            node.removeAttribute('hidden');
+            node.removeAttribute('data-exam-section');
+            node.removeAttribute('data-exam-month-index');
         });
 
         clone.querySelectorAll('.add-tile-btn, .chip-check, .chip-delete, .chip-drag-handle, .chip-color-swatch, .day-passed-toggle, .day-passed-x, .exam-day-toggle, .exam-banner-color-btn, .exam-tile-color-btn, .exam-countdown-toggle, .countdown-badge').forEach(el => el.remove());
