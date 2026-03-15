@@ -69,15 +69,6 @@
     font-size: 0.85em;
 }
 
-.exam-window-label {
-    font-size: 0.85em;
-    color: #475569;
-    background: #f8fafc;
-    border: 1px solid #e2e8f0;
-    border-radius: 6px;
-    padding: 6px 10px;
-}
-
 /* Color Picker */
 .color-picker-btn {
     width: 30px;
@@ -219,22 +210,6 @@
     font-weight: bold;
     border-bottom: 2px solid #f1f5f9;
     padding-bottom: 5px;
-}
-
-#examModeOverlay h2.exam-month-history {
-    opacity: 0.82;
-    color: #64748b;
-}
-
-#examModeOverlay table.exam-month-history {
-    opacity: 0.82;
-    border: 1px dashed #cbd5e1;
-    border-radius: 8px;
-}
-
-#examModeOverlay h2.exam-month-hidden,
-#examModeOverlay table.exam-month-hidden {
-    display: none !important;
 }
 
 #examModeOverlay .exam-editable {
