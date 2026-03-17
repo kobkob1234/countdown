@@ -9,10 +9,8 @@ export const cleanUsername = (name) => {
     return (name || '').trim().toLowerCase().replaceAll(/[^a-z0-9_-]/g, '');
 };
 
-// Initialize authentication
+// Initialize authentication - returns currentUser string
 export function initAuth() {
-    console.log('[Auth] Initializing authentication...');
-
     let currentUser = localStorage.getItem('countdown_username');
 
     // Login Process
@@ -30,31 +28,25 @@ export function initAuth() {
     // Store in AppState
     AppState.currentUser = currentUser;
 
-    // Update UI
+    // Update UI + switch user handler
     const userBtn = $('userBtn');
     if (userBtn) {
         userBtn.textContent = `👤 ${currentUser}`;
 
         userBtn.onclick = (e) => {
-            console.log('[User] userBtn clicked');
-            try {
-                e.stopPropagation();
+            e.preventDefault();
+            e.stopPropagation();
+            // Use timeout to prevent instant dismissal issues on mobile
+            setTimeout(() => {
                 const switchUser = confirm(`You are logged in as "${currentUser}".\n\nDo you want to switch users?`);
-                console.log('[User] Switch user dialog result:', switchUser);
                 if (switchUser) {
                     localStorage.removeItem('countdown_username');
                     location.reload();
                 }
-            } catch (err) {
-                console.error('[User] Error in userBtn click handler:', err);
-                alert('Error switching users. Please try refreshing the page.');
-            }
+            }, 50);
         };
-    } else {
-        console.warn('[User] userBtn element not found!');
     }
 
-    console.log('[Auth] User authenticated:', currentUser);
     return currentUser;
 }
 

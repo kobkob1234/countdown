@@ -1,5 +1,5 @@
 // Bump cache version when precache list or fetch strategy changes
-const CACHE_NAME = 'countdown-push-v16';
+const CACHE_NAME = 'countdown-push-v17';
 const NOTIFY_DEDUPE_CACHE = 'countdown-notify-dedupe-v1';
 const NOTIFY_DEDUPE_TTL_MS = 1000 * 60 * 60 * 24 * 7;
 const PENDING_SUB_DB = 'countdown-pending-sub';
@@ -27,7 +27,7 @@ const CACHE_URLS = [
   './js/auth.js',
   './js/notifications.js',
   './js/sync.js',
-  './js/app.js',
+  './js/exam-mode.js',
   './js/controllers/mobile.js',
   './js/main.js',
   './js/inline/pwa-install.js',

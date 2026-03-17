@@ -1,6 +1,7 @@
 
 import { AppState } from '../state.js';
 import { isEditableTarget } from '../utils.js';
+import { forceAllSyncReady } from '../sync.js';
 
 export function initMobileController() {
     // ===== Mobile Detection =====
@@ -227,8 +228,8 @@ export function initMobileController() {
 
                 // Trigger Sync
                 window.haptic.medium();
-                if (window.AppModules && window.AppModules.forceAllSyncReady) {
-                    await window.AppModules.forceAllSyncReady('manual-pull');
+                if (forceAllSyncReady) {
+                    await forceAllSyncReady('manual-pull');
                 }
 
                 // Simulate delay

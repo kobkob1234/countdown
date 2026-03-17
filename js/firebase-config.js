@@ -7,6 +7,7 @@ import {
     getDatabase,
     ref,
     set,
+    get,
     onValue,
     push,
     remove,
@@ -41,6 +42,7 @@ AppState.db = db;
 export {
     ref,
     set,
+    get,
     onValue,
     push,
     remove,

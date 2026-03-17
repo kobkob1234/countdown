@@ -24,8 +24,8 @@
 // ╚══════════════════════════════════════════════════════════════════════════╝
 
 // ============ 1. FIREBASE INITIALIZATION ============
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getDatabase, ref, set, get, onValue, push, remove, onChildAdded, onChildChanged, onChildRemoved, goOnline, goOffline } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+import { db, ref, set, get, onValue, push, remove, onChildAdded, onChildChanged, onChildRemoved, goOnline, goOffline, eventsRef, getUserTasksRef, getUserSubjectsRef } from "./firebase-config.js";
+import { initAuth } from "./auth.js";
 import { ctx } from "./context.js";
 window.ctx = ctx; // Expose globally for auto-cleanup logic
 import { initEvents } from "./events.js";
@@ -33,80 +33,17 @@ import { initTasks } from "./tasks.js";
 import { initCalendar } from "./calendar.js";
 import { createPomodoro } from "./pomodoro.js";
 import { initUi } from "./ui.js";
-
-const firebaseConfig = {
-  apiKey: "AIzaSyB_IflOD8CwVLQQjqtz_ZKWzbfgCiOm2Js",
-  authDomain: "countdown-463de.firebaseapp.com",
-  databaseURL: "https://countdown-463de-default-rtdb.firebaseio.com",
-  projectId: "countdown-463de",
-  storageBucket: "countdown-463de.firebasestorage.app",
-  messagingSenderId: "1016385864732",
-  appId: "1:1016385864732:web:8a82e771e1f4be567a8bd9"
-};
-
-const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
-const eventsRef = ref(db, 'events');
 Object.assign(ctx, {
-  db,
-  ref,
-  set,
-  get,
-  onValue,
-  push,
-  remove,
-  onChildAdded,
-  onChildChanged,
-  onChildRemoved,
-  goOnline,
-  goOffline,
-  eventsRef
+  db, ref, set, get, onValue, push, remove,
+  onChildAdded, onChildChanged, onChildRemoved,
+  goOnline, goOffline, eventsRef
 });
 
 // ============ 2. USER AUTHENTICATION ============
-const userBtn = document.getElementById('userBtn');
-let currentUser = localStorage.getItem('countdown_username');
-
-// Function to sanitize username (remove special chars)
-const cleanUsername = (name) => {
-  return (name || '').trim().toLowerCase().replaceAll(/[^a-z0-9_-]/g, '');
-};
-
-// Login Process
-if (!currentUser) {
-  const input = prompt("👋 Welcome! \nEnter a username to access your private tasks:\n(e.g., 'john123', 'sarah_work')");
-  currentUser = cleanUsername(input);
-
-  if (!currentUser) {
-    currentUser = 'guest_' + Math.floor(Math.random() * 1000);
-    alert("No name entered. You are logged in as: " + currentUser);
-  }
-  localStorage.setItem('countdown_username', currentUser);
-}
-
-// Update UI
-if (userBtn) userBtn.textContent = `👤 ${currentUser}`;
-
-// 3. PRIVATE REFERENCES (Scoped to the user)
-const tasksRef = ref(db, `users/${currentUser}/tasks`);
-const subjectsRef = ref(db, `users/${currentUser}/subjects`);
+const currentUser = initAuth();
+const tasksRef = getUserTasksRef(currentUser);
+const subjectsRef = getUserSubjectsRef(currentUser);
 Object.assign(ctx, { currentUser, tasksRef, subjectsRef });
-
-// 4. LOGOUT / SWITCH USER FUNCTION
-if (userBtn) {
-  userBtn.onclick = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    // Use timeout to prevent instant dismissal issues
-    setTimeout(() => {
-      const switchUser = confirm(`You are logged in as "${currentUser}".\n\nDo you want to switch users?`);
-      if (switchUser) {
-        localStorage.removeItem('countdown_username');
-        location.reload(); // Reload page to reset references
-      }
-    }, 50);
-  };
-}
 
 // ============ 3. GLOBAL CONSTANTS & DOM REFERENCES ============
 const COLORS = ['#667eea', '#f59e0b', '#10b981', '#ec4899', '#8b5cf6', '#06b6d4', '#ef4444', '#84cc16'];
@@ -120,8 +57,20 @@ const escapeHtml = (str) => String(str || '').replaceAll(/[&<>"']/g, (c) => ({
   '"': '&quot;',
   "'": '&#39;'
 })[c]);
-Object.assign(ctx, { COLORS, HEBREW_DAYS, HEBREW_MONTHS, escapeHtml });
+const STORAGE_KEYS = {
+  THEME: 'countdown-theme',
+  SIDEBAR_WIDTH: 'countdown-sidebar-width',
+  GOOGLE_API_KEY: 'countdown-google-api-key',
+  GOOGLE_CLIENT_ID: 'countdown-google-client-id'
+};
+const CACHE_KEYS = {
+  EVENTS: 'countdown-events-cache-v1',
+  TASKS_PREFIX: 'countdown-tasks-cache-v1:',
+  SUBJECTS_PREFIX: 'countdown-subjects-cache-v1:'
+};
+Object.assign(ctx, { COLORS, HEBREW_DAYS, HEBREW_MONTHS, escapeHtml, STORAGE_KEYS, CACHE_KEYS });
 
+// --- DOM References ---
 const $ = id => document.getElementById(id);
 const eventList = $("eventList");
 const emptyState = $("emptyState");
@@ -147,14 +96,10 @@ const monthEventsTitle = $("monthEventsTitle");
 const clearModal = $("clearModal");
 const confirmClearBtn = $("confirmClearBtn");
 const cancelClearModalBtn = $("cancelClearModalBtn");
-ctx.clearModal = clearModal;
 const themeToggle = $("themeToggle");
 const notifyBtn = $("notifyBtn");
 const togglePomodoro = $("togglePomodoro");
 const pomodoroOverlay = $("pomodoroOverlay");
-
-
-
 const eventNotes = $("eventNotes");
 const undoToast = $("undoToast");
 const undoToastMsg = $("undoToastMsg");
@@ -162,28 +107,6 @@ const shortcutsModal = $("shortcutsModal");
 const shortcutsClose = $("shortcutsClose");
 const helpShortcuts = $("helpShortcuts");
 const dayDrawer = $("dayDrawer");
-Object.assign(ctx, {
-  eventList,
-  emptyState,
-  eventName,
-  eventDate,
-  eventNotes,
-  inputPanel,
-  themeToggle,
-  notifyBtn,
-  pomodoroOverlay,
-  eventAlertModal,
-  alertTitle,
-  alertMessage,
-  undoToast,
-  undoToastMsg,
-  shortcutsModal,
-  shortcutsClose,
-  helpShortcuts,
-  dayDrawer
-});
-let shortcutsLastFocus = null;
-
 const undoToastUndo = $("undoToastUndo");
 const pomodoroCard = $("pomodoroCard");
 const pomodoroTaskSelect = $("pomodoroTaskSelect");
@@ -206,19 +129,13 @@ const pomodoroFocusMinutes = $("pomodoroFocusMinutes");
 const pomodoroStreak = $("pomodoroStreak");
 const pomodoroDayProgress = $("pomodoroDayProgress");
 const pomodoroDayLabel = $("pomodoroDayLabel");
-
-const STORAGE_KEYS = {
-  THEME: 'countdown-theme',
-  SIDEBAR_WIDTH: 'countdown-sidebar-width',
-  GOOGLE_API_KEY: 'countdown-google-api-key',
-  GOOGLE_CLIENT_ID: 'countdown-google-client-id'
-};
-const CACHE_KEYS = {
-  EVENTS: 'countdown-events-cache-v1',
-  TASKS_PREFIX: 'countdown-tasks-cache-v1:',
-  SUBJECTS_PREFIX: 'countdown-subjects-cache-v1:'
-};
-Object.assign(ctx, { STORAGE_KEYS, CACHE_KEYS });
+Object.assign(ctx, {
+  clearModal, eventList, emptyState, eventName, eventDate, eventNotes,
+  inputPanel, themeToggle, notifyBtn, pomodoroOverlay,
+  eventAlertModal, alertTitle, alertMessage,
+  undoToast, undoToastMsg, shortcutsModal, shortcutsClose, helpShortcuts, dayDrawer
+});
+let shortcutsLastFocus = null;
 
 let editingId = null;
 Object.defineProperty(ctx, 'editingId', { get: () => editingId, set: (val) => { editingId = val; } });
