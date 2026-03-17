@@ -1,5 +1,5 @@
 // Bump cache version when precache list or fetch strategy changes
-const CACHE_NAME = 'countdown-push-v14';
+const CACHE_NAME = 'countdown-push-v15';
 const NOTIFY_DEDUPE_CACHE = 'countdown-notify-dedupe-v1';
 const NOTIFY_DEDUPE_TTL_MS = 1000 * 60 * 60 * 24 * 7;
 const PENDING_SUB_DB = 'countdown-pending-sub';
@@ -32,7 +32,13 @@ const CACHE_URLS = [
   './js/main.js',
   './js/inline/pwa-install.js',
   './js/inline/mobile-nav.js',
-  './js/inline/pull-to-refresh.js'
+  './js/inline/pull-to-refresh.js',
+  './js/inline/confetti.js',
+  './js/inline/daily-planner.js',
+  './js/inline/nlp-parsing.js',
+  './js/inline/undo-redo-keyboard.js',
+  './js/inline/context-menus.js',
+  './js/inline/daily-reminder.js'
 ];
 
 // ============================================
