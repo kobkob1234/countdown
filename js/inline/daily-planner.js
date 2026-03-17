@@ -1,5 +1,7 @@
 import { ctx } from '../context.js';
 
+const $ = id => document.getElementById(id);
+
 // ============ 14. DAILY PLANNER ============
 // Extracted from main.js - reads dependencies from ctx
 

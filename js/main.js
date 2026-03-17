@@ -5403,6 +5403,7 @@ setupSmartViewsHandlers();
 // ============ 14. DAILY PLANNER (extracted to js/inline/daily-planner.js) ============
 import { initDailyPlanner } from './inline/daily-planner.js';
 const DailyPlanner = initDailyPlanner();
+window.DailyPlanner = DailyPlanner;
 
 
 // Handle Notification Actions (Complete Task)
