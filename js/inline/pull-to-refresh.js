@@ -83,8 +83,8 @@ export function initPullToRefresh() {
         if (typeof window.ctx !== 'undefined') {
           // Render current data immediately
           if (window.ctx.renderTasks) window.ctx.renderTasks();
-          if (window.ctx.updateEventList) window.ctx.updateEventList();
-          if (window.ctx.renderPlannerBlocks) window.ctx.renderPlannerBlocks();
+          if (window.ctx.renderCalendar) window.ctx.renderCalendar();
+          if (window.DailyPlanner && window.DailyPlanner.render) window.DailyPlanner.render();
         }
 
         // Also check for service worker updates

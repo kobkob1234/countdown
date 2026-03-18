@@ -8,11 +8,11 @@ const $ = id => document.getElementById(id);
 export function initDailyPlanner() {
   // Read dependencies from ctx
   const { db, ref, set, get, onValue, push, remove, currentUser, escapeHtml,
-          showSystemNotification, getAudioContext,
+          showSystemNotification, showEventAlert, getAudioContext,
           notifiedPlannerBlocks, reminderCheckState,
           getReminderWindow, persistLastCheck,
           wasDedupeKeySeen, markDedupeKeySeen,
-          persistNotifiedMap, NOTIFY_KEYS, REMINDER_CATCHUP_MAX_COUNT } = ctx;
+          persistNotifiedMap, pruneNotifiedMap, NOTIFY_KEYS, REMINDER_CATCHUP_MAX_COUNT } = ctx;
 
   // Dynamic getters for reactive data (these arrays change over time)
   const getTasks = () => ctx.tasks || [];
@@ -1408,8 +1408,8 @@ export function initDailyPlanner() {
   };
 
   const pruneDeletedTaskBlocks = () => {
-    if (typeof tasksLoaded !== 'undefined' && typeof hasTasksCache !== 'undefined') {
-      if (!tasksLoaded && !hasTasksCache) return 0;
+    if (typeof ctx.tasksLoaded !== 'undefined' && typeof ctx.hasTasksCache !== 'undefined') {
+      if (!ctx.tasksLoaded && !ctx.hasTasksCache) return 0;
     }
     const taskIds = new Set(getTasks().map(t => t.id));
     const initialLen = plannerBlocks.length;
@@ -2037,26 +2037,4 @@ export function initDailyPlanner() {
     checkReminders: checkPlannerReminders,
     startReminderTicker: startPlannerReminderTicker
   };
-
-  const DailyPlanner = {
-    init,
-    render,
-    refreshTasks,
-    refreshEvents,
-    addPlannerBlock,
-    checkReminders: checkPlannerReminders,
-    startReminderTicker: startPlannerReminderTicker
-  };
-
-  window.DailyPlanner = DailyPlanner;
-  
-  if (typeof ctx.eventsLoaded === 'undefined' || ctx.eventsLoaded || ctx.hasEventsCache) {
-    DailyPlanner.refreshEvents();
-  }
-  
-  if (typeof DailyPlanner.startReminderTicker === 'function') {
-    DailyPlanner.startReminderTicker();
-  }
-
-  return DailyPlanner;
 }

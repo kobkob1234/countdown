@@ -882,6 +882,7 @@ const closeEventAlert = () => {
   if (eventAlertModal) eventAlertModal.classList.remove('open');
 };
 ctx.closeEventAlert = closeEventAlert;
+ctx.showEventAlert = showEventAlert;
 
 const getReminderMinutesFromUI = () => {
   if (!eventReminder) return 0;

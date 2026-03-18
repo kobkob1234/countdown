@@ -382,8 +382,7 @@ export function initMobileNav() {
     const storageKey = context.STORAGE_KEYS?.SETTINGS_AUTO_DELETE || 'countdown-settings-auto-delete';
     const isEnabled = localStorage.getItem(storageKey) === 'true';
 
-    // Use window.tasks to access the global tasks array
-    const tasksList = window.tasks || [];
+    const tasksList = window.ctx?.tasks || [];
     if (!isEnabled || !tasksList || tasksList.length === 0) return;
 
     const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000;
@@ -410,7 +409,7 @@ export function initMobileNav() {
     if (tasksToDelete.length > 0) {
       console.log(`[AutoDelete] Found ${tasksToDelete.length} tasks to delete.`);
       tasksToDelete.forEach(task => {
-        removeTask(task);
+        if (window.ctx?.removeTask) window.ctx.removeTask(task);
         deletedCount++;
       });
       if (deletedCount > 0) {
@@ -471,7 +470,7 @@ export function initMobileNav() {
 
     if (!isEnabled) return;
 
-    const eventsList = (typeof ctx.getActiveEvents === 'function') ? ctx.getActiveEvents() : (context.events || []);
+    const eventsList = (typeof context.getActiveEvents === 'function') ? context.getActiveEvents() : (context.events || []);
     if (!eventsList || eventsList.length === 0) return;
 
     const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000;
@@ -489,8 +488,8 @@ export function initMobileNav() {
     if (eventsToDelete.length > 0) {
       console.log(`[AutoDeleteEvents] Found ${eventsToDelete.length} events to delete.`);
       eventsToDelete.forEach(evt => {
-        if (typeof ctx.deleteFromCloud === 'function') {
-          ctx.deleteFromCloud(evt.id);
+        if (typeof context.deleteFromCloud === 'function') {
+          context.deleteFromCloud(evt.id);
           deletedCount++;
         }
       });
