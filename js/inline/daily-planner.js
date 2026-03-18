@@ -1422,8 +1422,8 @@ export function initDailyPlanner() {
   };
 
   const pruneDeletedEventBlocks = () => {
-    if (typeof eventsLoaded !== 'undefined' && typeof hasEventsCache !== 'undefined') {
-      if (!eventsLoaded && !hasEventsCache) return 0;
+    if (typeof ctx.eventsLoaded !== 'undefined' && typeof ctx.hasEventsCache !== 'undefined') {
+      if (!ctx.eventsLoaded && !ctx.hasEventsCache) return 0;
     }
     const eventIds = new Set(getEvents().map(evt => evt.id));
     const initialLen = plannerBlocks.length;
@@ -1713,8 +1713,8 @@ export function initDailyPlanner() {
 
   // Main render function
   const render = () => {
-    if (typeof eventsLoaded !== 'undefined' && typeof hasEventsCache !== 'undefined') {
-      if (eventsLoaded || hasEventsCache) {
+    if (typeof ctx.eventsLoaded !== 'undefined' && typeof ctx.hasEventsCache !== 'undefined') {
+      if (ctx.eventsLoaded || ctx.hasEventsCache) {
         pruneDeletedEventBlocks();
       }
     }
@@ -1994,7 +1994,7 @@ export function initDailyPlanner() {
   };
 
   const addPlannerBlock = async ({ date, title, start, durationMinutes = 60, notes = '', category = '' }) => {
-    if (typeof showView === 'function') showView('planner');
+    if (typeof window.showView === 'function') window.showView('planner');
     if (!initialized) init();
 
     const dateObj = new Date(date);
