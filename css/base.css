@@ -1,12 +1,17 @@
     :root {
+      /* ═══════════════════════════════════════════
+         shadcn/ui Design Tokens
+         HSL color system with foreground pairs
+         ═══════════════════════════════════════════ */
+
       /* Typography Scale */
-      --font-size-xs: 11px;
-      --font-size-sm: 13px;
-      --font-size-base: 15px;
-      --font-size-lg: 18px;
-      --font-size-xl: 22px;
-      --font-size-2xl: 28px;
-      --font-size-3xl: 36px;
+      --font-size-xs: 0.6875rem;
+      --font-size-sm: 0.8125rem;
+      --font-size-base: 0.875rem;
+      --font-size-lg: 1rem;
+      --font-size-xl: 1.25rem;
+      --font-size-2xl: 1.5rem;
+      --font-size-3xl: 1.875rem;
 
       /* Font Weights */
       --font-weight-normal: 400;
@@ -14,67 +19,104 @@
       --font-weight-semibold: 600;
       --font-weight-bold: 700;
 
-      /* Spacing Scale */
-      --space-1: 4px;
-      --space-2: 8px;
-      --space-3: 12px;
-      --space-4: 16px;
-      --space-5: 20px;
-      --space-6: 24px;
-      --space-8: 32px;
-      --space-10: 40px;
+      /* Spacing Scale (rem-based) */
+      --space-0: 0px;
+      --space-px: 1px;
+      --space-0-5: 0.125rem;
+      --space-1: 0.25rem;
+      --space-1-5: 0.375rem;
+      --space-2: 0.5rem;
+      --space-2-5: 0.625rem;
+      --space-3: 0.75rem;
+      --space-3-5: 0.875rem;
+      --space-4: 1rem;
+      --space-5: 1.25rem;
+      --space-6: 1.5rem;
+      --space-8: 2rem;
+      --space-10: 2.5rem;
+      --space-12: 3rem;
 
-      /* Border Radius Scale */
-      --radius-sm: 6px;
-      --radius-md: 10px;
-      --radius-lg: 14px;
-      --radius-xl: 18px;
+      /* Border Radius (shadcn default: 0.5rem base) */
+      --radius: 0.5rem;
+      --radius-sm: calc(var(--radius) - 2px);
+      --radius-md: var(--radius);
+      --radius-lg: calc(var(--radius) + 2px);
+      --radius-xl: calc(var(--radius) + 6px);
+      --radius-full: 9999px;
 
-      /* Colors */
-      --bg: #f7f8fc;
-      --bg-gradient: radial-gradient(1200px 520px at 50% -240px, rgba(102, 126, 234, 0.16), rgba(247, 248, 252, 0) 65%),
-        linear-gradient(180deg, #fdfdff 0%, #f7f8fc 100%);
-      --card: #ffffff;
-      --text: #1a1a2e;
-      --muted: #6b7280;
-      --accent: #667eea;
-      --accent2: #6d5ce7;
-      --accent-soft: rgba(102, 126, 234, 0.12);
-      --accent-soft-strong: rgba(102, 126, 234, 0.18);
-      --danger: #ef4444;
-      --success: #10b981;
-      --shadow: 0 2px 6px rgba(15, 23, 42, 0.08);
-      --shadow-hover: 0 10px 24px rgba(15, 23, 42, 0.12);
-      --border: #e6e8f0;
-      --header-bg: rgba(255, 255, 255, 0.86);
-      --font: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      --input-bg: #ffffff;
-      --day-other: #f1f3f8;
-      --day-hover: #eceff6;
-      --btn-secondary-bg: #eef1f6;
-      --btn-secondary-hover: #e2e6ef;
-      --focus-ring: 0 0 0 3px rgba(102, 126, 234, 0.4);
+      /* ── Colors (shadcn/ui zinc palette) ── */
+      --bg: hsl(0 0% 100%);
+      --bg-gradient: none;
+      --card: hsl(0 0% 100%);
+      --card-foreground: hsl(240 10% 3.9%);
+      --popover: hsl(0 0% 100%);
+      --popover-foreground: hsl(240 10% 3.9%);
+      --text: hsl(240 10% 3.9%);
+      --muted: hsl(240 3.8% 46.1%);
+      --muted-bg: hsl(240 4.8% 95.9%);
+      --accent: hsl(231 77% 65%);
+      --accent2: hsl(262 68% 56%);
+      --accent-soft: hsl(231 77% 65% / 0.1);
+      --accent-soft-strong: hsl(231 77% 65% / 0.18);
+      --border: hsl(240 5.9% 90%);
+      --input: hsl(240 5.9% 90%);
+      --ring: hsl(240 5.9% 10%);
+      --danger: hsl(0 84.2% 60.2%);
+      --danger-foreground: hsl(0 0% 98%);
+      --success: hsl(142 71% 45%);
+      --success-foreground: hsl(0 0% 100%);
+      --warning: hsl(43 96% 56%);
+      --warning-foreground: hsl(0 0% 0%);
+
+      /* ── Shadows (subtle, like shadcn) ── */
+      --shadow-sm: 0 1px 2px 0 hsl(0 0% 0% / 0.05);
+      --shadow: 0 1px 3px 0 hsl(0 0% 0% / 0.1), 0 1px 2px -1px hsl(0 0% 0% / 0.1);
+      --shadow-md: 0 4px 6px -1px hsl(0 0% 0% / 0.1), 0 2px 4px -2px hsl(0 0% 0% / 0.1);
+      --shadow-lg: 0 10px 15px -3px hsl(0 0% 0% / 0.1), 0 4px 6px -4px hsl(0 0% 0% / 0.1);
+      --shadow-hover: 0 10px 15px -3px hsl(0 0% 0% / 0.1), 0 4px 6px -4px hsl(0 0% 0% / 0.1);
+
+      /* ── Aliases (backward compat) ── */
+      --header-bg: hsl(0 0% 100% / 0.8);
+      --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      --input-bg: hsl(0 0% 100%);
+      --day-other: hsl(240 4.8% 95.9%);
+      --day-hover: hsl(240 4.8% 95.9%);
+      --btn-secondary-bg: hsl(240 4.8% 95.9%);
+      --btn-secondary-hover: hsl(240 4.8% 93%);
+      --focus-ring: 0 0 0 2px hsl(0 0% 100%), 0 0 0 4px hsl(231 77% 65%);
     }
 
     body.dark {
-      --bg: #0f172a;
-      --bg-gradient: radial-gradient(1000px 480px at 50% -220px, rgba(99, 102, 241, 0.18), rgba(15, 23, 42, 0) 65%),
-        linear-gradient(180deg, #0b1222 0%, #0f172a 100%);
-      --card: #1e293b;
-      --text: #f1f5f9;
-      --muted: #94a3b8;
-      --border: #334155;
-      --accent-soft: rgba(129, 140, 248, 0.18);
-      --accent-soft-strong: rgba(129, 140, 248, 0.28);
-      --shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
-      --shadow-hover: 0 12px 28px rgba(0, 0, 0, 0.5);
-      --input-bg: #1e293b;
-      --day-other: #1a2535;
-      --day-hover: #243146;
-      --btn-secondary-bg: #2b394f;
-      --btn-secondary-hover: #3a4b66;
-      --header-bg: rgba(15, 23, 42, 0.82);
-      --focus-ring: 0 0 0 3px rgba(102, 126, 234, 0.5);
+      --bg: hsl(222.2 84% 4.9%);
+      --bg-gradient: none;
+      --card: hsl(222.2 84% 4.9%);
+      --card-foreground: hsl(210 40% 98%);
+      --popover: hsl(222.2 84% 4.9%);
+      --popover-foreground: hsl(210 40% 98%);
+      --text: hsl(210 40% 98%);
+      --muted: hsl(215 20.2% 65.1%);
+      --muted-bg: hsl(217.2 32.6% 17.5%);
+      --accent: hsl(234 89% 74%);
+      --accent-soft: hsl(234 89% 74% / 0.15);
+      --accent-soft-strong: hsl(234 89% 74% / 0.25);
+      --border: hsl(217.2 32.6% 17.5%);
+      --input: hsl(217.2 32.6% 17.5%);
+      --ring: hsl(212.7 26.8% 83.9%);
+      --danger: hsl(0 62.8% 30.6%);
+      --danger-foreground: hsl(210 40% 98%);
+      --success: hsl(142 71% 35%);
+      --header-bg: hsl(222.2 84% 4.9% / 0.82);
+      --input-bg: hsl(222.2 84% 4.9%);
+      --day-other: hsl(217.2 32.6% 17.5%);
+      --day-hover: hsl(217.2 32.6% 20%);
+      --btn-secondary-bg: hsl(217.2 32.6% 17.5%);
+      --btn-secondary-hover: hsl(217.2 32.6% 22%);
+      --shadow-sm: 0 1px 2px 0 hsl(0 0% 0% / 0.2);
+      --shadow: 0 1px 3px 0 hsl(0 0% 0% / 0.3), 0 1px 2px -1px hsl(0 0% 0% / 0.3);
+      --shadow-md: 0 4px 6px -1px hsl(0 0% 0% / 0.3), 0 2px 4px -2px hsl(0 0% 0% / 0.3);
+      --shadow-lg: 0 10px 15px -3px hsl(0 0% 0% / 0.3), 0 4px 6px -4px hsl(0 0% 0% / 0.3);
+      --shadow-hover: 0 10px 15px -3px hsl(0 0% 0% / 0.3), 0 4px 6px -4px hsl(0 0% 0% / 0.3);
+      --focus-ring: 0 0 0 2px hsl(222.2 84% 4.9%), 0 0 0 4px hsl(234 89% 74%);
     }
 
     /* Accessibility: Focus visible */
@@ -160,54 +202,51 @@
       top: 0;
       left: 0;
       right: 0;
-      height: 60px;
+      height: 3.5rem;
       background: var(--header-bg);
       border-bottom: 1px solid var(--border);
       display: flex;
       align-items: center;
-      padding: 0 16px;
-      gap: 10px;
+      padding: 0 var(--space-4);
+      gap: var(--space-1);
       z-index: 10000;
-      box-shadow: var(--shadow);
-      backdrop-filter: blur(14px) saturate(1.1);
+      backdrop-filter: blur(12px) saturate(1.1);
     }
 
     .header-btn {
       display: inline-flex;
       align-items: center;
-      gap: 8px;
-      padding: 10px 16px;
-      opacity: 1;
-      /* Changed from 0.3 to 1 */
-      border: 1px solid transparent;
+      gap: var(--space-2);
+      padding: var(--space-2) var(--space-3);
+      height: 2.25rem;
+      border: none;
       border-radius: var(--radius-md);
       background: transparent;
       color: var(--muted);
+      font-family: var(--font);
       font-size: var(--font-size-sm);
       font-weight: var(--font-weight-medium);
       cursor: pointer;
-      transition: all 0.2s;
+      transition: background 0.15s, color 0.15s;
       white-space: nowrap;
     }
 
     .header-btn:hover {
-      background: var(--day-hover);
-      border-color: rgba(102, 126, 234, 0.2);
+      background: var(--day-other);
+      color: var(--text);
     }
 
     .header-btn.active {
       background: var(--accent-soft);
       color: var(--accent);
-      border-color: rgba(102, 126, 234, 0.2);
     }
 
     .header-btn.icon-only {
-      width: 38px;
-      height: 38px;
+      width: 2.25rem;
+      height: 2.25rem;
       padding: 0;
       justify-content: center;
-      border-radius: 12px;
-      background: var(--day-other);
+      border-radius: var(--radius-md);
     }
 
     .header-btn .icon {
@@ -221,7 +260,7 @@
     /* Notification button enabled state */
     #notifyBtn.notify-enabled {
       background: var(--accent-soft);
-      border-color: rgba(102, 126, 234, 0.35);
+      border-color: var(--accent-soft-strong);
       box-shadow: none;
     }
 
@@ -248,7 +287,7 @@
       height: 6px;
       border-radius: 50%;
       background: var(--accent);
-      box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.15);
+      box-shadow: 0 0 0 4px var(--accent-soft-strong);
       animation: syncPulse 1.6s ease-in-out infinite;
     }
 
@@ -348,16 +387,17 @@
 
     .command-palette {
       background: var(--card);
-      border-radius: 16px;
-      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.3);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xl);
+      box-shadow: var(--shadow-lg);
       width: 90%;
-      max-width: 560px;
+      max-width: 32rem;
       max-height: 70vh;
       display: flex;
       flex-direction: column;
       overflow: hidden;
-      transform: translateY(-20px) scale(0.95);
-      transition: transform 0.2s;
+      transform: translateY(-10px) scale(0.98);
+      transition: transform 0.15s ease;
     }
 
     .command-palette-backdrop.open .command-palette {
@@ -365,44 +405,48 @@
     }
 
     .command-palette-input-wrap {
-      padding: 16px;
+      padding: var(--space-3);
       border-bottom: 1px solid var(--border);
     }
 
     .command-palette-input {
       width: 100%;
-      padding: 14px 18px;
-      border: 2px solid var(--border);
-      border-radius: 12px;
-      font-size: 16px;
+      padding: var(--space-3) var(--space-4);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      font-family: var(--font);
+      font-size: var(--font-size-sm);
       background: var(--input-bg);
       color: var(--text);
       outline: none;
+      transition: border-color 0.15s;
     }
 
     .command-palette-input:focus {
-      border-color: var(--accent);
+      border-color: var(--ring);
+      box-shadow: var(--focus-ring);
     }
 
     .command-palette-results {
       flex: 1;
       overflow-y: auto;
-      padding: 8px;
+      padding: var(--space-1);
     }
 
     .command-palette-item {
-      padding: 12px 16px;
-      border-radius: 10px;
+      padding: var(--space-2) var(--space-3);
+      border-radius: var(--radius-sm);
       cursor: pointer;
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: var(--space-3);
       transition: background 0.1s;
+      font-size: var(--font-size-sm);
     }
 
     .command-palette-item:hover,
     .command-palette-item.selected {
-      background: var(--day-hover);
+      background: var(--day-other);
     }
 
     .command-palette-item.selected {
@@ -411,27 +455,30 @@
     }
 
     .command-palette-icon {
-      font-size: 20px;
-      width: 32px;
+      font-size: 18px;
+      width: 1.5rem;
       text-align: center;
+      color: var(--muted);
     }
 
     .command-palette-label {
       flex: 1;
-      font-size: 14px;
+      font-size: var(--font-size-sm);
     }
 
     .command-palette-shortcut {
-      font-size: 11px;
+      font-size: var(--font-size-xs);
       color: var(--muted);
       background: var(--day-other);
-      padding: 3px 8px;
-      border-radius: 6px;
+      padding: 2px var(--space-2);
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
     }
 
     .command-palette-item.selected .command-palette-shortcut {
       background: rgba(255, 255, 255, 0.2);
       color: white;
+      border-color: transparent;
     }
 
     .command-palette-empty {
@@ -583,7 +630,7 @@
     }
 
     .calendar-day.very-busy-day {
-      box-shadow: inset 0 0 0 2px var(--accent), 0 0 12px rgba(102, 126, 234, 0.3);
+      box-shadow: inset 0 0 0 2px var(--accent), 0 0 12px var(--accent-soft-strong);
     }
 
     .calendar-day-count {
@@ -780,7 +827,7 @@
     /* Pull to Refresh */
     .pull-to-refresh {
       position: fixed;
-      top: 56px;
+      top: 3.5rem;
       left: 50%;
       transform: translateX(-50%) translateY(-100px);
       background: var(--card);
@@ -1018,7 +1065,7 @@
 
     /* Drag & Drop Calendar */
     .calendar-day.drag-over {
-      background: rgba(102, 126, 234, 0.1);
+      background: var(--accent-soft);
       border-color: var(--accent);
     }
 
@@ -1031,24 +1078,26 @@
     body {
       font-family: var(--font);
       background-color: var(--bg);
-      background-image: var(--bg-gradient);
       min-height: 100vh;
       min-height: 100dvh;
       color: var(--text);
+      font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
     }
 
     .app-layout {
       display: flex;
-      height: calc(100vh - 60px);
-      height: calc(100dvh - 60px);
+      height: calc(100vh - 3.5rem);
+      height: calc(100dvh - 3.5rem);
       align-items: flex-start;
       overflow-y: auto;
       position: relative;
     }
 
     .sidebar {
-      width: 450px;
-      min-width: 380px;
+      width: 420px;
+      min-width: 360px;
       max-width: 90vw;
       background: var(--card);
       border-left: 1px solid var(--border);
@@ -1056,7 +1105,7 @@
       display: flex;
       flex-direction: column;
       order: 1;
-      transition: transform 0.3s;
+      transition: transform 0.2s ease;
       overflow: visible;
       flex: 0 0 auto;
       box-sizing: border-box;
@@ -1073,18 +1122,18 @@
     .main-content {
       flex: 1;
       padding: var(--space-6);
-      padding-top: 80px;
+      padding-top: 5rem;
       overflow-y: visible;
     }
 
     .container {
-      max-width: 900px;
+      max-width: 56rem;
       margin: 0 auto;
     }
 
     /* Body offset for fixed header */
     body {
-      padding-top: 60px;
+      padding-top: 3.5rem;
     }
 
     .header {
@@ -1114,10 +1163,10 @@
       direction: rtl;
       background: var(--card);
       border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 12px;
-      box-shadow: var(--shadow);
-      margin-bottom: 14px;
+      border-radius: var(--radius-lg);
+      padding: var(--space-3);
+      box-shadow: var(--shadow-sm);
+      margin-bottom: var(--space-3);
       flex: 0 0 auto;
       overflow: visible;
       width: 100%;
@@ -1127,44 +1176,43 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      margin-bottom: 8px;
-      gap: 10px;
+      margin-bottom: var(--space-2);
+      gap: var(--space-2);
       flex-wrap: wrap;
     }
 
     .calendar-title {
-      font-size: 20px;
-      font-weight: 600;
+      font-size: var(--font-size-lg);
+      font-weight: var(--font-weight-semibold);
       color: var(--text);
     }
 
     .calendar-nav {
       display: flex;
-      gap: 8px;
+      gap: var(--space-1);
     }
 
     .calendar-nav button {
-      width: 36px;
-      height: 36px;
+      width: 2rem;
+      height: 2rem;
       border: 1px solid var(--border);
-      border-radius: 6px;
+      border-radius: var(--radius-sm);
       background: var(--card);
       color: var(--text);
-      font-size: 18px;
+      font-size: 16px;
       cursor: pointer;
-      transition: all 0.15s;
+      transition: background 0.15s, border-color 0.15s;
     }
 
     .calendar-nav button:hover {
-      background: var(--day-hover);
-      border-color: var(--accent);
+      background: var(--day-other);
     }
 
     .calendar-view-toggle {
       display: flex;
-      gap: 6px;
-      padding: 4px;
-      border-radius: 999px;
+      gap: var(--space-0-5);
+      padding: 2px;
+      border-radius: var(--radius-md);
       background: var(--day-other);
       border: 1px solid var(--border);
     }
@@ -1173,9 +1221,10 @@
       border: none;
       background: transparent;
       color: var(--muted);
-      font-size: 12px;
-      padding: 6px 12px;
-      border-radius: 999px;
+      font-family: var(--font);
+      font-size: var(--font-size-xs);
+      padding: var(--space-1) var(--space-3);
+      border-radius: var(--radius-sm);
       cursor: pointer;
       transition: all 0.15s;
     }
@@ -1185,17 +1234,18 @@
     }
 
     .calendar-view-toggle button.active {
-      background: var(--accent);
-      color: #fff;
-      box-shadow: 0 2px 6px rgba(102, 126, 234, 0.25);
+      background: var(--card);
+      color: var(--text);
+      box-shadow: var(--shadow-sm);
+      font-weight: var(--font-weight-medium);
     }
 
     .calendar-grid {
       display: grid;
       grid-template-columns: repeat(7, 1fr);
-      grid-auto-rows: minmax(56px, auto);
-      gap: 4px;
-      margin-top: 8px;
+      grid-auto-rows: minmax(3rem, auto);
+      gap: 1px;
+      margin-top: var(--space-2);
       align-items: stretch;
       width: 100%;
       box-sizing: border-box;
@@ -1203,8 +1253,8 @@
 
     .calendar-day-name {
       text-align: center;
-      font-size: 13px;
-      font-weight: 600;
+      font-size: var(--font-size-xs);
+      font-weight: var(--font-weight-medium);
       color: var(--muted);
       padding: var(--space-2) 0;
     }
@@ -1309,18 +1359,17 @@
     }
 
     .calendar-day:hover {
-      background: var(--day-hover);
-      border-color: var(--border);
+      background: var(--day-other);
     }
 
     .calendar-day.other-month {
-      background: var(--day-other);
-      opacity: 0.5;
+      opacity: 0.4;
     }
 
     .calendar-day.today {
       border: 2px solid var(--accent);
-      background: rgba(102, 126, 234, 0.05);
+      background: var(--accent-soft);
+      font-weight: var(--font-weight-semibold);
     }
 
     .calendar-day-number {
@@ -1440,26 +1489,28 @@
       background: var(--card);
       border: 1px solid var(--border);
       border-radius: var(--radius-lg);
-      padding: var(--space-5);
-      box-shadow: var(--shadow);
+      padding: var(--space-4);
+      box-shadow: var(--shadow-sm);
       margin-bottom: var(--space-5);
       direction: rtl;
     }
 
     .input-row {
       display: flex;
-      gap: var(--space-3);
+      gap: var(--space-2);
       align-items: center;
       flex-wrap: wrap;
     }
 
     .input-row input {
       flex: 1;
-      padding: var(--space-3) var(--space-4);
-      border: 2px solid var(--border);
+      padding: var(--space-2) var(--space-3);
+      height: 2.25rem;
+      border: 1px solid var(--border);
       border-radius: var(--radius-md);
-      font-size: var(--font-size-base);
-      transition: border-color 0.2s, box-shadow 0.2s;
+      font-family: var(--font);
+      font-size: var(--font-size-sm);
+      transition: border-color 0.15s, box-shadow 0.15s;
       outline: none;
       direction: rtl;
       text-align: right;
@@ -1468,8 +1519,8 @@
     }
 
     .input-row input:focus {
-      border-color: var(--accent);
-      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
+      border-color: var(--ring);
+      box-shadow: var(--focus-ring);
     }
 
     .input-row input[type="text"] {
@@ -1483,10 +1534,12 @@
     }
 
     .reminder-select {
-      padding: var(--space-3) var(--space-4);
-      border: 2px solid var(--border);
+      padding: var(--space-2) var(--space-3);
+      height: 2.25rem;
+      border: 1px solid var(--border);
       border-radius: var(--radius-md);
-      font-size: var(--font-size-base);
+      font-family: var(--font);
+      font-size: var(--font-size-sm);
       background: var(--input-bg);
       color: var(--text);
       outline: none;
@@ -1552,52 +1605,60 @@
     .reminder-custom input:focus,
     .reminder-custom select:focus {
       border-color: var(--accent);
-      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
+      box-shadow: 0 0 0 3px var(--accent-soft-strong);
     }
 
     .btn {
-      padding: var(--space-3) var(--space-6);
-      border: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-2);
+      padding: var(--space-2) var(--space-4);
+      height: 2.25rem;
+      border: 1px solid transparent;
       border-radius: var(--radius-md);
-      font-size: var(--font-size-base);
-      font-weight: var(--font-weight-semibold);
+      font-family: var(--font);
+      font-size: var(--font-size-sm);
+      font-weight: var(--font-weight-medium);
       cursor: pointer;
-      transition: all 0.2s;
+      transition: background 0.15s, color 0.15s, border-color 0.15s;
     }
 
     .btn-primary {
-      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      background: var(--accent);
       color: white;
-      box-shadow: 0 6px 14px rgba(102, 126, 234, 0.25);
+      border-color: var(--accent);
     }
 
     .btn-primary:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+      opacity: 0.9;
     }
 
     .btn-primary:active {
-      transform: translateY(0);
+      opacity: 0.85;
     }
 
     .btn-ghost {
-      background: rgba(239, 68, 68, 0.08);
-      border: 1px solid rgba(239, 68, 68, 0.2);
-      color: #dc2626;
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--danger);
     }
 
     .btn-ghost:hover {
-      background: rgba(239, 68, 68, 0.12);
+      background: hsl(0 84.2% 60.2% / 0.1);
+      border-color: var(--danger);
     }
 
     .btn-cancel {
       background: var(--btn-secondary-bg);
       color: var(--muted);
+      border: 1px solid var(--border);
       display: none;
     }
 
     .btn-cancel:hover {
       background: var(--btn-secondary-hover);
+      color: var(--text);
     }
 
     .event-list {
@@ -1638,19 +1699,18 @@
       background: var(--card);
       border: 1px solid var(--border);
       border-radius: var(--radius-lg);
-      padding: 18px 18px;
+      padding: var(--space-4);
       box-sizing: border-box;
       display: flex;
       align-items: center;
-      gap: 16px;
-      box-shadow: var(--shadow);
-      transition: transform 0.15s, box-shadow 0.15s, background 0.2s;
+      gap: var(--space-4);
+      box-shadow: var(--shadow-sm);
+      transition: box-shadow 0.15s, border-color 0.15s;
     }
 
     .event-row:hover {
-      transform: translateY(-1px);
-      box-shadow: var(--shadow-hover);
-      border-color: #d7dbe8;
+      box-shadow: var(--shadow);
+      border-color: var(--accent-soft-strong);
     }
 
     .event-row.highlighted {
@@ -1659,9 +1719,9 @@
     }
 
     .color-dot {
-      width: 12px;
-      height: 12px;
-      border-radius: 50%;
+      width: 10px;
+      height: 10px;
+      border-radius: var(--radius-full);
       flex-shrink: 0;
     }
 
@@ -1672,7 +1732,7 @@
     }
 
     .event-name {
-      font-size: 18px;
+      font-size: var(--font-size-base);
       font-weight: 600;
       color: var(--text);
       white-space: nowrap;
@@ -1759,7 +1819,7 @@
     /* ============== DAILY PLANNER STYLES ============== */
     .planner-overlay {
       position: fixed;
-      top: 56px;
+      top: 3.5rem;
       left: 0;
       right: 0;
       bottom: 0;
@@ -1778,76 +1838,76 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 12px 24px;
+      padding: var(--space-3) var(--space-4);
       background: var(--card);
       border-bottom: 1px solid var(--border);
-      gap: 16px;
+      gap: var(--space-3);
       flex-wrap: wrap;
     }
 
     .planner-header-title {
-      font-size: 20px;
-      font-weight: 700;
+      font-size: var(--font-size-lg);
+      font-weight: var(--font-weight-semibold);
       color: var(--text);
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: var(--space-2);
     }
 
     .planner-date-nav {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: var(--space-2);
     }
 
     .planner-date-nav button {
-      width: 36px;
-      height: 36px;
+      width: 2rem;
+      height: 2rem;
       border: 1px solid var(--border);
-      border-radius: var(--radius-md);
+      border-radius: var(--radius-sm);
       background: var(--card);
       color: var(--text);
-      font-size: 18px;
+      font-size: 16px;
       cursor: pointer;
-      transition: all 0.15s;
+      transition: background 0.15s;
     }
 
     .planner-date-nav button:hover {
-      background: var(--day-hover);
-      border-color: var(--accent);
+      background: var(--day-other);
     }
 
     .planner-current-date {
-      font-size: 16px;
-      font-weight: 600;
+      font-size: var(--font-size-sm);
+      font-weight: var(--font-weight-medium);
       color: var(--text);
-      min-width: 200px;
+      min-width: 12rem;
       text-align: center;
       cursor: pointer;
-      padding: 8px 16px;
+      padding: var(--space-2) var(--space-3);
       border-radius: var(--radius-md);
       transition: background 0.15s;
     }
 
     .planner-current-date:hover {
-      background: var(--day-hover);
+      background: var(--day-other);
     }
 
     .planner-today-btn {
-      padding: 8px 16px;
-      border: 1px solid var(--accent);
+      padding: var(--space-2) var(--space-3);
+      height: 2rem;
+      border: 1px solid var(--border);
       border-radius: var(--radius-md);
-      background: transparent;
-      color: var(--accent);
-      font-size: 13px;
-      font-weight: 600;
+      background: var(--card);
+      color: var(--text);
+      font-family: var(--font);
+      font-size: var(--font-size-xs);
+      font-weight: var(--font-weight-medium);
       cursor: pointer;
-      transition: all 0.15s;
+      transition: background 0.15s;
     }
 
     .planner-today-btn:hover {
-      background: var(--accent);
-      color: white;
+      background: var(--day-other);
     }
 
     .planner-view-toggle {
@@ -1986,7 +2046,7 @@
     }
 
     .planner-mini-day.today {
-      background: rgba(102, 126, 234, 0.15);
+      background: var(--accent-soft-strong);
       color: var(--accent);
       font-weight: 600;
     }
@@ -2142,11 +2202,11 @@
     }
 
     .planner-hour-content:hover {
-      background: rgba(102, 126, 234, 0.05);
+      background: var(--accent-soft);
     }
 
     .planner-hour-content.drop-target {
-      background: rgba(102, 126, 234, 0.15);
+      background: var(--accent-soft-strong);
     }
 
     /* Time Blocks */
@@ -2217,22 +2277,22 @@
       width: 40px;
       height: 5px;
       border-radius: 999px;
-      background: rgba(102, 126, 234, 0.5);
+      background: var(--accent);
       transition: all 0.2s ease;
     }
 
     .planner-block-resize-handle:hover::after {
-      background: rgba(102, 126, 234, 0.9);
+      background: var(--accent);
       height: 6px;
       width: 50px;
     }
 
     body.dark .planner-block-resize-handle::after {
-      background: rgba(102, 126, 234, 0.6);
+      background: var(--accent-soft-strong);
     }
 
     body.dark .planner-block-resize-handle:hover::after {
-      background: rgba(102, 126, 234, 1);
+      background: var(--accent);
     }
 
     .planner-block:hover .planner-block-resize-handle {
@@ -2244,7 +2304,7 @@
     }
 
     .planner-block.resizing .planner-block-resize-handle::after {
-      background: rgba(102, 126, 234, 1);
+      background: var(--accent);
       height: 7px;
       width: 60px;
     }
@@ -2264,10 +2324,10 @@
       pointer-events: none;
       z-index: 25;
       border-radius: var(--radius-sm);
-      border: 3px solid rgba(102, 126, 234, 1);
-      background: rgba(102, 126, 234, 0.25);
+      border: 3px solid var(--accent);
+      background: var(--accent-soft-strong);
       backdrop-filter: blur(4px);
-      box-shadow: 0 8px 24px rgba(102, 126, 234, 0.4), 0 2px 8px rgba(0, 0, 0, 0.15), inset 0 0 0 1px rgba(255, 255, 255, 0.3);
+      box-shadow: 0 8px 24px var(--accent-soft-strong), 0 2px 8px rgba(0, 0, 0, 0.15), inset 0 0 0 1px rgba(255, 255, 255, 0.3);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -2280,12 +2340,12 @@
 
       0%,
       100% {
-        box-shadow: 0 8px 24px rgba(102, 126, 234, 0.4), 0 2px 8px rgba(0, 0, 0, 0.15), inset 0 0 0 1px rgba(255, 255, 255, 0.3);
+        box-shadow: 0 8px 24px var(--accent-soft-strong), 0 2px 8px rgba(0, 0, 0, 0.15), inset 0 0 0 1px rgba(255, 255, 255, 0.3);
         transform: scale(1);
       }
 
       50% {
-        box-shadow: 0 12px 32px rgba(102, 126, 234, 0.5), 0 4px 12px rgba(0, 0, 0, 0.2), inset 0 0 0 1px rgba(255, 255, 255, 0.5);
+        box-shadow: 0 12px 32px var(--accent), 0 4px 12px rgba(0, 0, 0, 0.2), inset 0 0 0 1px rgba(255, 255, 255, 0.5);
         transform: scale(1.01);
       }
     }
@@ -2299,7 +2359,7 @@
       border-radius: 16px;
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
       white-space: nowrap;
-      border: 2px solid rgba(102, 126, 234, 0.3);
+      border: 2px solid var(--accent-soft-strong);
       transition: transform 0.2s ease;
     }
 
@@ -2309,8 +2369,8 @@
 
     body.dark .planner-ghost-time {
       background: rgba(20, 20, 30, 0.98);
-      color: #667eea;
-      border-color: rgba(102, 126, 234, 0.5);
+      color: var(--accent);
+      border-color: var(--accent);
     }
 
     /* Compact mode for 15-30 min events */
@@ -2458,7 +2518,7 @@
       left: 0;
       right: 0;
       height: 1px;
-      background: linear-gradient(90deg, var(--accent) 0%, rgba(102, 126, 234, 0.3) 100%);
+      background: linear-gradient(90deg, var(--accent) 0%, var(--accent-soft-strong) 100%);
       z-index: 5;
       pointer-events: none;
     }
@@ -2472,7 +2532,7 @@
       height: 7px;
       border-radius: 50%;
       background: var(--accent);
-      box-shadow: 0 0 4px rgba(102, 126, 234, 0.5);
+      box-shadow: 0 0 4px var(--accent);
     }
 
     .planner-now-label {
@@ -2949,7 +3009,7 @@
       padding: 10px 14px;
       border: 1px solid var(--accent);
       border-radius: var(--radius-md);
-      background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
+      background: linear-gradient(135deg, var(--accent-soft), rgba(118, 75, 162, 0.1));
       color: var(--accent);
       font-size: 13px;
       font-weight: 600;
@@ -3013,7 +3073,7 @@
     .planner-countdown-item .countdown-time-left {
       font-size: 10px;
       color: var(--accent);
-      background: rgba(102, 126, 234, 0.1);
+      background: var(--accent-soft);
       padding: 2px 6px;
       border-radius: 4px;
       font-weight: 600;
@@ -3175,7 +3235,7 @@
     /* Pomodoro - Fullscreen like Task Manager */
     .pomodoro-overlay {
       position: fixed;
-      top: 56px;
+      top: 3.5rem;
       left: 0;
       right: 0;
       bottom: 0;
@@ -3195,7 +3255,7 @@
       align-items: center;
       justify-content: space-between;
       padding: 16px 32px;
-      background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
+      background: linear-gradient(135deg, var(--accent-soft), rgba(118, 75, 162, 0.1));
       border-bottom: 1px solid var(--border);
     }
 
@@ -3309,14 +3369,14 @@
 
     .pomodoro-card {
       background: linear-gradient(145deg, var(--card) 0%, var(--card) 100%);
-      border: 1px solid rgba(102, 126, 234, 0.2);
+      border: 1px solid var(--accent-soft-strong);
       border-radius: 32px;
       padding: 48px 40px;
       box-shadow:
-        0 25px 80px rgba(102, 126, 234, 0.2),
+        0 25px 80px var(--accent-soft-strong),
         0 10px 30px rgba(0, 0, 0, 0.08),
         0 0 0 1px rgba(255, 255, 255, 0.15) inset,
-        0 0 80px rgba(102, 126, 234, 0.05) inset;
+        0 0 80px var(--accent-soft) inset;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -3334,17 +3394,17 @@
       left: 20%;
       right: 20%;
       height: 2px;
-      background: linear-gradient(90deg, transparent, rgba(102, 126, 234, 0.5), rgba(118, 75, 162, 0.5), transparent);
+      background: linear-gradient(90deg, transparent, var(--accent), rgba(118, 75, 162, 0.5), transparent);
       border-radius: 999px;
     }
 
     .pomodoro-card:hover {
       transform: translateY(-2px);
       box-shadow:
-        0 30px 90px rgba(102, 126, 234, 0.25),
+        0 30px 90px var(--accent-soft-strong),
         0 15px 40px rgba(0, 0, 0, 0.1),
         0 0 0 1px rgba(255, 255, 255, 0.2) inset,
-        0 0 100px rgba(102, 126, 234, 0.08) inset;
+        0 0 100px var(--accent-soft) inset;
     }
 
     /* Timer Circle */
@@ -3363,7 +3423,7 @@
       position: absolute;
       inset: -20px;
       border-radius: 50%;
-      background: radial-gradient(circle, rgba(102, 126, 234, 0.15) 0%, transparent 70%);
+      background: radial-gradient(circle, var(--accent-soft-strong) 0%, transparent 70%);
       animation: timerGlow 3s ease-in-out infinite;
       pointer-events: none;
     }
@@ -3376,12 +3436,12 @@
           var(--accent) 0%,
           var(--accent2) calc(var(--progress, 0%) * 0.5),
           var(--accent) var(--progress, 0%),
-          rgba(102, 126, 234, 0.15) var(--progress, 0%),
-          rgba(102, 126, 234, 0.08) 100%);
+          var(--accent-soft-strong) var(--progress, 0%),
+          var(--accent-soft) 100%);
       padding: 10px;
       box-shadow:
-        0 0 40px rgba(102, 126, 234, 0.3),
-        inset 0 0 30px rgba(102, 126, 234, 0.1);
+        0 0 40px var(--accent-soft-strong),
+        inset 0 0 30px var(--accent-soft);
       transition: background 0.3s ease;
     }
 
@@ -3419,7 +3479,7 @@
       color: var(--text);
       font-variant-numeric: tabular-nums;
       line-height: 1;
-      text-shadow: 0 2px 20px rgba(102, 126, 234, 0.2);
+      text-shadow: 0 2px 20px var(--accent-soft-strong);
     }
 
     .pomodoro-mode {
@@ -3531,7 +3591,7 @@
       inset: 0;
       border-radius: 50%;
       padding: 2px;
-      background: linear-gradient(135deg, rgba(102, 126, 234, 0.3), rgba(118, 75, 162, 0.3));
+      background: linear-gradient(135deg, var(--accent-soft-strong), rgba(118, 75, 162, 0.3));
       -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
       mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
       -webkit-mask-composite: xor;
@@ -3540,7 +3600,7 @@
 
     .pomodoro-btn:hover {
       transform: translateY(-3px) scale(1.05);
-      box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+      box-shadow: 0 8px 25px var(--accent-soft-strong), inset 0 1px 0 rgba(255, 255, 255, 0.3);
     }
 
     .pomodoro-btn:active {
@@ -3553,7 +3613,7 @@
       font-size: 28px;
       background: linear-gradient(135deg, var(--accent), var(--accent2));
       color: white;
-      box-shadow: 0 8px 30px rgba(102, 126, 234, 0.4), 0 0 0 4px rgba(102, 126, 234, 0.15);
+      box-shadow: 0 8px 30px var(--accent-soft-strong), 0 0 0 4px var(--accent-soft-strong);
     }
 
     .pomodoro-btn.primary::before {
@@ -3562,7 +3622,7 @@
 
     .pomodoro-btn.primary:hover {
       transform: translateY(-4px) scale(1.08);
-      box-shadow: 0 12px 40px rgba(102, 126, 234, 0.5), 0 0 0 6px rgba(102, 126, 234, 0.2);
+      box-shadow: 0 12px 40px var(--accent), 0 0 0 6px var(--accent-soft-strong);
     }
 
     /* Presets */
@@ -3595,7 +3655,7 @@
       background: linear-gradient(135deg, var(--accent), var(--accent2));
       border-color: transparent;
       color: white;
-      box-shadow: 0 4px 16px rgba(102, 126, 234, 0.3);
+      box-shadow: 0 4px 16px var(--accent-soft-strong);
     }
 
     /* Settings Panel */
@@ -3647,7 +3707,7 @@
     .pomodoro-field input:focus {
       border-color: var(--accent);
       outline: none;
-      box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+      box-shadow: 0 0 0 4px var(--accent-soft);
     }
 
     /* Options Row */
@@ -3723,10 +3783,10 @@
 
     .pomodoro-stat {
       padding: 24px 16px;
-      background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
+      background: linear-gradient(135deg, var(--accent-soft), rgba(118, 75, 162, 0.1));
       border-radius: 20px;
       text-align: center;
-      border: 1px solid rgba(102, 126, 234, 0.2);
+      border: 1px solid var(--accent-soft-strong);
     }
 
     .pomodoro-stat .label {
@@ -3968,7 +4028,7 @@
     /* Pomodoro - Fullscreen like Task Manager */
     .pomodoro-overlay {
       position: fixed;
-      top: 56px;
+      top: 3.5rem;
       left: 0;
       right: 0;
       bottom: 0;
@@ -3988,7 +4048,7 @@
       align-items: center;
       justify-content: space-between;
       padding: 16px 32px;
-      background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
+      background: linear-gradient(135deg, var(--accent-soft), rgba(118, 75, 162, 0.1));
       border-bottom: 1px solid var(--border);
     }
 
@@ -4009,9 +4069,9 @@
       align-items: flex-start;
       padding: 40px 24px;
       background:
-        radial-gradient(ellipse at 20% 0%, rgba(102, 126, 234, 0.12) 0%, transparent 50%),
+        radial-gradient(ellipse at 20% 0%, var(--accent-soft) 0%, transparent 50%),
         radial-gradient(ellipse at 80% 100%, rgba(118, 75, 162, 0.1) 0%, transparent 50%),
-        radial-gradient(ellipse at 50% 50%, rgba(102, 126, 234, 0.03) 0%, transparent 70%),
+        radial-gradient(ellipse at 50% 50%, var(--accent-soft) 0%, transparent 70%),
         linear-gradient(180deg, var(--bg) 0%, var(--bg) 100%);
       position: relative;
     }
@@ -4035,14 +4095,14 @@
 
     .pomodoro-card {
       background: linear-gradient(145deg, var(--card) 0%, var(--card) 100%);
-      border: 1px solid rgba(102, 126, 234, 0.2);
+      border: 1px solid var(--accent-soft-strong);
       border-radius: 32px;
       padding: 48px 40px;
       box-shadow:
-        0 25px 80px rgba(102, 126, 234, 0.2),
+        0 25px 80px var(--accent-soft-strong),
         0 10px 30px rgba(0, 0, 0, 0.08),
         0 0 0 1px rgba(255, 255, 255, 0.15) inset,
-        0 0 80px rgba(102, 126, 234, 0.05) inset;
+        0 0 80px var(--accent-soft) inset;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -4060,17 +4120,17 @@
       left: 20%;
       right: 20%;
       height: 2px;
-      background: linear-gradient(90deg, transparent, rgba(102, 126, 234, 0.5), rgba(118, 75, 162, 0.5), transparent);
+      background: linear-gradient(90deg, transparent, var(--accent), rgba(118, 75, 162, 0.5), transparent);
       border-radius: 999px;
     }
 
     .pomodoro-card:hover {
       transform: translateY(-2px);
       box-shadow:
-        0 30px 90px rgba(102, 126, 234, 0.25),
+        0 30px 90px var(--accent-soft-strong),
         0 15px 40px rgba(0, 0, 0, 0.1),
         0 0 0 1px rgba(255, 255, 255, 0.2) inset,
-        0 0 100px rgba(102, 126, 234, 0.08) inset;
+        0 0 100px var(--accent-soft) inset;
     }
 
     /* Timer Circle */
@@ -4089,7 +4149,7 @@
       position: absolute;
       inset: -20px;
       border-radius: 50%;
-      background: radial-gradient(circle, rgba(102, 126, 234, 0.15) 0%, transparent 70%);
+      background: radial-gradient(circle, var(--accent-soft-strong) 0%, transparent 70%);
       animation: timerGlow 3s ease-in-out infinite;
       pointer-events: none;
     }
@@ -4116,12 +4176,12 @@
           var(--accent) 0%,
           var(--accent2) calc(var(--progress, 0%) * 0.5),
           var(--accent) var(--progress, 0%),
-          rgba(102, 126, 234, 0.15) var(--progress, 0%),
-          rgba(102, 126, 234, 0.08) 100%);
+          var(--accent-soft-strong) var(--progress, 0%),
+          var(--accent-soft) 100%);
       padding: 10px;
       box-shadow:
-        0 0 40px rgba(102, 126, 234, 0.3),
-        inset 0 0 30px rgba(102, 126, 234, 0.1);
+        0 0 40px var(--accent-soft-strong),
+        inset 0 0 30px var(--accent-soft);
       transition: background 0.3s ease;
     }
 
@@ -4159,7 +4219,7 @@
       color: var(--text);
       font-variant-numeric: tabular-nums;
       line-height: 1;
-      text-shadow: 0 4px 30px rgba(102, 126, 234, 0.25);
+      text-shadow: 0 4px 30px var(--accent-soft-strong);
       background: linear-gradient(135deg, var(--text) 0%, var(--accent) 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
@@ -4177,9 +4237,9 @@
       align-items: center;
       gap: 10px;
       padding: 8px 16px;
-      background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
+      background: linear-gradient(135deg, var(--accent-soft), rgba(118, 75, 162, 0.1));
       border-radius: 999px;
-      border: 1px solid rgba(102, 126, 234, 0.2);
+      border: 1px solid var(--accent-soft-strong);
     }
 
     .pomodoro-mode-dot {
@@ -4188,7 +4248,7 @@
       border-radius: 50%;
       background: linear-gradient(135deg, var(--accent), var(--accent2));
       animation: pulseGlow 2s ease-in-out infinite;
-      box-shadow: 0 0 10px rgba(102, 126, 234, 0.5);
+      box-shadow: 0 0 10px var(--accent);
     }
 
     @keyframes pulseGlow {
@@ -4197,13 +4257,13 @@
       100% {
         opacity: 1;
         transform: scale(1);
-        box-shadow: 0 0 10px rgba(102, 126, 234, 0.5);
+        box-shadow: 0 0 10px var(--accent);
       }
 
       50% {
         opacity: 0.7;
         transform: scale(0.85);
-        box-shadow: 0 0 20px rgba(102, 126, 234, 0.3);
+        box-shadow: 0 0 20px var(--accent-soft-strong);
       }
     }
 
@@ -4260,7 +4320,7 @@
       inset: 0;
       border-radius: 50%;
       padding: 2px;
-      background: linear-gradient(135deg, rgba(102, 126, 234, 0.3), rgba(118, 75, 162, 0.3));
+      background: linear-gradient(135deg, var(--accent-soft-strong), rgba(118, 75, 162, 0.3));
       -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
       mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
       -webkit-mask-composite: xor;
@@ -4269,7 +4329,7 @@
 
     .pomodoro-btn:hover {
       transform: translateY(-3px) scale(1.05);
-      box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+      box-shadow: 0 8px 25px var(--accent-soft-strong), inset 0 1px 0 rgba(255, 255, 255, 0.3);
     }
 
     .pomodoro-btn:active {
@@ -4282,7 +4342,7 @@
       font-size: 28px;
       background: linear-gradient(135deg, var(--accent), var(--accent2));
       color: white;
-      box-shadow: 0 8px 30px rgba(102, 126, 234, 0.4), 0 0 0 4px rgba(102, 126, 234, 0.15);
+      box-shadow: 0 8px 30px var(--accent-soft-strong), 0 0 0 4px var(--accent-soft-strong);
     }
 
     .pomodoro-btn.primary::before {
@@ -4291,7 +4351,7 @@
 
     .pomodoro-btn.primary:hover {
       transform: translateY(-4px) scale(1.08);
-      box-shadow: 0 12px 40px rgba(102, 126, 234, 0.5), 0 0 0 6px rgba(102, 126, 234, 0.2);
+      box-shadow: 0 12px 40px var(--accent), 0 0 0 6px var(--accent-soft-strong);
     }
 
     /* Presets */
@@ -4324,7 +4384,7 @@
       background: linear-gradient(135deg, var(--accent), var(--accent2));
       border-color: transparent;
       color: white;
-      box-shadow: 0 4px 16px rgba(102, 126, 234, 0.3);
+      box-shadow: 0 4px 16px var(--accent-soft-strong);
     }
 
     /* Settings Panel */
@@ -4376,7 +4436,7 @@
     .pomodoro-field input:focus {
       border-color: var(--accent);
       outline: none;
-      box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+      box-shadow: 0 0 0 4px var(--accent-soft);
     }
 
     /* Options Row */
@@ -4452,10 +4512,10 @@
 
     .pomodoro-stat {
       padding: 24px 16px;
-      background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
+      background: linear-gradient(135deg, var(--accent-soft), rgba(118, 75, 162, 0.1));
       border-radius: 20px;
       text-align: center;
-      border: 1px solid rgba(102, 126, 234, 0.2);
+      border: 1px solid var(--accent-soft-strong);
     }
 
     .pomodoro-stat .label {
@@ -4605,7 +4665,7 @@
     .star-btn:hover {
       background: var(--day-hover);
       color: var(--accent);
-      border-color: rgba(102, 126, 234, 0.15);
+      border-color: var(--accent-soft-strong);
     }
 
     .star-btn.active {
@@ -4631,7 +4691,7 @@
     .pin-btn:hover {
       background: var(--day-hover);
       color: var(--accent);
-      border-color: rgba(102, 126, 234, 0.15);
+      border-color: var(--accent-soft-strong);
     }
 
     .pin-btn.pinned {
@@ -4640,7 +4700,7 @@
     }
 
     .pin-btn.pinned:hover {
-      border-color: rgba(102, 126, 234, 0.25);
+      border-color: var(--accent-soft-strong);
     }
 
     .edit-btn {
@@ -4661,7 +4721,7 @@
     .edit-btn:hover {
       background: var(--day-hover);
       color: var(--accent);
-      border-color: rgba(102, 126, 234, 0.15);
+      border-color: var(--accent-soft-strong);
     }
 
     .event-reminder-wrap {
@@ -4685,13 +4745,13 @@
     .reminder-btn:hover {
       background: var(--day-hover);
       color: var(--accent);
-      border-color: rgba(102, 126, 234, 0.15);
+      border-color: var(--accent-soft-strong);
     }
 
     .reminder-btn.has-reminder {
       color: var(--accent);
       background: var(--accent-soft);
-      border-color: rgba(102, 126, 234, 0.2);
+      border-color: var(--accent-soft-strong);
     }
 
     .event-reminder-dropdown {
@@ -4727,7 +4787,7 @@
     }
 
     .event-reminder-option.active {
-      background: rgba(102, 126, 234, 0.1);
+      background: var(--accent-soft);
       color: var(--accent);
     }
 
@@ -4752,7 +4812,7 @@
 
     .time-unit:hover {
       background: var(--day-hover);
-      border-color: rgba(102, 126, 234, 0.12);
+      border-color: var(--accent-soft);
     }
 
     .time-val {
@@ -4841,7 +4901,7 @@
 
     .input-panel.editing {
       border-color: var(--accent);
-      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
+      box-shadow: 0 0 0 3px var(--accent-soft-strong);
     }
 
     /* Undo toast */
@@ -4891,10 +4951,10 @@
       align-items: center;
       gap: 12px;
       padding: 14px 20px;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background: linear-gradient(135deg, var(--accent) 0%, #764ba2 100%);
       color: white;
       border-radius: 12px;
-      box-shadow: 0 8px 32px rgba(102, 126, 234, 0.4);
+      box-shadow: 0 8px 32px var(--accent-soft-strong);
       font-size: 14px;
       font-weight: 500;
       animation: slideUpFadeIn 0.3s ease-out;
@@ -4931,24 +4991,13 @@
     .modal-backdrop {
       position: fixed;
       inset: 0;
-      background: rgba(0, 0, 0, 0.35);
+      background: hsl(0 0% 0% / 0.5);
+      backdrop-filter: blur(4px);
       display: none;
       align-items: center;
       justify-content: center;
       z-index: 200;
-      padding: 16px;
-    }
-
-    .modal-backdrop.open {
-      display: flex;
-    }
-
-    /* Responsive */
-    .modal-card {
-      align-items: center;
-      justify-content: center;
-      z-index: 200;
-      padding: 16px;
+      padding: var(--space-4);
     }
 
     .modal-backdrop.open {
@@ -4958,51 +5007,52 @@
     .modal-card {
       background: var(--card);
       border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 20px;
-      max-width: 420px;
+      border-radius: var(--radius-lg);
+      padding: var(--space-6);
+      max-width: 26rem;
       width: 100%;
-      box-shadow: var(--shadow-hover);
-      text-align: center;
+      box-shadow: var(--shadow-lg);
     }
 
     .modal-card h3 {
-      font-size: 18px;
-      margin-bottom: 8px;
+      font-size: var(--font-size-lg);
+      font-weight: var(--font-weight-semibold);
+      margin-bottom: var(--space-2);
       color: var(--text);
     }
 
     .modal-card p {
       color: var(--muted);
-      margin-bottom: 16px;
-      line-height: 1.4;
+      font-size: var(--font-size-sm);
+      margin-bottom: var(--space-4);
+      line-height: 1.5;
     }
 
     .modal-actions {
       display: flex;
-      gap: 10px;
-      justify-content: center;
-      flex-wrap: wrap;
+      gap: var(--space-2);
+      justify-content: flex-end;
     }
 
     .modal-actions .btn {
-      padding: var(--space-3) var(--space-4);
+      height: 2.25rem;
     }
 
     .btn-danger {
       background: var(--danger);
       color: white;
+      border-color: var(--danger);
     }
 
     .btn-danger:hover {
-      background: #dc2626;
+      opacity: 0.9;
     }
 
     /* Shortcut cheat sheet */
     .shortcuts-backdrop {
       position: fixed;
       inset: 0;
-      background: radial-gradient(circle at top, rgba(102, 126, 234, 0.25), rgba(15, 23, 42, 0.65));
+      background: radial-gradient(circle at top, var(--accent-soft-strong), rgba(15, 23, 42, 0.65));
       display: none;
       align-items: center;
       justify-content: center;
@@ -5019,7 +5069,7 @@
       width: min(760px, 100%);
       background: var(--card);
       border-radius: 22px;
-      border: 1px solid rgba(102, 126, 234, 0.35);
+      border: 1px solid var(--accent-soft-strong);
       box-shadow: 0 24px 70px rgba(15, 23, 42, 0.35), 0 0 0 1px rgba(255, 255, 255, 0.25) inset;
       overflow: hidden;
       direction: rtl;
@@ -5031,7 +5081,7 @@
       justify-content: space-between;
       gap: 16px;
       padding: 22px 26px 18px;
-      background: linear-gradient(135deg, rgba(102, 126, 234, 0.18), rgba(118, 75, 162, 0.12));
+      background: linear-gradient(135deg, var(--accent-soft-strong), rgba(118, 75, 162, 0.12));
       border-bottom: 1px solid var(--border);
     }
 
@@ -5372,7 +5422,7 @@
 
     .input-row-notes textarea:focus {
       border-color: var(--accent);
-      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
+      box-shadow: 0 0 0 3px var(--accent-soft-strong);
     }
 
     .event-notes {
@@ -5405,7 +5455,7 @@
     /* Task Manager Fullscreen Modal */
     .task-manager-overlay {
       position: fixed;
-      top: 56px;
+      top: 3.5rem;
       left: 0;
       right: 0;
       bottom: 0;
@@ -5425,106 +5475,105 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: var(--space-4) var(--space-6);
+      padding: var(--space-3) var(--space-4);
       background: var(--card);
       border-bottom: 1px solid var(--border);
-      box-shadow: var(--shadow);
-      gap: var(--space-4);
+      gap: var(--space-3);
       flex-wrap: wrap;
     }
 
     .task-manager-title {
-      font-size: var(--font-size-xl);
-      font-weight: var(--font-weight-bold);
-      background: linear-gradient(135deg, var(--accent), var(--accent2));
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
+      font-size: var(--font-size-lg);
+      font-weight: var(--font-weight-semibold);
+      color: var(--text);
       display: flex;
       align-items: center;
       gap: var(--space-2);
     }
 
     .task-manager-close {
-      width: 40px;
-      height: 40px;
+      width: 2rem;
+      height: 2rem;
       border: 1px solid var(--border);
-      border-radius: 8px;
+      border-radius: var(--radius-sm);
       background: var(--card);
-      color: var(--text);
-      font-size: 24px;
+      color: var(--muted);
+      font-size: 18px;
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
-      transition: all 0.2s;
+      transition: background 0.15s, color 0.15s;
     }
 
     .task-manager-close:hover {
-      background: #fef2f2;
+      background: hsl(0 84.2% 60.2% / 0.1);
       color: var(--danger);
     }
 
     .task-search-bar {
       flex: 1;
-      max-width: 500px;
+      max-width: 28rem;
       position: relative;
     }
 
     .task-search-bar input {
       width: 100%;
-      padding: 12px 16px 12px 44px;
-      border: 2px solid var(--border);
-      border-radius: 10px;
-      font-size: 15px;
+      padding: var(--space-2) var(--space-3) var(--space-2) 2.5rem;
+      height: 2.25rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      font-family: var(--font);
+      font-size: var(--font-size-sm);
       background: var(--input-bg);
       color: var(--text);
       outline: none;
-      transition: all 0.2s;
+      transition: border-color 0.15s, box-shadow 0.15s;
     }
 
     .task-search-bar input:focus {
-      border-color: var(--accent);
-      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
+      border-color: var(--ring);
+      box-shadow: var(--focus-ring);
     }
 
     .task-search-bar::before {
       content: '🔍';
       position: absolute;
-      left: 14px;
+      left: var(--space-3);
       top: 50%;
       transform: translateY(-50%);
-      font-size: 16px;
+      font-size: 14px;
     }
 
     .task-manager-body {
       flex: 1;
       overflow-y: auto;
-      padding: 24px;
+      padding: var(--space-6);
     }
 
     /* Quick Add Task */
     .quick-add-task {
-      max-width: 600px;
-      margin: 0 auto 32px auto;
+      max-width: 38rem;
+      margin: 0 auto var(--space-8) auto;
       background: var(--card);
-      border: 2px solid var(--border);
-      border-radius: 12px;
-      padding: 16px;
-      box-shadow: var(--shadow);
-      transition: all 0.2s;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: var(--space-4);
+      box-shadow: var(--shadow-sm);
+      transition: border-color 0.15s, box-shadow 0.15s;
     }
 
     .quick-add-task:focus-within {
-      border-color: var(--accent);
-      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
+      border-color: var(--ring);
+      box-shadow: var(--focus-ring);
     }
 
     .quick-add-task input[type="text"] {
       width: 100%;
       border: none;
-      font-size: 16px;
-      padding: 8px 0;
+      font-family: var(--font);
+      font-size: var(--font-size-sm);
+      padding: var(--space-2) 0;
       background: transparent;
       color: var(--text);
       outline: none;
@@ -5536,15 +5585,16 @@
 
     .quick-add-row {
       display: flex;
-      gap: 8px;
-      margin-top: 12px;
+      gap: var(--space-2);
+      margin-top: var(--space-3);
       flex-wrap: wrap;
       align-items: center;
     }
 
     .quick-add-row .btn {
-      padding: 10px 18px;
-      font-size: 14px;
+      height: 2rem;
+      padding: 0 var(--space-3);
+      font-size: var(--font-size-sm);
     }
 
     /* Color Picker */
@@ -5691,19 +5741,19 @@
     .task-item {
       background-color: var(--card);
       border: 1px solid var(--border);
-      border-radius: var(--radius-lg);
-      padding: var(--space-4) var(--space-5);
-      box-shadow: var(--shadow);
-      transition: all 0.25s ease;
+      border-radius: var(--radius-md);
+      padding: var(--space-3) var(--space-4);
+      box-shadow: var(--shadow-sm);
+      transition: border-color 0.15s, box-shadow 0.15s;
       display: flex;
       align-items: center;
-      gap: var(--space-4);
-      border-left: 5px solid var(--task-color, var(--priority-color, var(--border)));
+      gap: var(--space-3);
+      border-right: 3px solid var(--task-color, var(--priority-color, var(--border)));
       position: relative;
       overflow: visible;
     }
 
-    /* Color accent overlay */
+    /* Color accent overlay — simplified */
     .task-item::before {
       content: '';
       position: absolute;
@@ -5711,23 +5761,15 @@
       left: 0;
       right: 0;
       bottom: 0;
-      background: linear-gradient(135deg, var(--task-color, transparent) 0%, transparent 100%);
-      opacity: 0.08;
+      background: var(--task-color, transparent);
+      opacity: 0.04;
       pointer-events: none;
       border-radius: inherit;
     }
 
-    /* Top accent stripe for colored tasks */
+    /* Remove top stripe — cleaner shadcn look */
     .task-item::after {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: 3px;
-      background: var(--task-color, transparent);
-      opacity: 0.6;
-      border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+      display: none;
     }
 
     .task-item.dragging {
@@ -5736,26 +5778,25 @@
     }
 
     .task-item:hover {
-      box-shadow: var(--shadow-hover);
-      background-color: var(--priority-bg, var(--card));
+      border-color: var(--accent-soft-strong);
+      box-shadow: var(--shadow);
     }
 
     .task-item.completed {
-      opacity: 0.6;
-      background-color: var(--day-other);
+      opacity: 0.5;
     }
 
     .task-checkbox {
-      width: 24px;
-      height: 24px;
+      width: 1.25rem;
+      height: 1.25rem;
       border: 2px solid var(--priority-color, var(--border));
-      border-radius: 50%;
+      border-radius: var(--radius-full);
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
       flex-shrink: 0;
-      transition: all 0.2s;
+      transition: background 0.15s, border-color 0.15s;
       background: transparent;
       color: transparent;
       font-size: var(--font-size-sm);
@@ -5967,7 +6008,7 @@
     }
 
     .task-action-btn.ai-btn {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background: linear-gradient(135deg, var(--accent) 0%, #764ba2 100%);
       color: white;
       font-size: 14px;
     }
@@ -6041,7 +6082,7 @@
     }
 
     .task-reminder-option.active {
-      background: rgba(102, 126, 234, 0.1);
+      background: var(--accent-soft);
       color: var(--accent);
     }
 
@@ -6176,7 +6217,7 @@
 
     /* Suggested Tasks Banner */
     .suggested-tasks-banner {
-      background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
+      background: linear-gradient(135deg, var(--accent-soft), rgba(118, 75, 162, 0.1));
       border: 1px solid var(--accent);
       border-radius: 10px;
       padding: 12px 16px;
@@ -6197,7 +6238,7 @@
       display: inline-flex;
       align-items: center;
       gap: 4px;
-      background: rgba(102, 126, 234, 0.15);
+      background: var(--accent-soft-strong);
       color: var(--accent);
       padding: 2px 8px;
       border-radius: 10px;
@@ -6543,7 +6584,7 @@
     .add-subject-btn:hover {
       border-color: var(--accent);
       color: var(--accent);
-      background: rgba(102, 126, 234, 0.1);
+      background: var(--accent-soft);
     }
 
     /* Task Calendar in Sidebar - matches countdown calendar style */
@@ -6796,7 +6837,7 @@
       font-size: 10px;
       padding: 2px 6px;
       border-radius: 6px;
-      background: rgba(102, 126, 234, 0.15);
+      background: var(--accent-soft-strong);
       color: var(--accent);
       margin-right: 4px;
       display: inline-flex;
@@ -6981,7 +7022,7 @@
     .add-subject-sidebar-btn:hover {
       border-color: var(--accent);
       color: var(--accent);
-      background: rgba(102, 126, 234, 0.05);
+      background: var(--accent-soft);
     }
 
     /* Task Month List */
@@ -7100,8 +7141,8 @@
     }
 
     #eventAlertModal .reminder-card {
-      background: linear-gradient(180deg, rgba(102, 126, 234, 0.12), var(--card));
-      border: 1px solid rgba(102, 126, 234, 0.2);
+      background: linear-gradient(180deg, var(--accent-soft), var(--card));
+      border: 1px solid var(--accent-soft-strong);
       animation: alertPop 0.25s ease-out;
     }
 
@@ -7438,10 +7479,10 @@
       display: flex;
       align-items: center;
       gap: 6px;
-      background: color-mix(in srgb, var(--subject-color, #667eea) 28%, transparent);
-      color: var(--subject-color, #667eea);
-      border: 1px solid color-mix(in srgb, var(--subject-color, #667eea) 45%, transparent);
-      box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--subject-color, #667eea) 12%, transparent);
+      background: color-mix(in srgb, var(--subject-color, var(--accent)) 28%, transparent);
+      color: var(--subject-color, var(--accent));
+      border: 1px solid color-mix(in srgb, var(--subject-color, var(--accent)) 45%, transparent);
+      box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--subject-color, var(--accent)) 12%, transparent);
     }
 
     .task-subject-badge::before {
@@ -7449,7 +7490,7 @@
       width: 8px;
       height: 8px;
       border-radius: 50%;
-      background: var(--subject-color, #667eea);
+      background: var(--subject-color, var(--accent));
       flex-shrink: 0;
     }
 

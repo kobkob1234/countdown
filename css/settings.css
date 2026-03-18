@@ -3,21 +3,20 @@
     position: absolute;
     top: 100%;
     right: 60px;
-    /* Adjust based on button position */
-    width: 300px;
+    width: 18rem;
     background: var(--card);
     border: 1px solid var(--border);
-    border-radius: var(--radius-md);
-    box-shadow: var(--shadow-hover);
-    padding: 16px;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    padding: var(--space-4);
     z-index: 100;
-    margin-top: 8px;
+    margin-top: var(--space-2);
 }
 
 .settings-row {
     display: flex;
     align-items: flex-start;
-    gap: 12px;
+    gap: var(--space-3);
 }
 
 .settings-label {
@@ -25,24 +24,24 @@
 }
 
 .settings-title {
-    font-weight: 500;
+    font-weight: var(--font-weight-medium);
     color: var(--text);
-    font-size: 14px;
-    margin-bottom: 2px;
+    font-size: var(--font-size-sm);
+    margin-bottom: 1px;
 }
 
 .settings-desc {
-    font-size: 12px;
+    font-size: var(--font-size-xs);
     color: var(--muted);
     line-height: 1.4;
 }
 
-/* Toggle Switch */
+/* Toggle Switch (shadcn style) */
 .settings-toggle {
     position: relative;
     display: inline-block;
-    width: 44px;
-    height: 24px;
+    width: 2.5rem;
+    height: 1.25rem;
     flex-shrink: 0;
 }
 
@@ -59,30 +58,29 @@
     left: 0;
     right: 0;
     bottom: 0;
-    background-color: var(--day-other);
-    transition: .4s;
-    border-radius: 34px;
-    border: 1px solid var(--border);
+    background-color: var(--border);
+    transition: background-color 0.15s, border-color 0.15s;
+    border-radius: var(--radius-full);
+    border: none;
 }
 
 .slider:before {
     position: absolute;
     content: "";
-    height: 18px;
-    width: 18px;
+    height: 1rem;
+    width: 1rem;
     left: 2px;
     bottom: 2px;
     background-color: white;
-    transition: .4s;
+    transition: transform 0.15s;
     border-radius: 50%;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--shadow-sm);
 }
 
 input:checked+.slider {
     background-color: var(--accent);
-    border-color: var(--accent);
 }
 
 input:checked+.slider:before {
-    transform: translateX(20px);
+    transform: translateX(1.125rem);
 }

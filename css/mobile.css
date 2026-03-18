@@ -36,27 +36,28 @@
       }
 
       .fixed-header-bar {
-        height: 50px;
-        padding: 0 12px;
-        gap: 8px;
+        height: 3rem;
+        padding: 0 var(--space-3);
+        gap: var(--space-1);
       }
 
       .header-btn {
-        padding: 8px 12px;
-        font-size: 12px;
+        padding: var(--space-1-5) var(--space-2);
+        font-size: var(--font-size-xs);
+        height: 2rem;
       }
 
       .header-btn.icon-only {
-        width: 36px;
-        height: 36px;
+        width: 2rem;
+        height: 2rem;
       }
 
       body {
-        padding-top: 50px;
+        padding-top: 3rem;
       }
 
       .app-layout {
-        height: calc(100vh - 50px);
+        height: calc(100vh - 3rem);
       }
 
       .task-manager-header {
@@ -624,7 +625,7 @@
         padding: 10px 6px 8px;
         border-radius: 12px;
         background: var(--day-other);
-        border: 1px solid rgba(102, 126, 234, 0.12);
+        border: 1px solid var(--accent-soft);
         text-align: center;
         box-shadow: none;
         position: relative;
@@ -879,7 +880,7 @@
       .mobile-sheet-content select:focus,
       .mobile-sheet-content textarea:focus {
         border-color: var(--accent);
-        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
+        box-shadow: 0 0 0 3px var(--accent-soft-strong);
       }
 
       .mobile-sheet-content textarea {
@@ -1022,7 +1023,7 @@
         background: var(--accent);
         color: white;
         border-color: var(--accent);
-        box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+        box-shadow: 0 2px 8px var(--accent-soft-strong);
       }
 
       .task-manager-close {
@@ -1047,7 +1048,7 @@
 
       .task-search-bar input:focus {
         border-color: var(--accent);
-        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
+        box-shadow: 0 0 0 3px var(--accent-soft-strong);
       }
 
       .task-filters {
@@ -1350,16 +1351,16 @@
 
       .quick-add-task input:focus {
         border-color: var(--accent);
-        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
+        box-shadow: 0 0 0 3px var(--accent-soft-strong);
       }
 
       .nl-hint {
         font-size: 12px;
         padding: var(--mobile-spacing-sm);
         margin-top: var(--mobile-spacing-sm);
-        background: linear-gradient(135deg, rgba(102, 126, 234, 0.05), rgba(118, 75, 162, 0.05));
+        background: linear-gradient(135deg, var(--accent-soft), rgba(118, 75, 162, 0.05));
         border-radius: 10px;
-        border: 1px solid rgba(102, 126, 234, 0.2);
+        border: 1px solid var(--accent-soft-strong);
       }
 
       .nl-hint-examples {
@@ -1647,7 +1648,7 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        box-shadow: 0 4px 20px rgba(102, 126, 234, 0.4);
+        box-shadow: 0 4px 20px var(--accent-soft-strong);
         z-index: 10010;
         cursor: pointer;
 
@@ -1781,7 +1782,7 @@
       }
 
       body.dark .mobile-fab {
-        box-shadow: 0 4px 20px rgba(102, 126, 234, 0.5);
+        box-shadow: 0 4px 20px var(--accent);
       }
     }
 
@@ -1943,7 +1944,7 @@
       .ripple {
         position: absolute;
         border-radius: 50%;
-        background: rgba(102, 126, 234, 0.3);
+        background: var(--accent-soft-strong);
         transform: scale(0);
         animation: ripple-effect 0.6s ease-out forwards;
         pointer-events: none;
@@ -1962,7 +1963,7 @@
       }
 
       body.dark .ripple {
-        background: rgba(102, 126, 234, 0.4);
+        background: var(--accent-soft-strong);
       }
 
       /* ===== ENHANCED PULL TO REFRESH ===== */
@@ -2364,7 +2365,7 @@
         display: none;
         align-items: center;
         gap: var(--mobile-spacing-md);
-        box-shadow: 0 8px 32px rgba(102, 126, 234, 0.4);
+        box-shadow: 0 8px 32px var(--accent-soft-strong);
         z-index: 10005;
         animation: install-banner-slide-up 0.4s cubic-bezier(0.4, 0, 0.2, 1);
       }
@@ -2845,7 +2846,7 @@
 
       /* Swipe threshold reached indicator */
       .task-item.swipe-threshold-reached {
-        box-shadow: 0 0 20px rgba(102, 126, 234, 0.5);
+        box-shadow: 0 0 20px var(--accent);
       }
 
       /* Background colors revealed during swipe */
