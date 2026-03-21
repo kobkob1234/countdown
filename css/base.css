@@ -1946,8 +1946,8 @@
     }
 
     .planner-view-toggle button.active {
-      background: var(--card);
-      color: var(--text);
+      background: var(--accent);
+      color: white;
       font-weight: var(--font-weight-semibold);
     }
 
@@ -2158,8 +2158,7 @@
 
     .planner-day-header {
       padding: var(--space-4) var(--space-5);
-      background: var(--muted-bg);
-      border-bottom: 1px solid var(--border);
+      background: var(--accent);
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -2168,7 +2167,7 @@
     .planner-day-title {
       font-size: var(--font-size-lg);
       font-weight: var(--font-weight-semibold);
-      color: var(--text);
+      color: white;
     }
 
     .planner-day-summary {
@@ -2178,7 +2177,7 @@
     }
 
     .planner-day-summary span {
-      color: var(--muted);
+      color: hsl(0 0% 100% / 0.85);
     }
 
     .planner-timeline {
