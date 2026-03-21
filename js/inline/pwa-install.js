@@ -62,7 +62,7 @@ export function initPwaInstall() {
 
     if (outcome === 'accepted') {
       if (window.mobileToast) {
-        window.mobileToast('האפליקציה הותקנה!', { icon: '✅' });
+        window.mobileToast('האפליקציה הותקנה!', { icon: '<span class="icon" style="font-size:16px;vertical-align:middle">check_circle</span>' });
       }
     }
 
@@ -82,7 +82,7 @@ export function initPwaInstall() {
     deferredPrompt = null;
     console.log('[PWA] App installed successfully');
     if (window.mobileToast) {
-      window.mobileToast('האפליקציה הותקנה בהצלחה!', { icon: '🎉' });
+      window.mobileToast('האפליקציה הותקנה בהצלחה!', { icon: '<span class="icon" style="font-size:16px;vertical-align:middle">celebration</span>' });
     }
   });
 }

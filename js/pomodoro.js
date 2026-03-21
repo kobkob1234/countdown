@@ -55,8 +55,8 @@ export function createPomodoro() {
       ultradian: { focus: 90, shortBreak: 20, longBreak: 25, longEvery: 1, label: '90/20 אולטרה' },
       perfect: { focus: 52, shortBreak: 17, longBreak: 20, longEvery: 3, label: '52/17 קצב יעיל' },
       // Bad day presets - based on research showing even short focus sessions help
-      badday10: { focus: 10, shortBreak: 3, longBreak: 5, longEvery: 4, label: '😔 10 דק׳', isBadDay: true },
-      badday5: { focus: 5, shortBreak: 2, longBreak: 5, longEvery: 6, label: '💫 5 דק׳', isBadDay: true }
+      badday10: { focus: 10, shortBreak: 3, longBreak: 5, longEvery: 4, label: '10 דק׳', isBadDay: true },
+      badday5: { focus: 5, shortBreak: 2, longBreak: 5, longEvery: 6, label: '5 דק׳', isBadDay: true }
     };
 
     const clampNum = (val, min, max, fallback) => {
@@ -204,7 +204,7 @@ export function createPomodoro() {
       const totalMs = getDuration(state.mode) * 60000;
       const pct = Math.max(0, Math.min(100, 100 - (state.remainingMs / totalMs) * 100));
       if (refs.progress) refs.progress.style.setProperty('--progress', pct + '%');
-      if (refs.startBtn) refs.startBtn.textContent = state.running ? '⏸️' : '▶️';
+      if (refs.startBtn) refs.startBtn.innerHTML = state.running ? '<span class="icon" style="font-size:16px;vertical-align:middle">pause</span>' : '<span class="icon" style="font-size:16px;vertical-align:middle">play_arrow</span>';
       // Update mini player
       if (refs.miniTime) refs.miniTime.textContent = formatTime(state.remainingMs);
       if (refs.miniMode) refs.miniMode.textContent = state.mode === 'focus' ? 'מיקוד' : (state.mode === 'long' ? 'הפסקה ארוכה' : 'הפסקה קצרה');

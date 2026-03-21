@@ -25,7 +25,7 @@ export function initContextMenus() {
         const h = document.createElement('div');
         h.className = 'context-menu-header';
         h.style.cssText = 'padding: 8px 16px; font-size: 11px; color: var(--muted); font-weight: 600;';
-        h.textContent = item.header;
+        h.innerHTML = item.header;
         menu.appendChild(h);
         return;
       }
@@ -68,45 +68,45 @@ export function initContextMenus() {
     if (!task) return;
 
     const priorityItems = [
-      { header: '⚡ עדיפות' },
-      { icon: '🔴', label: 'דחוף', action: () => updateTaskPriority(taskId, 'urgent') },
-      { icon: '🟠', label: 'גבוה', action: () => updateTaskPriority(taskId, 'high') },
-      { icon: '🟡', label: 'בינוני', action: () => updateTaskPriority(taskId, 'medium') },
-      { icon: '🟢', label: 'נמוך', action: () => updateTaskPriority(taskId, 'low') },
-      { icon: '⬜', label: 'ללא', action: () => updateTaskPriority(taskId, 'none') },
+      { header: '<span class="icon" style="font-size:16px;vertical-align:middle">bolt</span> עדיפות' },
+      { icon: '<span class="icon" style="font-size:16px;vertical-align:middle">circle</span>', label: 'דחוף', action: () => updateTaskPriority(taskId, 'urgent') },
+      { icon: '<span class="icon" style="font-size:16px;vertical-align:middle">circle</span>', label: 'גבוה', action: () => updateTaskPriority(taskId, 'high') },
+      { icon: '<span class="icon" style="font-size:16px;vertical-align:middle">circle</span>', label: 'בינוני', action: () => updateTaskPriority(taskId, 'medium') },
+      { icon: '<span class="icon" style="font-size:16px;vertical-align:middle">circle</span>', label: 'נמוך', action: () => updateTaskPriority(taskId, 'low') },
+      { icon: '<span class="icon" style="font-size:16px;vertical-align:middle">check_box_outline_blank</span>', label: 'ללא', action: () => updateTaskPriority(taskId, 'none') },
     ];
 
     const subjects = ctx.subjects;
     const subjectItems = subjects.length > 0 ? [
-      { header: '📁 העבר לנושא' },
-      { icon: '📂', label: 'ללא נושא', action: () => moveTaskToSubject(taskId, null) },
+      { header: '<span class="icon" style="font-size:16px;vertical-align:middle">folder</span> העבר לנושא' },
+      { icon: '<span class="icon" style="font-size:16px;vertical-align:middle">folder</span>', label: 'ללא נושא', action: () => moveTaskToSubject(taskId, null) },
       ...subjects.slice(0, 5).map(s => ({
-        icon: '📁', label: s.name, action: () => moveTaskToSubject(taskId, s.id)
+        icon: '<span class="icon" style="font-size:16px;vertical-align:middle">folder</span>', label: s.name, action: () => moveTaskToSubject(taskId, s.id)
       }))
     ] : [];
 
     const dateItems = [
-      { header: '📅 תאריך יעד' },
-      { icon: '📆', label: 'היום', action: () => setTaskDueDate(taskId, 0) },
-      { icon: '📆', label: 'מחר', action: () => setTaskDueDate(taskId, 1) },
-      { icon: '📆', label: 'בעוד שבוע', action: () => setTaskDueDate(taskId, 7) },
-      { icon: '🚫', label: 'הסר תאריך', action: () => setTaskDueDate(taskId, null) },
+      { header: '<span class="icon" style="font-size:16px;vertical-align:middle">event</span> תאריך יעד' },
+      { icon: '<span class="icon" style="font-size:16px;vertical-align:middle">date_range</span>', label: 'היום', action: () => setTaskDueDate(taskId, 0) },
+      { icon: '<span class="icon" style="font-size:16px;vertical-align:middle">date_range</span>', label: 'מחר', action: () => setTaskDueDate(taskId, 1) },
+      { icon: '<span class="icon" style="font-size:16px;vertical-align:middle">date_range</span>', label: 'בעוד שבוע', action: () => setTaskDueDate(taskId, 7) },
+      { icon: '<span class="icon" style="font-size:16px;vertical-align:middle">block</span>', label: 'הסר תאריך', action: () => setTaskDueDate(taskId, null) },
     ];
 
     const reminderItems = [
-      { header: '⏰ תזכורת' },
-      { icon: '🔔', label: '10 דקות לפני', action: () => setTaskReminder(taskId, 10) },
-      { icon: '🔔', label: '30 דקות לפני', action: () => setTaskReminder(taskId, 30) },
-      { icon: '🔔', label: 'שעה לפני', action: () => setTaskReminder(taskId, 60) },
-      { icon: '🔔', label: 'יום לפני', action: () => setTaskReminder(taskId, 1440) },
-      { icon: '🔕', label: 'ללא תזכורת', action: () => setTaskReminder(taskId, 0) },
+      { header: '<span class="icon" style="font-size:16px;vertical-align:middle">alarm</span> תזכורת' },
+      { icon: '<span class="icon" style="font-size:16px;vertical-align:middle">notifications</span>', label: '10 דקות לפני', action: () => setTaskReminder(taskId, 10) },
+      { icon: '<span class="icon" style="font-size:16px;vertical-align:middle">notifications</span>', label: '30 דקות לפני', action: () => setTaskReminder(taskId, 30) },
+      { icon: '<span class="icon" style="font-size:16px;vertical-align:middle">notifications</span>', label: 'שעה לפני', action: () => setTaskReminder(taskId, 60) },
+      { icon: '<span class="icon" style="font-size:16px;vertical-align:middle">notifications</span>', label: 'יום לפני', action: () => setTaskReminder(taskId, 1440) },
+      { icon: '<span class="icon" style="font-size:16px;vertical-align:middle">notifications_off</span>', label: 'ללא תזכורת', action: () => setTaskReminder(taskId, 0) },
     ];
 
     const items = [
-      { icon: task.completed ? '⬜' : '✅', label: task.completed ? 'סמן כלא הושלם' : 'סמן כהושלם', shortcut: 'X', action: () => toggleTaskComplete(taskId) },
-      { icon: '✏️', label: 'עריכה', shortcut: 'Enter', action: () => ctx.openTaskEditModal(taskId) },
-      { icon: '📋', label: 'שכפל', action: () => duplicateTask(taskId) },
-      { icon: '🗑️', label: 'מחק', action: () => deleteTaskById(taskId) },
+      { icon: task.completed ? '<span class="icon" style="font-size:16px;vertical-align:middle">check_box_outline_blank</span>' : '<span class="icon" style="font-size:16px;vertical-align:middle">check_circle</span>', label: task.completed ? 'סמן כלא הושלם' : 'סמן כהושלם', shortcut: 'X', action: () => toggleTaskComplete(taskId) },
+      { icon: '<span class="icon" style="font-size:16px;vertical-align:middle">edit</span>', label: 'עריכה', shortcut: 'Enter', action: () => ctx.openTaskEditModal(taskId) },
+      { icon: '<span class="icon" style="font-size:16px;vertical-align:middle">content_copy</span>', label: 'שכפל', action: () => duplicateTask(taskId) },
+      { icon: '<span class="icon" style="font-size:16px;vertical-align:middle">delete</span>', label: 'מחק', action: () => deleteTaskById(taskId) },
       { divider: true },
       ...priorityItems,
       { divider: true },
@@ -166,7 +166,7 @@ export function initContextMenus() {
       }
       if (ctx.maybeCreateRecurringTask) ctx.maybeCreateRecurringTask(task);
       if (ctx.pushToUndoStack) {
-        ctx.pushToUndoStack({ type: 'completeTask', taskId, message: `✅ "${task.title}" הושלם` });
+        ctx.pushToUndoStack({ type: 'completeTask', taskId, message: `<span class="icon" style="font-size:16px;vertical-align:middle">check_circle</span> "${task.title}" הושלם` });
       }
     }
     const { id, isOwn, isShared, ...clean } = task;
@@ -186,10 +186,10 @@ export function initContextMenus() {
   // Calendar Day Context Menu
   function showCalendarDayContextMenu(x, y, dateStr) {
     const items = [
-      { icon: '✅', label: 'הוסף משימה ליום זה', action: () => addTaskToDate(dateStr) },
-      { icon: '📅', label: 'הוסף אירוע ליום זה', action: () => addEventToDate(dateStr) },
+      { icon: '<span class="icon" style="font-size:16px;vertical-align:middle">check_circle</span>', label: 'הוסף משימה ליום זה', action: () => addTaskToDate(dateStr) },
+      { icon: '<span class="icon" style="font-size:16px;vertical-align:middle">event</span>', label: 'הוסף אירוע ליום זה', action: () => addEventToDate(dateStr) },
       { divider: true },
-      { icon: '📋', label: 'הצג פרטי יום', action: () => openDayDrawerForDate(dateStr) },
+      { icon: '<span class="icon" style="font-size:16px;vertical-align:middle">list_alt</span>', label: 'הצג פרטי יום', action: () => openDayDrawerForDate(dateStr) },
     ];
     createContextMenu(x, y, items, 'calendar-day-context-menu');
   }
@@ -222,15 +222,15 @@ export function initContextMenus() {
   // Header/Logo Context Menu
   function showHeaderContextMenu(x, y) {
     const items = [
-      { icon: '⌨️', label: 'קיצורי מקלדת', shortcut: 'H', action: () => ctx.openShortcuts() },
-      { icon: '❓', label: 'מדריך ועזרה', shortcut: 'H', action: () => ctx.openGuide() },
+      { icon: '<span class="icon" style="font-size:16px;vertical-align:middle">keyboard</span>', label: 'קיצורי מקלדת', shortcut: 'H', action: () => ctx.openShortcuts() },
+      { icon: '<span class="icon" style="font-size:16px;vertical-align:middle">help</span>', label: 'מדריך ועזרה', shortcut: 'H', action: () => ctx.openGuide() },
       { divider: true },
-      { icon: '🌙', label: 'מצב כהה/בהיר', shortcut: 'D', action: () => ctx.toggleTheme() },
-      { icon: '🔍', label: 'פלטת פקודות', shortcut: '⌘K', action: () => ctx.openCommandPalette() },
+      { icon: '<span class="icon" style="font-size:16px;vertical-align:middle">dark_mode</span>', label: 'מצב כהה/בהיר', shortcut: 'D', action: () => ctx.toggleTheme() },
+      { icon: '<span class="icon" style="font-size:16px;vertical-align:middle">search</span>', label: 'פלטת פקודות', shortcut: '⌘K', action: () => ctx.openCommandPalette() },
       { divider: true },
-      { icon: '📅', label: 'עבור להיום', shortcut: 'T', action: () => ctx.goToToday() },
-      { icon: '🍅', label: 'פתח פומודורו', shortcut: 'P', action: () => ctx.openPomodoro() },
-      { icon: '✅', label: 'פתח משימות', shortcut: 'M', action: () => ctx.showView('tasks') },
+      { icon: '<span class="icon" style="font-size:16px;vertical-align:middle">event</span>', label: 'עבור להיום', shortcut: 'T', action: () => ctx.goToToday() },
+      { icon: '<span class="icon" style="font-size:16px;vertical-align:middle">timelapse</span>', label: 'פתח פומודורו', shortcut: 'P', action: () => ctx.openPomodoro() },
+      { icon: '<span class="icon" style="font-size:16px;vertical-align:middle">check_circle</span>', label: 'פתח משימות', shortcut: 'M', action: () => ctx.showView('tasks') },
     ];
     createContextMenu(x, y, items, 'header-context-menu');
   }
@@ -238,15 +238,15 @@ export function initContextMenus() {
   // Countdown View Context Menu
   function showCountdownContextMenu(x, y) {
     const items = [
-      { icon: '📅', label: 'הוסף אירוע חדש', action: () => { ctx.eventName?.focus(); } },
-      { icon: '📅', label: 'אירוע למחר', action: () => addEventToDate(getTomorrowDateStr()) },
-      { icon: '📅', label: 'אירוע לשבוע הבא', action: () => addEventToDate(getNextWeekDateStr()) },
+      { icon: '<span class="icon" style="font-size:16px;vertical-align:middle">event</span>', label: 'הוסף אירוע חדש', action: () => { ctx.eventName?.focus(); } },
+      { icon: '<span class="icon" style="font-size:16px;vertical-align:middle">event</span>', label: 'אירוע למחר', action: () => addEventToDate(getTomorrowDateStr()) },
+      { icon: '<span class="icon" style="font-size:16px;vertical-align:middle">event</span>', label: 'אירוע לשבוע הבא', action: () => addEventToDate(getNextWeekDateStr()) },
       { divider: true },
-      { icon: '✅', label: 'פתח משימות', shortcut: 'M', action: () => ctx.showView('tasks') },
-      { icon: '🍅', label: 'פתח פומודורו', shortcut: 'P', action: () => ctx.openPomodoro() },
+      { icon: '<span class="icon" style="font-size:16px;vertical-align:middle">check_circle</span>', label: 'פתח משימות', shortcut: 'M', action: () => ctx.showView('tasks') },
+      { icon: '<span class="icon" style="font-size:16px;vertical-align:middle">timelapse</span>', label: 'פתח פומודורו', shortcut: 'P', action: () => ctx.openPomodoro() },
       { divider: true },
-      { icon: '⌨️', label: 'קיצורי מקלדת', shortcut: 'H', action: () => ctx.openShortcuts() },
-      { icon: '❓', label: 'מדריך ועזרה', shortcut: 'H', action: () => ctx.openGuide() },
+      { icon: '<span class="icon" style="font-size:16px;vertical-align:middle">keyboard</span>', label: 'קיצורי מקלדת', shortcut: 'H', action: () => ctx.openShortcuts() },
+      { icon: '<span class="icon" style="font-size:16px;vertical-align:middle">help</span>', label: 'מדריך ועזרה', shortcut: 'H', action: () => ctx.openGuide() },
     ];
     createContextMenu(x, y, items, 'countdown-context-menu');
   }
@@ -254,14 +254,14 @@ export function initContextMenus() {
   // Sidebar Context Menu
   function showSidebarContextMenu(x, y) {
     const items = [
-      { icon: '📁', label: 'נושא חדש', action: () => { if (ctx.openSubjectModal) ctx.openSubjectModal(); } },
+      { icon: '<span class="icon" style="font-size:16px;vertical-align:middle">folder</span>', label: 'נושא חדש', action: () => { if (ctx.openSubjectModal) ctx.openSubjectModal(); } },
       { divider: true },
-      { icon: '📋', label: 'הכל', action: () => { ctx.currentSmartView = null; ctx.currentSubject = null; if (ctx.renderTasks) ctx.renderTasks(); } },
-      { icon: '📅', label: 'היום', action: () => { ctx.currentSmartView = 'today'; ctx.currentSubject = null; if (ctx.renderTasks) ctx.renderTasks(); } },
-      { icon: '📆', label: 'מחר', action: () => { ctx.currentSmartView = 'tomorrow'; ctx.currentSubject = null; if (ctx.renderTasks) ctx.renderTasks(); } },
-      { icon: '📅', label: 'השבוע', action: () => { ctx.currentSmartView = 'week'; ctx.currentSubject = null; if (ctx.renderTasks) ctx.renderTasks(); } },
+      { icon: '<span class="icon" style="font-size:16px;vertical-align:middle">list_alt</span>', label: 'הכל', action: () => { ctx.currentSmartView = null; ctx.currentSubject = null; if (ctx.renderTasks) ctx.renderTasks(); } },
+      { icon: '<span class="icon" style="font-size:16px;vertical-align:middle">event</span>', label: 'היום', action: () => { ctx.currentSmartView = 'today'; ctx.currentSubject = null; if (ctx.renderTasks) ctx.renderTasks(); } },
+      { icon: '<span class="icon" style="font-size:16px;vertical-align:middle">date_range</span>', label: 'מחר', action: () => { ctx.currentSmartView = 'tomorrow'; ctx.currentSubject = null; if (ctx.renderTasks) ctx.renderTasks(); } },
+      { icon: '<span class="icon" style="font-size:16px;vertical-align:middle">event</span>', label: 'השבוע', action: () => { ctx.currentSmartView = 'week'; ctx.currentSubject = null; if (ctx.renderTasks) ctx.renderTasks(); } },
       { divider: true },
-      { icon: '✅', label: 'הושלמו', action: () => { ctx.currentSmartView = 'completed'; ctx.currentSubject = null; if (ctx.renderTasks) ctx.renderTasks(); } },
+      { icon: '<span class="icon" style="font-size:16px;vertical-align:middle">check_circle</span>', label: 'הושלמו', action: () => { ctx.currentSmartView = 'completed'; ctx.currentSubject = null; if (ctx.renderTasks) ctx.renderTasks(); } },
     ];
     createContextMenu(x, y, items, 'sidebar-context-menu');
   }
@@ -269,13 +269,13 @@ export function initContextMenus() {
   // Pomodoro Area Context Menu
   function showPomodoroContextMenu(x, y) {
     const items = [
-      { icon: '▶️', label: 'התחל/המשך', action: () => { if (ctx.Pomodoro?.toggle) ctx.Pomodoro.toggle(); } },
-      { icon: '🔄', label: 'אפס טיימר', action: () => { if (ctx.Pomodoro?.reset) ctx.Pomodoro.reset(); } },
+      { icon: '<span class="icon" style="font-size:16px;vertical-align:middle">play_arrow</span>', label: 'התחל/המשך', action: () => { if (ctx.Pomodoro?.toggle) ctx.Pomodoro.toggle(); } },
+      { icon: '<span class="icon" style="font-size:16px;vertical-align:middle">sync</span>', label: 'אפס טיימר', action: () => { if (ctx.Pomodoro?.reset) ctx.Pomodoro.reset(); } },
       { divider: true },
-      { icon: '✅', label: 'פתח משימות', action: () => ctx.showView('tasks') },
-      { icon: '📅', label: 'פתח אירועים', action: () => ctx.showView('countdown') },
+      { icon: '<span class="icon" style="font-size:16px;vertical-align:middle">check_circle</span>', label: 'פתח משימות', action: () => ctx.showView('tasks') },
+      { icon: '<span class="icon" style="font-size:16px;vertical-align:middle">event</span>', label: 'פתח אירועים', action: () => ctx.showView('countdown') },
       { divider: true },
-      { icon: '❌', label: 'סגור פומודורו', action: () => ctx.closePomodoro() },
+      { icon: '<span class="icon" style="font-size:16px;vertical-align:middle">close</span>', label: 'סגור פומודורו', action: () => ctx.closePomodoro() },
     ];
     createContextMenu(x, y, items, 'pomodoro-context-menu');
   }
@@ -357,14 +357,14 @@ export function initContextMenus() {
 
   function showQuickAddContextMenu(x, y, isTaskView) {
     const items = [
-      { icon: '✅', label: 'משימה חדשה', shortcut: 'N', action: () => { if (ctx.showView) ctx.showView('tasks'); setTimeout(() => ctx.newTaskTitle?.focus(), 100); } },
-      { icon: '📅', label: 'אירוע חדש', shortcut: 'G', action: () => { if (ctx.showView) ctx.showView('countdown'); setTimeout(() => ctx.eventName?.focus(), 100); } },
+      { icon: '<span class="icon" style="font-size:16px;vertical-align:middle">check_circle</span>', label: 'משימה חדשה', shortcut: 'N', action: () => { if (ctx.showView) ctx.showView('tasks'); setTimeout(() => ctx.newTaskTitle?.focus(), 100); } },
+      { icon: '<span class="icon" style="font-size:16px;vertical-align:middle">event</span>', label: 'אירוע חדש', shortcut: 'G', action: () => { if (ctx.showView) ctx.showView('countdown'); setTimeout(() => ctx.eventName?.focus(), 100); } },
       { divider: true },
-      { icon: '🍅', label: 'פתח פומודורו', shortcut: 'P', action: () => ctx.openPomodoro() },
-      { icon: '📅', label: 'עבור להיום', shortcut: 'T', action: () => ctx.goToToday() },
+      { icon: '<span class="icon" style="font-size:16px;vertical-align:middle">timelapse</span>', label: 'פתח פומודורו', shortcut: 'P', action: () => ctx.openPomodoro() },
+      { icon: '<span class="icon" style="font-size:16px;vertical-align:middle">event</span>', label: 'עבור להיום', shortcut: 'T', action: () => ctx.goToToday() },
       { divider: true },
-      { icon: '⌨️', label: 'קיצורי מקלדת', shortcut: 'H', action: () => ctx.openShortcuts() },
-      { icon: '❓', label: 'מדריך ועזרה', shortcut: 'H', action: () => ctx.openGuide() },
+      { icon: '<span class="icon" style="font-size:16px;vertical-align:middle">keyboard</span>', label: 'קיצורי מקלדת', shortcut: 'H', action: () => ctx.openShortcuts() },
+      { icon: '<span class="icon" style="font-size:16px;vertical-align:middle">help</span>', label: 'מדריך ועזרה', shortcut: 'H', action: () => ctx.openGuide() },
     ];
     createContextMenu(x, y, items, 'quick-add-context-menu');
   }

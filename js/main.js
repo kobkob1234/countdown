@@ -636,8 +636,8 @@ async function refreshNotifyButton() {
       const sub = reg ? await reg.pushManager.getSubscription() : null;
       if (sub && perm === 'granted') {
         // PUSH ENABLED - show distinct active state
-        notifyBtn.textContent = "🔔";
-        notifyBtn.title = `✅ Push enabled for "${currentUser}" (works when closed) - click to disable`;
+        notifyBtn.innerHTML = '<span class="icon" style="font-size:16px;vertical-align:middle">notifications</span>';
+        notifyBtn.title = `Push enabled for "${currentUser}" (works when closed) - click to disable`;
         notifyBtn.setAttribute('aria-pressed', 'true');
         notifyBtn.classList.add('notify-enabled');
         return;
@@ -655,7 +655,7 @@ async function refreshNotifyButton() {
 
   // No push support - basic notifications
   if (perm === 'granted') {
-    notifyBtn.textContent = "🔔";
+    notifyBtn.innerHTML = '<span class="icon" style="font-size:16px;vertical-align:middle">notifications</span>';
     notifyBtn.title = "Notifications enabled (only while app is open)";
     notifyBtn.setAttribute('aria-pressed', 'true');
     notifyBtn.classList.add('notify-enabled');
@@ -699,7 +699,7 @@ async function toggleNotificationsFromUser() {
   }
 
   if (!isPushSupported()) {
-    showSystemNotification("Notifications enabled ✅", { body: "You’ll get reminders while this app is open.", requireInteraction: false }).catch(() => { });
+    showSystemNotification("Notifications enabled", { body: "You’ll get reminders while this app is open.", requireInteraction: false }).catch(() => { });
     await refreshNotifyButton();
     return;
   }
@@ -728,7 +728,7 @@ async function toggleNotificationsFromUser() {
     sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: appServerKey });
     await savePushSubscriptionForUser(currentUser, sub);
     localStorage.setItem(PUSH_LOCAL_USER_KEY, currentUser);
-    showSystemNotification("Push enabled ✅", { body: `Push is enabled for "${currentUser}".`, requireInteraction: false }).catch(() => { });
+    showSystemNotification("Push enabled", { body: `Push is enabled for "${currentUser}".`, requireInteraction: false }).catch(() => { });
 
     // Verify sync completed successfully with a short delay
     // This ensures subscription persists to Firebase before user closes app
@@ -781,7 +781,7 @@ window.testNotification = async function () {
     console.error('Notification permission not granted:', Notification.permission);
     return 'Permission: ' + Notification.permission;
   }
-  const ok = await showSystemNotification("Test Notification 🔔", {
+  const ok = await showSystemNotification("Test Notification", {
     body: "If you see this, notifications are working!",
     tag: 'test-notification',
     requireInteraction: true,
@@ -1042,7 +1042,7 @@ const initTheme = () => {
 
     document.body.classList.add('dark');
 
-    themeToggle.textContent = '☀️';
+    themeToggle.innerHTML = '<span class="icon" style="font-size:16px;vertical-align:middle">light_mode</span>';
 
   }
 
@@ -1053,7 +1053,7 @@ initTheme();
 themeToggle.onclick = () => {
   document.body.classList.toggle('dark');
   const isDark = document.body.classList.contains('dark');
-  themeToggle.textContent = isDark ? '☀️' : '🌙';
+  themeToggle.innerHTML = isDark ? '<span class="icon" style="font-size:16px;vertical-align:middle">light_mode</span>' : '<span class="icon" style="font-size:16px;vertical-align:middle">dark_mode</span>';
   localStorage.setItem(STORAGE_KEYS.THEME, isDark ? 'dark' : 'light');
 };
 
@@ -1197,7 +1197,7 @@ async function triggerAlert(evt, nowMs = Date.now()) {
     inAppMsg = 'Starting now';
   }
 
-  showSystemNotification("Event Reminder ⏰", {
+  showSystemNotification("Event Reminder", {
     body: msg,
     tag: `event-${evt.id || evt.name || 'reminder'}`,
     renotify: true
@@ -1248,7 +1248,7 @@ function startEdit(id) {
       mobileEventSheet.dataset.editingId = id;
 
       // Populate form with event data
-      if (mobileSheetTitle) mobileSheetTitle.textContent = 'עריכת אירוע ✏️';
+      if (mobileSheetTitle) { mobileSheetTitle.innerHTML = 'עריכת אירוע <span class="icon" style="font-size:16px;vertical-align:middle">edit</span>'; }
       if (mobileSheetAdd) mobileSheetAdd.textContent = 'שמור שינויים ✓';
       if (mobileEventName) mobileEventName.value = evt.name || '';
       if (mobileEventDate) mobileEventDate.value = toLocalDatetime(evt.date) || '';
@@ -1435,7 +1435,7 @@ function render() {
     pinBtn.className = `pin-btn ${evt.pinned ? 'pinned' : ''}`;
     pinBtn.setAttribute("aria-label", evt.pinned ? "Unpin event" : "Pin event");
     pinBtn.title = evt.pinned ? "Unpin" : "Pin to top";
-    pinBtn.textContent = "📌";
+    pinBtn.innerHTML = '<span class="icon" style="font-size:16px;vertical-align:middle">push_pin</span>';
 
     const editBtn = document.createElement("button");
     editBtn.className = "edit-btn";
@@ -1451,7 +1451,7 @@ function render() {
     reminderBtn.className = `reminder-btn ${evt.reminder ? 'has-reminder' : ''}`;
     reminderBtn.setAttribute("aria-label", "Set reminder");
     reminderBtn.title = evt.reminder ? `תזכורת ${evt.reminder} דקות לפני` : "הגדר תזכורת";
-    reminderBtn.textContent = "🔔";
+    reminderBtn.innerHTML = '<span class="icon" style="font-size:16px;vertical-align:middle">notifications</span>';
 
     const reminderDropdown = document.createElement("div");
     reminderDropdown.className = "event-reminder-dropdown";
@@ -1977,10 +1977,10 @@ const taskSortLabel = $("taskSortLabel");
 const taskSortMenu = $("taskSortMenu");
 let currentTaskSort = localStorage.getItem('task-sort-preference') || 'dueDate';
 const SORT_LABELS = {
-  dueDate: '📅 תאריך',
+  dueDate: '<span class="icon" style="font-size:16px;vertical-align:middle">event</span> תאריך',
   priority: '⚡ עדיפות',
-  created: '🕐 חדש',
-  createdOldest: '📆 ישן',
+  created: '<span class="icon" style="font-size:16px;vertical-align:middle">schedule</span> חדש',
+  createdOldest: '<span class="icon" style="font-size:16px;vertical-align:middle">date_range</span> ישן',
   title: '🔤 שם'
 };
 
@@ -2707,7 +2707,7 @@ taskSearch.addEventListener('input', () => {
 });
 
 const tasksEmptyDefaults = tasksEmpty ? {
-  icon: tasksEmpty.querySelector('.tasks-empty-icon')?.textContent || '📝',
+  icon: tasksEmpty.querySelector('.tasks-empty-icon')?.innerHTML || '<span class="icon" style="font-size:48px">edit_note</span>',
   title: tasksEmpty.querySelector('h3')?.textContent || 'אין משימות עדיין',
   desc: tasksEmpty.querySelector('p')?.textContent || 'הוסף משימה ראשונה למעלה כדי להתחיל!'
 } : null;
@@ -2717,7 +2717,7 @@ const setTasksEmptyMessage = (icon, title, desc) => {
   const iconEl = tasksEmpty.querySelector('.tasks-empty-icon');
   const titleEl = tasksEmpty.querySelector('h3');
   const descEl = tasksEmpty.querySelector('p');
-  if (iconEl) iconEl.textContent = icon;
+  if (iconEl) iconEl.innerHTML = icon;
   if (titleEl) titleEl.textContent = title;
   if (descEl) descEl.textContent = desc;
 };
@@ -3013,7 +3013,7 @@ function renderTasks() {
   const viewNameDisplay = document.querySelector('.task-manager-title');
   if (currentSmartView === 'date-filter' && window.taskFilterDate && viewNameDisplay) {
     const options = { weekday: 'long', day: 'numeric', month: 'long' };
-    viewNameDisplay.textContent = `📅 ${window.taskFilterDate.toLocaleDateString('he-IL', options)}`;
+    viewNameDisplay.innerHTML = `<span class="icon" style="font-size:16px;vertical-align:middle">event</span> ${window.taskFilterDate.toLocaleDateString('he-IL', options)}`;
   } else if (viewNameDisplay && !currentSmartView) {
     // Reset to default title if not in a smart view
     const subjectName = currentSubject ? subjects.find(s => s.id === currentSubject)?.name : null;
@@ -3034,7 +3034,7 @@ function renderTasks() {
     if (showingSuggested && active.length > 0) {
       suggestedBanner = `
       <div class="suggested-tasks-banner">
-        <span class="suggested-icon">💡</span>
+        <span class="suggested-icon"><span class="icon" style="font-size:16px;vertical-align:middle">lightbulb</span></span>
         <span>אין משימות בתת-נושא זה. מוצגות משימות דחופות מכל הנושאים:</span>
       </div>
     `;
@@ -3076,7 +3076,7 @@ function renderTaskDueDate(task, countdown) {
   const time = dueDate.toLocaleString('he-IL', { hour: '2-digit', minute: '2-digit' });
   const dateStr = `${weekday}, ${day} ${month}, ${time}`;
   const urgencyClass = countdown?.overdue ? 'overdue' : (countdown?.urgency === 'soon' ? 'soon' : '');
-  return `<span class="task-due ${urgencyClass}" data-due-iso="${task.dueDate}">📅 ${dateStr}</span>`;
+  return `<span class="task-due ${urgencyClass}" data-due-iso="${task.dueDate}"><span class="icon" style="font-size:16px;vertical-align:middle">event</span> ${dateStr}</span>`;
 }
 
 function renderTaskCountdown(task, countdown) {
@@ -3097,7 +3097,7 @@ function renderTaskReminder(task) {
   const reminderMinutes = Number.parseInt(task.reminder, 10) || 0;
   if (reminderMinutes <= 0) return '';
   const reminderLabel = formatReminderOffset(reminderMinutes);
-  return `<span class="task-reminder">🔔 ${reminderLabel}</span>`;
+  return `<span class="task-reminder"><span class="icon" style="font-size:16px;vertical-align:middle">notifications</span> ${reminderLabel}</span>`;
 }
 
 function renderTaskDuration(task) {
@@ -3113,7 +3113,7 @@ function renderTaskDuration(task) {
   } else {
     durationLabel = `${mins} דקות`;
   }
-  return `<span class="task-duration">⏱️ ${durationLabel}</span>`;
+  return `<span class="task-duration"><span class="icon" style="font-size:16px;vertical-align:middle">timer</span> ${durationLabel}</span>`;
 }
 
 function renderTaskSubjectBadge(task, showSubjectTag) {
@@ -3198,7 +3198,7 @@ function renderTaskItem(task, showSubjectTag = false) {
     </div>
     <div class="task-actions">
       <div class="task-reminder-wrap">
-        <button class="task-reminder-btn ${task.reminder ? 'has-reminder' : ''}" data-action="reminder" title="${task.reminder ? `תזכורת ${task.reminder} דקות לפני` : 'הגדר תזכורת'}">🔔</button>
+        <button class="task-reminder-btn ${task.reminder ? 'has-reminder' : ''}" data-action="reminder" title="${task.reminder ? `תזכורת ${task.reminder} דקות לפני` : 'הגדר תזכורת'}"><span class="icon" style="font-size:16px;vertical-align:middle">notifications</span></button>
         <div class="task-reminder-dropdown" data-task-id="${task.id}">
           <div class="task-reminder-option" data-minutes="1">דקה אחת</div>
           <div class="task-reminder-option" data-minutes="5">5 דקות</div>
@@ -3208,14 +3208,14 @@ function renderTaskItem(task, showSubjectTag = false) {
           ${task.reminder ? '<div class="task-reminder-option remove" data-minutes="0">הסר תזכורת</div>' : ''}
         </div>
       </div>
-      <button class="task-action-btn" data-action="edit" title="Edit" aria-label="עריכה">✏️</button>
+      <button class="task-action-btn" data-action="edit" title="Edit" aria-label="עריכה"><span class="icon" style="font-size:16px;vertical-align:middle">edit</span></button>
       <button class="task-action-btn" data-action="duplicate" title="Duplicate" aria-label="שכפל">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
           <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
           <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
         </svg>
       </button>
-      <button class="task-action-btn delete" data-action="delete" title="Delete" aria-label="מחק">🗑️</button>
+      <button class="task-action-btn delete" data-action="delete" title="Delete" aria-label="מחק"><span class="icon" style="font-size:16px;vertical-align:middle">delete</span></button>
     </div>
   </div>
 `;
@@ -3289,7 +3289,7 @@ function startInlineTaskDueEdit(dueEl, task) {
       const { id, isOwn, isShared, ...clean } = task;
       saveTask(task.id, { ...clean, dueDate: newDue }, task.subject);
       dueEl.dataset.dueIso = newDue || '';
-      dueEl.textContent = newDue ? `📅 ${formatTaskDueDisplay(newDue)}` : '+ תאריך';
+      dueEl.innerHTML = newDue ? `<span class="icon" style="font-size:16px;vertical-align:middle">event</span> ${formatTaskDueDisplay(newDue)}` : '+ תאריך';
       dueEl.classList.toggle('add', !newDue);
     }
   };
@@ -3508,7 +3508,7 @@ function setupTaskEventDelegation() {
           setTimeout(() => taskItem.classList.remove('completing'), 500);
           // Push to undo stack
           if (typeof pushToUndoStack === 'function') {
-            pushToUndoStack({ type: 'completeTask', taskId, message: `✅ "${task.title}" הושלם` });
+            pushToUndoStack({ type: 'completeTask', taskId, message: `"${task.title}" הושלם` });
           }
         }
         const { id, isOwn, isShared, ...cleanTask } = task;
@@ -3565,7 +3565,7 @@ document.addEventListener('click', (e) => {
 if (taskSortBtn && taskSortMenu) {
   // Set initial label from saved preference
   if (taskSortLabel && SORT_LABELS[currentTaskSort]) {
-    taskSortLabel.textContent = SORT_LABELS[currentTaskSort];
+    taskSortLabel.innerHTML = SORT_LABELS[currentTaskSort];
   }
   // Update selected state
   taskSortMenu.querySelectorAll('.task-sort-option').forEach(opt => {
@@ -3591,7 +3591,7 @@ if (taskSortBtn && taskSortMenu) {
     }
 
     // Update UI
-    if (taskSortLabel) taskSortLabel.textContent = SORT_LABELS[sortType] || sortType;
+    if (taskSortLabel) taskSortLabel.innerHTML = SORT_LABELS[sortType] || sortType;
     taskSortMenu.querySelectorAll('.task-sort-option').forEach(opt => {
       opt.classList.toggle('selected', opt.dataset.sort === sortType);
     });
@@ -3857,7 +3857,7 @@ function startTaskReminderTicker() {
 async function triggerTaskAlert(task) {
   const dueDate = new Date(task.dueDate);
   const dateStr = dueDate.toLocaleDateString('he-IL', { weekday: 'long', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
-  const title = `📋 תזכורת משימה: ${task.title}`;
+  const title = `תזכורת משימה: ${task.title}`;
   const message = `מועד יעד: ${dateStr}`;
 
   // Native notification sound is used instead of custom playReminderSound()
@@ -4411,8 +4411,8 @@ function renderSubjectsSidebar() {
         <span class="subject-name">${escapeHtml(s.name)}</span>
         <div class="subject-actions">
           <button class="subject-action-btn" data-action="add-sub" title="הוסף תת-נושא" aria-label="הוסף תת-נושא">➕</button>
-          <button class="subject-action-btn" data-action="edit" title="עריכה" aria-label="עריכה">✏️</button>
-          <button class="subject-action-btn delete" data-action="delete" title="מחק" aria-label="מחק">🗑️</button>
+          <button class="subject-action-btn" data-action="edit" title="עריכה" aria-label="עריכה"><span class="icon" style="font-size:16px;vertical-align:middle">edit</span></button>
+          <button class="subject-action-btn delete" data-action="delete" title="מחק" aria-label="מחק"><span class="icon" style="font-size:16px;vertical-align:middle">delete</span></button>
         </div>
       </div>
       ${hasChildren ? `
@@ -4429,8 +4429,8 @@ function renderSubjectsSidebar() {
                 <span class="child-color" style="background: ${c.color};"></span>
                 <span class="child-name">${escapeHtml(c.name)}</span>
                 <div class="subject-actions">
-                  <button class="subject-action-btn" data-action="edit" title="עריכה">✏️</button>
-                  <button class="subject-action-btn delete" data-action="delete" title="מחק">🗑️</button>
+                  <button class="subject-action-btn" data-action="edit" title="עריכה"><span class="icon" style="font-size:16px;vertical-align:middle">edit</span></button>
+                  <button class="subject-action-btn delete" data-action="delete" title="מחק"><span class="icon" style="font-size:16px;vertical-align:middle">delete</span></button>
                 </div>
               </div>
             `;
@@ -4645,11 +4645,11 @@ function showEventContextMenu(x, y, eventId) {
   const pinItem = eventContextMenu.querySelector('[data-action="pin"]');
 
   if (starItem && evt) {
-    starItem.innerHTML = evt.highlighted ? '⭐ הסר מועדף' : '⭐ סמן כמועדף';
+    starItem.innerHTML = evt.highlighted ? '<span class="icon" style="font-size:16px;vertical-align:middle">star</span> הסר מועדף' : '<span class="icon" style="font-size:16px;vertical-align:middle">star</span> סמן כמועדף';
   }
 
   if (pinItem && evt) {
-    pinItem.innerHTML = evt.pinned ? '📌 בטל נעיצה' : '📌 נעץ למעלה';
+    pinItem.innerHTML = evt.pinned ? '<span class="icon" style="font-size:16px;vertical-align:middle">push_pin</span> בטל נעיצה' : '<span class="icon" style="font-size:16px;vertical-align:middle">push_pin</span> נעץ למעלה';
   }
 
   // Position and show menu

@@ -228,16 +228,16 @@ export function initUi() {
   });
 
   const COMMANDS = [
-    { id: 'newTask', icon: '✅', label: 'משימה חדשה', shortcut: 'N', action: () => { if (typeof ctx.showView === 'function') ctx.showView('tasks'); setTimeout(() => ctx.newTaskTitle?.focus(), 100); } },
-    { id: 'newEvent', icon: '📅', label: 'אירוע חדש', shortcut: 'G', action: () => { if (typeof ctx.showView === 'function') ctx.showView('countdown'); setTimeout(() => ctx.eventName?.focus(), 100); } },
-    { id: 'goToday', icon: '📆', label: 'עבור להיום', shortcut: 'T', action: goToToday },
-    { id: 'openPomodoro', icon: '🍅', label: 'פתח פומודורו', shortcut: 'P', action: openPomodoro },
-    { id: 'openTasks', icon: '📋', label: 'עבור למשימות', shortcut: 'M', action: openTasksView },
-    { id: 'openCountdown', icon: '⏱️', label: 'עבור לספירה לאחור', shortcut: 'G', action: openCountdownView },
-    { id: 'toggleCalendar', icon: '📅', label: 'הצג/הסתר לוח שנה', shortcut: 'C', action: toggleCalendarSidebar },
-    { id: 'toggleTheme', icon: '🌙', label: 'מצב כהה/בהיר', shortcut: 'D', action: toggleTheme },
-    { id: 'openGuide', icon: '❓', label: 'מדריך ועזרה', shortcut: 'H', action: openGuide },
-    { id: 'search', icon: '🔍', label: 'חפש משימות', shortcut: '/', action: focusTaskSearch }
+    { id: 'newTask', icon: '<span class="icon" style="font-size:16px;vertical-align:middle">check_circle</span>', label: 'משימה חדשה', shortcut: 'N', action: () => { if (typeof ctx.showView === 'function') ctx.showView('tasks'); setTimeout(() => ctx.newTaskTitle?.focus(), 100); } },
+    { id: 'newEvent', icon: '<span class="icon" style="font-size:16px;vertical-align:middle">event</span>', label: 'אירוע חדש', shortcut: 'G', action: () => { if (typeof ctx.showView === 'function') ctx.showView('countdown'); setTimeout(() => ctx.eventName?.focus(), 100); } },
+    { id: 'goToday', icon: '<span class="icon" style="font-size:16px;vertical-align:middle">date_range</span>', label: 'עבור להיום', shortcut: 'T', action: goToToday },
+    { id: 'openPomodoro', icon: '<span class="icon" style="font-size:16px;vertical-align:middle">timelapse</span>', label: 'פתח פומודורו', shortcut: 'P', action: openPomodoro },
+    { id: 'openTasks', icon: '<span class="icon" style="font-size:16px;vertical-align:middle">list_alt</span>', label: 'עבור למשימות', shortcut: 'M', action: openTasksView },
+    { id: 'openCountdown', icon: '<span class="icon" style="font-size:16px;vertical-align:middle">timer</span>', label: 'עבור לספירה לאחור', shortcut: 'G', action: openCountdownView },
+    { id: 'toggleCalendar', icon: '<span class="icon" style="font-size:16px;vertical-align:middle">event</span>', label: 'הצג/הסתר לוח שנה', shortcut: 'C', action: toggleCalendarSidebar },
+    { id: 'toggleTheme', icon: '<span class="icon" style="font-size:16px;vertical-align:middle">dark_mode</span>', label: 'מצב כהה/בהיר', shortcut: 'D', action: toggleTheme },
+    { id: 'openGuide', icon: '<span class="icon" style="font-size:16px;vertical-align:middle">help</span>', label: 'מדריך ועזרה', shortcut: 'H', action: openGuide },
+    { id: 'search', icon: '<span class="icon" style="font-size:16px;vertical-align:middle">search</span>', label: 'חפש משימות', shortcut: '/', action: focusTaskSearch }
   ];
 
   function openCommandPalette() {

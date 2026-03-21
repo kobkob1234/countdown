@@ -298,7 +298,7 @@ export function initCalendar() {
             <div class="day-drawer-item-color" style="background: ${color}"></div>
             <div class="day-drawer-item-info">
               <div class="day-drawer-item-name">${ctx.escapeHtml ? ctx.escapeHtml(evt.name) : evt.name}</div>
-              <div class="day-drawer-item-time">🕐 ${timeStr}</div>
+              <div class="day-drawer-item-time"><span class="icon" style="font-size:16px;vertical-align:middle">schedule</span> ${timeStr}</div>
             </div>
           </div>
         `;
@@ -327,7 +327,7 @@ export function initCalendar() {
             <div class="day-drawer-item-color" style="background: ${PRIORITY_COLORS[priority]}"></div>
             <div class="day-drawer-item-info">
               <div class="day-drawer-item-name">${ctx.escapeHtml ? ctx.escapeHtml(task.title) : task.title}</div>
-              ${timeStr ? `<div class=\"day-drawer-item-time\">🕐 ${timeStr}</div>` : ''}
+              ${timeStr ? `<div class=\"day-drawer-item-time\"><span class="icon" style="font-size:16px;vertical-align:middle">schedule</span> ${timeStr}</div>` : ''}
             </div>
             ${priorityLabel ? `<div class=\"day-drawer-item-priority\" style=\"background: ${PRIORITY_BG[priority]}; color: ${PRIORITY_COLORS[priority]}\">${priorityLabel}</div>` : ''}
           </div>
@@ -614,7 +614,7 @@ export function initCalendar() {
       if (clientId) localStorage.setItem(ctx.STORAGE_KEYS.GOOGLE_CLIENT_ID, clientId);
       else localStorage.removeItem(ctx.STORAGE_KEYS.GOOGLE_CLIENT_ID);
 
-      showCalendarStatus('✅ Saved Google settings', 'success');
+      showCalendarStatus('Saved Google settings', 'success');
     };
   }
 
@@ -623,7 +623,7 @@ export function initCalendar() {
       localStorage.removeItem(ctx.STORAGE_KEYS.GOOGLE_API_KEY);
       localStorage.removeItem(ctx.STORAGE_KEYS.GOOGLE_CLIENT_ID);
       syncGoogleSettingsInputsFromStorage();
-      showCalendarStatus('🔄 Reset Google settings', 'info');
+      showCalendarStatus('Reset Google settings', 'info');
     };
   }
 
@@ -657,7 +657,7 @@ export function initCalendar() {
         return;
       }
 
-      showCalendarStatus(`🗑️ Deleting ${imported.length} imported events...`, 'info');
+      showCalendarStatus(`Deleting ${imported.length} imported events...`, 'info');
 
       let deleted = 0;
       const deletedIds = [];
@@ -676,9 +676,9 @@ export function initCalendar() {
       // Cleanup planner blocks
       if (typeof ctx.bulkDeleteImportedBlocks === 'function' && deletedIds.length > 0) {
         const blocksRemoved = ctx.bulkDeleteImportedBlocks(deletedIds);
-        showCalendarStatus(`✅ Deleted ${deleted} events and ${blocksRemoved} planner blocks.`, 'success');
+        showCalendarStatus(`Deleted ${deleted} events and ${blocksRemoved} planner blocks.`, 'success');
       } else {
-        showCalendarStatus(`✅ Deleted ${deleted} events.`, 'success');
+        showCalendarStatus(`Deleted ${deleted} events.`, 'success');
       }
     };
   }
@@ -694,7 +694,7 @@ export function initCalendar() {
   if (syncGoogleCalendar) {
     syncGoogleCalendar.onclick = async () => {
       if (location.protocol === 'file:') {
-        showCalendarStatus('❌ Google Calendar sign-in does not work from file://. Run the app via http://localhost (e.g. `python3 -m http.server 8000`).', 'error');
+        showCalendarStatus('Google Calendar sign-in does not work from file://. Run the app via http://localhost (e.g. `python3 -m http.server 8000`).', 'error');
         openGoogleSettings();
         return;
       }
@@ -702,16 +702,16 @@ export function initCalendar() {
       const apiKey = getGoogleApiKey();
       const clientId = getGoogleClientId();
       if (isPlaceholderClientId(clientId)) {
-        showCalendarStatus('❌ Missing OAuth Client ID. Open “Google Settings” and paste your Client ID (ends with .apps.googleusercontent.com).', 'error');
+        showCalendarStatus('Missing OAuth Client ID. Open “Google Settings” and paste your Client ID (ends with .apps.googleusercontent.com).', 'error');
         openGoogleSettings();
         return;
       }
       if (isPlaceholderApiKey(apiKey)) {
-        showCalendarStatus('⚠️ Missing Google API Key. It may still work, but recommended to add one in “Google Settings”.', 'info');
+        showCalendarStatus('Missing Google API Key. It may still work, but recommended to add one in “Google Settings”.', 'info');
         openGoogleSettings();
       }
 
-      showCalendarStatus('🔄 Connecting to Google Calendar...', 'info');
+      showCalendarStatus('Connecting to Google Calendar...', 'info');
 
       try {
         if (!window.gapi) {
@@ -739,7 +739,7 @@ export function initCalendar() {
           await auth.signIn();
         }
 
-        showCalendarStatus('✅ Connected! Fetching events...', 'success');
+        showCalendarStatus('Connected! Fetching events...', 'success');
 
         const now = new Date();
         const oneMonthLater = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
@@ -782,7 +782,7 @@ export function initCalendar() {
           hint = ' (Tip: check your OAuth Client ID.)';
         }
 
-        showCalendarStatus(`❌ Error: ${details || 'Failed to connect to Google Calendar'}${hint}`, 'error');
+        showCalendarStatus(`Error: ${details || 'Failed to connect to Google Calendar'}${hint}`, 'error');
         openGoogleSettings();
       }
     };
@@ -790,7 +790,7 @@ export function initCalendar() {
 
   if (syncAppleCalendar) {
     syncAppleCalendar.onclick = async () => {
-      showCalendarStatus('🍎 Apple Calendar requires .ics file import', 'info');
+      showCalendarStatus('Apple Calendar requires .ics file import', 'info');
 
       const input = document.createElement('input');
       input.type = 'file';
@@ -800,7 +800,7 @@ export function initCalendar() {
         const file = e.target.files[0];
         if (!file) return;
 
-        showCalendarStatus('🔄 Reading calendar file...', 'info');
+        showCalendarStatus('Reading calendar file...', 'info');
 
         try {
           const text = await file.text();
@@ -815,7 +815,7 @@ export function initCalendar() {
 
         } catch (error) {
           console.error('iCal parse error:', error);
-          showCalendarStatus(`❌ Error: ${error.message || 'Failed to read calendar file'}`, 'error');
+          showCalendarStatus(`Error: ${error.message || 'Failed to read calendar file'}`, 'error');
         }
       };
 
@@ -1104,7 +1104,7 @@ export function initCalendar() {
 
     pendingCalendarEvents = expandedEvents;
 
-    showCalendarStatus(`✅ Found ${pendingCalendarEvents.length} future occurrences`, 'success');
+    showCalendarStatus(`Found ${pendingCalendarEvents.length} future occurrences`, 'success');
 
     if (calendarEventsContent) {
       calendarEventsContent.innerHTML = pendingCalendarEvents.map((evt, idx) => {
@@ -1146,7 +1146,7 @@ export function initCalendar() {
         return;
       }
 
-      showCalendarStatus(`🔄 Processing ${selectedIndices.length} events...`, 'info');
+      showCalendarStatus(`Processing ${selectedIndices.length} events...`, 'info');
 
       let imported = 0;
       let updated = 0;
@@ -1199,7 +1199,7 @@ export function initCalendar() {
         }
       }
 
-      showCalendarStatus(`✅ Done! Added ${imported} new, Updated ${updated} events.`, 'success');
+      showCalendarStatus(`Done! Added ${imported} new, Updated ${updated} events.`, 'success');
 
       // Auto-sync ALL imported events to planner (bulk)
       if (typeof ctx.bulkSyncImportedEvents === 'function' && processedExternalIds.length > 0) {

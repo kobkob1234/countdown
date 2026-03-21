@@ -85,13 +85,13 @@ export function initDailyPlanner() {
 
   // Category icons
   const categoryIcons = {
-    work: '💼',
-    study: '📚',
-    health: '🏃',
-    personal: '🏠',
-    social: '👥',
-    creative: '🎨',
-    rest: '🧘'
+    work: '<span class="icon" style="font-size:16px;vertical-align:middle">work</span>',
+    study: '<span class="icon" style="font-size:16px;vertical-align:middle">school</span>',
+    health: '<span class="icon" style="font-size:16px;vertical-align:middle">directions_run</span>',
+    personal: '<span class="icon" style="font-size:16px;vertical-align:middle">home</span>',
+    social: '<span class="icon" style="font-size:16px;vertical-align:middle">group</span>',
+    creative: '<span class="icon" style="font-size:16px;vertical-align:middle">palette</span>',
+    rest: '<span class="icon" style="font-size:16px;vertical-align:middle">self_improvement</span>'
   };
 
   // Templates
@@ -366,7 +366,7 @@ export function initDailyPlanner() {
             continue;
           }
           if (item.dedupeKey) await markDedupeKeySeen(item.dedupeKey, nowMs);
-          const title = `📅 תזכורת יומן יומי: ${item.block.title || 'פעילות'}`;
+          const title = `<span class="icon" style="font-size:16px;vertical-align:middle">event</span> תזכורת יומן יומי: ${item.block.title || 'פעילות'}`;
           const message = formatPlannerReminderMessage(item.block);
           showSystemNotification(title, {
             body: message,
@@ -610,7 +610,7 @@ export function initDailyPlanner() {
     const blockBg = block.color ? `${block.color}20` : defaultColors.bg;
     const categoryIcon = block.category ? (categoryIcons[block.category] || '') : '';
     const endTime = formatTime(startMin + duration);
-    const reminderText = block.reminder > 0 ? `🔔 ${block.reminder} דק׳ לפני` : '';
+    const reminderText = block.reminder > 0 ? `<span class="icon" style="font-size:16px;vertical-align:middle">notifications</span> ${block.reminder} דק׳ לפני` : '';
 
     // Determine notes display for day view (not compact/weekly)
     let notesHtml = '';
@@ -1486,7 +1486,7 @@ export function initDailyPlanner() {
     const deleteBtn = modal.querySelector('#plannerDeleteBtn');
     const priorityPicker = modal.querySelector('#plannerPriorityPicker');
 
-    if (titleEl) titleEl.textContent = '➕ הוסף פעילות';
+    if (titleEl) titleEl.innerHTML = '<span class="icon" style="font-size:16px;vertical-align:middle">add_circle</span> הוסף פעילות';
     if (blockTitle) blockTitle.value = '';
     if (blockStart) blockStart.value = formatTime(hour * 60);
     if (blockEnd) blockEnd.value = formatTime((hour + 1) * 60);
@@ -1543,7 +1543,7 @@ export function initDailyPlanner() {
     const deleteBtn = modal.querySelector('#plannerDeleteBtn');
     const priorityPicker = modal.querySelector('#plannerPriorityPicker');
 
-    if (titleEl) titleEl.textContent = '✏️ ערוך פעילות';
+    if (titleEl) titleEl.innerHTML = '<span class="icon" style="font-size:16px;vertical-align:middle">edit</span> ערוך פעילות';
     if (blockTitle) blockTitle.value = block.title || '';
     if (blockStart) blockStart.value = block.start || '09:00';
     if (blockEnd) blockEnd.value = formatTime(parseTime(block.start) + (block.duration || 60));

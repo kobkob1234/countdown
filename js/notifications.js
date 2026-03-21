@@ -391,7 +391,7 @@ export async function refreshNotifyButton() {
     if (!notifyBtn) return;
 
     if (!("Notification" in window)) {
-        notifyBtn.textContent = "🔕";
+        notifyBtn.innerHTML = '<span class="icon" style="font-size:16px;vertical-align:middle">notifications_off</span>';
         notifyBtn.title = "Notifications are not supported in this browser";
         notifyBtn.disabled = true;
         notifyBtn.setAttribute('aria-disabled', 'true');
@@ -400,7 +400,7 @@ export async function refreshNotifyButton() {
     }
 
     if (!window.isSecureContext) {
-        notifyBtn.textContent = "🔒";
+        notifyBtn.innerHTML = '<span class="icon" style="font-size:16px;vertical-align:middle">lock</span>';
         notifyBtn.title = "Notifications require HTTPS (or localhost)";
         notifyBtn.disabled = true;
         notifyBtn.setAttribute('aria-disabled', 'true');
@@ -409,7 +409,7 @@ export async function refreshNotifyButton() {
     }
 
     if (isIOS() && !isStandalone()) {
-        notifyBtn.textContent = "📲";
+        notifyBtn.innerHTML = '<span class="icon" style="font-size:16px;vertical-align:middle">install_mobile</span>';
         notifyBtn.title = "On iPhone/iPad: install this app (Add to Home Screen) to enable notifications";
         notifyBtn.disabled = false;
         notifyBtn.removeAttribute('aria-disabled');
@@ -423,7 +423,7 @@ export async function refreshNotifyButton() {
 
     const perm = Notification.permission;
     if (perm === 'denied') {
-        notifyBtn.textContent = "🔕";
+        notifyBtn.innerHTML = '<span class="icon" style="font-size:16px;vertical-align:middle">notifications_off</span>';
         notifyBtn.title = "Notifications blocked (enable in browser settings)";
         notifyBtn.classList.remove('notify-enabled');
         return;
@@ -435,8 +435,8 @@ export async function refreshNotifyButton() {
             const sub = reg ? await reg.pushManager.getSubscription() : null;
             const hasFCM = await hasFCMToken();
             if ((sub || hasFCM) && perm === 'granted') {
-                notifyBtn.textContent = "🔔";
-                notifyBtn.title = `✅ Push enabled for "${currentUser}" (works when closed) - click to disable`;
+                notifyBtn.innerHTML = '<span class="icon" style="font-size:16px;vertical-align:middle">notifications</span>';
+                notifyBtn.title = `Push enabled for "${currentUser}" (works when closed) - click to disable`;
                 notifyBtn.setAttribute('aria-pressed', 'true');
                 notifyBtn.classList.add('notify-enabled');
                 return;
@@ -444,7 +444,7 @@ export async function refreshNotifyButton() {
         } catch { }
 
 
-        notifyBtn.textContent = "🔕";
+        notifyBtn.innerHTML = '<span class="icon" style="font-size:16px;vertical-align:middle">notifications_off</span>';
         notifyBtn.title = perm === 'granted'
             ? "Click to enable push (works when closed)"
             : "Click to enable notifications";
@@ -455,12 +455,12 @@ export async function refreshNotifyButton() {
 
     // No push support - basic notifications
     if (perm === 'granted') {
-        notifyBtn.textContent = "🔔";
+        notifyBtn.innerHTML = '<span class="icon" style="font-size:16px;vertical-align:middle">notifications</span>';
         notifyBtn.title = "Notifications enabled (only while app is open)";
         notifyBtn.setAttribute('aria-pressed', 'true');
         notifyBtn.classList.add('notify-enabled');
     } else {
-        notifyBtn.textContent = "🔕";
+        notifyBtn.innerHTML = '<span class="icon" style="font-size:16px;vertical-align:middle">notifications_off</span>';
         notifyBtn.title = "Click to enable notifications";
         notifyBtn.setAttribute('aria-pressed', 'false');
         notifyBtn.classList.remove('notify-enabled');
@@ -497,7 +497,7 @@ async function toggleNotificationsFromUser() {
     }
 
     if (!isPushSupported()) {
-        showSystemNotification("Notifications enabled ✅", { body: "You'll get reminders while this app is open.", requireInteraction: false }).catch(e => console.warn('[Notification] Enable confirmation failed:', e.message));
+        showSystemNotification("Notifications enabled", { body: "You'll get reminders while this app is open.", requireInteraction: false }).catch(e => console.warn('[Notification] Enable confirmation failed:', e.message));
         await refreshNotifyButton();
         return;
     }
@@ -553,7 +553,7 @@ async function toggleNotificationsFromUser() {
             await saveFCMTokenForUser(currentUser, fcmToken);
         }
 
-        showSystemNotification("Push enabled ✅", { body: `Push is enabled for "${currentUser}".`, requireInteraction: false }).catch(() => { });
+        showSystemNotification("Push enabled", { body: `Push is enabled for "${currentUser}".`, requireInteraction: false }).catch(() => { });
     } catch (e) {
         console.warn('[Push] subscribe/save failed:', e);
         try { if (sub) await sub.unsubscribe(); } catch { }
@@ -713,7 +713,7 @@ export async function initNotifications() {
             console.error('Notification permission not granted:', Notification.permission);
             return 'Permission: ' + Notification.permission;
         }
-        const ok = await showSystemNotification("Test Notification 🔔", {
+        const ok = await showSystemNotification("Test Notification", {
             body: "If you see this, notifications are working!",
             tag: 'test-notification',
             requireInteraction: true,

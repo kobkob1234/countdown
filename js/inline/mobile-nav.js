@@ -156,7 +156,7 @@ export function initMobileNav() {
       if (eventToEdit) {
         // Edit mode
         mobileEditingId = eventToEdit.id;
-        if (mobileSheetTitle) mobileSheetTitle.textContent = 'עריכת אירוע ✏️';
+        if (mobileSheetTitle) mobileSheetTitle.innerHTML = '<span class="icon" style="font-size:16px;vertical-align:middle">edit</span> עריכת אירוע';
         if (mobileSheetAdd) mobileSheetAdd.textContent = 'שמור שינויים ✓';
         if (nameInput) nameInput.value = eventToEdit.name || '';
         if (dateInput) dateInput.value = window.ctx?.toLocalDatetime?.(eventToEdit.date) || eventToEdit.date || '';
@@ -165,8 +165,8 @@ export function initMobileNav() {
       } else {
         // Add mode
         mobileEditingId = null;
-        if (mobileSheetTitle) mobileSheetTitle.textContent = 'הוסף אירוע חדש ➕';
-        if (mobileSheetAdd) mobileSheetAdd.textContent = 'הוסף אירוע ✓';
+        if (mobileSheetTitle) mobileSheetTitle.innerHTML = '<span class="icon" style="font-size:16px;vertical-align:middle">add_circle</span> הוסף אירוע חדש';
+        if (mobileSheetAdd) mobileSheetAdd.textContent = 'הוסף אירוע';
         // Set default date to tomorrow at 9:00 AM
         const tomorrow = new Date();
         tomorrow.setDate(tomorrow.getDate() + 1);
@@ -209,8 +209,8 @@ export function initMobileNav() {
       if (reminderSelect) reminderSelect.value = '0';
 
       // Reset title and button text
-      if (mobileSheetTitle) mobileSheetTitle.textContent = 'הוסף אירוע חדש ➕';
-      if (mobileSheetAdd) mobileSheetAdd.textContent = 'הוסף אירוע ✓';
+      if (mobileSheetTitle) mobileSheetTitle.innerHTML = '<span class="icon" style="font-size:16px;vertical-align:middle">add_circle</span> הוסף אירוע חדש';
+      if (mobileSheetAdd) mobileSheetAdd.textContent = 'הוסף אירוע';
     }
 
     // Close handlers

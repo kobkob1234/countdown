@@ -66,7 +66,7 @@ export function initMobileController() {
         document.body.appendChild(toastContainer);
 
         window.mobileToast = (msg, options = {}) => {
-            const { icon = 'ℹ️', duration = 3000 } = options;
+            const { icon = '<span class="icon" style="font-size:16px;vertical-align:middle">info</span>', duration = 3000 } = options;
             const toast = document.createElement('div');
             toast.className = 'mobile-toast';
             toast.innerHTML = `
@@ -156,7 +156,7 @@ export function initMobileController() {
                     // Right Swipe (Complete)
                     const id = activeItem.dataset.id;
                     if (id && typeof window.handleCompleteTask === 'function') {
-                        window.mobileToast('הושלם!', { icon: '✅' });
+                        window.mobileToast('הושלם!', { icon: '<span class="icon" style="font-size:16px;vertical-align:middle">check_circle</span>' });
                         window.handleCompleteTask(id);
                     }
                 } else {
@@ -164,7 +164,7 @@ export function initMobileController() {
                     if (confirm('למחוק את המשימה?')) {
                         const id = activeItem.dataset.id;
                         if (id && typeof window.deleteTask === 'function') {
-                            window.mobileToast('נמחק', { icon: '🗑️' });
+                            window.mobileToast('נמחק', { icon: '<span class="icon" style="font-size:16px;vertical-align:middle">delete</span>' });
                             window.deleteTask(id);
                         }
                     }
@@ -235,7 +235,7 @@ export function initMobileController() {
                 // Simulate delay
                 setTimeout(() => {
                     if (pullIcon) pullIcon.classList.remove('refreshing');
-                    window.mobileToast('סונכרן בהצלחה', { icon: '🔄' });
+                    window.mobileToast('סונכרן בהצלחה', { icon: '<span class="icon" style="font-size:16px;vertical-align:middle">sync</span>' });
                 }, 1500);
             }
         });

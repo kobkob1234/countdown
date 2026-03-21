@@ -8,8 +8,8 @@
   <title>Shared Event Countdowns</title>
 
   <!-- PWA Meta Tags -->
-  <meta name="theme-color" content="#667eea" media="(prefers-color-scheme: light)" />
-  <meta name="theme-color" content="#0f172a" media="(prefers-color-scheme: dark)" />
+  <meta name="theme-color" content="#3b82f6" media="(prefers-color-scheme: light)" />
+  <meta name="theme-color" content="#171c28" media="(prefers-color-scheme: dark)" />
   <meta name="description" content="Track countdowns to events and manage tasks with reminders" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -17,7 +17,7 @@
   <meta name="apple-mobile-web-app-title" content="Countdowns" />
   <meta name="application-name" content="Countdowns" />
   <meta name="format-detection" content="telephone=no" />
-  <meta name="msapplication-TileColor" content="#667eea" />
+  <meta name="msapplication-TileColor" content="#3b82f6" />
   <meta name="msapplication-tap-highlight" content="no" />
 
   <link rel="manifest" href="manifest.webmanifest" />
@@ -92,9 +92,9 @@
   <div class="task-manager-overlay" id="taskManagerOverlay">
 
     <div class="task-manager-header">
-      <div class="task-manager-title">📝 Task Manager</div>
-      <button class="header-btn" id="toggleTaskSidebar" style="margin-right: 12px;">📚 נושאים</button>
-      <button class="header-btn" id="taskSettingsBtn" title="הגדרות" style="margin-right: 8px;">⚙️</button>
+      <div class="task-manager-title"><span class="icon" aria-hidden="true">checklist</span> Task Manager</div>
+      <button class="header-btn" id="toggleTaskSidebar" style="margin-right: 12px;"><span class="icon" aria-hidden="true">folder</span> נושאים</button>
+      <button class="header-btn" id="taskSettingsBtn" title="הגדרות" style="margin-right: 8px;"><span class="icon" aria-hidden="true">settings</span></button>
       <button class="task-manager-close" id="closeTaskManager" aria-label="Close task manager">×</button>
       <div class="task-search-bar">
         <input type="text" id="taskSearch" placeholder="חיפוש משימות... / Search tasks..." />
@@ -103,7 +103,7 @@
         <button class="filter-pill active" data-filter="all">הכל</button>
         <button class="filter-pill" data-filter="active">פעיל</button>
         <button class="filter-pill" data-filter="completed">הושלם</button>
-        <button class="header-btn" id="toggleTaskCalendar">📅 לוח</button>
+        <button class="header-btn" id="toggleTaskCalendar"><span class="icon" aria-hidden="true">calendar_month</span> לוח</button>
       </div>
 
       <!-- Task Settings Popover -->
@@ -126,39 +126,39 @@
       <!-- Sidebar -->
       <div class="task-manager-sidebar" id="taskSidebar" style="transition: margin-right 0.2s;">
         <div class="task-manager-sidebar-header">
-          <h3>📚 נושאים</h3>
+          <h3><span class="icon" aria-hidden="true">folder</span> נושאים</h3>
           <button class="add-subject-btn" id="addSubjectBtn" title="הוסף נושא">+</button>
         </div>
         <div class="task-manager-sidebar-content">
           <!-- Smart Views -->
           <div class="smart-views-list" id="smartViewsList">
             <div class="smart-view-item" data-view="all">
-              <span class="view-icon">📋</span>
+              <span class="view-icon"><span class="icon" style="font-size:20px">inbox</span></span>
               <span class="view-name">כל המשימות</span>
               <span class="view-count" id="countAll">0</span>
             </div>
             <div class="smart-view-item" data-view="today">
-              <span class="view-icon">📅</span>
+              <span class="view-icon"><span class="icon" style="font-size:20px;--icon-fill:1">today</span></span>
               <span class="view-name">היום</span>
               <span class="view-count" id="countToday">0</span>
             </div>
             <div class="smart-view-item" data-view="tomorrow">
-              <span class="view-icon">🌅</span>
+              <span class="view-icon"><span class="icon" style="font-size:20px">light_mode</span></span>
               <span class="view-name">מחר</span>
               <span class="view-count" id="countTomorrow">0</span>
             </div>
             <div class="smart-view-item" data-view="week">
-              <span class="view-icon">📆</span>
+              <span class="view-icon"><span class="icon" style="font-size:20px">date_range</span></span>
               <span class="view-name">7 ימים הבאים</span>
               <span class="view-count" id="countWeek">0</span>
             </div>
             <div class="smart-view-item" data-view="overdue">
-              <span class="view-icon">⚠️</span>
+              <span class="view-icon"><span class="icon" style="font-size:20px;color:var(--danger)">error</span></span>
               <span class="view-name">באיחור</span>
               <span class="view-count" id="countOverdue">0</span>
             </div>
             <div class="smart-view-item" data-view="nodate">
-              <span class="view-icon">📭</span>
+              <span class="view-icon"><span class="icon" style="font-size:20px">event_available</span></span>
               <span class="view-name">ללא תאריך</span>
               <span class="view-count" id="countNoDate">0</span>
             </div>
@@ -182,12 +182,12 @@
           <input type="text" id="newTaskTitle" placeholder="הוסף משימה... (לדוגמה: להגיש תרגיל מחר 23:00 #מתמטיקה דחוף)"
             dir="auto" aria-label="הוסף משימה חדשה" />
           <div class="nl-hint">
-            💡 <strong>קצרת דרך:</strong> כתוב בשפה טבעית ולחץ Enter!
+            <span class="icon" style="font-size:16px;vertical-align:middle">lightbulb</span> <strong>קצרת דרך:</strong> כתוב בשפה טבעית ולחץ Enter!
             <button type="button" class="nl-hint-toggle"
               onclick="document.getElementById('nlExamples').classList.toggle('show')">דוגמאות ▼</button>
             <div class="nl-hint-examples" id="nlExamples">
               <div style="border-bottom: 2px solid var(--accent); padding-bottom: 12px; margin-bottom: 12px;">
-                <strong style="color: var(--accent); font-size: 13px;">📅 תאריכים ושעות:</strong>
+                <strong style="color: var(--accent); font-size: 13px;"><span class="icon" style="font-size:14px;vertical-align:middle">event</span> תאריכים ושעות:</strong>
               </div>
               <div>
                 <div class="example-input">להגיש תרגיל מחר 23:59 #מתמטיקה דחוף</div>
@@ -208,7 +208,7 @@
 
               <div
                 style="border-bottom: 2px solid var(--accent); padding-bottom: 12px; margin-bottom: 12px; margin-top: 16px;">
-                <strong style="color: var(--accent); font-size: 13px;">📚 נושאים (כולל תת-נושאים):</strong>
+                <strong style="color: var(--accent); font-size: 13px;"><span class="icon" style="font-size:14px;vertical-align:middle">folder</span> נושאים (כולל תת-נושאים):</strong>
               </div>
               <div>
                 <div class="example-input">לקרוא פרק 5 #מתמטיקה/אלגברה</div>
@@ -241,7 +241,7 @@
 
               <div
                 style="border-bottom: 2px solid var(--accent); padding-bottom: 12px; margin-bottom: 12px; margin-top: 16px;">
-                <strong style="color: var(--accent); font-size: 13px;">🚨 עדיפויות:</strong>
+                <strong style="color: var(--accent); font-size: 13px;"><span class="icon" style="font-size:14px;vertical-align:middle">priority_high</span> עדיפויות:</strong>
               </div>
               <div>
                 <div class="example-input">להגיש עבודה דחוף !!!</div>
@@ -258,45 +258,45 @@
 
               <div
                 style="border-bottom: none; color: var(--text); background: var(--day-other); padding: 12px; padding-top: 16px; border-radius: 8px; margin-top: 12px;">
-                <strong style="display: block; margin-bottom: 8px; color: var(--accent);">📖 מילות מפתח:</strong>
+                <strong style="display: block; margin-bottom: 8px; color: var(--accent);"><span class="icon" style="font-size:14px;vertical-align:middle">menu_book</span> מילות מפתח:</strong>
                 <div style="line-height: 1.8; font-size: 11px;">
-                  <div><strong>📅 תאריכים:</strong> היום, מחר, מחרתיים, בעוד X ימים, השבוע, בשבוע הבא, ביום
+                  <div><strong><span class="icon" style="font-size:12px;vertical-align:middle">event</span> תאריכים:</strong> היום, מחר, מחרתיים, בעוד X ימים, השבוע, בשבוע הבא, ביום
                     ראשון/שני/..., DD/MM</div>
-                  <div><strong>⏰ שעות:</strong> 14:30, בשעה 9:00, ב-23:59, 2:30 PM</div>
-                  <div><strong>🏷️ נושאים:</strong> #נושא, #נושא_עם_קו_תחתון, #"נושא עם רווחים", #הורה/ילד,
+                  <div><strong><span class="icon" style="font-size:12px;vertical-align:middle">schedule</span> שעות:</strong> 14:30, בשעה 9:00, ב-23:59, 2:30 PM</div>
+                  <div><strong><span class="icon" style="font-size:12px;vertical-align:middle">label</span> נושאים:</strong> #נושא, #נושא_עם_קו_תחתון, #"נושא עם רווחים", #הורה/ילד,
                     #הורה/ילד/נכד</div>
-                  <div><strong>🚨 עדיפות:</strong> דחוף (!!!), גבוה (!), בינוני, נמוך</div>
+                  <div><strong><span class="icon" style="font-size:12px;vertical-align:middle">priority_high</span> עדיפות:</strong> דחוף (!!!), גבוה (!), בינוני, נמוך</div>
                 </div>
               </div>
 
               <div style="padding-top: 12px; color: var(--muted); font-size: 11px; text-align: center;">
-                <strong>💡 טיפ:</strong> אפשר לשלב הכל! לדוגמה: "להגיש פרויקט מחר 23:59 #עבודה/פיתוח דחוף !!"
+                <strong><span class="icon" style="font-size:12px;vertical-align:middle">lightbulb</span> טיפ:</strong> אפשר לשלב הכל! לדוגמה: "להגיש פרויקט מחר 23:59 #עבודה/פיתוח דחוף !!"
               </div>
             </div>
           </div>
           <div class="quick-add-row" id="quickAddRow" style="display: none;">
             <div class="priority-selector" id="taskPriorityPicker">
-              <div class="priority-option" data-priority="urgent">🔴 דחוף</div>
-              <div class="priority-option" data-priority="high">🟠 גבוה</div>
-              <div class="priority-option selected" data-priority="medium">🟡 בינוני</div>
-              <div class="priority-option" data-priority="low">🟢 נמוך</div>
-              <div class="priority-option" data-priority="none">⚪ ללא</div>
+              <div class="priority-option" data-priority="urgent"><span class="priority-dot" style="background:var(--danger)"></span> דחוף</div>
+              <div class="priority-option" data-priority="high"><span class="priority-dot" style="background:hsl(25 95% 53%)"></span> גבוה</div>
+              <div class="priority-option selected" data-priority="medium"><span class="priority-dot" style="background:var(--warning)"></span> בינוני</div>
+              <div class="priority-option" data-priority="low"><span class="priority-dot" style="background:var(--success)"></span> נמוך</div>
+              <div class="priority-option" data-priority="none"><span class="priority-dot" style="background:var(--border)"></span> ללא</div>
             </div>
             <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap; width: 100%;">
               <div class="label-input-wrapper" style="flex-shrink: 0;">
-                <span>📁</span>
+                <span class="icon" style="font-size:16px">folder</span>
                 <select id="newTaskSubject"
                   style="border: none; background: transparent; color: var(--text); font-size: 13px; outline: none; cursor: pointer;">
                   <option value="">ללא נושא</option>
                 </select>
               </div>
               <div class="label-input-wrapper">
-                <span>📅</span>
+                <span class="icon" style="font-size:16px">event</span>
                 <input type="datetime-local" id="newTaskDue"
                   style="width: 180px; border: none; background: transparent; color: var(--text);" />
               </div>
               <div class="label-input-wrapper">
-                <span>⏱️</span>
+                <span class="icon" style="font-size:16px">timer</span>
                 <select id="newTaskDuration"
                   style="border: none; background: transparent; color: var(--text); font-size: 13px; outline: none; cursor: pointer;">
                   <option value="0">ללא משך</option>
@@ -320,7 +320,7 @@
                   <option value="biweekly">דו-שבועי</option>
                   <option value="monthly">חודשי</option>
                   <option value="yearly">שנתי</option>
-                  <option value="custom">⚙️ מותאם אישית...</option>
+                  <option value="custom">מותאם אישית...</option>
                 </select>
                 <div class="task-recurrence-custom hidden" id="newTaskRecurrenceCustomWrap">
                   <input type="number" id="newTaskRecurrenceCustomValue" min="1" step="1"
@@ -336,7 +336,7 @@
                 </div>
               </div>
               <div class="label-input-wrapper">
-                <span>🔔</span>
+                <span class="icon" style="font-size:16px">notifications</span>
                 <select id="newTaskReminder"
                   style="border: none; background: transparent; color: var(--text); font-size: 13px; outline: none; cursor: pointer;">
                   <option value="0">ללא תזכורת</option>
@@ -347,7 +347,7 @@
                   <option value="30">30 דקות לפני</option>
                   <option value="60">שעה לפני</option>
                   <option value="1440">יום לפני</option>
-                  <option value="custom">⚙️ מותאם אישית...</option>
+                  <option value="custom">מותאם אישית...</option>
                 </select>
                 <div class="task-reminder-custom hidden" id="newTaskReminderCustomWrap">
                   <input type="number" id="newTaskReminderCustomValue" min="1" step="1"
@@ -362,7 +362,7 @@
                 </div>
               </div>
               <div class="label-input-wrapper">
-                <span>🎨</span>
+                <span class="icon" style="font-size:16px">palette</span>
                 <div class="task-color-picker compact" id="quickTaskColorPicker">
                   <div class="task-color-option none selected" data-color="" title="ללא צבע">–</div>
                   <div class="task-color-option subject disabled" data-color="subject" title="צבע נושא">S</div>
@@ -385,20 +385,20 @@
           <!-- Active Tasks -->
           <div id="activeSection">
             <div class="task-section-header">
-              <div class="task-section-title">📋 משימות פעילות</div>
+              <div class="task-section-title"><span class="icon" style="font-size:16px;vertical-align:middle">list_alt</span> משימות פעילות</div>
               <div class="task-sort-dropdown">
                 <button class="task-sort-btn" id="taskSortBtn" title="מיין לפי">
-                  <span id="taskSortLabel">📅 תאריך</span>
+                  <span id="taskSortLabel"><span class="icon" style="font-size:14px;vertical-align:middle">event</span> תאריך</span>
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="m6 9 6 6 6-6" />
                   </svg>
                 </button>
                 <div class="task-sort-menu" id="taskSortMenu">
-                  <div class="task-sort-option selected" data-sort="dueDate">📅 תאריך יעד (קרוב ראשון)</div>
-                  <div class="task-sort-option" data-sort="priority">⚡ עדיפות (דחוף ראשון)</div>
-                  <div class="task-sort-option" data-sort="created">🕐 נוצר (חדש ראשון)</div>
-                  <div class="task-sort-option" data-sort="createdOldest">📆 נוצר (ישן ראשון)</div>
-                  <div class="task-sort-option" data-sort="title">🔤 שם (א-ת)</div>
+                  <div class="task-sort-option selected" data-sort="dueDate"><span class="icon" style="font-size:16px;vertical-align:middle">event</span> תאריך יעד (קרוב ראשון)</div>
+                  <div class="task-sort-option" data-sort="priority"><span class="icon" style="font-size:16px;vertical-align:middle">bolt</span> עדיפות (דחוף ראשון)</div>
+                  <div class="task-sort-option" data-sort="created"><span class="icon" style="font-size:16px;vertical-align:middle">schedule</span> נוצר (חדש ראשון)</div>
+                  <div class="task-sort-option" data-sort="createdOldest"><span class="icon" style="font-size:16px;vertical-align:middle">history</span> נוצר (ישן ראשון)</div>
+                  <div class="task-sort-option" data-sort="title"><span class="icon" style="font-size:16px;vertical-align:middle">sort_by_alpha</span> שם (א-ת)</div>
                 </div>
               </div>
             </div>
@@ -407,13 +407,13 @@
 
           <!-- Completed Tasks -->
           <div id="completedSection" style="display: none;">
-            <div class="task-section-title">✅ הושלמו</div>
+            <div class="task-section-title"><span class="icon" style="font-size:16px;vertical-align:middle">check_circle</span> הושלמו</div>
             <div class="task-list" id="completedTasks"></div>
           </div>
 
           <!-- Empty State -->
           <div class="tasks-empty" id="tasksEmpty" style="display: none;">
-            <div class="tasks-empty-icon">📝</div>
+            <div class="tasks-empty-icon"><span class="icon" style="font-size:48px">note_add</span></div>
             <h3>אין משימות עדיין</h3>
             <p>הוסף משימה ראשונה למעלה כדי להתחיל!</p>
           </div>
@@ -457,7 +457,7 @@
   <!-- Pomodoro Overlay -->
   <div class="pomodoro-overlay" id="pomodoroOverlay">
     <div class="pomodoro-header-bar">
-      <div class="pomodoro-header-title">🍅 טיימר פומודורו</div>
+      <div class="pomodoro-header-title"><span class="icon" aria-hidden="true">timelapse</span> טיימר פומודורו</div>
       <label class="pomodoro-option" style="margin: 0; background: transparent;">
         <input type="checkbox" id="pomodoroMiniToggle" />
         <span style="font-size: 13px;">הצג מיני-טיימר</span>
@@ -487,10 +487,10 @@
 
           <!-- Controls -->
           <div class="pomodoro-controls">
-            <button class="pomodoro-btn" id="pomodoroReset" title="איפוס">🔄</button>
-            <button class="pomodoro-btn primary" id="pomodoroStart" title="התחל">▶️</button>
-            <button class="pomodoro-btn" id="pomodoroSkip" title="דלג">⏭️</button>
-            <button class="pomodoro-btn" id="pomodoroPiP" title="Picture-in-Picture">📌</button>
+            <button class="pomodoro-btn" id="pomodoroReset" title="איפוס"><span class="icon">restart_alt</span></button>
+            <button class="pomodoro-btn primary" id="pomodoroStart" title="התחל"><span class="icon">play_arrow</span></button>
+            <button class="pomodoro-btn" id="pomodoroSkip" title="דלג"><span class="icon">skip_next</span></button>
+            <button class="pomodoro-btn" id="pomodoroPiP" title="Picture-in-Picture"><span class="icon">picture_in_picture_alt</span></button>
           </div>
 
           <div id="pomodoroProgress" style="display:none;"></div>
@@ -501,14 +501,14 @@
             <button class="pomodoro-preset" data-preset="flow">50/10 זרימה</button>
             <button class="pomodoro-preset" data-preset="ultradian">90/20 אולטרה</button>
             <button class="pomodoro-preset" data-preset="perfect">52/17 קצב יעיל</button>
-            <button class="pomodoro-preset bad-day" data-preset="badday10">😔 10 דק׳</button>
-            <button class="pomodoro-preset bad-day" data-preset="badday5">💫 5 דק׳</button>
-            <button class="pomodoro-preset" data-preset="custom">⚙️ מותאם אישית</button>
+            <button class="pomodoro-preset bad-day" data-preset="badday10"><span class="icon" style="font-size:16px">sentiment_dissatisfied</span> 10 דק׳</button>
+            <button class="pomodoro-preset bad-day" data-preset="badday5"><span class="icon" style="font-size:16px">auto_awesome</span> 5 דק׳</button>
+            <button class="pomodoro-preset" data-preset="custom"><span class="icon" style="font-size:16px">tune</span> מותאם אישית</button>
           </div>
 
           <!-- Bad Day Tip -->
           <div class="pomodoro-bad-day-tip" id="pomodoroBadDayTip" style="display: none;">
-            <span class="tip-icon">💡</span>
+            <span class="tip-icon"><span class="icon">lightbulb</span></span>
             <span class="tip-text">יום מאתגר? זה בסדר. גם 5-10 דקות מיקוד עוזרות לשמור על מומנטום ולהפחית סטרס.</span>
           </div>
 
@@ -540,27 +540,27 @@
             </label>
             <label class="pomodoro-option">
               <input type="checkbox" id="pomodoroSoundEnabled" checked />
-              <span>🔔 צליל התראה</span>
+              <span><span class="icon" style="font-size:16px;vertical-align:middle">notifications</span> צליל התראה</span>
             </label>
             <select class="pomodoro-sound-select" id="pomodoroSound">
-              <option value="chime">🎵 צלצול עדין</option>
-              <option value="soft">🧘 מדיטציה</option>
-              <option value="bell">🔔 פעמון</option>
-              <option value="digital">📱 דיגיטלי</option>
-              <option value="glass">✨ קריסטל</option>
-              <option value="success">🎉 פנפרה</option>
+              <option value="chime">צלצול עדין</option>
+              <option value="soft">מדיטציה</option>
+              <option value="bell">פעמון</option>
+              <option value="digital">דיגיטלי</option>
+              <option value="glass">קריסטל</option>
+              <option value="success">פנפרה</option>
             </select>
             <select class="pomodoro-sound-select" id="pomodoroSoundLength" aria-label="אורך צליל">
               <option value="1">אורך צליל: קצר</option>
               <option value="2">אורך צליל: בינוני</option>
               <option value="3">אורך צליל: ארוך</option>
             </select>
-            <button class="pomodoro-preview-btn" id="pomodoroPreviewSound">▶️ האזן</button>
+            <button class="pomodoro-preview-btn" id="pomodoroPreviewSound"><span class="icon" style="font-size:16px;vertical-align:middle">play_arrow</span> האזן</button>
           </div>
 
           <!-- Task Select -->
           <select class="pomodoro-task-select" id="pomodoroTaskSelect">
-            <option value="">📋 בחר משימת מיקוד (לא חובה)</option>
+            <option value="">בחר משימת מיקוד (לא חובה)</option>
           </select>
 
           <!-- Stats -->
@@ -600,7 +600,7 @@
   <!-- ============== DAILY PLANNER ============== -->
   <div class="planner-overlay" id="plannerOverlay">
     <div class="planner-header-bar">
-      <div class="planner-header-title">📅 מתכנן יומי</div>
+      <div class="planner-header-title"><span class="icon" aria-hidden="true">event_note</span> מתכנן יומי</div>
 
       <div class="planner-date-nav" style="order: 2;">
         <button id="plannerPrevDay">‹</button>
@@ -608,38 +608,38 @@
         <button id="plannerNextDay">›</button>
       </div>
 
-      <button class="planner-today-btn" id="plannerTodayBtn" style="order: 3;">📍 היום</button>
+      <button class="planner-today-btn" id="plannerTodayBtn" style="order: 3;"><span class="icon" style="font-size:16px;vertical-align:middle">my_location</span> היום</button>
 
       <div class="planner-view-toggle">
-        <button class="active" data-view="day">📋 יום</button>
-        <button data-view="week">📆 שבוע</button>
+        <button class="active" data-view="day"><span class="icon" style="font-size:16px;vertical-align:middle">view_day</span> יום</button>
+        <button data-view="week"><span class="icon" style="font-size:16px;vertical-align:middle">view_week</span> שבוע</button>
       </div>
     </div>
 
     <div class="planner-stats-bar">
       <div class="planner-stat">
-        <div class="planner-stat-icon">📝</div>
+        <div class="planner-stat-icon"><span class="icon">edit_note</span></div>
         <div class="planner-stat-info">
           <div class="planner-stat-value" id="plannerTotalBlocks">0</div>
           <div class="planner-stat-label">פעילויות</div>
         </div>
       </div>
       <div class="planner-stat">
-        <div class="planner-stat-icon">⏱️</div>
+        <div class="planner-stat-icon"><span class="icon">schedule</span></div>
         <div class="planner-stat-info">
           <div class="planner-stat-value" id="plannerTotalHours">0 שעות</div>
           <div class="planner-stat-label">זמן מתוכנן</div>
         </div>
       </div>
       <div class="planner-stat">
-        <div class="planner-stat-icon">✅</div>
+        <div class="planner-stat-icon"><span class="icon">check_circle</span></div>
         <div class="planner-stat-info">
           <div class="planner-stat-value" id="plannerCompletedBlocks">0</div>
           <div class="planner-stat-label">הושלמו</div>
         </div>
       </div>
       <div class="planner-stat">
-        <div class="planner-stat-icon">🎯</div>
+        <div class="planner-stat-icon"><span class="icon">trending_up</span></div>
         <div class="planner-stat-info">
           <div class="planner-stat-value" id="plannerProgress">0%</div>
           <div class="planner-stat-label">התקדמות</div>
@@ -674,14 +674,14 @@
         <!-- Sync All Button -->
         <div style="padding: 16px 16px 0 16px;">
           <button class="planner-sync-all-btn" id="plannerSyncAllBtn">
-            <span>🔄</span>
+            <span class="icon" style="font-size:18px">sync</span>
             <span>סנכרן הכל ליום הנוכחי</span>
           </button>
         </div>
 
         <!-- Mini Calendar -->
         <div class="planner-sidebar-section">
-          <div class="planner-sidebar-title">📅 לוח שנה</div>
+          <div class="planner-sidebar-title"><span class="icon" style="font-size:16px;vertical-align:middle">calendar_month</span> לוח שנה</div>
           <div class="planner-mini-calendar" id="plannerMiniCalendar">
             <div class="planner-mini-header">
               <button class="planner-mini-nav-btn" id="plannerMiniPrev">‹</button>
@@ -698,7 +698,7 @@
         <div class="planner-sidebar-section">
           <div class="planner-sync-header">
             <div class="planner-sidebar-title planner-section-collapse" id="plannerCountdownsToggle">
-              <span class="collapse-icon">▼</span> ⏰ ספירות לאחור
+              <span class="collapse-icon">▼</span> <span class="icon" style="font-size:16px;vertical-align:middle">timer</span> ספירות לאחור
             </div>
             <button class="planner-sync-btn" id="plannerSyncCountdownsBtn">
               <span>↓</span> סנכרן
@@ -713,7 +713,7 @@
         <div class="planner-sidebar-section">
           <div class="planner-sync-header">
             <div class="planner-sidebar-title planner-section-collapse" id="plannerScheduledTasksToggle">
-              <span class="collapse-icon">▼</span> ✅ משימות מתוזמנות
+              <span class="collapse-icon">▼</span> <span class="icon" style="font-size:16px;vertical-align:middle">check_circle</span> משימות מתוזמנות
             </div>
             <button class="planner-sync-btn" id="plannerSyncTasksBtn">
               <span>↓</span> סנכרן
@@ -726,28 +726,28 @@
 
         <!-- Quick Templates -->
         <div class="planner-sidebar-section">
-          <div class="planner-sidebar-title">⚡ תבניות מהירות</div>
+          <div class="planner-sidebar-title"><span class="icon" style="font-size:16px;vertical-align:middle">bolt</span> תבניות מהירות</div>
           <button class="planner-template-btn" data-template="morning">
-            <span class="planner-template-icon">🌅</span>
+            <span class="planner-template-icon"><span class="icon">wb_sunny</span></span>
             <span>שגרת בוקר</span>
           </button>
           <button class="planner-template-btn" data-template="work">
-            <span class="planner-template-icon">💼</span>
+            <span class="planner-template-icon"><span class="icon">work</span></span>
             <span>יום עבודה</span>
           </button>
           <button class="planner-template-btn" data-template="study">
-            <span class="planner-template-icon">📚</span>
+            <span class="planner-template-icon"><span class="icon">school</span></span>
             <span>יום לימודים</span>
           </button>
           <button class="planner-template-btn" data-template="relax">
-            <span class="planner-template-icon">🧘</span>
+            <span class="planner-template-icon"><span class="icon">self_improvement</span></span>
             <span>יום מנוחה</span>
           </button>
         </div>
 
         <!-- Unscheduled Tasks -->
         <div class="planner-sidebar-section" style="flex: 1; display: flex; flex-direction: column;">
-          <div class="planner-sidebar-title">📋 משימות לתזמון</div>
+          <div class="planner-sidebar-title"><span class="icon" style="font-size:16px;vertical-align:middle">assignment</span> משימות לתזמון</div>
           <div class="planner-quick-tasks" id="plannerQuickTasks">
             <!-- Tasks will be populated by JS -->
             <div class="no-events-msg" id="plannerNoTasks">אין משימות ללא תזמון</div>
@@ -760,7 +760,7 @@
   <!-- Planner Add/Edit Block Modal -->
   <div class="planner-add-modal" id="plannerAddModal">
     <div class="planner-add-card">
-      <div class="planner-add-title" id="plannerModalTitle">➕ הוסף פעילות</div>
+      <div class="planner-add-title" id="plannerModalTitle"><span class="icon" style="font-size:20px;vertical-align:middle">add_circle</span> הוסף פעילות</div>
 
       <div class="planner-add-field">
         <label for="plannerBlockTitle" class="planner-add-label">שם הפעילות *</label>
@@ -813,11 +813,11 @@
       <div class="planner-add-field">
         <div class="planner-add-label">עדיפות</div>
         <div class="planner-add-priority" id="plannerPriorityPicker">
-          <button class="planner-priority-option" data-priority="urgent">🔴 דחוף</button>
-          <button class="planner-priority-option" data-priority="high">🟠 גבוהה</button>
-          <button class="planner-priority-option selected" data-priority="medium">🟡 בינונית</button>
-          <button class="planner-priority-option" data-priority="low">🟢 נמוכה</button>
-          <button class="planner-priority-option" data-priority="none">⚪ ללא</button>
+          <button class="planner-priority-option" data-priority="urgent"><span class="priority-dot" style="background:var(--danger)"></span> דחוף</button>
+          <button class="planner-priority-option" data-priority="high"><span class="priority-dot" style="background:hsl(25 95% 53%)"></span> גבוהה</button>
+          <button class="planner-priority-option selected" data-priority="medium"><span class="priority-dot" style="background:var(--warning)"></span> בינונית</button>
+          <button class="planner-priority-option" data-priority="low"><span class="priority-dot" style="background:var(--success)"></span> נמוכה</button>
+          <button class="planner-priority-option" data-priority="none"><span class="priority-dot" style="background:var(--border)"></span> ללא</button>
         </div>
       </div>
 
@@ -825,13 +825,13 @@
         <label for="plannerBlockCategory" class="planner-add-label">קטגוריה (אופציונלי)</label>
         <select class="planner-add-input" id="plannerBlockCategory">
           <option value="">ללא קטגוריה</option>
-          <option value="work">💼 עבודה</option>
-          <option value="study">📚 לימודים</option>
-          <option value="health">🏃 בריאות</option>
-          <option value="personal">🏠 אישי</option>
-          <option value="social">👥 חברתי</option>
-          <option value="creative">🎨 יצירתי</option>
-          <option value="rest">🧘 מנוחה</option>
+          <option value="work">עבודה</option>
+          <option value="study">לימודים</option>
+          <option value="health">בריאות</option>
+          <option value="personal">אישי</option>
+          <option value="social">חברתי</option>
+          <option value="creative">יצירתי</option>
+          <option value="rest">מנוחה</option>
         </select>
       </div>
 
@@ -856,14 +856,14 @@
       <div class="planner-add-field">
         <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
           <input type="checkbox" id="plannerBlockRepeat" />
-          <span style="font-size: 13px; color: var(--text);">🔄 חזור כל יום</span>
+          <span style="font-size: 13px; color: var(--text);"><span class="icon" style="font-size:16px;vertical-align:middle">repeat</span> חזור כל יום</span>
         </label>
       </div>
 
       <div class="planner-add-actions">
         <button class="planner-add-cancel" id="plannerCancelBtn">ביטול</button>
-        <button class="planner-add-delete" id="plannerDeleteBtn" style="display: none;">🗑️</button>
-        <button class="planner-add-save" id="plannerSaveBtn">💾 שמור</button>
+        <button class="planner-add-delete" id="plannerDeleteBtn" style="display: none;"><span class="icon">delete</span></button>
+        <button class="planner-add-save" id="plannerSaveBtn"><span class="icon" style="font-size:16px;vertical-align:middle">save</span> שמור</button>
       </div>
     </div>
   </div>
@@ -921,55 +921,55 @@
 
   <!-- Context Menu for Subjects -->
   <div class="context-menu" id="contextMenu">
-    <div class="context-menu-item" data-action="edit">✏️ עריכה</div>
-    <div class="context-menu-item" data-action="share">🔗 שתף</div>
-    <div class="context-menu-item" data-action="add-sub">➕ הוסף תת-נושא</div>
+    <div class="context-menu-item" data-action="edit"><span class="icon" style="font-size:16px;vertical-align:middle">edit</span> עריכה</div>
+    <div class="context-menu-item" data-action="share"><span class="icon" style="font-size:16px;vertical-align:middle">link</span> שתף</div>
+    <div class="context-menu-item" data-action="add-sub"><span class="icon" style="font-size:16px;vertical-align:middle">add</span> הוסף תת-נושא</div>
     <div class="context-menu-divider"></div>
-    <div class="context-menu-item danger" data-action="delete">🗑️ מחק</div>
+    <div class="context-menu-item danger" data-action="delete"><span class="icon" style="font-size:16px;vertical-align:middle">delete</span> מחק</div>
   </div>
 
   <!-- Context Menu for Countdown Events -->
   <div class="context-menu" id="eventContextMenu">
-    <div class="context-menu-item" data-action="pin">📌 נעץ למעלה</div>
-    <div class="context-menu-item" data-action="star">⭐ סמן כמועדף</div>
-    <div class="context-menu-item" data-action="edit">✏️ עריכה</div>
-    <div class="context-menu-item" data-action="duplicate">📋 שכפל</div>
+    <div class="context-menu-item" data-action="pin"><span class="icon" style="font-size:16px;vertical-align:middle">push_pin</span> נעץ למעלה</div>
+    <div class="context-menu-item" data-action="star"><span class="icon" style="font-size:16px;vertical-align:middle">star</span> סמן כמועדף</div>
+    <div class="context-menu-item" data-action="edit"><span class="icon" style="font-size:16px;vertical-align:middle">edit</span> עריכה</div>
+    <div class="context-menu-item" data-action="duplicate"><span class="icon" style="font-size:16px;vertical-align:middle">content_copy</span> שכפל</div>
     <div class="context-menu-divider"></div>
-    <div class="context-menu-item danger" data-action="delete">🗑️ מחק</div>
+    <div class="context-menu-item danger" data-action="delete"><span class="icon" style="font-size:16px;vertical-align:middle">delete</span> מחק</div>
   </div>
 
   <!-- Context Menu for Adding New Event -->
   <div class="context-menu" id="addEventContextMenu">
-    <div class="context-menu-item" data-action="add">➕ הוסף אירוע חדש</div>
-    <div class="context-menu-item" data-action="add-tomorrow">📅 אירוע למחר</div>
-    <div class="context-menu-item" data-action="add-week">📆 אירוע לשבוע הבא</div>
+    <div class="context-menu-item" data-action="add"><span class="icon" style="font-size:16px;vertical-align:middle">add_circle</span> הוסף אירוע חדש</div>
+    <div class="context-menu-item" data-action="add-tomorrow"><span class="icon" style="font-size:16px;vertical-align:middle">event</span> אירוע למחר</div>
+    <div class="context-menu-item" data-action="add-week"><span class="icon" style="font-size:16px;vertical-align:middle">date_range</span> אירוע לשבוע הבא</div>
   </div>
 
   <!-- Daily Reminder Modal -->
   <div class="reminder-modal" id="reminderModal">
     <div class="reminder-card">
-      <h2>☀️ בוקר טוב!</h2>
+      <h2><span class="icon" style="font-size:24px;vertical-align:middle">wb_sunny</span> בוקר טוב!</h2>
       <div class="reminder-date" id="reminderDate"></div>
 
       <div class="reminder-section" id="todayTasksSection">
-        <h3>📅 משימות להיום</h3>
+        <h3><span class="icon" style="font-size:18px;vertical-align:middle">today</span> משימות להיום</h3>
         <div id="todayTasksList"></div>
       </div>
 
       <div class="reminder-section" id="tomorrowTasksSection">
-        <h3>📆 משימות למחר</h3>
+        <h3><span class="icon" style="font-size:18px;vertical-align:middle">date_range</span> משימות למחר</h3>
         <div id="tomorrowTasksList"></div>
       </div>
 
       <div class="reminder-actions">
-        <button class="btn btn-primary" id="closeReminderBtn" style="width: 100%;">הבנתי, תודה! 👍</button>
+        <button class="btn btn-primary" id="closeReminderBtn" style="width: 100%;">הבנתי, תודה!</button>
       </div>
     </div>
   </div>
 
   <div class="reminder-modal" id="eventAlertModal" role="dialog" aria-modal="true" aria-labelledby="alertTitle">
     <div class="reminder-card" style="border-top: 5px solid var(--accent);">
-      <div style="font-size: 40px; margin-bottom: 10px;">⏰</div>
+      <div style="font-size: 40px; margin-bottom: 10px;"><span class="icon" style="font-size:40px">alarm</span></div>
       <h2 id="alertTitle">Reminder!</h2>
       <p id="alertMessage" style="font-size: 18px; margin: 10px 0; color: var(--text);">Event is starting soon</p>
       <div class="reminder-actions">
@@ -982,7 +982,7 @@
   <div class="reminder-modal" id="calendarSyncModal" role="dialog" aria-modal="true"
     aria-labelledby="calendarSyncTitle">
     <div class="reminder-card" style="max-width: 500px; border-top: 5px solid var(--accent);">
-      <div style="font-size: 40px; margin-bottom: 10px;">📅</div>
+      <div style="font-size: 40px; margin-bottom: 10px;"><span class="icon" style="font-size:40px">calendar_month</span></div>
       <h2 id="calendarSyncTitle">סנכרון לוח שנה / Calendar Sync</h2>
       <p style="color: var(--muted); font-size: 14px; margin-bottom: 20px;">ייבוא אירועים מלוח השנה שלך (חד-כיווני)
       </p>
@@ -993,13 +993,13 @@
           <br>Existing events will be updated, not duplicated.
         </div>
         <button class="btn btn-primary" id="syncAppleCalendar"
-          style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; background: linear-gradient(135deg, #667eea, #764ba2);">
-          <span style="font-size: 20px;">📂</span>
+          style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; background: var(--accent);">
+          <span class="icon" style="font-size: 20px;">upload_file</span>
           <span>Import .ics File</span>
         </button>
         <button class="btn" id="clearImportedEventsBtn"
           style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; background: transparent; border: 1px solid var(--border); color: var(--muted); font-size: 13px;">
-          <span>🗑️ Clear Imported Events</span>
+          <span><span class="icon" style="font-size:16px;vertical-align:middle">delete</span> Clear Imported Events</span>
         </button>
       </div>
 
@@ -1025,7 +1025,7 @@
     <div class="main-content">
       <div class="container">
         <header class="header" style="position: relative;">
-          <h1 style="margin-right: 40px; margin-left: 40px;">⏱️ Shared Event Countdowns</h1>
+          <h1 style="margin-right: 40px; margin-left: 40px;"><span class="icon" style="font-size:28px;vertical-align:middle">timer</span> Shared Event Countdowns</h1>
           <p>Events sync live across all devices</p>
           <button id="countdownSettingsBtn" class="header-btn icon-only" title="הגדרות"
             style="position: absolute; right: 0; top: 0; background: transparent; color: var(--text-muted);">
@@ -1053,7 +1053,7 @@
             <input type="text" id="eventName" placeholder="Event name..." autocomplete="off" aria-label="Event name" />
             <input type="datetime-local" id="eventDate" aria-label="Event date and time" max="9999-12-31T23:59" />
             <select id="eventReminder" class="reminder-select" aria-label="Reminder time">
-              <option value="0">🔕 No Reminder</option>
+              <option value="0">No Reminder</option>
               <option value="5">5 minutes before</option>
               <option value="10">10 minutes before</option>
               <option value="60">1 hour before</option>
@@ -1061,7 +1061,7 @@
               <option value="2880">2 days before</option>
               <option value="4320">3 days before</option>
               <option value="10080">1 week before</option>
-              <option value="custom">⚙️ Custom…</option>
+              <option value="custom">Custom…</option>
             </select>
             <div class="reminder-custom hidden" id="reminderCustomWrap" aria-label="Custom reminder">
               <input type="number" id="eventReminderCustomValue" min="1" step="1" inputmode="numeric"
@@ -1095,7 +1095,7 @@
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
               d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
-          <p>No events yet. Add your first countdown above! 🎉</p>
+          <p>No events yet. Add your first countdown above!</p>
         </div>
       </div>
     </div>
@@ -1136,7 +1136,7 @@
     aria-labelledby="mobileSheetTitle">
     <div class="mobile-sheet-handle"></div>
     <div class="mobile-sheet-header">
-      <h3 id="mobileSheetTitle">הוסף אירוע חדש ➕</h3>
+      <h3 id="mobileSheetTitle">הוסף אירוע חדש</h3>
       <button class="mobile-sheet-close" id="mobileSheetClose" aria-label="סגור">×</button>
     </div>
     <div class="mobile-sheet-content">
@@ -1154,7 +1154,7 @@
       <div class="sheet-form-group">
         <label class="sheet-form-label" for="mobileEventReminder">תזכורת</label>
         <select id="mobileEventReminder">
-          <option value="0">🔕 ללא תזכורת</option>
+          <option value="0">ללא תזכורת</option>
           <option value="5">5 דקות לפני</option>
           <option value="10">10 דקות לפני</option>
           <option value="60">שעה לפני</option>
@@ -1197,7 +1197,7 @@
     <div class="shortcuts-card">
       <div class="shortcuts-hero">
         <div>
-          <div class="shortcuts-eyebrow">⌨️ קיצורי מקלדת</div>
+          <div class="shortcuts-eyebrow"><span class="icon" style="font-size:16px;vertical-align:middle">keyboard</span> קיצורי מקלדת</div>
           <div class="shortcuts-title" id="shortcutsTitle">Shortcut Command Center</div>
           <div class="shortcuts-subtitle">H לפתיחה/סגירה</div>
         </div>
@@ -1259,7 +1259,7 @@
             </div>
             <div class="shortcut-item">
               <div class="shortcut-label">קליק ימני ברשימת אירועים</div>
-              <div class="shortcut-keys"><span class="keycap wide">➕</span></div>
+              <div class="shortcut-keys"><span class="keycap wide">Right-click</span></div>
             </div>
           </div>
         </div>
@@ -1273,7 +1273,7 @@
     <div class="shortcuts-card" style="max-width: 800px; max-height: 90vh; overflow-y: auto;">
       <div class="shortcuts-hero">
         <div>
-          <div class="shortcuts-eyebrow">❓ מדריך האפליקציה</div>
+          <div class="shortcuts-eyebrow"><span class="icon" style="font-size:16px;vertical-align:middle">help</span> מדריך האפליקציה</div>
           <div class="shortcuts-title" id="guideTitle">Complete Guide & Shortcuts</div>
           <div class="shortcuts-subtitle">H לפתיחה/סגירה</div>
         </div>
@@ -1282,7 +1282,7 @@
       <div class="shortcuts-body">
         <!-- Keyboard Shortcuts Section -->
         <div class="shortcuts-section">
-          <div class="shortcuts-section-title">⌨️ קיצורי מקלדת - ניווט ותצוגות</div>
+          <div class="shortcuts-section-title">קיצורי מקלדת - ניווט ותצוגות</div>
           <div class="shortcuts-grid">
             <div class="shortcut-item">
               <div class="shortcut-label">פתח פלטת פקודות (חיפוש מהיר)</div>
@@ -1320,7 +1320,7 @@
         </div>
 
         <div class="shortcuts-section">
-          <div class="shortcuts-section-title">⌨️ קיצורי מקלדת - יצירה ועריכה</div>
+          <div class="shortcuts-section-title">קיצורי מקלדת - יצירה ועריכה</div>
           <div class="shortcuts-grid">
             <div class="shortcut-item">
               <div class="shortcut-label">פוקוס על הוספה מהירה</div>
@@ -1339,7 +1339,7 @@
         </div>
 
         <div class="shortcuts-section">
-          <div class="shortcuts-section-title">⌨️ ניווט Vim-Style במשימות</div>
+          <div class="shortcuts-section-title">ניווט Vim-Style במשימות</div>
           <div class="shortcuts-grid">
             <div class="shortcut-item">
               <div class="shortcut-label">ירידה למשימה הבאה</div>
@@ -1361,7 +1361,7 @@
         </div>
 
         <div class="shortcuts-section">
-          <div class="shortcuts-section-title">⌨️ קיצורי מערכת</div>
+          <div class="shortcuts-section-title">קיצורי מערכת</div>
           <div class="shortcuts-grid">
             <div class="shortcut-item">
               <div class="shortcut-label">סגור מודאלים/חלונות</div>
@@ -1380,7 +1380,7 @@
 
         <!-- Right-Click Section -->
         <div class="shortcuts-section">
-          <div class="shortcuts-section-title">🖱️ קליק ימני (Context Menu)</div>
+          <div class="shortcuts-section-title">קליק ימני (Context Menu)</div>
           <div class="shortcuts-grid">
             <div class="shortcut-item">
               <div class="shortcut-label">על משימה: השלם, ערוך, שכפל, מחק, עדיפות, תאריך, תזכורת, נושא</div>
@@ -1411,46 +1411,46 @@
 
         <!-- NLP Quick Add Guide Section -->
         <div class="shortcuts-section">
-          <div class="shortcuts-section-title">🧠 הוספה מהירה בשפה טבעית</div>
+          <div class="shortcuts-section-title">הוספה מהירה בשפה טבעית</div>
           <div class="shortcuts-grid">
             <div class="shortcut-item">
-              <div class="shortcut-label">📅 תאריך: היום, מחר, מחרתיים, ביום ראשון</div>
+              <div class="shortcut-label">תאריך: היום, מחר, מחרתיים, ביום ראשון</div>
               <div class="shortcut-keys"><span class="keycap wide">פגישה מחר</span></div>
             </div>
             <div class="shortcut-item">
-              <div class="shortcut-label">📅 תאריך מדויק: 15/1, ב-15 בינואר</div>
+              <div class="shortcut-label">תאריך מדויק: 15/1, ב-15 בינואר</div>
               <div class="shortcut-keys"><span class="keycap wide">הגשה ב-20 בפברואר</span></div>
             </div>
             <div class="shortcut-item">
-              <div class="shortcut-label">⏰ שעה: 14:30, בשעה 9:00</div>
+              <div class="shortcut-label">שעה: 14:30, בשעה 9:00</div>
               <div class="shortcut-keys"><span class="keycap wide">פגישה מחר ב-14:00</span></div>
             </div>
             <div class="shortcut-item">
-              <div class="shortcut-label">⏰ זמן ביום: הבוקר, בצהריים, בערב, בלילה</div>
+              <div class="shortcut-label">זמן ביום: הבוקר, בצהריים, בערב, בלילה</div>
               <div class="shortcut-keys"><span class="keycap wide">פגישה מחר בבוקר</span></div>
             </div>
             <div class="shortcut-item">
-              <div class="shortcut-label">🔔 תזכורת: תזכורת 10 דקות לפני, תזכיר לי שעה לפני</div>
+              <div class="shortcut-label">תזכורת: תזכורת 10 דקות לפני, תזכיר לי שעה לפני</div>
               <div class="shortcut-keys"><span class="keycap wide">הגשה מחר תזכורת 30 דקות לפני</span></div>
             </div>
             <div class="shortcut-item">
-              <div class="shortcut-label">🔁 חזרה: כל יום, כל שבוע, כל 3 ימים</div>
+              <div class="shortcut-label">חזרה: כל יום, כל שבוע, כל 3 ימים</div>
               <div class="shortcut-keys"><span class="keycap wide">משימה כל שבוע</span></div>
             </div>
             <div class="shortcut-item">
-              <div class="shortcut-label">📁 שיוך לנושא: #שם_נושא</div>
+              <div class="shortcut-label">שיוך לנושא: #שם_נושא</div>
               <div class="shortcut-keys"><span class="keycap wide">הגשה #מתמטיקה</span></div>
             </div>
             <div class="shortcut-item">
-              <div class="shortcut-label">📁 שיוך לתת-נושא: #נושא/תת_נושא</div>
+              <div class="shortcut-label">שיוך לתת-נושא: #נושא/תת_נושא</div>
               <div class="shortcut-keys"><span class="keycap wide">שיעורי בית #לימודים/מתמטיקה</span></div>
             </div>
             <div class="shortcut-item">
-              <div class="shortcut-label">🚨 עדיפות: דחוף, חשוב, נמוך</div>
+              <div class="shortcut-label">עדיפות: דחוף, חשוב, נמוך</div>
               <div class="shortcut-keys"><span class="keycap wide">הגשה דחוף מחר</span></div>
             </div>
             <div class="shortcut-item">
-              <div class="shortcut-label">✨ שילוב הכל ביחד</div>
+              <div class="shortcut-label">שילוב הכל ביחד</div>
               <div class="shortcut-keys"><span class="keycap wide">הגשת פרויקט #לימודים מחר ב-14:00 דחוף</span></div>
             </div>
           </div>
@@ -1458,28 +1458,28 @@
 
         <!-- Features Section -->
         <div class="shortcuts-section">
-          <div class="shortcuts-section-title">✨ פיצ׳רים נוספים</div>
+          <div class="shortcuts-section-title">פיצ׳רים נוספים</div>
           <div class="shortcuts-grid">
             <div class="shortcut-item">
-              <div class="shortcut-label">🎉 קונפטי בהשלמת משימה</div>
+              <div class="shortcut-label">קונפטי בהשלמת משימה</div>
               <div class="shortcut-keys"><span class="keycap wide">אוטומטי</span></div>
             </div>
             <div class="shortcut-item">
-              <div class="shortcut-label">🔄 חזרות: יומי, שבועי, דו-שבועי, חודשי, שנתי, ימי חול</div>
+              <div class="shortcut-label">חזרות: יומי, שבועי, דו-שבועי, חודשי, שנתי, ימי חול</div>
               <div class="shortcut-keys"><span class="keycap wide">בעריכה</span></div>
             </div>
             <div class="shortcut-item">
-              <div class="shortcut-label">↩️ Undo/Redo עד 50 פעולות</div>
+              <div class="shortcut-label">Undo/Redo עד 50 פעולות</div>
               <div class="shortcut-keys"><span class="keycap">⌘</span><span class="keycap">Z</span></div>
             </div>
             <div class="shortcut-item">
-              <div class="shortcut-label">🔔 התראות Push (גם כשהאפליקציה סגורה)</div>
-              <div class="shortcut-keys"><span class="keycap wide">לחץ 🔔</span></div>
+              <div class="shortcut-label">התראות Push (גם כשהאפליקציה סגורה)</div>
+              <div class="shortcut-keys"><span class="keycap wide">לחץ על פעמון</span></div>
             </div>
           </div>
         </div>
 
-        <div class="shortcut-note">💡 קיצורי מקלדת פועלים רק כשלא מקלידים בתוך שדה טקסט</div>
+        <div class="shortcut-note">קיצורי מקלדת פועלים רק כשלא מקלידים בתוך שדה טקסט</div>
       </div>
     </div>
   </div>
@@ -1497,20 +1497,20 @@
       <div class="day-drawer-content">
         <div class="day-drawer-section" id="dayDrawerEvents">
           <div class="day-drawer-section-title">
-            📅 אירועים <span class="count" id="dayEventsCount">0</span>
+            <span class="icon" style="font-size:16px;vertical-align:middle">event</span> אירועים <span class="count" id="dayEventsCount">0</span>
           </div>
           <div id="dayEventsList"></div>
         </div>
         <div class="day-drawer-section" id="dayDrawerTasks">
           <div class="day-drawer-section-title">
-            ✅ משימות <span class="count" id="dayTasksCount">0</span>
+            <span class="icon" style="font-size:16px;vertical-align:middle">check_circle</span> משימות <span class="count" id="dayTasksCount">0</span>
           </div>
           <div id="dayTasksList"></div>
         </div>
       </div>
       <div class="day-drawer-actions">
-        <button class="btn btn-primary" id="addEventToDay">📅 הוסף אירוע</button>
-        <button class="btn" id="addTaskToDay" style="background: var(--btn-secondary-bg); color: var(--text);">✅ הוסף
+        <button class="btn btn-primary" id="addEventToDay"><span class="icon" style="font-size:16px;vertical-align:middle">event</span> הוסף אירוע</button>
+        <button class="btn" id="addTaskToDay" style="background: var(--btn-secondary-bg); color: var(--text);"><span class="icon" style="font-size:16px;vertical-align:middle">add_task</span> הוסף
           משימה</button>
       </div>
     </div>
@@ -1537,14 +1537,14 @@
 
   <!-- Pull to Refresh Indicator -->
   <div class="pull-to-refresh" id="pullToRefresh">
-    <span class="pull-spinner">🔄</span>
+    <span class="pull-spinner"><span class="icon">sync</span></span>
   </div>
 
   <!-- Advanced Undo Stack Toast -->
   <div class="undo-stack-toast" id="undoStackToast" role="status" aria-live="polite">
     <span class="undo-stack-message" id="undoStackMessage">פעולה בוצעה</span>
     <div class="undo-stack-actions">
-      <button class="undo-stack-btn undo" id="undoStackUndo">↩️ בטל (Cmd+Z)</button>
+      <button class="undo-stack-btn undo" id="undoStackUndo"><span class="icon" style="font-size:16px;vertical-align:middle">undo</span> בטל (Cmd+Z)</button>
       <button class="undo-stack-btn dismiss" id="undoStackDismiss">סגור</button>
     </div>
   </div>
@@ -1656,7 +1656,7 @@
       </div>
 
       <div class="task-edit-section">
-        <div class="task-edit-section-title">⏱️ Duration</div>
+        <div class="task-edit-section-title"><span class="icon" style="font-size:16px;vertical-align:middle">timer</span> Duration</div>
         <select id="editTaskDuration"
           style="padding: 12px 14px; border: 2px solid var(--border); border-radius: 10px; font-size: 14px; background: var(--input-bg); color: var(--text); outline: none; width: 100%; max-width: 250px; cursor: pointer;">
           <option value="0">ללא משך</option>
@@ -1694,7 +1694,7 @@
           <option value="biweekly">דו-שבועי</option>
           <option value="monthly">חודשי</option>
           <option value="yearly">שנתי</option>
-          <option value="custom">⚙️ מותאם אישית...</option>
+          <option value="custom">מותאם אישית...</option>
         </select>
         <div class="task-recurrence-custom hidden" id="editTaskRecurrenceCustomWrap"
           style="display: flex; gap: 8px; margin-top: 10px;">
@@ -1726,15 +1726,15 @@
         </div>
         <select id="editTaskReminder"
           style="padding: 12px 14px; border: 2px solid var(--border); border-radius: 10px; font-size: 14px; background: var(--input-bg); color: var(--text); outline: none; width: 100%; max-width: 250px; cursor: pointer;">
-          <option value="0">🔕 ללא תזכורת</option>
-          <option value="1">🔔 דקה לפני</option>
-          <option value="5">🔔 5 דקות לפני</option>
-          <option value="10">🔔 10 דקות לפני</option>
-          <option value="15">🔔 15 דקות לפני</option>
-          <option value="30">🔔 30 דקות לפני</option>
-          <option value="60">🔔 שעה לפני</option>
-          <option value="1440">🔔 יום לפני</option>
-          <option value="custom">⚙️ מותאם אישית...</option>
+          <option value="0">ללא תזכורת</option>
+          <option value="1">דקה לפני</option>
+          <option value="5">5 דקות לפני</option>
+          <option value="10">10 דקות לפני</option>
+          <option value="15">15 דקות לפני</option>
+          <option value="30">30 דקות לפני</option>
+          <option value="60">שעה לפני</option>
+          <option value="1440">יום לפני</option>
+          <option value="custom">מותאם אישית...</option>
         </select>
         <div class="task-reminder-custom hidden" id="editTaskReminderCustomWrap"
           style="display: flex; gap: 8px; margin-top: 10px;">
@@ -1771,7 +1771,7 @@
               <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
             </svg>
           </button>
-          <button class="task-action-btn delete" id="deleteTaskBtn" title="Delete" aria-label="מחק משימה">🗑️</button>
+          <button class="task-action-btn delete" id="deleteTaskBtn" title="Delete" aria-label="מחק משימה"><span class="icon">delete</span></button>
         </div>
         <button class="btn btn-primary" id="saveTaskBtn">Save</button>
       </div>

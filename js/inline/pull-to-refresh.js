@@ -75,7 +75,7 @@ export function initPullToRefresh() {
 
       const spinner = pullIndicator.querySelector('.pull-spinner');
       if (spinner) {
-        spinner.textContent = '⏳';
+        spinner.innerHTML = '<span class="icon" style="font-size:16px;vertical-align:middle">hourglass_empty</span>';
       }
 
       try {
@@ -94,16 +94,16 @@ export function initPullToRefresh() {
         }
 
         // Show success feedback
-        if (spinner) spinner.textContent = '✅';
+        if (spinner) spinner.innerHTML = '<span class="icon" style="font-size:16px;vertical-align:middle">check_circle</span>';
         await new Promise(r => setTimeout(r, 500));
       } catch (err) {
         console.warn('[Pull-to-Refresh] Error:', err);
-        if (spinner) spinner.textContent = '❌';
+        if (spinner) spinner.innerHTML = '<span class="icon" style="font-size:16px;vertical-align:middle">cancel</span>';
         await new Promise(r => setTimeout(r, 500));
       }
 
       // Reset
-      if (spinner) spinner.textContent = '🔄';
+      if (spinner) spinner.innerHTML = '<span class="icon" style="font-size:16px;vertical-align:middle">sync</span>';
       refreshing = false;
       pullIndicator.classList.remove('refreshing', 'visible');
       pullIndicator.style.transform = '';

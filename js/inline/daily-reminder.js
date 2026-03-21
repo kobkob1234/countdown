@@ -42,7 +42,7 @@ export function initDailyReminder() {
       todayTasksList.innerHTML = todayTasks.map(t => renderReminderTask(t)).join('');
     } else {
       todayTasksSection.style.display = 'block';
-      todayTasksList.innerHTML = '<div class="reminder-empty">🎉 אין משימות להיום!</div>';
+      todayTasksList.innerHTML = '<div class="reminder-empty"><span class="icon" style="font-size:16px;vertical-align:middle">celebration</span> אין משימות להיום!</div>';
     }
 
     if (tomorrowTasks.length > 0) {
@@ -72,7 +72,7 @@ export function initDailyReminder() {
       <div class="task-priority-dot" style="background: ${color};"></div>
       <div class="task-info">
         <div class="task-title">${escapeHtml(task.title)}</div>
-        ${time ? `<div class="task-time">⏰ ${time}</div>` : ''}
+        ${time ? `<div class="task-time"><span class="icon" style="font-size:16px;vertical-align:middle">alarm</span> ${time}</div>` : ''}
       </div>
     </div>
   `;

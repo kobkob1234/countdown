@@ -99,7 +99,7 @@ export function initTasks(hooks = {}) {
     if (!task) return;
     // Push to undo stack before deleting
     if (typeof ctx.pushToUndoStack === 'function') {
-      ctx.pushToUndoStack({ type: 'deleteTask', taskId: task.id, taskData: { ...task }, message: `🗑️ "${task.title}" נמחק` });
+      ctx.pushToUndoStack({ type: 'deleteTask', taskId: task.id, taskData: { ...task }, message: `"${task.title}" נמחק` });
     }
     const subject = (ctx.subjects || []).find(s => s.id === task.subject);
     if (subject?.isShared || task.isShared) {
