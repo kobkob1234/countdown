@@ -1429,7 +1429,7 @@ function render() {
     const starBtn = document.createElement("button");
     starBtn.className = `star-btn ${evt.highlighted ? 'active' : ''}`;
     starBtn.setAttribute("aria-label", "Highlight event");
-    starBtn.textContent = "☆";
+    starBtn.innerHTML = '<span class="icon" style="font-size:18px">star</span>';
 
     const pinBtn = document.createElement("button");
     pinBtn.className = `pin-btn ${evt.pinned ? 'pinned' : ''}`;
@@ -1441,7 +1441,7 @@ function render() {
     editBtn.className = "edit-btn";
     editBtn.setAttribute("aria-label", "Edit event");
     editBtn.title = "Edit";
-    editBtn.textContent = "✎";
+    editBtn.innerHTML = '<span class="icon" style="font-size:18px">edit</span>';
 
     // Reminder button with dropdown
     const reminderWrap = document.createElement("div");
@@ -1491,7 +1491,7 @@ function render() {
     const deleteBtn = document.createElement("button");
     deleteBtn.className = "delete-btn";
     deleteBtn.setAttribute("aria-label", "Delete event");
-    deleteBtn.textContent = "×";
+    deleteBtn.innerHTML = '<span class="icon" style="font-size:18px">close</span>';
 
     const actions = document.createElement("div");
     actions.className = "event-actions";
