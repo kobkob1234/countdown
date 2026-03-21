@@ -1135,7 +1135,7 @@
     }
 
     .container {
-      max-width: 56rem;
+      max-width: 64rem;
       margin: 0 auto;
     }
 
@@ -1146,23 +1146,20 @@
 
     .header {
       text-align: center;
-      margin-bottom: var(--space-8);
+      margin-bottom: var(--space-5);
       color: var(--text);
     }
 
     .header h1 {
-      font-size: var(--font-size-3xl);
-      font-weight: var(--font-weight-bold);
-      margin-bottom: var(--space-2);
-      letter-spacing: -0.5px;
-      background: linear-gradient(135deg, var(--accent), var(--accent2));
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
+      font-size: var(--font-size-2xl);
+      font-weight: var(--font-weight-semibold);
+      margin-bottom: var(--space-1);
+      letter-spacing: -0.3px;
+      color: var(--text);
     }
 
     .header p {
-      font-size: 16px;
+      font-size: var(--font-size-sm);
       color: var(--muted);
     }
 
@@ -1171,9 +1168,8 @@
       direction: rtl;
       background: var(--card);
       border: 1px solid var(--border);
-      border-radius: var(--radius-lg);
+      border-radius: var(--radius-md);
       padding: var(--space-3);
-      box-shadow: var(--shadow-sm);
       margin-bottom: var(--space-3);
       flex: 0 0 auto;
       overflow: visible;
@@ -1245,7 +1241,6 @@
     .calendar-view-toggle button.active {
       background: var(--card);
       color: var(--text);
-      box-shadow: var(--shadow-sm);
       font-weight: var(--font-weight-medium);
     }
 
@@ -1272,9 +1267,9 @@
       min-height: 56px;
       padding: var(--space-2);
       border: 1px solid var(--border);
-      border-radius: var(--radius-md);
+      border-radius: var(--radius-sm);
       cursor: pointer;
-      transition: all 0.15s;
+      transition: background 0.15s;
       display: flex;
       flex-direction: column;
       background: var(--card);
@@ -1404,14 +1399,13 @@
 
     .calendar-event-chip {
       font-size: var(--font-size-xs);
-      padding: 3px var(--space-2);
-      border-radius: var(--radius-sm);
+      padding: 2px var(--space-1-5);
+      border-radius: calc(var(--radius-sm) / 2);
       white-space: normal;
       overflow: visible;
       text-overflow: clip;
       color: white;
-      font-weight: var(--font-weight-semibold);
-      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
+      font-weight: var(--font-weight-medium);
       line-height: 1.25;
     }
 
@@ -1450,13 +1444,19 @@
     }
 
     .month-event-item {
-      padding: 10px 12px;
-      background: var(--day-other);
-      border-radius: 8px;
-      border-inline-start: 4px solid var(--accent);
+      padding: var(--space-2-5) var(--space-3);
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      border-inline-start: 3px solid var(--accent);
       display: flex;
       align-items: center;
       gap: var(--space-2-5);
+      transition: background 0.15s;
+    }
+
+    .month-event-item:hover {
+      background: var(--muted-bg);
     }
 
     .month-event-color {
@@ -1497,28 +1497,27 @@
     .input-panel {
       background: var(--card);
       border: 1px solid var(--border);
-      border-radius: var(--radius-lg);
-      padding: var(--space-4);
-      box-shadow: var(--shadow-sm);
+      border-radius: var(--radius-md);
+      padding: var(--space-5) var(--space-6);
       margin-bottom: var(--space-5);
       direction: rtl;
     }
 
     .input-row {
       display: flex;
-      gap: var(--space-2);
+      gap: var(--space-3);
       align-items: center;
       flex-wrap: wrap;
     }
 
     .input-row input {
       flex: 1;
-      padding: var(--space-2) var(--space-3);
-      height: 2.25rem;
+      padding: var(--space-2-5) var(--space-3);
+      height: 2.5rem;
       border: 1px solid var(--border);
-      border-radius: var(--radius-md);
+      border-radius: var(--radius-sm);
       font-family: var(--font);
-      font-size: var(--font-size-sm);
+      font-size: var(--font-size-base);
       transition: border-color 0.15s, box-shadow 0.15s;
       outline: none;
       direction: rtl;
@@ -1543,17 +1542,18 @@
     }
 
     .reminder-select {
-      padding: var(--space-2) var(--space-3);
-      height: 2.25rem;
+      padding: var(--space-2-5) var(--space-3);
+      height: 2.5rem;
       border: 1px solid var(--border);
-      border-radius: var(--radius-md);
+      border-radius: var(--radius-sm);
       font-family: var(--font);
-      font-size: var(--font-size-sm);
+      font-size: var(--font-size-base);
       background: var(--input-bg);
       color: var(--text);
       outline: none;
       cursor: pointer;
       min-width: 160px;
+      transition: border-color 0.15s;
     }
 
     .reminder-select:focus {
@@ -1590,14 +1590,16 @@
 
     .reminder-custom input,
     .reminder-custom select {
-      padding: var(--space-3) var(--space-4);
-      border: 2px solid var(--border);
-      border-radius: var(--radius-md);
-      font-size: var(--font-size-base);
+      padding: var(--space-2) var(--space-3);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-size: var(--font-size-sm);
       background: var(--input-bg);
       color: var(--text);
       outline: none;
       cursor: pointer;
+      height: 2.25rem;
+      transition: border-color 0.15s;
     }
 
     .reminder-custom input {
@@ -1622,8 +1624,8 @@
       align-items: center;
       justify-content: center;
       gap: var(--space-2);
-      padding: var(--space-2) var(--space-4);
-      height: 2.25rem;
+      padding: var(--space-2-5) var(--space-5);
+      height: 2.5rem;
       border: 1px solid transparent;
       border-radius: var(--radius-sm);
       font-family: var(--font);
@@ -1674,7 +1676,7 @@
     .event-list {
       display: flex;
       flex-direction: column;
-      gap: 16px;
+      gap: var(--space-3);
     }
 
     .event-list.loading .event-row {
@@ -1683,7 +1685,7 @@
 
     .event-skeleton {
       display: grid;
-      gap: 12px;
+      gap: var(--space-3);
     }
 
     .event-skeleton-row {
@@ -1708,19 +1710,17 @@
     .event-row {
       background: var(--card);
       border: 1px solid var(--border);
-      border-radius: var(--radius-lg);
-      padding: var(--space-4);
+      border-radius: var(--radius-md);
+      padding: var(--space-4) var(--space-5);
       box-sizing: border-box;
       display: flex;
       align-items: center;
       gap: var(--space-4);
-      box-shadow: var(--shadow-sm);
-      transition: box-shadow 0.15s, border-color 0.15s;
+      transition: background 0.15s;
     }
 
     .event-row:hover {
-      box-shadow: var(--shadow);
-      border-color: var(--accent-soft-strong);
+      background: var(--muted-bg);
     }
 
     .event-row.highlighted {
@@ -1742,8 +1742,8 @@
     }
 
     .event-name {
-      font-size: var(--font-size-base);
-      font-weight: 600;
+      font-size: var(--font-size-lg);
+      font-weight: var(--font-weight-medium);
       color: var(--text);
       white-space: nowrap;
       overflow: hidden;
@@ -1751,7 +1751,7 @@
     }
 
     .event-date {
-      font-size: 12px;
+      font-size: var(--font-size-base);
       color: var(--muted);
       margin-top: 4px;
     }
@@ -1763,9 +1763,8 @@
       background: var(--input-bg);
       border: 1px solid var(--border);
       border-radius: var(--radius-sm);
-      padding: 6px 8px;
+      padding: var(--space-1-5) var(--space-2);
       min-width: 160px;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
     }
 
     .inline-edit-input:focus {
@@ -1787,7 +1786,7 @@
       background: var(--card);
       border: 1px solid var(--border);
       border-radius: var(--radius-md);
-      box-shadow: var(--shadow-hover);
+      box-shadow: var(--shadow-md);
       display: flex;
       flex-direction: column;
       overflow: hidden;
@@ -1796,34 +1795,35 @@
     }
 
     .priority-popover button {
-      padding: 10px 12px;
+      padding: var(--space-2-5) var(--space-3);
       background: transparent;
       border: none;
       text-align: right;
       font: inherit;
+      font-size: var(--font-size-sm);
       cursor: pointer;
+      transition: background 0.1s;
     }
 
     .priority-popover button:hover {
-      background: var(--btn-secondary-bg);
+      background: var(--muted-bg);
     }
 
     .conflict-badge {
       display: inline-flex;
       align-items: center;
-      gap: 6px;
+      gap: var(--space-1-5);
       color: var(--danger);
-      font-size: 13px;
-      font-weight: 600;
+      font-size: var(--font-size-xs);
+      font-weight: var(--font-weight-semibold);
     }
 
     .conflict-dot {
       width: 8px;
       height: 8px;
-      border-radius: 50%;
+      border-radius: var(--radius-full);
       background: var(--danger);
       display: inline-block;
-      box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.18);
     }
 
     /* ============== DAILY PLANNER STYLES ============== */
@@ -4658,18 +4658,19 @@
     }
 
     .star-btn {
-      width: 36px;
-      height: 36px;
+      width: 32px;
+      height: 32px;
       border: 1px solid transparent;
       background: transparent;
       color: var(--muted);
       cursor: pointer;
-      border-radius: 10px;
-      transition: background 0.15s, color 0.15s, border-color 0.15s;
+      border-radius: var(--radius-sm);
+      transition: background 0.15s, color 0.15s;
       display: flex;
       align-items: center;
       justify-content: center;
       line-height: 1;
+      font-size: 20px;
     }
 
     .star-btn:hover {
@@ -4684,14 +4685,14 @@
     }
 
     .pin-btn {
-      width: 36px;
-      height: 36px;
+      width: 32px;
+      height: 32px;
       border: 1px solid transparent;
       background: transparent;
       color: var(--muted);
       cursor: pointer;
-      border-radius: 10px;
-      transition: background 0.15s, color 0.15s, border-color 0.15s;
+      border-radius: var(--radius-sm);
+      transition: background 0.15s, color 0.15s;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -4714,14 +4715,14 @@
     }
 
     .edit-btn {
-      width: 36px;
-      height: 36px;
+      width: 32px;
+      height: 32px;
       border: 1px solid transparent;
       background: transparent;
       color: var(--muted);
       cursor: pointer;
-      border-radius: 10px;
-      transition: background 0.15s, color 0.15s, border-color 0.15s;
+      border-radius: var(--radius-sm);
+      transition: background 0.15s, color 0.15s;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -4739,14 +4740,14 @@
     }
 
     .reminder-btn {
-      width: 36px;
-      height: 36px;
+      width: 32px;
+      height: 32px;
       border: 1px solid transparent;
       background: transparent;
       color: var(--muted);
       cursor: pointer;
-      border-radius: 10px;
-      transition: background 0.15s, color 0.15s, border-color 0.15s;
+      border-radius: var(--radius-sm);
+      transition: background 0.15s, color 0.15s;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -4807,39 +4808,39 @@
 
     .timer {
       display: flex;
-      gap: 12px;
+      gap: var(--space-2-5);
     }
 
     .time-unit {
       text-align: center;
-      background: var(--day-other);
-      border: 1px solid transparent;
-      border-radius: 10px;
-      padding: 10px 12px;
-      min-width: 64px;
-      transition: background 0.2s, border-color 0.2s;
+      background: var(--muted-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: var(--space-3) var(--space-3);
+      min-width: 68px;
+      transition: background 0.15s;
     }
 
     .time-unit:hover {
       background: var(--day-hover);
-      border-color: var(--accent-soft);
     }
 
     .time-val {
       display: block;
-      font-size: 24px;
-      font-weight: 700;
+      font-size: 1.5rem;
+      font-weight: var(--font-weight-bold);
       font-variant-numeric: tabular-nums;
-      line-height: 1.1;
+      line-height: 1.15;
+      color: var(--text);
     }
 
     .time-label {
       display: block;
-      font-size: 9px;
+      font-size: 10px;
       color: var(--muted);
       text-transform: uppercase;
-      letter-spacing: 0.6px;
-      margin-top: 4px;
+      letter-spacing: 0.5px;
+      margin-top: 3px;
     }
 
     .badge {
@@ -4862,39 +4863,44 @@
     }
 
     .delete-btn {
-      width: 36px;
-      height: 36px;
-      border: 1px solid transparent;
+      width: 32px;
+      height: 32px;
+      border: none;
       background: transparent;
       color: var(--muted);
-      font-size: 20px;
+      font-size: 18px;
       cursor: pointer;
-      border-radius: 10px;
-      transition: background 0.15s, color 0.15s, border-color 0.15s;
+      border-radius: var(--radius-sm);
+      transition: background 0.15s, color 0.15s;
       display: flex;
       align-items: center;
       justify-content: center;
       line-height: 1;
+      opacity: 0;
+    }
+
+    .event-row:hover .delete-btn {
+      opacity: 1;
     }
 
     .delete-btn:hover {
-      background: rgba(239, 68, 68, 0.12);
+      background: hsl(0 84.2% 60.2% / 0.1);
       color: var(--danger);
-      border-color: rgba(239, 68, 68, 0.2);
     }
 
     .event-actions {
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 2px;
+      font-size: 18px;
     }
 
     .empty-state {
       text-align: center;
-      padding: 40px 20px;
+      padding: var(--space-8) var(--space-5);
       background: var(--card);
       border: 1px solid var(--border);
-      border-radius: 16px;
+      border-radius: var(--radius-md);
       color: var(--muted);
       display: none;
     }
@@ -4902,17 +4908,16 @@
     .empty-state svg {
       width: 48px;
       height: 48px;
-      margin-bottom: 12px;
+      margin-bottom: var(--space-3);
       opacity: 0.4;
     }
 
     .empty-state p {
-      font-size: 14px;
+      font-size: var(--font-size-sm);
     }
 
     .input-panel.editing {
       border-color: var(--accent);
-      box-shadow: 0 0 0 3px var(--accent-soft-strong);
     }
 
     /* Undo toast */
@@ -4923,13 +4928,13 @@
       z-index: 220;
       display: none;
       align-items: center;
-      gap: 12px;
-      padding: 12px 16px;
-      background: linear-gradient(135deg, var(--accent), var(--accent2));
-      color: white;
-      border-radius: 12px;
-      box-shadow: var(--shadow-hover);
-      font-size: 14px;
+      gap: var(--space-3);
+      padding: var(--space-3) var(--space-4);
+      background: var(--text);
+      color: var(--bg);
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-md);
+      font-size: var(--font-size-sm);
     }
 
     .undo-toast.show {
@@ -4938,12 +4943,13 @@
 
     .undo-toast button {
       border: none;
-      background: rgba(255, 255, 255, 0.2);
-      color: white;
-      padding: 8px 12px;
-      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.15);
+      color: inherit;
+      padding: var(--space-1-5) var(--space-3);
+      border-radius: var(--radius-sm);
       cursor: pointer;
-      font-weight: 600;
+      font-weight: var(--font-weight-medium);
+      font-size: var(--font-size-sm);
       transition: background 0.15s;
     }
 
@@ -5410,18 +5416,18 @@
 
     /* Notes/Description */
     .input-row-notes {
-      margin-top: 12px;
+      margin-top: var(--space-3);
     }
 
     .input-row-notes textarea {
       width: 100%;
-      padding: 12px 14px;
-      border: 2px solid var(--border);
-      border-radius: 10px;
-      font-size: 14px;
+      padding: var(--space-3) var(--space-4);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-size: var(--font-size-base);
       font-family: inherit;
       resize: vertical;
-      min-height: 60px;
+      min-height: 70px;
       max-height: 150px;
       outline: none;
       direction: rtl;
@@ -5437,9 +5443,9 @@
     }
 
     .event-notes {
-      font-size: 12px;
+      font-size: var(--font-size-xs);
       color: var(--muted);
-      margin-top: 4px;
+      margin-top: 2px;
       white-space: pre-wrap;
       word-break: break-word;
       max-height: 40px;

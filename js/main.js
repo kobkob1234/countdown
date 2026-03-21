@@ -1435,7 +1435,7 @@ function render() {
     pinBtn.className = `pin-btn ${evt.pinned ? 'pinned' : ''}`;
     pinBtn.setAttribute("aria-label", evt.pinned ? "Unpin event" : "Pin event");
     pinBtn.title = evt.pinned ? "Unpin" : "Pin to top";
-    pinBtn.innerHTML = '<span class="icon" style="font-size:16px;vertical-align:middle">push_pin</span>';
+    pinBtn.innerHTML = '<span class="icon" style="font-size:18px;vertical-align:middle">push_pin</span>';
 
     const editBtn = document.createElement("button");
     editBtn.className = "edit-btn";
