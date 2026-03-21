@@ -3826,10 +3826,7 @@
       font-size: 28px;
       font-weight: 700;
       font-variant-numeric: tabular-nums;
-      background: linear-gradient(135deg, var(--accent), var(--accent2));
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
+      color: var(--accent);
     }
 
     .pomodoro-mini-mode {
@@ -4104,11 +4101,7 @@
       color: var(--text);
       font-variant-numeric: tabular-nums;
       line-height: 1;
-      text-shadow: 0 4px 30px var(--accent-soft-strong);
-      background: linear-gradient(135deg, var(--text) 0%, var(--accent) 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
+      color: var(--text);
     }
 
     .pomodoro-mode {
@@ -4130,10 +4123,8 @@
     .pomodoro-mode-dot {
       width: 10px;
       height: 10px;
-      border-radius: 50%;
-      background: linear-gradient(135deg, var(--accent), var(--accent2));
-      animation: pulseGlow 2s ease-in-out infinite;
-      box-shadow: 0 0 10px var(--accent);
+      border-radius: var(--radius-full);
+      background: var(--accent);
     }
 
     @keyframes pulseGlow {
@@ -4476,10 +4467,7 @@
       font-size: 28px;
       font-weight: 700;
       font-variant-numeric: tabular-nums;
-      background: linear-gradient(135deg, var(--accent), var(--accent2));
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
+      color: var(--accent);
     }
 
     .pomodoro-mini-mode {
@@ -5863,16 +5851,14 @@
     }
 
     .task-action-btn.ai-btn {
-      background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 100%);
+      background: var(--accent);
       color: white;
-      font-size: 14px;
+      font-size: var(--font-size-base);
     }
 
     .task-action-btn.ai-btn:hover {
-      background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 100%);
       opacity: 0.9;
       color: white;
-      transform: scale(1.05);
     }
 
     .task-reminder-wrap {
@@ -6327,7 +6313,7 @@
     }
 
     .subject-tab.smart-view {
-      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      background: var(--accent);
       color: white;
       border: none;
     }

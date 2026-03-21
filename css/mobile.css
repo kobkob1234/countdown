@@ -461,7 +461,7 @@
         transform: translateX(-50%);
         width: 0;
         height: 3px;
-        background: linear-gradient(135deg, var(--accent), var(--accent2));
+        background: var(--accent);
         border-radius: 0 0 3px 3px;
         transition: width 0.2s ease;
       }
@@ -551,7 +551,7 @@
         left: 0;
         right: 0;
         height: 4px;
-        background: linear-gradient(90deg, var(--event-color, var(--accent)), var(--accent2));
+        background: var(--event-color, var(--accent));
         opacity: 0.9;
       }
 
@@ -917,7 +917,7 @@
       }
 
       .mobile-sheet-actions .btn-primary {
-        background: linear-gradient(135deg, var(--accent), var(--accent2));
+        background: var(--accent);
         color: white;
         border: none;
       }
@@ -1640,19 +1640,17 @@
         right: var(--mobile-spacing-md);
         width: 56px;
         height: 56px;
-        border-radius: 50%;
-        background: linear-gradient(135deg, var(--accent), var(--accent2));
+        border-radius: var(--radius-full);
+        background: var(--accent);
         color: white;
         border: none;
         font-size: 28px;
         display: flex;
         align-items: center;
         justify-content: center;
-        box-shadow: 0 4px 20px var(--accent-soft-strong);
         z-index: 10010;
         cursor: pointer;
-
-        transition: transform 0.2s, box-shadow 0.2s;
+        transition: transform 0.15s;
       }
 
       .mobile-fab:active {
@@ -1878,12 +1876,12 @@
 
       .swipe-actions-left {
         left: 0;
-        background: linear-gradient(135deg, #22c55e, #16a34a);
+        background: var(--success);
       }
 
       .swipe-actions-right {
         right: 0;
-        background: linear-gradient(135deg, #ef4444, #dc2626);
+        background: var(--danger);
       }
 
       .swipe-action-btn {
@@ -1924,15 +1922,13 @@
 
       .swipe-container.threshold-left::before {
         left: 0;
-        background: #22c55e;
-        box-shadow: 0 0 12px rgba(34, 197, 94, 0.5);
+        background: var(--success);
       }
 
       .swipe-container.threshold-right::before {
         right: 0;
         left: auto;
-        background: #ef4444;
-        box-shadow: 0 0 12px rgba(239, 68, 68, 0.5);
+        background: var(--danger);
       }
 
       /* ===== TOUCH RIPPLE EFFECT ===== */
@@ -2359,13 +2355,12 @@
         bottom: calc(var(--mobile-bottom-nav-height) + env(safe-area-inset-bottom, 0px));
         left: var(--mobile-spacing-md);
         right: var(--mobile-spacing-md);
-        background: linear-gradient(135deg, var(--accent), var(--accent2));
+        background: var(--accent);
         border-radius: var(--mobile-radius);
         padding: var(--mobile-spacing-md);
         display: none;
         align-items: center;
         gap: var(--mobile-spacing-md);
-        box-shadow: 0 8px 32px var(--accent-soft-strong);
         z-index: 10005;
         animation: install-banner-slide-up 0.4s cubic-bezier(0.4, 0, 0.2, 1);
       }
@@ -2497,7 +2492,7 @@
         transform: translateY(-50%);
         width: 8px;
         height: 60px;
-        background: linear-gradient(135deg, var(--accent), var(--accent2));
+        background: var(--accent);
         border-radius: 4px;
         opacity: 0;
         transition: opacity 0.15s, transform 0.15s;
@@ -2841,7 +2836,7 @@
 
       /* Green glow when swiping right (complete) */
       .task-item.swiping[style*="translateX("] {
-        box-shadow: 0 0 0 2px #22c55e;
+        box-shadow: 0 0 0 2px var(--success);
       }
 
       /* Swipe threshold reached indicator */
@@ -2880,12 +2875,12 @@
         right: 12px;
         top: 50%;
         transform: translateY(-50%);
-        background: #22c55e;
-        color: white;
-        padding: 6px 12px;
-        border-radius: 8px;
-        font-size: 12px;
-        font-weight: 600;
+        background: var(--success);
+        color: var(--success-foreground);
+        padding: var(--space-1-5) var(--space-3);
+        border-radius: var(--radius-sm);
+        font-size: var(--font-size-xs);
+        font-weight: var(--font-weight-semibold);
         opacity: 0;
         animation: swipeHintIn 0.2s ease-out forwards;
       }
