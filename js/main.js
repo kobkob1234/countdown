@@ -4410,7 +4410,7 @@ function renderSubjectsSidebar() {
         <span class="subject-color-dot" style="background: ${s.color};"></span>
         <span class="subject-name">${escapeHtml(s.name)}</span>
         <div class="subject-actions">
-          <button class="subject-action-btn" data-action="add-sub" title="הוסף תת-נושא" aria-label="הוסף תת-נושא">➕</button>
+          <button class="subject-action-btn" data-action="add-sub" title="הוסף תת-נושא" aria-label="הוסף תת-נושא"><span class="icon" style="font-size:16px;vertical-align:middle">add</span></button>
           <button class="subject-action-btn" data-action="edit" title="עריכה" aria-label="עריכה"><span class="icon" style="font-size:16px;vertical-align:middle">edit</span></button>
           <button class="subject-action-btn delete" data-action="delete" title="מחק" aria-label="מחק"><span class="icon" style="font-size:16px;vertical-align:middle">delete</span></button>
         </div>

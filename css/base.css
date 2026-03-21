@@ -749,8 +749,8 @@
     }
 
     .swipe-action-btn.delete {
-      background: #ef4444;
-      color: white;
+      background: var(--danger);
+      color: var(--danger-foreground);
     }
 
     .task-item.swiping {

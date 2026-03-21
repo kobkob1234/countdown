@@ -279,7 +279,7 @@
                     if (td.classList.contains('countdown-enabled')) {
                         countdownBtn.classList.add('active');
                     }
-                    countdownBtn.textContent = '⏰';
+                    countdownBtn.innerHTML = '<span class="icon" style="font-size:14px">timer</span>';
                     countdownBtn.title = 'הפעל ספירה לאחור';
                     countdownBtn.onclick = (e) => {
                         e.stopPropagation();
@@ -294,7 +294,7 @@
                 if (!bannerWrapper.querySelector('.exam-banner-color-btn')) {
                     const colorBtn = document.createElement('span');
                     colorBtn.className = 'exam-banner-color-btn';
-                    colorBtn.textContent = '🎨';
+                    colorBtn.innerHTML = '<span class="icon" style="font-size:14px">palette</span>';
                     colorBtn.title = 'שנה צבע';
                     colorBtn.onclick = (e) => {
                         e.stopPropagation();
@@ -306,7 +306,7 @@
                 if (!bannerWrapper.querySelector('.exam-tile-color-btn')) {
                     const tileColorBtn = document.createElement('span');
                     tileColorBtn.className = 'exam-tile-color-btn';
-                    tileColorBtn.textContent = '🖼️';
+                    tileColorBtn.innerHTML = '<span class="icon" style="font-size:14px">palette</span>';
                     tileColorBtn.title = 'שנה צבע תא';
                     tileColorBtn.onclick = (e) => {
                         e.stopPropagation();
@@ -1076,13 +1076,13 @@
 
                 const colorBtn = document.createElement('span');
                 colorBtn.className = 'exam-banner-color-btn';
-                colorBtn.textContent = '🎨';
+                colorBtn.innerHTML = '<span class="icon" style="font-size:14px">palette</span>';
                 colorBtn.title = 'שנה צבע';
                 colorBtn.onclick = (e) => { e.stopPropagation(); showExamBannerColorPicker(colorBtn, banner, container); };
 
                 const countdownBtn = document.createElement('span');
                 countdownBtn.className = 'exam-countdown-toggle';
-                countdownBtn.textContent = '⏰';
+                countdownBtn.innerHTML = '<span class="icon" style="font-size:14px">timer</span>';
                 countdownBtn.title = 'הפעל ספירה לאחור';
                 countdownBtn.onclick = (e) => {
                     e.stopPropagation();
@@ -1094,7 +1094,7 @@
 
                 const tileColorBtn = document.createElement('span');
                 tileColorBtn.className = 'exam-tile-color-btn';
-                tileColorBtn.textContent = '🖼️';
+                tileColorBtn.innerHTML = '<span class="icon" style="font-size:14px">palette</span>';
                 tileColorBtn.title = 'שנה צבע תא';
                 tileColorBtn.onclick = (e) => { e.stopPropagation(); showExamTileColorPicker(tileColorBtn, td, container); };
 
