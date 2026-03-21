@@ -1,15 +1,14 @@
 #examModeOverlay {
     position: fixed;
     top: 3.5rem;
-    /* Below header */
     left: 0;
     right: 0;
     bottom: 0;
-    background-color: var(--bg, hsl(0 0% 100%));
+    background-color: var(--bg);
     overflow-y: auto;
     z-index: 100;
     display: none;
-    padding: var(--space-5, 1.25rem);
+    padding: var(--space-5);
 }
 
 #examModeOverlay.open {
@@ -19,64 +18,63 @@
 /* Controls Bar */
 .exam-controls {
     max-width: 1400px;
-    margin: 0 auto var(--space-5, 1.25rem);
+    margin: 0 auto var(--space-5);
     display: flex;
-    gap: var(--space-2, 0.5rem);
+    gap: var(--space-2);
     justify-content: center;
     align-items: center;
     flex-wrap: wrap;
-    background: var(--card, white);
-    padding: var(--space-3, 0.75rem);
-    border-radius: var(--radius-md, 0.5rem);
-    border: 1px solid var(--border, hsl(240 5.9% 90%));
-    box-shadow: var(--shadow-sm, 0 1px 2px 0 hsl(0 0% 0% / 0.05));
+    background: var(--card);
+    padding: var(--space-3);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border);
 }
 
 .exam-btn {
-    padding: var(--space-2, 0.5rem) var(--space-3, 0.75rem);
-    border: 1px solid var(--border, hsl(240 5.9% 90%));
-    background: var(--card, white);
-    border-radius: var(--radius-sm, 0.375rem);
+    padding: var(--space-2) var(--space-3);
+    border: 1px solid var(--border);
+    background: var(--card);
+    border-radius: var(--radius-sm);
     cursor: pointer;
-    font-family: var(--font, inherit);
-    font-size: var(--font-size-sm, 0.8125rem);
-    font-weight: var(--font-weight-medium, 500);
-    color: var(--muted, hsl(240 3.8% 46.1%));
+    font-family: var(--font);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+    color: var(--muted);
     transition: background 0.15s, border-color 0.15s, color 0.15s;
 }
 
 .exam-btn:hover {
-    background: var(--day-other, hsl(240 4.8% 95.9%));
-    color: var(--text, hsl(240 10% 3.9%));
+    background: var(--muted-bg);
+    color: var(--text);
 }
 
 .exam-btn.active {
-    background: var(--accent-soft, hsl(231 77% 65% / 0.1));
-    color: var(--accent, hsl(231 77% 65%));
-    border-color: var(--accent, hsl(231 77% 65%));
+    background: var(--accent-soft);
+    color: var(--accent);
+    border-color: var(--accent);
 }
 
 .exam-divider {
     width: 1px;
     height: 24px;
-    background: #e2e8f0;
-    margin: 0 6px;
+    background: var(--border);
+    margin: 0 var(--space-1-5);
 }
 
 .exam-hint {
     flex-basis: 100%;
     text-align: center;
-    color: #64748b;
-    font-size: 0.85em;
+    color: var(--muted);
+    font-size: var(--font-size-sm);
 }
 
 /* Color Picker */
 .color-picker-btn {
     width: 30px;
     height: 30px;
-    border-radius: 50%;
-    border: 2px solid white;
-    box-shadow: 0 0 0 1px #cbd5e1;
+    border-radius: var(--radius-full);
+    border: 2px solid var(--card);
+    box-shadow: 0 0 0 1px var(--border);
     cursor: pointer;
 }
 
@@ -84,7 +82,7 @@
 .exam-legend-bar {
     display: flex;
     flex-wrap: wrap;
-    gap: 8px;
+    gap: var(--space-2);
     align-items: center;
     justify-content: center;
     flex: 1;
@@ -94,27 +92,27 @@
 .legend-tag {
     display: flex;
     align-items: center;
-    gap: 4px;
-    padding: 4px 8px;
-    border-radius: 6px;
+    gap: var(--space-1);
+    padding: var(--space-1) var(--space-2);
+    border-radius: var(--radius-sm);
     border: 2px solid transparent;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all 0.15s;
 }
 
 .legend-tag:hover {
-    border-color: #94a3b8;
+    border-color: var(--muted);
 }
 
 .legend-tag.selected {
-    border-color: #0284c7;
-    box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.2);
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px var(--accent-soft);
 }
 
 .legend-color-swatch {
     width: 20px;
     height: 20px;
-    border-radius: 4px;
+    border-radius: var(--radius-sm);
     cursor: pointer;
     border: 1px solid rgba(0, 0, 0, 0.15);
     flex-shrink: 0;
@@ -127,20 +125,20 @@
 
 /* Color Palette Popup */
 .color-palette-popup {
-    background: white;
-    border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    padding: 8px;
+    background: var(--card);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border);
+    padding: var(--space-2);
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    gap: 6px;
+    gap: var(--space-1-5);
     z-index: 1000;
 }
 
 .palette-color {
     width: 24px;
     height: 24px;
-    border-radius: 4px;
+    border-radius: var(--radius-sm);
     cursor: pointer;
     border: 2px solid transparent;
     transition: transform 0.15s, border-color 0.15s;
@@ -148,26 +146,26 @@
 
 .palette-color:hover {
     transform: scale(1.15);
-    border-color: #333;
+    border-color: var(--text);
 }
 
 /* Chip Color Palette (for adding new events) */
 .chip-color-palette {
-    background: white;
-    border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-    padding: 8px;
+    background: var(--card);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border);
+    padding: var(--space-2);
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    gap: 6px;
+    gap: var(--space-1-5);
     z-index: 1000;
 }
 
 .legend-tag-text {
-    padding: 3px 8px;
-    border-radius: 4px;
-    font-size: 0.85em;
-    font-weight: 500;
+    padding: var(--space-0-5) var(--space-2);
+    border-radius: var(--radius-sm);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
     color: white;
     min-width: 30px;
     outline: none;
@@ -183,29 +181,28 @@
 #examModeOverlay .container {
     max-width: 1400px;
     margin: 0 auto;
-    background: var(--card, white);
-    padding: var(--space-5, 1.25rem);
-    border-radius: var(--radius-lg, 0.625rem);
-    border: 1px solid var(--border, hsl(240 5.9% 90%));
-    font-family: var(--font, inherit);
-    color: var(--text, hsl(240 10% 3.9%));
+    background: var(--card);
+    padding: var(--space-5);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border);
+    font-family: var(--font);
+    color: var(--text);
     line-height: 1.5;
-    box-shadow: var(--shadow-sm, 0 1px 2px 0 hsl(0 0% 0% / 0.05));
 }
 
 #examModeOverlay h1 {
     text-align: center;
-    color: #0284c7;
-    margin-bottom: 5px;
+    color: var(--accent);
+    margin-bottom: var(--space-1);
     font-size: 2em;
-    font-weight: bold;
+    font-weight: var(--font-weight-bold);
     min-height: 1.2em;
     outline: none;
 }
 
 #examModeOverlay h1:empty::before {
     content: attr(data-placeholder);
-    color: #94a3b8;
+    color: var(--muted);
     font-weight: normal;
     font-size: 0.6em;
 }
@@ -215,30 +212,30 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 12px;
-    margin-bottom: 10px;
+    gap: var(--space-3);
+    margin-bottom: var(--space-2-5);
 }
 
 .exam-month-nav .nav-btn {
-    padding: 6px 14px;
-    border: 1px solid #cbd5e1;
-    background: white;
-    border-radius: 6px;
+    padding: var(--space-1-5) var(--space-3-5);
+    border: 1px solid var(--border);
+    background: var(--card);
+    border-radius: var(--radius-sm);
     cursor: pointer;
     font-size: 1.1em;
-    color: #475569;
-    transition: all 0.2s;
+    color: var(--muted);
+    transition: all 0.15s;
 }
 
 .exam-month-nav .nav-btn:hover {
-    background: #f0f9ff;
-    border-color: #0ea5e9;
-    color: #0284c7;
+    background: var(--accent-soft);
+    border-color: var(--accent);
+    color: var(--accent);
 }
 
 .exam-month-nav .nav-label {
-    font-size: 0.95em;
-    color: #64748b;
+    font-size: var(--font-size-base);
+    color: var(--muted);
     min-width: 140px;
     text-align: center;
 }
@@ -250,19 +247,19 @@
     justify-content: center;
     width: 28px;
     height: 28px;
-    border-radius: 6px;
-    border: 2px dashed #cbd5e1;
+    border-radius: var(--radius-sm);
+    border: 2px dashed var(--border);
     cursor: pointer;
-    font-size: 16px;
-    color: #94a3b8;
-    transition: all 0.2s;
+    font-size: var(--font-size-base);
+    color: var(--muted);
+    transition: all 0.15s;
     flex-shrink: 0;
 }
 
 .legend-add-topic:hover {
-    border-color: #0ea5e9;
-    color: #0ea5e9;
-    background: #f0f9ff;
+    border-color: var(--accent);
+    color: var(--accent);
+    background: var(--accent-soft);
 }
 
 .legend-tag .legend-remove-btn {
@@ -271,10 +268,10 @@
     justify-content: center;
     width: 16px;
     height: 16px;
-    border-radius: 50%;
-    background: rgba(239, 68, 68, 0.1);
-    color: #ef4444;
-    font-size: 12px;
+    border-radius: var(--radius-full);
+    background: hsl(0 84.2% 60.2% / 0.1);
+    color: var(--danger);
+    font-size: var(--font-size-xs);
     cursor: pointer;
     line-height: 1;
     flex-shrink: 0;
@@ -286,18 +283,17 @@
 }
 
 .legend-remove-btn:hover {
-    background: #ef4444;
-    color: white;
+    background: var(--danger);
+    color: var(--danger-foreground);
 }
 
 #examModeOverlay h2 {
-    color: #475569;
-    /* Slate 600 */
-    margin-bottom: 10px;
+    color: var(--muted);
+    margin-bottom: var(--space-2-5);
     font-size: 1.5em;
-    font-weight: bold;
-    border-bottom: 2px solid #f1f5f9;
-    padding-bottom: 5px;
+    font-weight: var(--font-weight-bold);
+    border-bottom: 2px solid var(--muted-bg);
+    padding-bottom: var(--space-1);
 }
 
 #examModeOverlay .exam-editable {
@@ -305,28 +301,28 @@
 }
 
 #examModeOverlay .exam-editable:focus {
-    outline: 2px dashed #94a3b8;
+    outline: 2px dashed var(--muted);
     outline-offset: 2px;
-    background: #f8fafc;
+    background: var(--muted-bg);
 }
 
 #examModeOverlay .legend {
     display: flex;
     justify-content: center;
-    gap: 15px;
-    margin-bottom: 20px;
+    gap: var(--space-4);
+    margin-bottom: var(--space-5);
     flex-wrap: wrap;
-    background: #f8fafc;
-    padding: 10px;
-    border-radius: 8px;
+    background: var(--muted-bg);
+    padding: var(--space-2-5);
+    border-radius: var(--radius-md);
 }
 
 #examModeOverlay .legend span {
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-size: 0.9em;
-    font-weight: bold;
-    color: #0f172a;
+    padding: var(--space-1) var(--space-2);
+    border-radius: var(--radius-sm);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-bold);
+    color: var(--text);
 }
 
 #examModeOverlay table {
@@ -334,100 +330,100 @@
     border-collapse: separate;
     border-spacing: 4px;
     table-layout: fixed;
-    margin-bottom: 40px;
+    margin-bottom: var(--space-10);
 }
 
 #examModeOverlay th {
-    background: #f1f5f9;
-    color: #475569;
-    padding: 10px;
-    border-bottom: 2px solid #e2e8f0;
+    background: var(--muted-bg);
+    color: var(--muted);
+    padding: var(--space-2-5);
+    border-bottom: 2px solid var(--border);
     text-align: center;
-    font-weight: bold;
+    font-weight: var(--font-weight-bold);
 }
 
 #examModeOverlay td {
     height: 160px;
     vertical-align: top;
-    padding: 6px;
-    background: white;
-    border: 1px solid #e2e8f0;
-    font-size: 0.85em;
-    color: #334155;
+    padding: var(--space-1-5);
+    background: var(--card);
+    border: 1px solid var(--border);
+    font-size: var(--font-size-sm);
+    color: var(--text);
     position: relative;
-    transition: background-color 0.2s;
+    transition: background-color 0.15s;
 }
 
 #examModeOverlay td:hover {
-    background: #f8fafc;
+    background: var(--muted-bg);
 }
 
 #examModeOverlay .week-goal-row td {
     height: auto;
-    background: #f8fafc;
-    border: 1px dashed #e2e8f0;
-    padding: 8px 10px;
+    background: var(--muted-bg);
+    border: 1px dashed var(--border);
+    padding: var(--space-2) var(--space-2-5);
 }
 
 #examModeOverlay .week-goal {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: var(--space-2);
     flex-wrap: wrap;
 }
 
 #examModeOverlay .week-goal-label {
-    font-weight: 600;
-    color: #475569;
+    font-weight: var(--font-weight-semibold);
+    color: var(--muted);
 }
 
 #examModeOverlay .week-goal-text {
     min-width: 200px;
-    padding: 3px 6px;
-    border-radius: 6px;
-    background: #ffffff;
-    border: 1px solid #e2e8f0;
+    padding: var(--space-0-5) var(--space-1-5);
+    border-radius: var(--radius-sm);
+    background: var(--card);
+    border: 1px solid var(--border);
     outline: none;
 }
 
 #examModeOverlay .week-goal-text:empty::before {
     content: attr(data-placeholder);
-    color: #94a3b8;
+    color: var(--muted);
 }
 
 #examModeOverlay .week-goal-progress {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: var(--space-2);
     flex: 1 1 240px;
 }
 
 #examModeOverlay .week-goal-bar {
     flex: 1;
     height: 8px;
-    background: #e2e8f0;
-    border-radius: 999px;
+    background: var(--border);
+    border-radius: var(--radius-full);
     overflow: hidden;
 }
 
 #examModeOverlay .week-goal-fill {
     height: 100%;
     width: 0%;
-    background: linear-gradient(90deg, #0ea5e9, #22c55e);
+    background: var(--accent);
     transition: width 0.2s ease;
 }
 
 #examModeOverlay .week-goal-count,
 #examModeOverlay .week-goal-percent {
-    font-size: 0.85em;
-    color: #64748b;
+    font-size: var(--font-size-sm);
+    color: var(--muted);
     min-width: 44px;
     text-align: center;
 }
 
 #examModeOverlay td.drag-over {
-    background: #e2e8f0;
-    outline: 2px dashed #94a3b8;
+    background: var(--border);
+    outline: 2px dashed var(--muted);
 }
 
 /* Add Tile Button (appears on hover) */
@@ -437,16 +433,16 @@
     right: 5px;
     width: 20px;
     height: 20px;
-    background: #e2e8f0;
-    color: #64748b;
-    border-radius: 4px;
+    background: var(--border);
+    color: var(--muted);
+    border-radius: var(--radius-sm);
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    font-size: 14px;
+    font-size: var(--font-size-base);
     opacity: 0;
-    transition: opacity 0.2s;
+    transition: opacity 0.15s;
     z-index: 10;
 }
 
@@ -455,26 +451,24 @@
 }
 
 #examModeOverlay .date {
-    font-weight: bold;
-    color: #64748b;
-    /* Slate 500 */
-    margin-bottom: 4px;
+    font-weight: var(--font-weight-bold);
+    color: var(--muted);
+    margin-bottom: var(--space-1);
     display: block;
 }
 
 /* Task Chips */
 #examModeOverlay .chip {
-    padding: 4px 6px;
+    padding: var(--space-1) var(--space-1-5);
     padding-right: 24px;
-    /* Space for checkbox */
-    margin-bottom: 4px;
-    border-radius: 4px;
-    font-size: 0.9em;
+    margin-bottom: var(--space-1);
+    border-radius: var(--radius-sm);
+    font-size: var(--font-size-sm);
     display: block;
-    border-left: 3px solid rgba(0, 0, 0, 0.1);
+    border-inline-start: 3px solid rgba(0, 0, 0, 0.1);
     color: white;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all 0.15s;
     position: relative;
 }
 
@@ -490,8 +484,7 @@
 }
 
 #examModeOverlay .chip:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    filter: brightness(0.95);
 }
 
 #examModeOverlay .chip.editing {
@@ -569,7 +562,6 @@
 #examModeOverlay .chip-delete {
     position: absolute;
     left: 4px;
-    /* On the left side */
     top: 50%;
     transform: translateY(-50%);
     width: 14px;
@@ -577,10 +569,9 @@
     border-radius: 3px;
     cursor: pointer;
     display: none;
-    /* Hidden by default */
     align-items: center;
     justify-content: center;
-    font-size: 12px;
+    font-size: var(--font-size-xs);
     line-height: 1;
     color: rgba(255, 255, 255, 0.8);
     font-family: inherit;
@@ -589,7 +580,6 @@
 
 #examModeOverlay .chip:hover .chip-delete {
     display: flex;
-    /* Show on hover */
 }
 
 #examModeOverlay .chip-delete:hover {
@@ -599,7 +589,6 @@
 
 #examModeOverlay .chip {
     padding-left: 20px;
-    /* Space for delete button */
 }
 
 /* Generic topic classes - colors applied via inline styles from legend config */
@@ -630,29 +619,27 @@
 #examModeOverlay .rest { background: #64748b; color: white; }
 
 #examModeOverlay .exam {
-    background: #ef4444;
-    color: white;
-    font-weight: bold;
+    background: var(--danger);
+    color: var(--danger-foreground);
+    font-weight: var(--font-weight-bold);
     text-align: center;
-    padding: 8px;
-    margin-top: 10px;
-    border: 2px solid #fee2e2;
-    box-shadow: 0 4px 6px -1px rgba(239, 68, 68, 0.2);
+    padding: var(--space-2);
+    margin-top: var(--space-2-5);
+    border: 2px solid hsl(0 84.2% 60.2% / 0.15);
     display: block;
 }
 
 #examModeOverlay .skipped-exam {
-    background: #f1f5f9;
-    color: #94a3b8;
+    background: var(--muted-bg);
+    color: var(--muted);
     text-decoration: line-through;
-    border: 2px dashed #cbd5e1;
+    border: 2px dashed var(--border);
     text-align: center;
-    padding: 5px;
-    margin-top: 10px;
+    padding: var(--space-1);
+    margin-top: var(--space-2-5);
     display: block;
 }
 
-/* Drag and Drop Visuals */
 /* Drag and Drop Visuals */
 #examModeOverlay .chip-drag-handle {
     position: absolute;
@@ -662,7 +649,7 @@
     cursor: grab;
     color: rgba(255, 255, 255, 0.6);
     padding: 2px;
-    font-size: 14px;
+    font-size: var(--font-size-base);
     line-height: 1;
     z-index: 20;
     user-select: none;
@@ -674,20 +661,16 @@
 
 #examModeOverlay .chip {
     padding-left: 18px;
-    /* Space for handle */
     padding-right: 24px;
-    /* Space for checkbox */
 }
 
-/* Adjust delete button position if needed, or hide handle on hover? No, keep handle always or hover? Handle always is better for discoverability */
 #examModeOverlay .chip-delete {
     left: 18px;
-    /* Shift delete button to right of handle */
 }
 
 #examModeOverlay .chip.dragging {
     opacity: 0.5;
-    border: 2px dashed #94a3b8;
+    border: 2px dashed var(--muted);
 }
 
 /* Day Passed Feature */
@@ -697,15 +680,15 @@
     left: 5px;
     width: 18px;
     height: 18px;
-    border: 2px solid #cbd5e1;
-    border-radius: 4px;
-    background: white;
+    border: 2px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--card);
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
     opacity: 0;
-    transition: opacity 0.2s, background 0.2s;
+    transition: opacity 0.15s, background 0.15s;
     z-index: 10;
 }
 
@@ -715,15 +698,15 @@
 
 #examModeOverlay td.day-passed .day-passed-toggle {
     opacity: 1;
-    background: #fee2e2;
-    border-color: #ef4444;
+    background: hsl(0 84.2% 60.2% / 0.1);
+    border-color: var(--danger);
 }
 
 #examModeOverlay td.day-passed .day-passed-toggle::after {
     content: '✓';
-    color: #ef4444;
-    font-weight: bold;
-    font-size: 12px;
+    color: var(--danger);
+    font-weight: var(--font-weight-bold);
+    font-size: var(--font-size-xs);
 }
 
 /* Red X Overlay */
@@ -750,9 +733,8 @@
     left: 50%;
     width: 120%;
     height: 6px;
-    background: rgba(239, 68, 68, 0.75);
+    background: hsl(0 84.2% 60.2% / 0.6);
     border-radius: 3px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
 }
 
 #examModeOverlay td .day-passed-x::before {
@@ -770,15 +752,15 @@
     left: 28px;
     width: 18px;
     height: 18px;
-    border: 2px solid #cbd5e1;
-    border-radius: 4px;
-    background: white;
+    border: 2px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--card);
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
     opacity: 0;
-    transition: opacity 0.2s, background 0.2s;
+    transition: opacity 0.15s, background 0.15s;
     z-index: 10;
     font-size: 10px;
 }
@@ -789,27 +771,26 @@
 
 #examModeOverlay td.exam-day .exam-day-toggle {
     opacity: 1;
-    background: #fee2e2;
-    border-color: #ef4444;
+    background: hsl(0 84.2% 60.2% / 0.1);
+    border-color: var(--danger);
 }
 
 /* Exam Day Cell Styling */
 #examModeOverlay td.exam-day {
-    background: rgba(239, 68, 68, 0.1) !important;
-    border: 2px solid #ef4444 !important;
+    background: hsl(0 84.2% 60.2% / 0.08) !important;
+    border: 2px solid var(--danger) !important;
 }
 
 /* Exam Banner */
 #examModeOverlay .exam-banner {
-    background: #ef4444;
-    color: white;
-    font-weight: bold;
+    background: var(--danger);
+    color: var(--danger-foreground);
+    font-weight: var(--font-weight-bold);
     text-align: center;
-    padding: 8px 10px;
-    margin: 6px 0;
-    border-radius: 6px;
-    border: 2px solid #fee2e2;
-    box-shadow: 0 4px 6px -1px rgba(239, 68, 68, 0.2);
+    padding: var(--space-2) var(--space-2-5);
+    margin: var(--space-1-5) 0;
+    border-radius: var(--radius-sm);
+    border: 2px solid hsl(0 84.2% 60.2% / 0.15);
     cursor: text;
     min-height: 20px;
     outline: none;
@@ -828,7 +809,7 @@
 /* Exam Banner Wrapper */
 #examModeOverlay .exam-banner-wrapper {
     position: relative;
-    margin: 6px 0;
+    margin: var(--space-1-5) 0;
 }
 
 #examModeOverlay .exam-banner-wrapper .exam-banner {
@@ -842,16 +823,16 @@
     top: -8px;
     width: 20px;
     height: 20px;
-    background: white;
-    border-radius: 50%;
+    background: var(--card);
+    border-radius: var(--radius-full);
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 10px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    border: 1px solid var(--border);
     opacity: 0;
-    transition: opacity 0.2s;
+    transition: opacity 0.15s;
     z-index: 10;
 }
 
@@ -870,7 +851,7 @@
     left: 50%;
     right: auto;
     transform: translateX(-50%);
-    margin-top: 4px;
+    margin-top: var(--space-1);
 }
 
 /* Countdown Toggle Button */
@@ -880,16 +861,16 @@
     top: -8px;
     width: 20px;
     height: 20px;
-    background: white;
-    border-radius: 50%;
+    background: var(--card);
+    border-radius: var(--radius-full);
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 10px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    border: 1px solid var(--border);
     opacity: 0;
-    transition: opacity 0.2s, background 0.2s;
+    transition: opacity 0.15s, background 0.15s;
     z-index: 10;
 }
 
@@ -899,8 +880,8 @@
 
 #examModeOverlay .exam-countdown-toggle.active {
     opacity: 1;
-    background: #fef3c7;
-    box-shadow: 0 0 0 2px #f59e0b, 0 2px 4px rgba(0, 0, 0, 0.2);
+    background: hsl(43 96% 56% / 0.15);
+    border-color: var(--warning);
 }
 
 #examModeOverlay .exam-countdown-toggle:hover {
@@ -912,14 +893,13 @@
     position: absolute;
     top: 2px;
     left: 2px;
-    background: linear-gradient(135deg, #f59e0b, #d97706);
-    color: white;
+    background: var(--warning);
+    color: var(--warning-foreground);
     font-size: 9px;
-    font-weight: bold;
-    padding: 1px 4px;
-    border-radius: 4px;
+    font-weight: var(--font-weight-bold);
+    padding: 1px var(--space-1);
+    border-radius: var(--radius-sm);
     z-index: 8;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
     white-space: nowrap;
 }
 
@@ -930,16 +910,16 @@
     top: -8px;
     width: 20px;
     height: 20px;
-    background: white;
-    border-radius: 50%;
+    background: var(--card);
+    border-radius: var(--radius-full);
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 10px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    border: 1px solid var(--border);
     opacity: 0;
-    transition: opacity 0.2s;
+    transition: opacity 0.15s;
     z-index: 10;
 }
 
@@ -958,28 +938,28 @@
     left: 50%;
     right: auto;
     transform: translateX(-50%);
-    margin-top: 4px;
+    margin-top: var(--space-1);
 }
 
 /* Palette Remove Button */
 .palette-remove {
-    background: #fee2e2 !important;
-    color: #ef4444;
-    font-size: 16px;
-    font-weight: bold;
+    background: hsl(0 84.2% 60.2% / 0.1) !important;
+    color: var(--danger);
+    font-size: var(--font-size-base);
+    font-weight: var(--font-weight-bold);
     display: flex;
     align-items: center;
     justify-content: center;
 }
 
 .palette-remove:hover {
-    background: #ef4444 !important;
-    color: white;
+    background: var(--danger) !important;
+    color: var(--danger-foreground);
 }
 
 /* Empty calendar cells */
 #examModeOverlay td.empty-cell {
-    background: #f8fafc;
+    background: var(--muted-bg);
     border-color: transparent;
     pointer-events: none;
     height: auto;
