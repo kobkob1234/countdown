@@ -1,6 +1,11 @@
 export function createPomodoro() {
   const Pomodoro = (() => {
     const refs = {
+      overlay: document.getElementById('pomodoroOverlay'),
+      timerWrap: document.querySelector('.pomodoro-timer-wrap'),
+      cycleDots: document.getElementById('pomodoroCycleDots'),
+      currentTask: document.getElementById('pomodoroCurrentTask'),
+      currentTaskName: document.getElementById('pomodoroCurrentTaskName'),
       card: document.getElementById('pomodoroCard'),
       taskSelect: document.getElementById('pomodoroTaskSelect'),
       presets: Array.from(document.querySelectorAll('.pomodoro-preset')),
@@ -198,16 +203,58 @@ export function createPomodoro() {
       refs.display.textContent = formatTime(state.remainingMs);
       const modeLabel = state.mode === 'focus' ? 'מיקוד' : (state.mode === 'long' ? 'הפסקה ארוכה' : 'הפסקה קצרה');
       refs.mode.textContent = modeLabel;
-      if (refs.phaseLabel) refs.phaseLabel.textContent = `שלב: ${modeLabel}`;
       if (refs.longCountdown) refs.longCountdown.textContent = formatLongBreakCountdown();
       refs.next.textContent = `הבא: ${getNextLabel()}`;
       const totalMs = getDuration(state.mode) * 60000;
       const pct = Math.max(0, Math.min(100, 100 - (state.remainingMs / totalMs) * 100));
       if (refs.progress) refs.progress.style.setProperty('--progress', pct + '%');
-      if (refs.startBtn) refs.startBtn.innerHTML = state.running ? '<span class="icon" style="font-size:16px;vertical-align:middle">pause</span>' : '<span class="icon" style="font-size:16px;vertical-align:middle">play_arrow</span>';
+      if (refs.startBtn) refs.startBtn.innerHTML = state.running ? '<span class="icon">pause</span><span class="pomodoro-btn-label">עצור</span>' : '<span class="icon">play_arrow</span><span class="pomodoro-btn-label">התחל</span>';
+      // Toggle running class for CSS animations
+      if (refs.timerWrap) refs.timerWrap.classList.toggle('running', state.running);
+      // Toggle immersive running mode on overlay
+      if (refs.overlay) {
+        refs.overlay.classList.toggle('is-running', state.running);
+        refs.overlay.setAttribute('data-mode', state.mode);
+      }
+      // Render cycle dots
+      renderCycleDots();
+      // Show current task near timer
+      renderCurrentTask();
       // Update mini player
       if (refs.miniTime) refs.miniTime.textContent = formatTime(state.remainingMs);
       if (refs.miniMode) refs.miniMode.textContent = state.mode === 'focus' ? 'מיקוד' : (state.mode === 'long' ? 'הפסקה ארוכה' : 'הפסקה קצרה');
+      if (refs.mini) refs.mini.setAttribute('data-mode', state.mode);
+    };
+
+    const renderCycleDots = () => {
+      if (!refs.cycleDots) return;
+      const every = Math.max(1, Number(config.longEvery) || 4);
+      const currentInCycle = state.cycle % every;
+      let html = '';
+      for (let i = 0; i < every; i++) {
+        let cls = 'pomodoro-cycle-dot';
+        if (i < currentInCycle) {
+          cls += ' completed';
+        } else if (i === currentInCycle && state.mode === 'focus') {
+          cls += ' active';
+        } else if (i === currentInCycle && state.mode !== 'focus') {
+          cls += ' is-break';
+        }
+        html += `<div class="${cls}"></div>`;
+      }
+      refs.cycleDots.innerHTML = html;
+    };
+
+    const renderCurrentTask = () => {
+      if (!refs.currentTask || !refs.currentTaskName || !refs.taskSelect) return;
+      const selected = refs.taskSelect.value;
+      if (selected && refs.taskSelect.selectedIndex > 0) {
+        const taskText = refs.taskSelect.options[refs.taskSelect.selectedIndex].text;
+        refs.currentTaskName.textContent = taskText;
+        refs.currentTask.style.display = 'flex';
+      } else {
+        refs.currentTask.style.display = 'none';
+      }
     };
 
     const setMode = (mode) => {
@@ -911,6 +958,18 @@ export function createPomodoro() {
 
       refs.presets.forEach(btn => btn.addEventListener('click', () => selectPreset(btn.dataset.preset)));
 
+      // Settings toggle (progressive disclosure)
+      const settingsToggle = document.getElementById('pomodoroSettingsToggle');
+      if (settingsToggle) {
+        settingsToggle.addEventListener('click', () => {
+          settingsToggle.classList.toggle('open');
+          const panel = document.querySelector('.pomodoro-settings-panel');
+          const opts = document.querySelector('.pomodoro-options');
+          if (panel) panel.classList.toggle('visible');
+          if (opts) opts.classList.toggle('visible');
+        });
+      }
+
       [refs.focusInput, refs.breakInput, refs.longInput, refs.longEveryInput].forEach(input => {
         if (!input) return;
         input.addEventListener('change', handleCustomChange);
@@ -929,6 +988,11 @@ export function createPomodoro() {
       }
       if (refs.skipBtn) refs.skipBtn.onclick = () => advance(false);
       if (refs.resetBtn) refs.resetBtn.onclick = reset;
+
+      // Update task display when task select changes
+      if (refs.taskSelect) {
+        refs.taskSelect.addEventListener('change', renderCurrentTask);
+      }
 
       // Mini player setup
       let miniDragging = false;

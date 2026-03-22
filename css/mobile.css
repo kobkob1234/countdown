@@ -1499,6 +1499,10 @@
         min-height: 40px;
       }
 
+      .pomodoro-content {
+        overflow-y: auto;
+      }
+
       /* ===== MOBILE DAILY PLANNER ===== */
       .planner-overlay {
         top: 0;

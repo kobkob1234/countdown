@@ -455,20 +455,30 @@
   <!-- Task Edit Modal -->
 
   <!-- Pomodoro Overlay -->
-  <div class="pomodoro-overlay" id="pomodoroOverlay">
-    <div class="pomodoro-header-bar">
-      <div class="pomodoro-header-title"><span class="icon" aria-hidden="true">timelapse</span> טיימר פומודורו</div>
-      <label class="pomodoro-option" style="margin: 0; background: transparent;">
-        <input type="checkbox" id="pomodoroMiniToggle" />
-        <span style="font-size: 13px;">הצג מיני-טיימר</span>
-      </label>
-    </div>
-
+  <div class="pomodoro-overlay" id="pomodoroOverlay" data-mode="focus">
     <div class="pomodoro-content">
       <div class="pomodoro-container">
         <div class="pomodoro-card" id="pomodoroCard">
+          <div id="pomodoroProgress" style="display:none;"></div>
 
-          <!-- Timer Circle -->
+          <!-- Preset Tabs -->
+          <nav class="pomodoro-presets">
+            <button class="pomodoro-preset" data-preset="classic">25/5</button>
+            <button class="pomodoro-preset" data-preset="flow">50/10</button>
+            <button class="pomodoro-preset" data-preset="ultradian">90/20</button>
+            <button class="pomodoro-preset" data-preset="perfect">52/17</button>
+            <button class="pomodoro-preset bad-day" data-preset="badday10"><span class="icon" style="font-size:14px">sentiment_dissatisfied</span> 10</button>
+            <button class="pomodoro-preset bad-day" data-preset="badday5"><span class="icon" style="font-size:14px">auto_awesome</span> 5</button>
+            <button class="pomodoro-preset" data-preset="custom"><span class="icon" style="font-size:14px">tune</span></button>
+          </nav>
+
+          <!-- Bad Day Tip -->
+          <div class="pomodoro-bad-day-tip" id="pomodoroBadDayTip" style="display: none;">
+            <span class="tip-icon"><span class="icon">lightbulb</span></span>
+            <span class="tip-text">יום מאתגר? גם 5-10 דקות מיקוד עוזרות.</span>
+          </div>
+
+          <!-- Timer -->
           <div class="pomodoro-timer-wrap">
             <div class="pomodoro-timer-ring" id="pomodoroRing" style="--progress: 0%;"></div>
             <div class="pomodoro-timer">
@@ -477,117 +487,145 @@
                 <span class="pomodoro-mode-dot"></span>
                 <span id="pomodoroMode">מיקוד</span>
               </div>
-              <div class="pomodoro-next" id="pomodoroNext">הבא: הפסקה קצרה</div>
-              <div class="pomodoro-phase-row">
-                <span class="pomodoro-phase-chip" id="pomodoroPhaseLabel">שלב: מיקוד</span>
-                <span class="pomodoro-phase-chip" id="pomodoroLongCountdown">הפסקה ארוכה בעוד 4 מחזורים</span>
-              </div>
             </div>
+          </div>
+
+          <!-- Cycle Dots + Phase Info -->
+          <div class="pomodoro-cycle" id="pomodoroCycleDots">
+            <div class="pomodoro-cycle-dot active"></div>
+            <div class="pomodoro-cycle-dot"></div>
+            <div class="pomodoro-cycle-dot"></div>
+            <div class="pomodoro-cycle-dot"></div>
+          </div>
+          <div class="pomodoro-phase-info">
+            <span class="pomodoro-phase-text" id="pomodoroNext">הבא: הפסקה קצרה</span>
+            <span class="pomodoro-phase-separator">·</span>
+            <span class="pomodoro-phase-text" id="pomodoroLongCountdown">הפסקה ארוכה בעוד 4 מחזורים</span>
+          </div>
+
+          <!-- Task Select (Stillpoint pill) -->
+          <div class="pomodoro-task-select-wrap">
+            <span class="icon pomodoro-task-icon">task_alt</span>
+            <select class="pomodoro-task-select" id="pomodoroTaskSelect">
+              <option value="">בחר משימת מיקוד</option>
+            </select>
+            <span class="icon pomodoro-task-chevron">expand_more</span>
+          </div>
+
+          <!-- Current Task Display -->
+          <div class="pomodoro-current-task" id="pomodoroCurrentTask" style="display:none;">
+            <span class="icon" style="font-size:14px">task_alt</span>
+            <span class="pomodoro-current-task-name" id="pomodoroCurrentTaskName"></span>
           </div>
 
           <!-- Controls -->
           <div class="pomodoro-controls">
             <button class="pomodoro-btn" id="pomodoroReset" title="איפוס"><span class="icon">restart_alt</span></button>
-            <button class="pomodoro-btn primary" id="pomodoroStart" title="התחל"><span class="icon">play_arrow</span></button>
+            <button class="pomodoro-btn primary" id="pomodoroStart" title="התחל"><span class="icon">play_arrow</span><span class="pomodoro-btn-label">התחל</span></button>
             <button class="pomodoro-btn" id="pomodoroSkip" title="דלג"><span class="icon">skip_next</span></button>
-            <button class="pomodoro-btn" id="pomodoroPiP" title="Picture-in-Picture"><span class="icon">picture_in_picture_alt</span></button>
           </div>
+        </div>
 
-          <div id="pomodoroProgress" style="display:none;"></div>
-
-          <!-- Presets -->
-          <div class="pomodoro-presets">
-            <button class="pomodoro-preset" data-preset="classic">25/5 קלאסי</button>
-            <button class="pomodoro-preset" data-preset="flow">50/10 זרימה</button>
-            <button class="pomodoro-preset" data-preset="ultradian">90/20 אולטרה</button>
-            <button class="pomodoro-preset" data-preset="perfect">52/17 קצב יעיל</button>
-            <button class="pomodoro-preset bad-day" data-preset="badday10"><span class="icon" style="font-size:16px">sentiment_dissatisfied</span> 10 דק׳</button>
-            <button class="pomodoro-preset bad-day" data-preset="badday5"><span class="icon" style="font-size:16px">auto_awesome</span> 5 דק׳</button>
-            <button class="pomodoro-preset" data-preset="custom"><span class="icon" style="font-size:16px">tune</span> מותאם אישית</button>
+        <!-- Stats Card -->
+        <div class="pomodoro-stats-card pomodoro-secondary">
+          <div class="pomodoro-stats-card-info">
+            <span class="pomodoro-stats-card-label">התקדמות יומית</span>
+            <div class="pomodoro-daily">
+              <div class="pomodoro-daily-bar">
+                <div class="pomodoro-daily-fill" id="pomodoroDayProgress"></div>
+              </div>
+            </div>
           </div>
-
-          <!-- Bad Day Tip -->
-          <div class="pomodoro-bad-day-tip" id="pomodoroBadDayTip" style="display: none;">
-            <span class="tip-icon"><span class="icon">lightbulb</span></span>
-            <span class="tip-text">יום מאתגר? זה בסדר. גם 5-10 דקות מיקוד עוזרות לשמור על מומנטום ולהפחית סטרס.</span>
+          <div class="pomodoro-stats-card-numbers">
+            <span class="pomodoro-stats-count" id="pomodoroDayLabel">0/8 מחזורי מיקוד היום</span>
+            <div class="pomodoro-stats-extra">
+              <span><span id="pomodoroFocusMinutes">0</span> דק׳</span>
+              <span class="pomodoro-stat-sep">·</span>
+              <span>רצף <span id="pomodoroStreak">0</span></span>
+            </div>
           </div>
+          <span id="pomodoroSessionCount" style="display:none">0</span>
+        </div>
 
-          <!-- Settings Panel -->
+        <!-- Settings Card (Stillpoint Customization) -->
+        <details class="pomodoro-settings-card pomodoro-secondary">
+          <summary class="pomodoro-settings-header">
+            <span class="icon" style="font-size:20px">tune</span>
+            <span class="pomodoro-settings-title">התאמה אישית</span>
+            <span class="icon pomodoro-chevron" style="font-size:18px">expand_more</span>
+          </summary>
           <div class="pomodoro-settings-panel">
-            <div class="pomodoro-field">
-              <label for="pomodoroFocus">זמן מיקוד</label>
-              <input type="number" min="5" max="240" id="pomodoroFocus" value="25" />
+            <div class="pomodoro-duration-grid">
+              <div class="pomodoro-duration-field">
+                <label for="pomodoroFocus">מיקוד</label>
+                <input type="number" min="5" max="240" id="pomodoroFocus" value="25" />
+              </div>
+              <div class="pomodoro-duration-field">
+                <label for="pomodoroBreak">הפסקה</label>
+                <input type="number" min="3" max="60" id="pomodoroBreak" value="5" />
+              </div>
+              <div class="pomodoro-duration-field">
+                <label for="pomodoroLong">ארוכה</label>
+                <input type="number" min="5" max="90" id="pomodoroLong" value="15" />
+              </div>
             </div>
-            <div class="pomodoro-field">
-              <label for="pomodoroBreak">הפסקה קצרה</label>
-              <input type="number" min="3" max="60" id="pomodoroBreak" value="5" />
-            </div>
-            <div class="pomodoro-field">
-              <label for="pomodoroLong">הפסקה ארוכה</label>
-              <input type="number" min="5" max="90" id="pomodoroLong" value="15" />
-            </div>
-            <div class="pomodoro-field">
-              <label for="pomodoroLongEvery">הפסקה ארוכה כל כמה מחזורים</label>
+            <div class="pomodoro-duration-field pomodoro-duration-single">
+              <label for="pomodoroLongEvery">מחזורים עד הפסקה ארוכה</label>
               <input type="number" min="1" max="8" id="pomodoroLongEvery" value="4" />
             </div>
-          </div>
-
-          <!-- Options -->
-          <div class="pomodoro-options">
-            <label class="pomodoro-option">
-              <input type="checkbox" id="pomodoroAutoContinue" />
-              <span>מעבר אוטומטי בין מצבים</span>
-            </label>
-            <label class="pomodoro-option">
-              <input type="checkbox" id="pomodoroSoundEnabled" checked />
-              <span><span class="icon" style="font-size:16px;vertical-align:middle">notifications</span> צליל התראה</span>
-            </label>
-            <select class="pomodoro-sound-select" id="pomodoroSound">
-              <option value="chime">צלצול עדין</option>
-              <option value="soft">מדיטציה</option>
-              <option value="bell">פעמון</option>
-              <option value="digital">דיגיטלי</option>
-              <option value="glass">קריסטל</option>
-              <option value="success">פנפרה</option>
-            </select>
-            <select class="pomodoro-sound-select" id="pomodoroSoundLength" aria-label="אורך צליל">
-              <option value="1">אורך צליל: קצר</option>
-              <option value="2">אורך צליל: בינוני</option>
-              <option value="3">אורך צליל: ארוך</option>
-            </select>
-            <button class="pomodoro-preview-btn" id="pomodoroPreviewSound"><span class="icon" style="font-size:16px;vertical-align:middle">play_arrow</span> האזן</button>
-          </div>
-
-          <!-- Task Select -->
-          <select class="pomodoro-task-select" id="pomodoroTaskSelect">
-            <option value="">בחר משימת מיקוד (לא חובה)</option>
-          </select>
-
-          <!-- Stats -->
-          <div class="pomodoro-stats">
-            <div class="pomodoro-stat">
-              <div class="label">מחזורים</div>
-              <div class="value" id="pomodoroSessionCount">0</div>
+            <div class="pomodoro-sound-field">
+              <label>צליל התראה</label>
+              <div class="pomodoro-sound-row">
+                <div class="pomodoro-sound-select-wrap">
+                  <span class="icon" style="font-size:18px">volume_up</span>
+                  <select class="pomodoro-sound-select" id="pomodoroSound">
+                    <option value="chime">צלצול</option>
+                    <option value="soft">מדיטציה</option>
+                    <option value="bell">פעמון</option>
+                    <option value="digital">דיגיטלי</option>
+                    <option value="glass">קריסטל</option>
+                    <option value="success">פנפרה</option>
+                  </select>
+                </div>
+                <select class="pomodoro-sound-length-select" id="pomodoroSoundLength" aria-label="אורך">
+                  <option value="1">קצר</option>
+                  <option value="2">בינוני</option>
+                  <option value="3">ארוך</option>
+                </select>
+                <button class="pomodoro-preview-btn" id="pomodoroPreviewSound" title="השמע">
+                  <span class="icon" style="font-size:16px">play_circle</span>
+                </button>
+              </div>
             </div>
-            <div class="pomodoro-stat">
-              <div class="label">דקות מיקוד</div>
-              <div class="value" id="pomodoroFocusMinutes">0</div>
+            <div class="pomodoro-settings-divider"></div>
+            <div class="pomodoro-toggle-row">
+              <span>מעבר אוטומטי</span>
+              <label class="pomodoro-toggle">
+                <input type="checkbox" id="pomodoroAutoContinue" />
+                <span class="pomodoro-toggle-track"></span>
+              </label>
             </div>
-            <div class="pomodoro-stat">
-              <div class="label">רצף ימי מיקוד</div>
-              <div class="value" id="pomodoroStreak">0</div>
+            <div class="pomodoro-toggle-row">
+              <span>צליל</span>
+              <label class="pomodoro-toggle">
+                <input type="checkbox" id="pomodoroSoundEnabled" checked />
+                <span class="pomodoro-toggle-track"></span>
+              </label>
             </div>
           </div>
+        </details>
 
-          <!-- Daily Progress -->
-          <div class="pomodoro-daily">
-            <div class="pomodoro-daily-bar">
-              <div class="pomodoro-daily-fill" id="pomodoroDayProgress"></div>
-            </div>
-            <div class="pomodoro-daily-label" id="pomodoroDayLabel">0/8 מחזורי מיקוד היום</div>
-          </div>
-
+        <!-- Bottom Actions -->
+        <div class="pomodoro-bottom-actions pomodoro-secondary">
+          <label class="pomodoro-option pomodoro-mini-toggle">
+            <input type="checkbox" id="pomodoroMiniToggle" />
+            <span>מיני</span>
+          </label>
+          <button class="pomodoro-btn-ghost" id="pomodoroPiP" title="PiP">
+            <span class="icon" style="font-size:18px">picture_in_picture_alt</span>
+          </button>
         </div>
+
       </div>
     </div>
   </div>
