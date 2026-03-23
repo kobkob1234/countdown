@@ -3312,9 +3312,9 @@
       }
 
       .pomodoro-btn.primary {
-        width: 64px;
-        height: 64px;
-        font-size: 28px;
+        min-width: 72px;
+        height: 60px;
+        font-size: 20px;
       }
 
       .pomodoro-settings-panel {
@@ -3550,12 +3550,20 @@
     }
 
     .pomodoro-btn.primary {
-      width: 60px;
-      height: 60px;
-      font-size: 24px;
+      width: auto;
+      min-width: 60px;
+      height: 56px;
+      padding: 0 var(--space-6);
+      font-size: 18px;
+      font-weight: var(--font-weight-semibold);
       background: var(--accent);
       color: white;
       border-color: var(--accent);
+      gap: var(--space-2);
+    }
+
+    .pomodoro-btn.primary .icon {
+      font-size: 24px;
     }
 
     .pomodoro-btn.primary:hover {
@@ -3894,9 +3902,9 @@
       }
 
       .pomodoro-btn.primary {
-        width: 64px;
-        height: 64px;
-        font-size: 28px;
+        min-width: 72px;
+        height: 60px;
+        font-size: 20px;
       }
 
       .pomodoro-settings-panel {
@@ -4204,12 +4212,20 @@
     }
 
     .pomodoro-btn.primary {
-      width: 60px;
-      height: 60px;
-      font-size: 24px;
+      width: auto;
+      min-width: 60px;
+      height: 56px;
+      padding: 0 var(--space-6);
+      font-size: 18px;
+      font-weight: var(--font-weight-semibold);
       background: var(--accent);
       color: white;
       border-color: var(--accent);
+      gap: var(--space-2);
+    }
+
+    .pomodoro-btn.primary .icon {
+      font-size: 24px;
     }
 
     .pomodoro-btn.primary:hover {
