@@ -3040,6 +3040,11 @@ function renderTasks() {
     `;
     }
     activeTasks.innerHTML = suggestedBanner + active.map(t => renderTaskItem(t, showingSuggested)).join('');
+
+    // Mobile: group active tasks into overdue/today/upcoming sections
+    if (document.body.classList.contains('is-mobile') && active.length > 1 && !showingSuggested) {
+      groupMobileTaskList(activeTasks, active);
+    }
   } else {
     activeSection.style.display = 'none';
   }
@@ -3065,6 +3070,80 @@ function renderTasks() {
   // Event delegation is set up once below, no need to call attachTaskEventHandlers
 }
 ctx.renderTasks = renderTasks;
+
+// Mobile task grouping — groups flat task list into overdue/today/upcoming/later sections
+function groupMobileTaskList(container, taskArray) {
+  const now = new Date();
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const tomorrowStart = new Date(todayStart);
+  tomorrowStart.setDate(tomorrowStart.getDate() + 1);
+  const weekEnd = new Date(todayStart);
+  weekEnd.setDate(weekEnd.getDate() + 7);
+
+  const groups = { overdue: [], today: [], upcoming: [], later: [], noDate: [] };
+
+  taskArray.forEach(task => {
+    if (!task.dueDate) { groups.noDate.push(task.id); return; }
+    const due = new Date(task.dueDate);
+    if (due < todayStart) groups.overdue.push(task.id);
+    else if (due < tomorrowStart) groups.today.push(task.id);
+    else if (due < weekEnd) groups.upcoming.push(task.id);
+    else groups.later.push(task.id);
+  });
+
+  const groupDefs = [
+    { key: 'overdue', label: 'באיחור', icon: 'warning', cls: 'overdue' },
+    { key: 'today', label: 'היום', icon: 'today', cls: 'today' },
+    { key: 'upcoming', label: 'השבוע', icon: 'date_range', cls: '' },
+    { key: 'later', label: 'בהמשך', icon: 'event', cls: '' },
+    { key: 'noDate', label: 'ללא תאריך', icon: 'event_busy', cls: '' },
+  ];
+
+  // Only group if there are at least 2 non-empty groups
+  const nonEmpty = groupDefs.filter(g => groups[g.key].length > 0);
+  if (nonEmpty.length < 2) return;
+
+  // Collect all existing task elements by id
+  const taskEls = {};
+  container.querySelectorAll('.task-item[data-id]').forEach(el => {
+    taskEls[el.dataset.id] = el;
+  });
+  // Also grab any non-task-item elements (e.g. suggested banner)
+  const banner = container.querySelector('.suggested-tasks-banner');
+
+  const fragment = document.createDocumentFragment();
+  if (banner) fragment.appendChild(banner);
+
+  nonEmpty.forEach(g => {
+    const ids = groups[g.key];
+    const wrapper = document.createElement('div');
+    wrapper.className = 'mobile-task-group';
+    wrapper.dataset.group = g.key;
+
+    const header = document.createElement('div');
+    header.className = `mobile-task-group-header ${g.cls}`;
+    header.innerHTML = `<span class="icon">${g.icon}</span><span>${g.label}</span><span class="mobile-group-count">${ids.length}</span><span class="icon mobile-task-group-chevron">expand_more</span>`;
+    header.addEventListener('click', () => {
+      wrapper.classList.toggle('collapsed');
+      window.haptic?.light();
+    });
+
+    const items = document.createElement('div');
+    items.className = 'mobile-task-group-items';
+    const inner = document.createElement('div');
+    ids.forEach(id => {
+      if (taskEls[id]) inner.appendChild(taskEls[id]);
+    });
+    items.appendChild(inner);
+
+    wrapper.appendChild(header);
+    wrapper.appendChild(items);
+    fragment.appendChild(wrapper);
+  });
+
+  container.innerHTML = '';
+  container.appendChild(fragment);
+}
 
 // Helper functions for renderTaskItem
 function renderTaskDueDate(task, countdown) {
@@ -3506,6 +3585,8 @@ function setupTaskEventDelegation() {
           }
           taskItem.classList.add('completing');
           setTimeout(() => taskItem.classList.remove('completing'), 500);
+          // Haptic feedback on mobile
+          if (window.haptic) window.haptic.success();
           // Push to undo stack
           if (typeof pushToUndoStack === 'function') {
             pushToUndoStack({ type: 'completeTask', taskId, message: `"${task.title}" הושלם` });
@@ -4377,6 +4458,15 @@ function updateSmartViewCounts() {
   if (countWeek) countWeek.textContent = weekCount;
   if (countOverdue) countOverdue.textContent = overdueCount;
   if (countNoDate) countNoDate.textContent = noDateCount;
+
+  // PWA App Badge — show overdue count on app icon
+  if ('setAppBadge' in navigator) {
+    if (overdueCount > 0) {
+      navigator.setAppBadge(overdueCount).catch(() => {});
+    } else {
+      navigator.clearAppBadge().catch(() => {});
+    }
+  }
 }
 
 // ============ 12. TASK CALENDAR (extracted to js/inline/task-calendar.js) ============
@@ -5592,6 +5682,36 @@ if (completeTaskId && shouldProcessComplete) {
       }
     }
   }, 10000);
+}
+
+// Handle PWA app shortcut URL params (?view=X, ?action=X)
+{
+  const shortcutView = urlParams.get('view');
+  const shortcutAction = urlParams.get('action');
+  if (shortcutView || shortcutAction) {
+    // Clean URL params
+    const url = new URL(window.location);
+    url.searchParams.delete('view');
+    url.searchParams.delete('action');
+    window.history.replaceState({}, '', url);
+
+    if (shortcutView && typeof showView === 'function') {
+      showView(shortcutView);
+    }
+    if (shortcutAction === 'add-task') {
+      showView('tasks');
+      setTimeout(() => {
+        if (window.openMobileQuickAddSheet) window.openMobileQuickAddSheet();
+        else document.getElementById('newTaskTitle')?.focus();
+      }, 400);
+    } else if (shortcutAction === 'add-countdown') {
+      showView('countdown');
+      setTimeout(() => {
+        if (ctx.openMobileEventSheet) ctx.openMobileEventSheet();
+        else document.getElementById('eventName')?.focus();
+      }, 400);
+    }
+  }
 }
 
 if ('serviceWorker' in navigator) {

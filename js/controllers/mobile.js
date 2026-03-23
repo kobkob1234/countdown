@@ -240,10 +240,50 @@ export function initMobileController() {
             }
         });
 
-        // 6. Edge Swipe for Navigation
+        // 6. Edge Swipe for Navigation between tabs
+        const viewOrder = ['countdown', 'tasks', 'pomodoro', 'planner', 'calendar'];
+        let edgeSwipeStartX = 0;
+        let edgeSwipeStartY = 0;
+        let edgeSwipeActive = false;
+
         document.addEventListener('touchstart', (e) => {
-            if (e.touches[0].clientX < 20) {
-                // Left edge
+            const x = e.touches[0].clientX;
+            const w = window.innerWidth;
+            // Detect edge: left 20px or right 20px
+            if (x < 20 || x > w - 20) {
+                edgeSwipeStartX = x;
+                edgeSwipeStartY = e.touches[0].clientY;
+                edgeSwipeActive = true;
+            }
+        }, { passive: true });
+
+        document.addEventListener('touchend', (e) => {
+            if (!edgeSwipeActive) return;
+            edgeSwipeActive = false;
+            const endX = e.changedTouches[0].clientX;
+            const endY = e.changedTouches[0].clientY;
+            const dx = endX - edgeSwipeStartX;
+            const dy = Math.abs(endY - edgeSwipeStartY);
+            // Need horizontal swipe > 60px and mostly horizontal
+            if (Math.abs(dx) < 60 || dy > Math.abs(dx)) return;
+
+            const currentView = document.querySelector('.mobile-nav-item.active')?.dataset.view || 'countdown';
+            const idx = viewOrder.indexOf(currentView);
+            if (idx === -1) return;
+
+            // RTL: swipe right (positive dx) = previous, swipe left = next
+            const isRTL = document.documentElement.dir === 'rtl' || getComputedStyle(document.body).direction === 'rtl';
+            let nextIdx;
+            if (isRTL) {
+                nextIdx = dx > 0 ? idx + 1 : idx - 1;
+            } else {
+                nextIdx = dx > 0 ? idx - 1 : idx + 1;
+            }
+
+            if (nextIdx >= 0 && nextIdx < viewOrder.length) {
+                window.haptic?.light();
+                const navBtn = document.querySelector(`.mobile-nav-item[data-view="${viewOrder[nextIdx]}"]`);
+                navBtn?.click();
             }
         });
 
@@ -395,6 +435,23 @@ export function initMobileController() {
                     action: () => {
                         const t = ctx.tasks.find(t => t.id === taskId);
                         if (t && ctx.pushTaskClone) ctx.pushTaskClone(t);
+                    }
+                },
+                {
+                    icon: 'share',
+                    label: 'שיתוף',
+                    action: () => {
+                        const t = ctx.tasks.find(t => t.id === taskId);
+                        if (!t) return;
+                        const text = t.dueDate
+                            ? `${t.title} — ${new Date(t.dueDate).toLocaleDateString('he-IL')}`
+                            : t.title;
+                        if (navigator.share) {
+                            navigator.share({ title: t.title, text }).catch(() => {});
+                        } else {
+                            navigator.clipboard?.writeText(text);
+                            window.mobileToast?.('הועתק ללוח', { icon: '<span class="icon" style="font-size:16px;vertical-align:middle">content_copy</span>' });
+                        }
                     }
                 },
                 { divider: true },

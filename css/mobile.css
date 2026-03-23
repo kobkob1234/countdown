@@ -1286,38 +1286,39 @@
         min-height: 44px;
       }
 
-      /* Mobile Task Items */
+      /* Mobile Task Items — MD3 Outlined Card */
       .task-item {
         padding: var(--mobile-spacing-md);
-        border-radius: var(--mobile-radius);
+        border-radius: var(--md3-shape-corner-l, 16px);
         gap: var(--mobile-spacing-sm);
-        flex-wrap: wrap;
-        box-shadow: var(--mobile-card-shadow);
-        border: none;
-        border-left: 4px solid var(--task-color, var(--priority-color, var(--border)));
+        flex-wrap: nowrap;
+        box-shadow: none;
+        border: 1px solid var(--border);
+        border-inline-start: 3px solid var(--task-color, var(--priority-color, var(--border)));
         background: var(--card);
         margin-bottom: 0;
         position: relative;
         overflow: hidden;
+        transition: background var(--md3-duration-short, 200ms) var(--md3-easing-standard);
       }
 
       /* Task item accent gradient */
       .task-item::before {
-        opacity: 0.06;
+        opacity: 0.04;
       }
 
       .task-item:active {
-        transform: scale(0.98);
-        transition: transform 0.1s;
+        background: var(--day-hover);
+        transition: background 0.1s;
       }
 
       .task-item.completed {
-        opacity: 0.65;
+        opacity: 0.55;
+        border-inline-start-color: var(--border);
       }
 
       .task-item.dragging {
         opacity: 0.5;
-        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
       }
 
       .task-checkbox {
@@ -1389,54 +1390,90 @@
         font-size: 14px;
       }
 
+      /* Hide inline action buttons on mobile — use long-press action sheet instead */
       .task-actions {
-        width: 100%;
-        justify-content: flex-end;
+        display: none !important;
+      }
+
+      /* ===== MD3 Task Group Sections ===== */
+      .mobile-task-group {
+        margin-bottom: var(--mobile-spacing-md);
+      }
+
+      .mobile-task-group-header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: var(--mobile-spacing-sm) 4px;
+        font-size: 13px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: var(--muted);
+        cursor: pointer;
+        -webkit-tap-highlight-color: transparent;
+      }
+
+      .mobile-task-group-header .icon {
+        font-size: 18px;
+      }
+
+      .mobile-task-group-header .mobile-group-count {
+        font-size: 11px;
+        font-weight: 700;
+        background: var(--day-other);
+        color: var(--muted);
+        border-radius: var(--md3-shape-corner-full, 9999px);
+        padding: 2px 8px;
+        margin-inline-start: auto;
+      }
+
+      .mobile-task-group-header.overdue {
+        color: var(--danger, #ef4444);
+      }
+
+      .mobile-task-group-header.overdue .mobile-group-count {
+        background: color-mix(in srgb, var(--danger, #ef4444) 12%, transparent);
+        color: var(--danger, #ef4444);
+      }
+
+      .mobile-task-group-header.today {
+        color: var(--accent);
+      }
+
+      .mobile-task-group-header.today .mobile-group-count {
+        background: color-mix(in srgb, var(--accent) 12%, transparent);
+        color: var(--accent);
+      }
+
+      .mobile-task-group-chevron {
+        font-size: 18px;
+        transition: transform var(--md3-duration-short, 200ms) var(--md3-easing-standard);
+      }
+
+      .mobile-task-group.collapsed .mobile-task-group-chevron {
+        transform: rotate(-90deg);
+      }
+
+      html[dir="rtl"] .mobile-task-group.collapsed .mobile-task-group-chevron {
+        transform: rotate(90deg);
+      }
+
+      .mobile-task-group-items {
+        display: grid;
         gap: var(--mobile-spacing-sm);
-        padding-top: var(--mobile-spacing-sm);
-        border-top: 1px solid var(--border);
-        margin-top: var(--mobile-spacing-sm);
+        transition: grid-template-rows var(--md3-duration-medium) var(--md3-easing-standard);
+        grid-template-rows: 1fr;
       }
 
-      .task-action-btn {
-        width: 44px;
-        height: 44px;
-        font-size: 20px;
-        border-radius: 12px;
-        background: var(--day-other);
-        /* Fix mobile tap issues */
-        touch-action: manipulation;
-        -webkit-tap-highlight-color: rgba(0, 0, 0, 0.1);
-        position: relative;
-        z-index: 50;
+      .mobile-task-group.collapsed .mobile-task-group-items {
+        grid-template-rows: 0fr;
+        overflow: hidden;
       }
 
-      .task-reminder-btn {
-        width: 44px;
-        height: 44px;
-        font-size: 20px;
-        border-radius: 12px;
-        background: var(--day-other);
-        /* Fix mobile tap issues */
-        touch-action: manipulation;
-        -webkit-tap-highlight-color: rgba(0, 0, 0, 0.1);
-        position: relative;
-        z-index: 50;
+      .mobile-task-group-items > div {
+        min-height: 0;
       }
-
-      .task-action-btn:active,
-      .task-reminder-btn:active {
-        transform: scale(0.92);
-        background: var(--day-hover);
-      }
-
-      /* Ensure task-actions container allows clicks through */
-      .task-actions {
-        position: relative;
-        z-index: 40;
-        overflow: visible !important;
-      }
-
 
       /* Quick Add Task - Mobile Optimized */
       .quick-add-task {

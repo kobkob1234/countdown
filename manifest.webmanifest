@@ -26,5 +26,25 @@
       "type": "image/png",
       "purpose": "any maskable"
     }
+  ],
+  "shortcuts": [
+    {
+      "name": "הוסף משימה",
+      "short_name": "משימה",
+      "url": "./?action=add-task",
+      "icons": [{ "src": "icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "פומודורו",
+      "short_name": "פומודורו",
+      "url": "./?view=pomodoro",
+      "icons": [{ "src": "icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "ספירה חדשה",
+      "short_name": "ספירה",
+      "url": "./?action=add-countdown",
+      "icons": [{ "src": "icon-192.png", "sizes": "192x192" }]
+    }
   ]
 }

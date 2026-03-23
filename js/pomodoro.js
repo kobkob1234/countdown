@@ -224,6 +224,27 @@ export function createPomodoro() {
       if (refs.miniTime) refs.miniTime.textContent = formatTime(state.remainingMs);
       if (refs.miniMode) refs.miniMode.textContent = state.mode === 'focus' ? 'מיקוד' : (state.mode === 'long' ? 'הפסקה ארוכה' : 'הפסקה קצרה');
       if (refs.mini) refs.mini.setAttribute('data-mode', state.mode);
+      // Media Session API — lock screen controls for Pomodoro
+      updateMediaSession();
+    };
+
+    const updateMediaSession = () => {
+      if (!('mediaSession' in navigator)) return;
+      const modeLabel = state.mode === 'focus' ? 'מיקוד' : (state.mode === 'long' ? 'הפסקה ארוכה' : 'הפסקה קצרה');
+      try {
+        navigator.mediaSession.metadata = new MediaMetadata({
+          title: `${modeLabel} — ${formatTime(state.remainingMs)}`,
+          artist: 'פומודורו',
+          album: 'Countdown PWA',
+        });
+        navigator.mediaSession.playbackState = state.running ? 'playing' : 'paused';
+        navigator.mediaSession.setActionHandler('play', () => { if (!state.running) start(); });
+        navigator.mediaSession.setActionHandler('pause', () => { if (state.running) pause(); });
+        navigator.mediaSession.setActionHandler('nexttrack', () => advance(false));
+        navigator.mediaSession.setActionHandler('previoustrack', () => reset());
+      } catch (e) {
+        // Media Session not fully supported, ignore
+      }
     };
 
     const renderCycleDots = () => {
