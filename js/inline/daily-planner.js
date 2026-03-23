@@ -366,7 +366,7 @@ export function initDailyPlanner() {
             continue;
           }
           if (item.dedupeKey) await markDedupeKeySeen(item.dedupeKey, nowMs);
-          const title = `<span class="icon" style="font-size:16px;vertical-align:middle">event</span> תזכורת יומן יומי: ${item.block.title || 'פעילות'}`;
+          const title = `תזכורת יומן יומי: ${item.block.title || 'פעילות'}`;
           const message = formatPlannerReminderMessage(item.block);
           showSystemNotification(title, {
             body: message,

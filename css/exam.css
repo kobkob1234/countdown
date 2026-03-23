@@ -358,6 +358,16 @@
     background: var(--muted-bg);
 }
 
+#examModeOverlay td.exam-today {
+    border: 2px solid var(--accent);
+    background: var(--accent-soft);
+}
+
+#examModeOverlay td.exam-today .date {
+    color: var(--accent);
+    font-weight: var(--font-weight-bold);
+}
+
 #examModeOverlay .week-goal-row td {
     height: auto;
     background: var(--muted-bg);

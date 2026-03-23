@@ -450,6 +450,7 @@
         const tbody = document.createElement('tbody');
         let currentDay = 1;
         let rowCount = 0;
+        const now = new Date();
 
         while (currentDay <= daysInMonth) {
             const tr = document.createElement('tr');
@@ -463,6 +464,9 @@
                     dateSpan.className = 'date';
                     dateSpan.textContent = `${currentDay}/${month + 1}`;
                     td.appendChild(dateSpan);
+                    if (year === now.getFullYear() && month === now.getMonth() && currentDay === now.getDate()) {
+                        td.classList.add('exam-today');
+                    }
                     currentDay++;
                 }
                 tr.appendChild(td);
@@ -668,6 +672,19 @@
                         tbody.innerHTML = savedTbody.innerHTML;
                     }
                 }
+            }
+
+            // Re-apply today highlighting (saved data doesn't preserve it)
+            const now = new Date();
+            if (year === now.getFullYear() && month === now.getMonth()) {
+                const cells = table.querySelectorAll('td:not(.empty-cell)');
+                cells.forEach(cell => {
+                    const dateSpan = cell.querySelector('.date');
+                    if (dateSpan) {
+                        const dayNum = parseInt(dateSpan.textContent);
+                        if (dayNum === now.getDate()) cell.classList.add('exam-today');
+                    }
+                });
             }
 
             container.appendChild(header);

@@ -1501,11 +1501,12 @@
       padding: var(--space-5) var(--space-6);
       margin-bottom: var(--space-5);
       direction: rtl;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
     }
 
     .input-row {
       display: flex;
-      gap: var(--space-3);
+      gap: var(--space-4);
       align-items: center;
       flex-wrap: wrap;
     }
@@ -1716,21 +1717,23 @@
       display: flex;
       align-items: center;
       gap: var(--space-4);
-      transition: background 0.15s;
+      transition: background 0.15s, box-shadow 0.2s, transform 0.2s;
     }
 
     .event-row:hover {
       background: var(--muted-bg);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+      transform: translateY(-1px);
     }
 
     .event-row.highlighted {
       border: 1px solid var(--event-color, var(--accent));
-      background: color-mix(in srgb, var(--event-color, var(--accent)) 4%, var(--card));
+      background: color-mix(in srgb, var(--event-color, var(--accent)) 6%, var(--card));
     }
 
     .color-dot {
-      width: 12px;
-      height: 12px;
+      width: 4px;
+      align-self: stretch;
       border-radius: var(--radius-full);
       flex-shrink: 0;
     }
@@ -2215,7 +2218,7 @@
     }
 
     .planner-hour-content:hover {
-      background: var(--accent-soft);
+      background: color-mix(in srgb, var(--accent) 4%, transparent);
     }
 
     .planner-hour-content.drop-target {
@@ -2245,6 +2248,8 @@
 
     .planner-block:hover {
       filter: brightness(0.97);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+      transform: translateY(-1px);
       z-index: 10;
       overflow: visible;
     }
@@ -4652,7 +4657,8 @@
 
     .time-unit {
       text-align: center;
-      background: var(--muted-bg);
+      background: color-mix(in srgb, var(--event-color, var(--muted-bg)) 8%, var(--muted-bg));
+      border: 1px solid color-mix(in srgb, var(--event-color, var(--border)) 20%, var(--border));
       border-radius: var(--radius-sm);
       padding: var(--space-2) var(--space-2-5);
       min-width: 58px;
@@ -4660,29 +4666,31 @@
 
     .time-val {
       display: block;
-      font-size: 1.5rem;
+      font-size: 1.75rem;
       font-weight: var(--font-weight-bold);
       font-variant-numeric: tabular-nums;
       line-height: 1.2;
+      letter-spacing: -0.5px;
     }
 
     .time-label {
       display: block;
-      font-size: 9px;
+      font-size: 10px;
       color: var(--muted);
       text-transform: uppercase;
-      letter-spacing: 0.5px;
+      letter-spacing: 0.8px;
       margin-top: 2px;
       font-weight: var(--font-weight-medium);
     }
 
     .badge {
-      font-size: var(--font-size-xs);
+      font-size: 11px;
       font-weight: var(--font-weight-semibold);
-      padding: 2px var(--space-2-5);
+      padding: 3px var(--space-3);
       border-radius: var(--radius-full);
       white-space: nowrap;
       line-height: 1.25rem;
+      letter-spacing: 0.3px;
     }
 
     .badge-upcoming {
@@ -4726,6 +4734,14 @@
       align-items: center;
       gap: 2px;
       font-size: 18px;
+      opacity: 0;
+      transition: opacity 0.15s;
+    }
+
+    .event-row:hover .event-actions,
+    .event-actions:has(.star-btn.active),
+    .event-actions:has(.pin-btn.pinned) {
+      opacity: 1;
     }
 
     .empty-state {
