@@ -1214,6 +1214,42 @@
     </div>
   </div>
 
+  <!-- Mobile Quick-Add Task Sheet -->
+  <div class="mobile-event-sheet-backdrop" id="mobileQuickAddBackdrop"></div>
+  <div class="mobile-event-sheet" id="mobileQuickAddSheet" role="dialog" aria-modal="true"
+    aria-labelledby="mobileQuickAddTitle">
+    <div class="mobile-sheet-handle"></div>
+    <div class="mobile-sheet-header">
+      <h3 id="mobileQuickAddTitle"><span class="icon" style="font-size:16px;vertical-align:middle">add_task</span> משימה חדשה</h3>
+      <button class="mobile-sheet-close" id="mobileQuickAddClose" aria-label="סגור">×</button>
+    </div>
+    <div class="mobile-sheet-content">
+      <div class="sheet-form-group">
+        <label class="sheet-form-label" for="mobileQuickTaskTitle">שם המשימה</label>
+        <input type="text" id="mobileQuickTaskTitle" placeholder="למשל: להגיש עבודה, לקנות..." autocomplete="off" dir="auto" />
+      </div>
+      <div class="sheet-form-group">
+        <label class="sheet-form-label" for="mobileQuickTaskDue">תאריך יעד (אופציונלי)</label>
+        <input type="date" id="mobileQuickTaskDue" style="direction: ltr;" />
+      </div>
+      <div class="mobile-sheet-actions">
+        <button class="btn btn-secondary" id="mobileQuickAddCancel">ביטול</button>
+        <button class="btn btn-primary" id="mobileQuickAddSubmit">הוסף משימה ✓</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mobile Action Sheet (context menu) -->
+  <div class="mobile-action-sheet-backdrop" id="mobileActionSheetBackdrop"></div>
+  <div class="mobile-action-sheet" id="mobileActionSheet" role="dialog" aria-modal="true"
+    aria-labelledby="mobileActionSheetTitle">
+    <div class="mobile-sheet-handle"></div>
+    <div class="mobile-action-sheet-header">
+      <span class="mobile-action-sheet-title" id="mobileActionSheetTitle"></span>
+    </div>
+    <ul class="mobile-action-sheet-list" id="mobileActionSheetList"></ul>
+  </div>
+
   <!-- Mobile Sidebar Backdrop -->
   <div class="mobile-sidebar-backdrop" id="mobileSidebarBackdrop"></div>
 
@@ -1600,24 +1636,24 @@
 
   <!-- Mobile Bottom Navigation Bar -->
   <nav class="mobile-bottom-nav" id="mobileBottomNav" style="display: none;">
-    <button class="mobile-nav-item active" data-view="countdown">
-      <span class="icon mobile-nav-icon" aria-hidden="true">timer</span>
+    <button class="mobile-nav-item active" data-view="countdown" style="--tab-color: var(--accent)">
+      <span class="mobile-nav-pill"><span class="icon mobile-nav-icon" aria-hidden="true">timer</span></span>
       <span class="mobile-nav-label">ספירה</span>
     </button>
-    <button class="mobile-nav-item" data-view="tasks">
-      <span class="icon mobile-nav-icon" aria-hidden="true">checklist</span>
+    <button class="mobile-nav-item" data-view="tasks" style="--tab-color: var(--success)">
+      <span class="mobile-nav-pill"><span class="icon mobile-nav-icon" aria-hidden="true">checklist</span></span>
       <span class="mobile-nav-label">משימות</span>
     </button>
-    <button class="mobile-nav-item" data-view="pomodoro">
-      <span class="icon mobile-nav-icon" aria-hidden="true">timelapse</span>
+    <button class="mobile-nav-item" data-view="pomodoro" style="--tab-color: hsl(16 90% 55%)">
+      <span class="mobile-nav-pill"><span class="icon mobile-nav-icon" aria-hidden="true">timelapse</span></span>
       <span class="mobile-nav-label">פומודורו</span>
     </button>
-    <button class="mobile-nav-item" data-view="planner">
-      <span class="icon mobile-nav-icon" aria-hidden="true">event_note</span>
+    <button class="mobile-nav-item" data-view="planner" style="--tab-color: hsl(270 60% 58%)">
+      <span class="mobile-nav-pill"><span class="icon mobile-nav-icon" aria-hidden="true">event_note</span></span>
       <span class="mobile-nav-label">מתכנן</span>
     </button>
-    <button class="mobile-nav-item" data-view="calendar">
-      <span class="icon mobile-nav-icon" aria-hidden="true">calendar_month</span>
+    <button class="mobile-nav-item" data-view="calendar" style="--tab-color: hsl(180 60% 42%)">
+      <span class="mobile-nav-pill"><span class="icon mobile-nav-icon" aria-hidden="true">calendar_month</span></span>
       <span class="mobile-nav-label">לוח</span>
     </button>
   </nav>

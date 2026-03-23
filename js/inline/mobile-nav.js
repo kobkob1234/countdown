@@ -297,11 +297,16 @@ export function initMobileNav() {
           openMobileEventSheet();
           break;
         case 'tasks':
-          // Focus on task input
-          const taskInput = document.getElementById('newTaskTitle');
-          if (taskInput) {
-            taskInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            setTimeout(() => taskInput.focus(), 300);
+          // Open quick-add task sheet
+          if (window.openMobileQuickAddSheet) {
+            window.openMobileQuickAddSheet();
+          } else {
+            // Fallback: focus on task input
+            const taskInput = document.getElementById('newTaskTitle');
+            if (taskInput) {
+              taskInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              setTimeout(() => taskInput.focus(), 300);
+            }
           }
           break;
         case 'pomodoro':

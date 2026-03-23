@@ -323,7 +323,6 @@
       :root {
         --mobile-touch-target: 48px;
 
-
         --mobile-spacing-xs: 6px;
         --mobile-spacing-sm: 10px;
         --mobile-spacing-md: 16px;
@@ -332,7 +331,19 @@
         --mobile-radius-lg: 24px;
         --mobile-card-shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
         --mobile-header-height: 60px;
-        --mobile-bottom-nav-height: 64px;
+        --mobile-bottom-nav-height: 80px;
+
+        /* MD3 motion tokens */
+        --md3-easing-standard: cubic-bezier(0.2, 0, 0, 1);
+        --md3-easing-emphasized: cubic-bezier(0.2, 0, 0, 1);
+        --md3-duration-short: 200ms;
+        --md3-duration-medium: 300ms;
+        --md3-duration-long: 500ms;
+        --md3-shape-corner-xl: 28px;
+        --md3-shape-corner-l: 16px;
+        --md3-shape-corner-full: 9999px;
+        --md3-nav-indicator-w: 64px;
+        --md3-nav-indicator-h: 32px;
       }
 
       /* ===== BODY & LAYOUT OPTIMIZATIONS ===== */
@@ -418,7 +429,7 @@
         display: none;
       }
 
-      /* ===== MOBILE BOTTOM NAVIGATION BAR ===== */
+      /* ===== MOBILE BOTTOM NAVIGATION BAR (MD3) ===== */
       .mobile-bottom-nav {
         position: fixed;
         bottom: 0;
@@ -432,7 +443,6 @@
         justify-content: space-around;
         align-items: stretch;
         z-index: 10001;
-        box-shadow: 0 -6px 16px rgba(15, 23, 42, 0.08);
       }
 
       .mobile-nav-item {
@@ -447,43 +457,64 @@
         color: var(--muted);
         font-size: 11px;
         font-weight: 500;
-        padding: 8px 4px;
+        padding: 12px 4px 8px;
         cursor: pointer;
-        transition: all 0.2s ease;
+        transition: color var(--md3-duration-short) var(--md3-easing-standard);
+        position: relative;
+        -webkit-tap-highlight-color: transparent;
+      }
+
+      /* Remove old top-bar indicator */
+      .mobile-nav-item::before {
+        display: none;
+      }
+
+      /* MD3 pill indicator behind icon */
+      .mobile-nav-pill {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        height: var(--md3-nav-indicator-h);
+        border-radius: var(--md3-shape-corner-full);
+        transition: width var(--md3-duration-medium) var(--md3-easing-standard),
+                    background var(--md3-duration-medium) var(--md3-easing-standard);
         position: relative;
       }
 
-      .mobile-nav-item::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 50%;
-        transform: translateX(-50%);
-        width: 0;
-        height: 3px;
-        background: var(--accent);
-        border-radius: 0 0 3px 3px;
-        transition: width 0.2s ease;
+      .mobile-nav-item.active .mobile-nav-pill {
+        width: var(--md3-nav-indicator-w);
+        background: color-mix(in srgb, var(--tab-color, var(--accent)) 16%, transparent);
       }
 
+      body.dark .mobile-nav-item.active .mobile-nav-pill {
+        background: color-mix(in srgb, var(--tab-color, var(--accent)) 24%, transparent);
+      }
+
+      /* Active state: use tab's own color */
       .mobile-nav-item.active {
-        color: var(--accent);
-      }
-
-      .mobile-nav-item.active::before {
-        width: 24px;
+        color: var(--tab-color, var(--accent));
       }
 
       .mobile-nav-icon {
-        font-size: 22px;
+        font-size: 24px;
         line-height: 1;
+        transition: font-size var(--md3-duration-short) var(--md3-easing-standard);
       }
 
       .mobile-nav-label {
-        font-size: 10px;
+        font-size: 12px;
+        font-weight: 500;
         white-space: nowrap;
+        letter-spacing: 0.02em;
+        transition: font-weight var(--md3-duration-short) var(--md3-easing-standard);
       }
 
+      .mobile-nav-item.active .mobile-nav-label {
+        font-weight: 700;
+      }
+
+      /* Filled icon on active */
       .mobile-nav-item.active .icon {
         --icon-fill: 1;
       }
@@ -757,48 +788,51 @@
       }
 
       /* ===== MOBILE EVENT BOTTOM SHEET MODAL ===== */
-      .mobile-event-sheet-backdrop {
+      .mobile-event-sheet-backdrop,
+      .mobile-action-sheet-backdrop {
         position: fixed;
         inset: 0;
-        background: rgba(0, 0, 0, 0.5);
-        backdrop-filter: blur(4px);
+        background: rgba(0, 0, 0, 0.32);
         z-index: 10003;
         opacity: 0;
         visibility: hidden;
-        transition: opacity 0.3s, visibility 0.3s;
+        transition: opacity var(--md3-duration-medium) var(--md3-easing-standard),
+                    visibility var(--md3-duration-medium) var(--md3-easing-standard);
       }
 
-      .mobile-event-sheet-backdrop.open {
+      .mobile-event-sheet-backdrop.open,
+      .mobile-action-sheet-backdrop.open {
         opacity: 1;
         visibility: visible;
       }
 
-      .mobile-event-sheet {
+      .mobile-event-sheet,
+      .mobile-action-sheet {
         position: fixed;
         bottom: 0;
         left: 0;
         right: 0;
         max-height: 85vh;
         background: var(--card);
-        border-radius: 24px 24px 0 0;
+        border-radius: var(--md3-shape-corner-xl) var(--md3-shape-corner-xl) 0 0;
         z-index: 10004;
         transform: translateY(100%);
         transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1);
-        box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.2);
         overflow: hidden;
         display: flex;
         flex-direction: column;
       }
 
-      .mobile-event-sheet.open {
+      .mobile-event-sheet.open,
+      .mobile-action-sheet.open {
         transform: translateY(0);
       }
 
       .mobile-sheet-handle {
-        width: 40px;
-        height: 5px;
+        width: 32px;
+        height: 4px;
         background: var(--border);
-        border-radius: 3px;
+        border-radius: 2px;
         margin: 12px auto 8px;
         flex-shrink: 0;
       }
@@ -926,6 +960,79 @@
         background: var(--day-other);
         color: var(--muted);
         border: 1px solid var(--border);
+      }
+
+      /* ===== MD3 ACTION SHEET (context menu) ===== */
+      .mobile-action-sheet {
+        max-height: 60vh;
+      }
+
+      .mobile-action-sheet-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 4px var(--mobile-spacing-md) var(--mobile-spacing-sm);
+        border-bottom: 1px solid var(--border);
+      }
+
+      .mobile-action-sheet-title {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--muted);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        flex: 1;
+        min-width: 0;
+      }
+
+      .mobile-action-sheet-list {
+        list-style: none;
+        margin: 0;
+        padding: 8px 0;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+      }
+
+      .mobile-action-sheet-item {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 14px var(--mobile-spacing-md);
+        min-height: var(--mobile-touch-target);
+        font-size: 16px;
+        color: var(--text);
+        background: none;
+        border: none;
+        width: 100%;
+        text-align: start;
+        cursor: pointer;
+        transition: background var(--md3-duration-short, 200ms) var(--md3-easing-standard);
+      }
+
+      .mobile-action-sheet-item:active {
+        background: var(--day-hover);
+      }
+
+      .mobile-action-sheet-item .icon {
+        font-size: 22px;
+        color: var(--muted);
+        flex-shrink: 0;
+      }
+
+      .mobile-action-sheet-item.destructive {
+        color: var(--danger, #ef4444);
+      }
+
+      .mobile-action-sheet-item.destructive .icon {
+        color: var(--danger, #ef4444);
+      }
+
+      .mobile-action-sheet-divider {
+        height: 1px;
+        background: var(--border);
+        margin: 4px 0;
       }
 
       /* ===== INPUT ROW STYLES (kept for reference) ===== */
@@ -1780,7 +1887,6 @@
 
       body.dark .mobile-bottom-nav {
         background: var(--card);
-        box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.3);
       }
 
       body.dark .mobile-fab {
@@ -1791,11 +1897,19 @@
     /* ===== LANDSCAPE MOBILE ===== */
     @media screen and (max-width: 896px) and (orientation: landscape) {
       .mobile-bottom-nav {
-        height: 52px;
+        height: 56px;
       }
 
       .mobile-nav-label {
         display: none;
+      }
+
+      .mobile-nav-pill {
+        height: 28px;
+      }
+
+      .mobile-nav-item.active .mobile-nav-pill {
+        width: 56px;
       }
 
       .mobile-nav-icon {
