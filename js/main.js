@@ -867,10 +867,13 @@ const markSyncReady = (key, source = 'unknown') => {
 };
 Object.assign(ctx, { clearSyncTimeouts, startSyncTimeout, updateSyncBadge, markSyncReady });
 
+let undoToastTimer = null;
 const showUndoToast = (name, id) => {
   undoToastMsg.textContent = `${name} deleted`;
   lastDeletedId = id;
   undoToast.classList.add('show');
+  clearTimeout(undoToastTimer);
+  undoToastTimer = setTimeout(hideUndoToast, 5000);
 };
 
 const hideUndoToast = () => {
