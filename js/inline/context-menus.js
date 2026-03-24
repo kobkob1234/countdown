@@ -62,6 +62,9 @@ export function initContextMenus() {
     return menu;
   }
 
+  // Expose for use by other modules (e.g., daily planner)
+  ctx.createContextMenu = createContextMenu;
+
   // Task Context Menu
   function showTaskContextMenu(x, y, taskId) {
     const task = ctx.tasks.find(t => t.id === taskId);

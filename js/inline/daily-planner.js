@@ -94,44 +94,7 @@ export function initDailyPlanner() {
     rest: '<span class="icon" style="font-size:16px;vertical-align:middle">self_improvement</span>'
   };
 
-  // Templates
-  const templates = {
-    morning: [
-      { title: 'התעוררות והתארגנות', start: '06:00', duration: 30, priority: 'medium', category: 'personal' },
-      { title: 'ארוחת בוקר', start: '06:30', duration: 30, priority: 'low', category: 'health' },
-      { title: 'פעילות גופנית', start: '07:00', duration: 45, priority: 'high', category: 'health' },
-      { title: 'מקלחת והתארגנות', start: '07:45', duration: 30, priority: 'medium', category: 'personal' }
-    ],
-    work: [
-      { title: 'בדיקת מיילים ותכנון יום', start: '09:00', duration: 30, priority: 'medium', category: 'work' },
-      { title: 'עבודה ממוקדת - בלוק 1', start: '09:30', duration: 90, priority: 'high', category: 'work' },
-      { title: 'הפסקה קצרה', start: '11:00', duration: 15, priority: 'low', category: 'rest' },
-      { title: 'עבודה ממוקדת - בלוק 2', start: '11:15', duration: 90, priority: 'high', category: 'work' },
-      { title: 'ארוחת צהריים', start: '12:45', duration: 45, priority: 'medium', category: 'health' },
-      { title: 'פגישות / שיחות', start: '13:30', duration: 60, priority: 'medium', category: 'work' },
-      { title: 'עבודה ממוקדת - בלוק 3', start: '14:30', duration: 90, priority: 'high', category: 'work' },
-      { title: 'סיכום יום ותכנון מחר', start: '16:00', duration: 30, priority: 'medium', category: 'work' }
-    ],
-    study: [
-      { title: 'לימוד - נושא ראשי', start: '08:00', duration: 90, priority: 'high', category: 'study' },
-      { title: 'הפסקה וחטיף', start: '09:30', duration: 15, priority: 'low', category: 'rest' },
-      { title: 'תרגול ופתרון בעיות', start: '09:45', duration: 60, priority: 'high', category: 'study' },
-      { title: 'ארוחת צהריים', start: '10:45', duration: 45, priority: 'medium', category: 'health' },
-      { title: 'לימוד - נושא משני', start: '11:30', duration: 75, priority: 'medium', category: 'study' },
-      { title: 'הפסקה ארוכה', start: '12:45', duration: 30, priority: 'low', category: 'rest' },
-      { title: 'חזרה וסיכום', start: '13:15', duration: 60, priority: 'medium', category: 'study' },
-      { title: 'הכנת שיעורי בית', start: '14:15', duration: 90, priority: 'high', category: 'study' }
-    ],
-    relax: [
-      { title: 'התעוררות טבעית', start: '09:00', duration: 30, priority: 'low', category: 'rest' },
-      { title: 'ארוחת בוקר נינוחה', start: '09:30', duration: 45, priority: 'low', category: 'health' },
-      { title: 'קריאה / מדיטציה', start: '10:15', duration: 60, priority: 'low', category: 'rest' },
-      { title: 'טיול / פעילות חוץ', start: '11:15', duration: 90, priority: 'medium', category: 'health' },
-      { title: 'ארוחת צהריים', start: '12:45', duration: 60, priority: 'low', category: 'health' },
-      { title: 'תחביב / פעילות יצירתית', start: '13:45', duration: 120, priority: 'medium', category: 'creative' },
-      { title: 'זמן חברתי / משפחתי', start: '16:00', duration: 120, priority: 'medium', category: 'social' }
-    ]
-  };
+  // (Templates section removed)
 
   const pruneNotifiedPlannerBlocks = () => {
     const ids = new Set(plannerBlocks.map(b => b.id));
@@ -1092,7 +1055,7 @@ export function initDailyPlanner() {
     `;
     }).join('');
 
-    // Add drag handlers
+    // Add drag handlers + right-click context menu
     refs.quickTasks.querySelectorAll('.planner-task-item').forEach(el => {
       el.addEventListener('dragstart', (e) => {
         e.dataTransfer.setData('text/plain', el.dataset.taskId);
@@ -1100,6 +1063,11 @@ export function initDailyPlanner() {
       });
       el.addEventListener('dragend', () => {
         el.classList.remove('dragging');
+      });
+      el.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        showQuickTaskContextMenu(e.clientX, e.clientY, el.dataset.taskId);
       });
     });
   };
@@ -1173,6 +1141,15 @@ export function initDailyPlanner() {
         addCountdownToPlanner(eventId);
       });
     });
+
+    // Right-click context menu for countdowns
+    refs.countdownsList.querySelectorAll('.planner-countdown-item').forEach(el => {
+      el.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        showCountdownContextMenu(e.clientX, e.clientY, el.dataset.eventId);
+      });
+    });
   };
 
   // Render scheduled tasks (tasks with due date/time) for the current date
@@ -1230,6 +1207,15 @@ export function initDailyPlanner() {
         e.stopPropagation();
         const taskId = el.dataset.taskId;
         addScheduledTaskToPlanner(taskId);
+      });
+    });
+
+    // Right-click context menu for scheduled tasks
+    refs.scheduledTasksList.querySelectorAll('.planner-scheduled-task-item').forEach(el => {
+      el.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        showScheduledTaskContextMenu(e.clientX, e.clientY, el.dataset.taskId);
       });
     });
   };
@@ -1651,6 +1637,29 @@ export function initDailyPlanner() {
       plannerBlocks.push(newBlock);
     }
 
+    // Two-way sync: if editing a linked block, update the original task
+    if (editingBlockId) {
+      const updatedBlock = plannerBlocks.find(b => b.id === editingBlockId);
+      if (updatedBlock?.linkedTaskId && ctx.saveTask) {
+        const task = getTasks().find(t => t.id === updatedBlock.linkedTaskId);
+        if (task) {
+          const { id, isOwn, isShared, ...clean } = task;
+          const updates = { ...clean, title };
+          // Sync time back if task had a due date with time
+          if (task.dueDate && task.dueDate.includes('T')) {
+            const oldDue = new Date(task.dueDate);
+            const [h, m] = start.split(':').map(Number);
+            oldDue.setHours(h, m, 0, 0);
+            updates.dueDate = oldDue.toISOString();
+          }
+          if (priority !== 'medium' || task.priority) {
+            updates.priority = priority;
+          }
+          ctx.saveTask(task.id, updates, task.subject);
+        }
+      }
+    }
+
     saveBlocks();
     closeModal();
     render();
@@ -1667,40 +1676,168 @@ export function initDailyPlanner() {
     render();
   };
 
-  // Toggle block completion
+  // Toggle block completion (with two-way sync to linked task)
   const toggleBlockComplete = (blockId) => {
     const block = plannerBlocks.find(b => b.id === blockId);
     if (block) {
       block.completed = !block.completed;
       saveBlocks();
+
+      // Two-way sync: if block is linked to a task, sync completion state
+      if (block.linkedTaskId && ctx.saveTask) {
+        const task = getTasks().find(t => t.id === block.linkedTaskId);
+        if (task && task.completed !== block.completed) {
+          const { id, isOwn, isShared, ...clean } = task;
+          const completedAt = block.completed ? Date.now() : null;
+          ctx.saveTask(task.id, { ...clean, completed: block.completed, completedAt }, task.subject);
+        }
+      }
+
       render();
     }
   };
 
-  // Apply template
-  const applyTemplate = (templateKey) => {
-    const template = templates[templateKey];
-    if (!template) return;
+  // ============ Sidebar Context Menus ============
 
-    const dateKey = getDateKey(currentDate);
+  // Remove planner blocks linked to a given task/event
+  const removePlannerBlockByLink = (type, linkId) => {
+    const key = type === 'task' ? 'linkedTaskId' : 'linkedEventId';
+    const before = plannerBlocks.length;
+    plannerBlocks = plannerBlocks.filter(b => b[key] !== linkId);
+    if (plannerBlocks.length !== before) {
+      saveBlocks();
+      render();
+    }
+  };
 
-    template.forEach(item => {
-      const newBlock = {
-        id: generateId(),
-        title: item.title,
-        start: item.start,
-        duration: item.duration,
-        category: item.category,
-        priority: item.priority,
-        completed: false,
-        date: dateKey,
-        createdAt: new Date().toISOString()
-      };
-      plannerBlocks.push(newBlock);
-    });
+  // Complete a task via ctx (shared helper for context menus)
+  const completeTaskFromSidebar = (taskId) => {
+    const task = getTasks().find(t => t.id === taskId);
+    if (!task || !ctx.saveTask) return;
+    const { id, isOwn, isShared, ...clean } = task;
+    const nextCompleted = !task.completed;
+    const completedAt = nextCompleted ? Date.now() : null;
+    ctx.saveTask(taskId, { ...clean, completed: nextCompleted, completedAt }, task.subject);
+    // Also sync planner blocks linked to this task
+    const linked = plannerBlocks.filter(b => b.linkedTaskId === taskId);
+    linked.forEach(b => { b.completed = nextCompleted; });
+    if (linked.length) saveBlocks();
+    setTimeout(() => render(), 200); // Wait for Firebase callback
+  };
 
-    saveBlocks();
-    render();
+  // Delete a task via ctx
+  const deleteTaskFromSidebar = (taskId) => {
+    const task = getTasks().find(t => t.id === taskId);
+    if (!task || !ctx.removeTask) return;
+    ctx.removeTask(task);
+    // Remove linked planner blocks too
+    removePlannerBlockByLink('task', taskId);
+    setTimeout(() => render(), 200);
+  };
+
+  // Show context menu for a scheduled task in the sidebar
+  const showScheduledTaskContextMenu = (x, y, taskId) => {
+    if (!ctx.createContextMenu) return;
+    const task = getTasks().find(t => t.id === taskId);
+    if (!task) return;
+
+    const currentBlocks = getBlocksForDate(currentDate);
+    const isSynced = currentBlocks.some(b => b.linkedTaskId === taskId);
+
+    const items = [
+      { header: `<span style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block">${escapeHtml(task.title)}</span>` },
+      {
+        icon: '<span class="icon" style="font-size:16px;vertical-align:middle">check_circle</span>',
+        label: task.completed ? 'סמן כלא הושלם' : 'סמן כהושלם',
+        action: () => completeTaskFromSidebar(taskId)
+      },
+      ...(isSynced ? [{
+        icon: '<span class="icon" style="font-size:16px;vertical-align:middle">event_busy</span>',
+        label: 'הסר מהיומן',
+        action: () => removePlannerBlockByLink('task', taskId)
+      }] : [{
+        icon: '<span class="icon" style="font-size:16px;vertical-align:middle">event_available</span>',
+        label: 'הוסף ליומן',
+        action: () => addScheduledTaskToPlanner(taskId)
+      }]),
+      ...(ctx.openTaskEditModal ? [{
+        icon: '<span class="icon" style="font-size:16px;vertical-align:middle">edit</span>',
+        label: 'ערוך משימה',
+        action: () => ctx.openTaskEditModal(taskId)
+      }] : []),
+      { divider: true },
+      {
+        icon: '<span class="icon" style="font-size:16px;vertical-align:middle;color:var(--danger)">delete</span>',
+        label: 'מחק משימה',
+        action: () => deleteTaskFromSidebar(taskId)
+      }
+    ];
+
+    ctx.createContextMenu(x, y, items, 'planner-sidebar-context-menu');
+  };
+
+  // Show context menu for a quick (unscheduled) task in the sidebar
+  const showQuickTaskContextMenu = (x, y, taskId) => {
+    if (!ctx.createContextMenu) return;
+    const task = getTasks().find(t => t.id === taskId);
+    if (!task) return;
+
+    const items = [
+      { header: `<span style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block">${escapeHtml(task.title)}</span>` },
+      {
+        icon: '<span class="icon" style="font-size:16px;vertical-align:middle">check_circle</span>',
+        label: 'סמן כהושלם',
+        action: () => completeTaskFromSidebar(taskId)
+      },
+      ...(ctx.openTaskEditModal ? [{
+        icon: '<span class="icon" style="font-size:16px;vertical-align:middle">edit</span>',
+        label: 'ערוך משימה',
+        action: () => ctx.openTaskEditModal(taskId)
+      }] : []),
+      { divider: true },
+      {
+        icon: '<span class="icon" style="font-size:16px;vertical-align:middle;color:var(--danger)">delete</span>',
+        label: 'מחק משימה',
+        action: () => deleteTaskFromSidebar(taskId)
+      }
+    ];
+
+    ctx.createContextMenu(x, y, items, 'planner-sidebar-context-menu');
+  };
+
+  // Show context menu for a countdown in the sidebar
+  const showCountdownContextMenu = (x, y, eventId) => {
+    if (!ctx.createContextMenu) return;
+    const evt = getEvents().find(e => e.id === eventId);
+    if (!evt) return;
+
+    const currentBlocks = getBlocksForDate(currentDate);
+    const isSynced = currentBlocks.some(b => b.linkedEventId === eventId);
+
+    const items = [
+      { header: `<span style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block">${escapeHtml(evt.name || 'אירוע')}</span>` },
+      ...(isSynced ? [{
+        icon: '<span class="icon" style="font-size:16px;vertical-align:middle">event_busy</span>',
+        label: 'הסר מהיומן',
+        action: () => removePlannerBlockByLink('event', eventId)
+      }] : [{
+        icon: '<span class="icon" style="font-size:16px;vertical-align:middle">event_available</span>',
+        label: 'הוסף ליומן',
+        action: () => addCountdownToPlanner(eventId)
+      }]),
+      { divider: true },
+      {
+        icon: '<span class="icon" style="font-size:16px;vertical-align:middle;color:var(--danger)">delete</span>',
+        label: 'מחק אירוע',
+        action: () => {
+          if (ctx.deleteFromCloud) ctx.deleteFromCloud(eventId);
+          removePlannerBlockByLink('event', eventId);
+          setTimeout(() => render(), 200);
+        }
+      }
+    ];
+
+    ctx.createContextMenu(x, y, items, 'planner-sidebar-context-menu');
   };
 
   // Update view toggle buttons
@@ -1833,12 +1970,6 @@ export function initDailyPlanner() {
       miniCalendarDate.setMonth(miniCalendarDate.getMonth() + 1);
       renderMiniCalendar();
     };
-
-    // Template buttons
-    const templateBtns = refs.overlay ? refs.overlay.querySelectorAll('.planner-template-btn') : [];
-    templateBtns.forEach(btn => {
-      btn.onclick = () => applyTemplate(btn.dataset.template);
-    });
 
     // Sync buttons
     if (refs.syncAllBtn) {
