@@ -5719,6 +5719,12 @@ if (completeTaskId && shouldProcessComplete) {
 
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.addEventListener('message', (event) => {
+    // Auto-reload when service worker updates (no manual cache clear needed)
+    if (event.data?.type === 'sw-updated') {
+      console.log('[App] New version available, reloading...');
+      window.location.reload();
+      return;
+    }
     if (event.data?.type === 'pushsubscriptionchange') {
       syncExistingSubscriptionToCurrentUser().catch(() => { });
       refreshNotifyButton().catch(() => { });

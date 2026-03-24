@@ -1308,7 +1308,13 @@
         localStorage.setItem('examModeContent', htmlContent);
 
         if (container.dataset.firebaseSync === 'true' && container.currentExamRef && container.firebaseSet) {
-            container.firebaseSet(container.currentExamRef, htmlContent).catch(err => {
+            // Save combined HTML + legend config as a single object
+            const legendConfig = localStorage.getItem('examLegendConfig');
+            container.firebaseSet(container.currentExamRef, {
+                html: htmlContent,
+                legend: legendConfig || null,
+                updatedAt: Date.now()
+            }).catch(err => {
                 console.error('[ExamMode] Failed to sync to cloud:', err);
             });
         }
@@ -1427,16 +1433,45 @@
                         onValue(examRef, (snapshot) => {
                             syncBadge.textContent = '🟢';
                             syncBadge.title = 'Sync Active';
-                            const remoteContent = snapshot.val();
+                            const rawVal = snapshot.val();
+                            // Support both old format (string) and new format ({html, legend, updatedAt})
+                            const remoteContent = typeof rawVal === 'object' && rawVal !== null ? rawVal.html : rawVal;
+                            const remoteLegend = typeof rawVal === 'object' && rawVal !== null ? rawVal.legend : null;
 
-                            if (remoteContent === null && saved && isInitialSync) {
-                                set(examRef, saved).then(() => console.log('[ExamMode] Migration complete.'));
-                            } else if (remoteContent && remoteContent !== container.innerHTML && !isUserEditing) {
-                                // For now, cloud sync re-renders the whole view
-                                // In future could be per-month sync
-                                console.log('[ExamMode] Syncing from cloud...');
-                                // Don't replace dynamic content - just note the sync
-                                // The per-month storage is authoritative locally
+                            if (remoteContent === null && !rawVal && saved && isInitialSync) {
+                                set(examRef, { html: saved, legend: localStorage.getItem('examLegendConfig') || null, updatedAt: Date.now() })
+                                    .then(() => console.log('[ExamMode] Migration complete.'));
+                            } else if (remoteContent && isInitialSync && !saved) {
+                                // Restore from cloud when localStorage is empty (e.g. after cache clear)
+                                console.log('[ExamMode] Restoring from cloud...');
+                                localStorage.setItem('examModeContent', remoteContent);
+                                // Extract per-month data from the combined HTML
+                                try {
+                                    const tempDiv = document.createElement('div');
+                                    tempDiv.innerHTML = remoteContent;
+                                    tempDiv.querySelectorAll('table[data-month]').forEach(table => {
+                                        const monthKey = table.dataset.month;
+                                        if (monthKey) {
+                                            localStorage.setItem(`examMonth_${monthKey}`, table.innerHTML);
+                                        }
+                                    });
+                                    tempDiv.querySelectorAll('h2[data-month]').forEach(h2 => {
+                                        if (h2.dataset.month) {
+                                            localStorage.setItem(`examMonthTitle_${h2.dataset.month}`, h2.textContent);
+                                        }
+                                    });
+                                    const h1 = tempDiv.querySelector('h1');
+                                    if (h1) localStorage.setItem('examTitle', h1.textContent);
+                                    // Restore legend config
+                                    if (remoteLegend) {
+                                        localStorage.setItem('examLegendConfig', remoteLegend);
+                                    }
+                                } catch (e) {
+                                    console.warn('[ExamMode] Failed to extract per-month data from cloud:', e);
+                                }
+                                // Re-render with restored data
+                                renderMonths(container);
+                                setupExamInteractionsInternal(container);
                             }
                             isInitialSync = false;
                         });

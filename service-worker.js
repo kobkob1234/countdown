@@ -1,5 +1,5 @@
 // Bump cache version when precache list or fetch strategy changes
-const CACHE_NAME = 'countdown-push-v48';
+const CACHE_NAME = 'countdown-push-v49';
 const NOTIFY_DEDUPE_CACHE = 'countdown-notify-dedupe-v1';
 const NOTIFY_DEDUPE_TTL_MS = 1000 * 60 * 60 * 24 * 7;
 const PENDING_SUB_DB = 'countdown-pending-sub';
@@ -166,7 +166,13 @@ self.addEventListener('install', (event) => {
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     Promise.all([
-      self.clients.claim(),
+      self.clients.claim().then(async () => {
+        // Notify all clients that a new version is available
+        const allClients = await self.clients.matchAll({ type: 'window' });
+        for (const client of allClients) {
+          client.postMessage({ type: 'sw-updated', cacheName: CACHE_NAME });
+        }
+      }),
       // Clean up old caches
       caches.keys().then((keys) => {
         const keepCaches = new Set([CACHE_NAME, NOTIFY_DEDUPE_CACHE]);
