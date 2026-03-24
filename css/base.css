@@ -2109,6 +2109,21 @@
       margin: 2px auto 0;
     }
 
+    .planner-mini-day.has-exam::before {
+      content: '';
+      position: absolute;
+      top: 2px;
+      right: 2px;
+      width: 4px;
+      height: 4px;
+      background: var(--danger, #ef4444);
+      border-radius: 50%;
+    }
+
+    .planner-mini-day {
+      position: relative;
+    }
+
     /* Quick Tasks List */
     .planner-quick-tasks {
       flex: 1;
@@ -2250,6 +2265,14 @@
 
     .planner-hour-content.drop-target {
       background: var(--accent-soft-strong);
+      outline: 2px dashed var(--accent);
+      outline-offset: -2px;
+      animation: dropPulse 1s ease infinite;
+    }
+
+    @keyframes dropPulse {
+      0%, 100% { background: var(--accent-soft); }
+      50% { background: var(--accent-soft-strong); }
     }
 
     /* Time Blocks */
@@ -2315,18 +2338,20 @@
     }
 
     .planner-block-resize-handle::after {
-      content: '';
-      width: 40px;
-      height: 8px;
+      content: '· · ·';
+      font-size: 10px;
+      letter-spacing: 2px;
+      color: var(--accent);
+      background: color-mix(in srgb, var(--accent) 15%, transparent);
+      padding: 0 8px;
       border-radius: 999px;
-      background: var(--accent);
+      line-height: 8px;
       transition: all 0.2s ease;
     }
 
     .planner-block-resize-handle:hover::after {
-      background: var(--accent);
-      height: 6px;
-      width: 50px;
+      background: color-mix(in srgb, var(--accent) 30%, transparent);
+      padding: 0 14px;
     }
 
     body.dark .planner-block-resize-handle::after {
@@ -2918,6 +2943,26 @@
 
     .planner-hour-content:hover .planner-empty-hour {
       opacity: 1;
+    }
+
+    .planner-empty-day-hint {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: var(--space-2);
+      padding: var(--space-6) var(--space-4);
+      color: var(--muted);
+      font-size: var(--font-size-sm);
+      text-align: center;
+      pointer-events: none;
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      20% { transform: translateX(-4px); }
+      40% { transform: translateX(4px); }
+      60% { transform: translateX(-3px); }
+      80% { transform: translateX(2px); }
     }
 
     /* Stats Bar */
@@ -5318,6 +5363,30 @@
 
     .undo-toast button:hover {
       background: rgba(255, 255, 255, 0.3);
+    }
+
+    /* Subtle Info Toast (auto-dismissing, cross-system integration) */
+    .subtle-info-toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      z-index: 15001;
+      padding: 10px 20px;
+      border-radius: var(--radius-lg);
+      background: var(--card);
+      color: var(--foreground);
+      font-size: var(--font-size-sm);
+      box-shadow: var(--shadow-lg);
+      border: 1px solid var(--border);
+      opacity: 0;
+      transition: opacity 0.3s ease, transform 0.3s ease;
+      pointer-events: none;
+      white-space: nowrap;
+    }
+    .subtle-info-toast.visible {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
     }
 
     /* AI Loading Toast */

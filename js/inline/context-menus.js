@@ -62,8 +62,28 @@ export function initContextMenus() {
     return menu;
   }
 
-  // Expose for use by other modules (e.g., daily planner)
+  // Shared subtle toast helper (auto-dismissing, no action button)
+  function showSubtleToast(message, durationMs = 3000) {
+    const existing = document.querySelector('.subtle-info-toast');
+    if (existing) existing.remove();
+
+    const toast = document.createElement('div');
+    toast.className = 'subtle-info-toast';
+    toast.textContent = message;
+    document.body.appendChild(toast);
+
+    requestAnimationFrame(() => toast.classList.add('visible'));
+
+    setTimeout(() => {
+      toast.classList.remove('visible');
+      setTimeout(() => toast.remove(), 300);
+    }, durationMs);
+  }
+
+  // Expose for use by other modules (e.g., daily planner, exam-mode)
   ctx.createContextMenu = createContextMenu;
+  ctx.showSubtleToast = showSubtleToast;
+  window.showSubtleToast = showSubtleToast;
 
   // Task Context Menu
   function showTaskContextMenu(x, y, taskId) {
@@ -117,6 +137,10 @@ export function initContextMenus() {
       { divider: true },
       ...reminderItems,
       ...(subjectItems.length > 0 ? [{ divider: true }, ...subjectItems] : []),
+      ...(window.addChipToExamCell ? [
+        { divider: true },
+        { icon: '<span class="icon" style="font-size:16px;vertical-align:middle">school</span>', label: 'הוסף ללוח בחינות', action: () => addTaskToExamCalendar(taskId) },
+      ] : []),
     ];
 
     createContextMenu(x, y, items, 'task-context-menu');
@@ -184,6 +208,28 @@ export function initContextMenus() {
   function deleteTaskById(taskId) {
     const task = ctx.tasks.find(t => t.id === taskId);
     if (task) ctx.removeTask(task);
+  }
+
+  function addTaskToExamCalendar(taskId) {
+    const task = ctx.tasks.find(t => t.id === taskId);
+    if (!task || !window.addChipToExamCell) return;
+    if (!task.dueDate) {
+      showSubtleToast('למשימה אין תאריך יעד');
+      return;
+    }
+    const dateObj = new Date(task.dueDate);
+    if (Number.isNaN(dateObj.getTime())) {
+      showSubtleToast('תאריך לא תקין');
+      return;
+    }
+    const subject = ctx.subjects?.find(s => s.id === task.subject);
+    const color = subject?.color || '#667eea';
+    const success = window.addChipToExamCell(dateObj, task.title, color);
+    if (success === false) {
+      showSubtleToast('התאריך לא בטווח תקופת הבחינות');
+    } else {
+      showSubtleToast('נוסף ללוח הבחינות');
+    }
   }
 
   // Calendar Day Context Menu

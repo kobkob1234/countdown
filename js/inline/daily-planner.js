@@ -415,15 +415,16 @@ export function initDailyPlanner() {
   // Update stats display
   const updateStats = () => {
     const stats = calculateStats(currentDate);
+    const isEmpty = stats.total === 0;
 
-    if (refs.totalBlocks) refs.totalBlocks.textContent = stats.total;
+    if (refs.totalBlocks) refs.totalBlocks.textContent = isEmpty ? '—' : stats.total;
     if (refs.totalHours) {
-      refs.totalHours.textContent = stats.mins > 0 ? `${stats.hours}:${String(stats.mins).padStart(2, '0')} שעות` : `${stats.hours} שעות`;
+      refs.totalHours.textContent = isEmpty ? '—' : (stats.mins > 0 ? `${stats.hours}:${String(stats.mins).padStart(2, '0')} שעות` : `${stats.hours} שעות`);
     }
-    if (refs.completedBlocks) refs.completedBlocks.textContent = stats.completed;
-    if (refs.progress) refs.progress.textContent = `${stats.progress}%`;
+    if (refs.completedBlocks) refs.completedBlocks.textContent = isEmpty ? '—' : stats.completed;
+    if (refs.progress) refs.progress.textContent = isEmpty ? '—' : `${stats.progress}%`;
     if (refs.daySummary) {
-      refs.daySummary.textContent = `${stats.total} פעילויות • ${stats.hours}:${String(stats.mins).padStart(2, '0')} שעות`;
+      refs.daySummary.textContent = isEmpty ? 'אין פעילויות מתוכננות' : `${stats.total} פעילויות • ${stats.hours}:${String(stats.mins).padStart(2, '0')} שעות`;
     }
   };
 
@@ -435,8 +436,14 @@ export function initDailyPlanner() {
     const now = new Date();
     const isCurrentDay = isToday(currentDate);
     const currentMinutes = now.getHours() * 60 + now.getMinutes();
+    const hasBlocks = blocks.length > 0;
 
     let html = '';
+
+    // Show empty state hint when no blocks
+    if (!hasBlocks) {
+      html += '<div class="planner-empty-day-hint"><span class="icon" style="font-size:28px;opacity:0.4">event_note</span><span>לחץ על שעה להוספת פעילות, או גרור משימה מהצד</span></div>';
+    }
 
     // Generate hour rows (6 AM to 11 PM)
     for (let hour = 6; hour <= 23; hour++) {
@@ -453,7 +460,7 @@ export function initDailyPlanner() {
       <div class="planner-hour-row" data-hour="${hour}">
         <div class="planner-hour-label">${hourLabel}</div>
         <div class="planner-hour-content" data-hour="${hour}">
-          <span class="planner-empty-hour">+ לחץ להוספה</span>
+          ${hasBlocks ? '<span class="planner-empty-hour">+ לחץ להוספה</span>' : ''}
           ${hourBlocks.map(block => renderBlock(block, hourMinutes)).join('')}
           ${isCurrentDay && currentMinutes >= hourMinutes && currentMinutes < hourMinutes + 60 ? renderNowLine(currentMinutes - hourMinutes) : ''}
         </div>
@@ -497,6 +504,15 @@ export function initDailyPlanner() {
         if (e.target.classList.contains('planner-block-resize-handle')) return;
         if (e.target.classList.contains('planner-block-checkbox')) return;
         openEditModal(el.dataset.id);
+      });
+    });
+
+    // Add right-click context menu for blocks
+    refs.timeline.querySelectorAll('.planner-block').forEach(el => {
+      el.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        showBlockContextMenu(e.clientX, e.clientY, el.dataset.id);
       });
     });
 
@@ -599,9 +615,12 @@ export function initDailyPlanner() {
       }
     }
 
+    // Build tooltip for compact blocks
+    const tooltipAttr = compactClass ? `title="${escapeHtml(block.title)} | ${block.start}-${endTime}${block.notes ? ' | ' + escapeHtml(block.notes.substring(0, 80)) : ''}"` : '';
+
     return `
-	        <div class="planner-block priority-${priority} ${block.completed ? 'planner-block-completed' : ''} ${compactClass}" 
-	             data-id="${block.id}" 
+	        <div class="planner-block priority-${priority} ${block.completed ? 'planner-block-completed' : ''} ${compactClass}"
+	             data-id="${block.id}" ${tooltipAttr}
 	             style="top: ${topPx}px; height: ${heightPx}px; --priority-color: ${blockColor}; --priority-bg: ${blockBg};">
 	          <div class="planner-block-checkbox ${block.completed ? 'checked' : ''}" data-id="${block.id}"></div>
 	          <div class="planner-block-title">${categoryIcon} ${escapeHtml(block.title)}</div>
@@ -1008,6 +1027,31 @@ export function initDailyPlanner() {
     }
 
     refs.miniGrid.innerHTML = html;
+
+    // Add exam day indicators (red dots) from exam localStorage data
+    try {
+      const monthKey = `${year}-${month}`;
+      const examHtml = localStorage.getItem(`examMonth_${monthKey}`);
+      if (examHtml) {
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(`<table>${examHtml}</table>`, 'text/html');
+        const examDays = new Set();
+        doc.querySelectorAll('td').forEach(td => {
+          if (td.querySelector('.chip') || td.classList.contains('exam-day')) {
+            const dateSpan = td.querySelector('.date');
+            if (dateSpan) examDays.add(parseInt(dateSpan.textContent));
+          }
+        });
+        if (examDays.size > 0) {
+          refs.miniGrid.querySelectorAll('.planner-mini-day:not(.other-month)').forEach(el => {
+            const dayNum = parseInt(el.textContent);
+            if (examDays.has(dayNum)) {
+              el.classList.add('has-exam');
+            }
+          });
+        }
+      }
+    } catch (e) { /* best-effort */ }
 
     // Add click handlers
     refs.miniGrid.querySelectorAll('.planner-mini-day').forEach(el => {
@@ -1588,6 +1632,16 @@ export function initDailyPlanner() {
     const start = blockStart ? blockStart.value : '09:00';
     const end = blockEnd ? blockEnd.value : '10:00';
     const duration = parseTime(end) - parseTime(start);
+
+    // Validate end > start
+    if (duration <= 0) {
+      if (blockEnd) {
+        blockEnd.style.borderColor = 'var(--danger)';
+        blockEnd.style.animation = 'shake 0.3s ease';
+        setTimeout(() => { blockEnd.style.borderColor = ''; blockEnd.style.animation = ''; }, 1500);
+      }
+      return;
+    }
     const category = blockCategory ? blockCategory.value : '';
     const notes = blockNotes ? blockNotes.value.trim() : '';
     const repeat = blockRepeat ? blockRepeat.checked : false;
@@ -1725,14 +1779,16 @@ export function initDailyPlanner() {
     setTimeout(() => render(), 200); // Wait for Firebase callback
   };
 
-  // Delete a task via ctx
+  // Delete a task via ctx (local-only: does NOT remove linked planner blocks)
   const deleteTaskFromSidebar = (taskId) => {
     const task = getTasks().find(t => t.id === taskId);
     if (!task || !ctx.removeTask) return;
+    const hasLinkedBlocks = plannerBlocks.some(b => b.linkedTaskId === taskId);
     ctx.removeTask(task);
-    // Remove linked planner blocks too
-    removePlannerBlockByLink('task', taskId);
     setTimeout(() => render(), 200);
+    if (hasLinkedBlocks && window.showSubtleToast) {
+      window.showSubtleToast('המשימה נמחקה. פעילויות ביומן נשארו');
+    }
   };
 
   // Show context menu for a scheduled task in the sidebar
@@ -1830,14 +1886,102 @@ export function initDailyPlanner() {
         icon: '<span class="icon" style="font-size:16px;vertical-align:middle;color:var(--danger)">delete</span>',
         label: 'מחק אירוע',
         action: () => {
+          const hasLinkedBlocks = plannerBlocks.some(b => b.linkedEventId === eventId);
           if (ctx.deleteFromCloud) ctx.deleteFromCloud(eventId);
-          removePlannerBlockByLink('event', eventId);
           setTimeout(() => render(), 200);
+          if (hasLinkedBlocks && window.showSubtleToast) {
+            window.showSubtleToast('האירוע נמחק. פעילויות ביומן נשארו');
+          }
         }
       }
     ];
 
     ctx.createContextMenu(x, y, items, 'planner-sidebar-context-menu');
+  };
+
+  // Show context menu for a planner block (right-click on timeline block)
+  const showBlockContextMenu = (x, y, blockId) => {
+    if (!ctx.createContextMenu) return;
+    const block = plannerBlocks.find(b => b.id === blockId);
+    if (!block) return;
+
+    const items = [
+      { header: `<span style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block">${escapeHtml(block.title)}</span>` },
+      {
+        icon: '<span class="icon" style="font-size:16px;vertical-align:middle">edit</span>',
+        label: 'ערוך',
+        action: () => openEditModal(blockId)
+      },
+      {
+        icon: `<span class="icon" style="font-size:16px;vertical-align:middle">${block.completed ? 'check_box_outline_blank' : 'check_circle'}</span>`,
+        label: block.completed ? 'סמן כלא הושלם' : 'סמן כהושלם',
+        action: () => toggleBlockComplete(blockId)
+      },
+      { divider: true },
+    ];
+
+    // Create task from block (only if not already linked to a task)
+    if (!block.linkedTaskId && ctx.createTask) {
+      items.push({
+        icon: '<span class="icon" style="font-size:16px;vertical-align:middle">check_circle</span>',
+        label: 'צור משימה',
+        action: () => {
+          const blockDate = block.date || getDateKey(currentDate);
+          const startTime = block.start || '09:00';
+          const dueDate = new Date(`${blockDate}T${startTime}`);
+          ctx.createTask({
+            title: block.title,
+            dueDate: dueDate.toISOString(),
+            priority: block.priority || 'medium',
+            subject: '',
+            completed: block.completed || false,
+            duration: block.duration || 60
+          });
+          // Link the block to the new task (best-effort: task ID not returned, but marks intent)
+          if (window.showSubtleToast) window.showSubtleToast('משימה נוצרה');
+        }
+      });
+    }
+
+    // Add to exam calendar
+    if (window.addChipToExamCell) {
+      items.push({
+        icon: '<span class="icon" style="font-size:16px;vertical-align:middle">school</span>',
+        label: 'הוסף ללוח בחינות',
+        action: () => {
+          const blockDate = block.date || getDateKey(currentDate);
+          const dateObj = new Date(blockDate);
+          const color = block.color || '';
+          const success = window.addChipToExamCell(dateObj, block.title, color);
+          if (success === false) {
+            if (window.showSubtleToast) window.showSubtleToast('התאריך לא בטווח תקופת הבחינות');
+          } else {
+            if (window.showSubtleToast) window.showSubtleToast('נוסף ללוח הבחינות');
+          }
+        }
+      });
+    }
+
+    items.push({ divider: true });
+    items.push({
+      icon: '<span class="icon" style="font-size:16px;vertical-align:middle;color:var(--danger)">delete</span>',
+      label: 'מחק',
+      action: () => {
+        const hadLinkedTask = block.linkedTaskId;
+        const hadLinkedEvent = block.linkedEventId;
+        plannerBlocks = plannerBlocks.filter(b => b.id !== blockId);
+        saveBlocks();
+        render();
+        // Subtle deletion reminders
+        if (hadLinkedTask && window.showSubtleToast) {
+          window.showSubtleToast('הפעילות הוסרה מהיומן. המשימה עדיין קיימת');
+        } else if (hadLinkedEvent && window.showSubtleToast) {
+          window.showSubtleToast('הפעילות הוסרה מהיומן. האירוע עדיין קיים');
+        }
+      }
+    });
+
+    ctx.createContextMenu(x, y, items, 'planner-block-context-menu');
   };
 
   // Update view toggle buttons
@@ -1867,6 +2011,18 @@ export function initDailyPlanner() {
     // Render appropriate view
     if (plannerView === 'day') {
       renderTimeline();
+      // Auto-scroll to current hour when viewing today
+      if (isToday(currentDate) && refs.timeline) {
+        requestAnimationFrame(() => {
+          const now = new Date();
+          const currentHour = now.getHours();
+          const targetRow = refs.timeline.querySelector(`.planner-hour-row[data-hour="${Math.max(6, currentHour - 1)}"]`);
+          if (targetRow) {
+            const content = refs.timeline.closest('.planner-content');
+            if (content) content.scrollTop = targetRow.offsetTop - 40;
+          }
+        });
+      }
     } else {
       renderWeekView();
     }
@@ -2124,7 +2280,7 @@ export function initDailyPlanner() {
     }
   };
 
-  const addPlannerBlock = async ({ date, title, start, durationMinutes = 60, notes = '', category = '' }) => {
+  const addPlannerBlock = async ({ date, title, start, durationMinutes, duration: durationAlt, notes = '', category = '', color: blockColor = '', priority: blockPriority = 'medium' }) => {
     if (typeof window.showView === 'function') window.showView('planner');
     if (!initialized) init();
 
@@ -2132,10 +2288,13 @@ export function initDailyPlanner() {
     if (Number.isNaN(dateObj.getTime())) throw new Error('Invalid date');
     const dateKey = getDateKey(dateObj);
 
-    const startMinutes = parseTime(start);
+    // Default start to current hour if not provided
+    const resolvedStart = start || `${String(new Date().getHours()).padStart(2, '0')}:00`;
+    const startMinutes = parseTime(resolvedStart);
     if (!Number.isFinite(startMinutes)) throw new Error('Invalid start time');
 
-    const duration = Math.min(240, Math.max(15, Number.parseInt(durationMinutes || 60, 10) || 60));
+    const rawDuration = durationMinutes || durationAlt || 60;
+    const duration = Math.min(240, Math.max(15, Number.parseInt(rawDuration, 10) || 60));
 
     const newBlock = {
       id: generateId(),
@@ -2145,8 +2304,8 @@ export function initDailyPlanner() {
       category: String(category || '').trim(),
       notes: String(notes || '').trim(),
       repeat: false,
-      priority: 'medium',
-      color: '',
+      priority: blockPriority || 'medium',
+      color: blockColor || '',
       reminder: 0,
       completed: false,
       date: dateKey,

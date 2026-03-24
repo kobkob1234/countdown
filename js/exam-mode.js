@@ -1071,6 +1071,7 @@
         if (!e.shiftKey && !confirm('מחק משימה זו?')) return;
         chip.remove();
         saveExamState(container);
+        if (window.showSubtleToast) window.showSubtleToast('הפריט הוסר מלוח הבחינות');
     }
 
     function toggleDayPassed(td, container) {
@@ -1457,6 +1458,156 @@
             }
         }
     };
+
+    // ===========================
+    // CROSS-INTEGRATION: Add chip to exam cell by date
+    // ===========================
+    window.addChipToExamCell = (dateObj, title, color) => {
+        const overlay = document.getElementById('examModeOverlay');
+        if (!overlay) return false;
+        const container = overlay.querySelector('.container');
+        if (!container) return false;
+
+        const targetDay = dateObj.getDate();
+        const targetMonth = dateObj.getMonth();
+        const targetYear = dateObj.getFullYear();
+        const monthKey = `${targetYear}-${targetMonth}`;
+
+        // Find the right table
+        const tables = container.querySelectorAll('table');
+        let targetCell = null;
+        for (const table of tables) {
+            if (table.dataset.month !== monthKey) continue;
+            const cells = table.querySelectorAll('td:not(.empty-cell)');
+            for (const cell of cells) {
+                const dateSpan = cell.querySelector('.date');
+                if (!dateSpan) continue;
+                const dayNum = parseInt(dateSpan.textContent);
+                if (dayNum === targetDay) {
+                    targetCell = cell;
+                    break;
+                }
+            }
+            if (targetCell) break;
+        }
+
+        if (!targetCell) return false;
+
+        // Create chip
+        const chip = document.createElement('div');
+        chip.className = 'chip';
+        if (color) chip.style.background = color;
+        const label = document.createElement('span');
+        label.className = 'chip-label';
+        label.textContent = title || '';
+        chip.appendChild(label);
+        addChipControls(chip);
+
+        // Insert before add button or at end
+        const addBtn = targetCell.querySelector('.add-tile-btn');
+        if (addBtn) {
+            targetCell.insertBefore(chip, addBtn);
+        } else {
+            targetCell.appendChild(chip);
+        }
+
+        saveExamState(container);
+        return true;
+    };
+
+    // ===========================
+    // CROSS-INTEGRATION: Chip context menu (right-click)
+    // ===========================
+    function getChipDateFromCell(chip) {
+        const td = chip.closest('td');
+        if (!td) return null;
+        const dateSpan = td.querySelector('.date');
+        if (!dateSpan) return null;
+        return parseDateFromSpan(dateSpan);
+    }
+
+    function showExamChipContextMenu(e, chip) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        // Need createContextMenu from context-menus module (exposed on ctx or try window)
+        const createMenu = (window.ctx && window.ctx.createContextMenu) || null;
+        // Fallback: check if ctx is available via import (it won't be in IIFE, so use a simpler approach)
+        if (!createMenu) {
+            // Try to find it on the global scope
+            const menuFn = document.querySelector('.dynamic-context-menu') ? null : null;
+            // If no context menu system available, skip
+            return;
+        }
+
+        const chipLabel = chip.querySelector('.chip-label');
+        const title = chipLabel ? chipLabel.textContent.trim() : '';
+        const chipDate = getChipDateFromCell(chip);
+        const color = chip.style.background || '';
+
+        const items = [];
+
+        // Create task from chip
+        if (window.ctx && window.ctx.createTask) {
+            items.push({
+                icon: '<span class="icon" style="font-size:16px;vertical-align:middle">check_circle</span>',
+                label: 'צור משימה',
+                action: () => {
+                    const taskData = {
+                        title: title || 'משימה מלוח בחינות',
+                        priority: 'medium',
+                        subject: '',
+                        completed: false
+                    };
+                    if (chipDate) {
+                        taskData.dueDate = chipDate.toISOString();
+                    }
+                    window.ctx.createTask(taskData);
+                    if (window.showSubtleToast) window.showSubtleToast('משימה נוצרה ✓');
+                }
+            });
+        }
+
+        // Add to daily planner
+        if (window.DailyPlanner && window.DailyPlanner.addPlannerBlock) {
+            items.push({
+                icon: '<span class="icon" style="font-size:16px;vertical-align:middle">event_note</span>',
+                label: 'הוסף למתכנן היומי',
+                action: () => {
+                    const dateKey = chipDate ? `${chipDate.getFullYear()}-${String(chipDate.getMonth() + 1).padStart(2, '0')}-${String(chipDate.getDate()).padStart(2, '0')}` : null;
+                    window.DailyPlanner.addPlannerBlock({
+                        title: title || 'פעילות מלוח בחינות',
+                        date: dateKey,
+                        duration: 60,
+                        color: color,
+                        priority: 'medium'
+                    });
+                    if (window.showSubtleToast) window.showSubtleToast('נוסף למתכנן ✓');
+                }
+            });
+        }
+
+        if (items.length === 0) return;
+
+        items.unshift({
+            header: `<span style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block">${title || 'פריט'}</span>`
+        });
+
+        createMenu(e.clientX, e.clientY, items, 'exam-chip-context-menu');
+    }
+
+    // Attach context menu to chips — hook into setupExamInteractions
+    const origSetup = setupExamInteractionsInternal;
+    setupExamInteractionsInternal = function(container) {
+        origSetup(container);
+        // Add right-click handlers to all chips
+        container.querySelectorAll('.chip').forEach(chip => {
+            if (chip.dataset.contextMenuBound) return;
+            chip.dataset.contextMenuBound = '1';
+            chip.addEventListener('contextmenu', (e) => showExamChipContextMenu(e, chip));
+        });
+    };
+    window.setupExamInteractions = setupExamInteractionsInternal;
 
     // Auto-initialize
     if (document.readyState === 'loading') {
