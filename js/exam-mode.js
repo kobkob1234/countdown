@@ -498,6 +498,8 @@
         const clone = tableEl.cloneNode(true);
         // Clean interactive elements
         clone.querySelectorAll('.add-tile-btn, .chip-check, .chip-delete, .chip-drag-handle, .chip-color-swatch, .day-passed-toggle, .day-passed-x, .exam-day-toggle, .exam-banner-color-btn, .exam-tile-color-btn, .exam-countdown-toggle, .countdown-badge').forEach(el => el.remove());
+        // Strip today highlight — it's re-applied dynamically on each render
+        clone.querySelectorAll('.exam-today').forEach(td => td.classList.remove('exam-today'));
         clone.querySelectorAll('.chip').forEach(c => {
             c.removeAttribute('contenteditable');
             c.removeAttribute('spellcheck');
