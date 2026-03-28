@@ -674,8 +674,10 @@
                 }
             }
 
-            // Re-apply today highlighting (saved data doesn't preserve it)
+            // Re-apply today highlighting: remove stale, add current
             const now = new Date();
+            // Always strip old today markers (may be baked into saved HTML from a previous day)
+            table.querySelectorAll('td.exam-today').forEach(td => td.classList.remove('exam-today'));
             if (year === now.getFullYear() && month === now.getMonth()) {
                 const cells = table.querySelectorAll('td:not(.empty-cell)');
                 cells.forEach(cell => {

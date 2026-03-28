@@ -359,13 +359,20 @@
 }
 
 #examModeOverlay td.exam-today {
-    border: 2px solid var(--accent);
-    background: var(--accent-soft);
+    border: 2px solid var(--accent) !important;
+    background: var(--accent-soft) !important;
+    box-shadow: inset 0 0 0 1px var(--accent), 0 0 8px hsl(var(--accent-hsl, 220 80% 56%) / 0.2);
 }
 
 #examModeOverlay td.exam-today .date {
-    color: var(--accent);
+    color: var(--accent) !important;
     font-weight: var(--font-weight-bold);
+}
+
+/* When today is also an exam day, show combined styling */
+#examModeOverlay td.exam-today.exam-day {
+    border: 2px solid var(--accent) !important;
+    background: linear-gradient(135deg, var(--accent-soft), hsl(0 84.2% 60.2% / 0.06)) !important;
 }
 
 #examModeOverlay .week-goal-row td {
