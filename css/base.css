@@ -888,40 +888,11 @@
       padding: 0 2px;
     }
 
-    /* Enhanced Context Menu */
-    .context-menu {
-      min-width: 180px;
-    }
-
-    .context-menu-divider {
-      height: 1px;
-      background: var(--border);
-      margin: 6px 0;
-    }
-
+    /* Context Menu icon sizing */
     .context-menu-item-icon {
-      width: 20px;
+      width: 18px;
       text-align: center;
-      margin-right: 8px;
-    }
-
-    .context-menu-item-shortcut {
-      margin-inline-start: auto;
-      font-size: 11px;
-      color: var(--muted);
-      padding-inline-start: 16px;
-    }
-
-    .context-menu-submenu {
-      position: relative;
-    }
-
-    .context-menu-submenu::after {
-      content: '▶';
-      position: absolute;
-      right: 8px;
-      font-size: 8px;
-      color: var(--muted);
+      flex-shrink: 0;
     }
 
     /* Undo/Redo Toast */
@@ -7525,27 +7496,37 @@
       box-shadow: var(--shadow-md);
       padding: var(--space-1);
       min-width: 180px;
-      z-index: 1000;
+      max-width: 260px;
+      z-index: 15000;
       display: none;
+      max-height: 80vh;
+      overflow-y: auto;
     }
 
     .context-menu.open {
       display: block;
+      animation: ctxFadeIn 0.12s ease;
+    }
+
+    @keyframes ctxFadeIn {
+      from { opacity: 0; transform: scale(0.96); }
+      to { opacity: 1; transform: scale(1); }
     }
 
     .context-menu-item {
-      padding: var(--space-1-5) var(--space-2);
+      padding: 6px 10px;
       border-radius: calc(var(--radius-sm) / 2);
       cursor: pointer;
       display: flex;
       align-items: center;
-      gap: var(--space-2);
+      gap: 8px;
       color: var(--text);
       font-family: var(--font);
-      font-size: var(--font-size-sm);
+      font-size: 13px;
       font-weight: var(--font-weight-medium);
-      line-height: 1.25rem;
+      line-height: 1.2;
       transition: background 0.1s;
+      white-space: nowrap;
     }
 
     .context-menu-item:hover {
@@ -7560,10 +7541,54 @@
       background: hsl(0 84.2% 60.2% / 0.1);
     }
 
+    .context-menu-header {
+      padding: 6px 10px 4px;
+      font-size: 11px;
+      color: var(--muted);
+      font-weight: 600;
+      user-select: none;
+    }
+
     .context-menu-divider {
       height: 1px;
       background: var(--border);
-      margin: 6px 0;
+      margin: 4px 0;
+    }
+
+    /* Submenu triggers */
+    .context-menu-submenu-trigger {
+      position: relative;
+    }
+
+    .context-menu-submenu-trigger.expanded {
+      background: var(--day-hover);
+    }
+
+    .context-menu-item-arrow {
+      opacity: 0.4;
+      margin-inline-start: auto;
+    }
+
+    .context-menu-item-shortcut {
+      opacity: 0.35;
+      font-size: 11px;
+      margin-inline-start: auto;
+    }
+
+    /* Submenu panel (inline expand) */
+    .context-menu-submenu-panel {
+      padding: 2px 0 2px 0;
+      margin: 0;
+    }
+
+    .context-menu-subitem {
+      padding: 5px 10px 5px 22px;
+      font-size: 12.5px;
+    }
+
+    .context-menu-subitem.active {
+      color: var(--accent);
+      font-weight: 600;
     }
 
     /* Daily Reminder Modal */
