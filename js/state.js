@@ -119,7 +119,7 @@ export const MAX_REMINDER_MINUTES = 10080; // 1 week maximum
 
 // Timing constants
 export const NOTIFY_TTL_MS = 1000 * 60 * 60 * 24 * 7; // 7 days
-export const REMINDER_CATCHUP_MAX_MS = 1000 * 60 * 60 * 12; // 12 hours
+export const REMINDER_CATCHUP_MAX_MS = 1000 * 60 * 60 * 48; // 48 hours
 export const REMINDER_CATCHUP_MAX_COUNT = 6;
 export const DELETE_TIMEOUT_MS = 10000;
 export const SYNC_TIMEOUT_MS = 15000;

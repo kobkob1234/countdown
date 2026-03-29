@@ -151,21 +151,38 @@ async function claimOnce(path) {
   const ref = db.ref(path);
   const now = Date.now();
   const SENDING_STALE_MS = 5 * 60 * 1000; // 5 minutes - allow takeover of stale claims
+  // Unique run ID to verify we own the claim after transaction
+  const runId = `${process.pid}-${now}-${Math.random().toString(36).slice(2, 8)}`;
 
   const res = await ref.transaction((cur) => {
     // Already sent successfully - skip
-    if (cur && cur.status === 'sent') return;
+    if (cur && cur.status === 'sent') return undefined;
+
+    // Already failed permanently - skip
+    if (cur && cur.status === 'failed') return undefined;
 
     // Another process claimed it - check if stale
     if (cur && cur.status === 'sending') {
       const ts = Number(cur.ts) || 0;
       // If claim is recent, don't take over
-      if (ts && (now - ts) < SENDING_STALE_MS) return;
-      // Otherwise, take over the stale claim
+      if (ts && (now - ts) < SENDING_STALE_MS) return undefined;
+      // Otherwise, take over the stale claim (log it)
+      console.log(`[push] Taking over stale claim at ${path} (age: ${Math.round((now - ts) / 1000)}s)`);
     }
 
-    return { status: 'sending', ts: now };
+    return { status: 'sending', ts: now, runId };
   });
+
+  // Verify we actually own the claim (prevents race where two instances both "committed")
+  if (res.committed) {
+    const snap = await ref.once('value');
+    const val = snap.val();
+    if (!val || val.runId !== runId) {
+      // Another process won the race
+      return { committed: false, ref };
+    }
+  }
+
   return { committed: !!res.committed, ref };
 }
 
@@ -192,15 +209,28 @@ function buildUrl(pathname = '/', params = {}) {
 }
 
 async function sendToSubscription({ userId, subKey, subscription, payload, dedupeKey }) {
+  // Use per-user claim (not per-subscription) to prevent duplicate notifications
+  // across multiple devices for the same reminder
   const sentHash = hashKey(dedupeKey);
-  const sentPath = `users/${userId}/pushSent/${subKey}/${sentHash}`;
+  const userSentPath = `users/${userId}/pushSentGlobal/${sentHash}`;
+  const perSubPath = `users/${userId}/pushSent/${subKey}/${sentHash}`;
 
-  const { committed, ref } = await claimOnce(sentPath);
-  if (!committed) return { skipped: true };
+  // First check per-user global claim — only one subscription should send per reminder
+  const { committed: globalClaimed, ref: globalRef } = await claimOnce(userSentPath);
+  if (!globalClaimed) return { skipped: true };
+
+  // Also claim per-subscription path for backward compat / cleanup
+  const { committed, ref } = await claimOnce(perSubPath);
+  if (!committed) {
+    // Per-sub already sent — mark global as sent too
+    await markSent(globalRef, { dedupeKey, subKey });
+    return { skipped: true };
+  }
 
   if (isDryRun) {
     console.log(`[DRY_RUN] Would send to user=${userId} sub=${subKey.slice(0, 8)}...`);
     await markSent(ref, { dryRun: true, dedupeKey });
+    await markSent(globalRef, { dryRun: true, dedupeKey, subKey });
     return { ok: true, dryRun: true };
   }
 
@@ -216,6 +246,7 @@ async function sendToSubscription({ userId, subKey, subscription, payload, dedup
         }
       });
       await markSent(ref, { dedupeKey, attempt });
+      await markSent(globalRef, { dedupeKey, subKey, attempt });
       if (attempt > 1) {
         console.log(`[push] Success on attempt ${attempt} for user=${userId}`);
       }
@@ -234,6 +265,7 @@ async function sendToSubscription({ userId, subKey, subscription, payload, dedup
 
       // Non-retryable or max retries reached
       await markFailed(ref, statusCode || null, { message, dedupeKey, attempts: attempt });
+      await markFailed(globalRef, statusCode || null, { message, dedupeKey, subKey, attempts: attempt });
       console.warn(`[push] Failed user=${userId} sub=${subKey.slice(0, 8)}... status=${statusCode || 'unknown'} msg=${message.slice(0, 100)}`);
 
       // Cleanup expired subscriptions (410 Gone / 404 Not Found)
@@ -495,7 +527,7 @@ async function runCheck() {
 }
 
 async function cleanupOldPushSent() {
-  // Clean up pushSent records older than 7 days to prevent database bloat
+  // Clean up pushSent and pushSentGlobal records older than 7 days
   const CLEANUP_AGE_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
   const cutoffTs = Date.now() - CLEANUP_AGE_MS;
 
@@ -505,6 +537,7 @@ async function cleanupOldPushSent() {
     let cleaned = 0;
 
     for (const [userId, userData] of Object.entries(users)) {
+      // Clean per-subscription records
       const pushSent = userData?.pushSent || {};
       for (const [subKey, records] of Object.entries(pushSent)) {
         for (const [recordKey, record] of Object.entries(records || {})) {
@@ -514,6 +547,16 @@ async function cleanupOldPushSent() {
             });
             cleaned++;
           }
+        }
+      }
+      // Clean global per-user records
+      const pushSentGlobal = userData?.pushSentGlobal || {};
+      for (const [recordKey, record] of Object.entries(pushSentGlobal)) {
+        if (record?.ts && record.ts < cutoffTs) {
+          await db.ref(`users/${userId}/pushSentGlobal/${recordKey}`).remove().catch((e) => {
+            console.warn('[cleanup] Failed to remove global sent record:', e.message);
+          });
+          cleaned++;
         }
       }
     }

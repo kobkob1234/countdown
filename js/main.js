@@ -185,9 +185,9 @@ const NOTIFY_KEYS = {
 const NOTIFY_TTL_MS = 1000 * 60 * 60 * 24 * 7;
 const NOTIFY_DEDUPE_CACHE = 'countdown-notify-dedupe-v1';
 const NOTIFY_DEDUPE_TTL_MS = NOTIFY_TTL_MS;
-const REMINDER_CATCHUP_MAX_MS = 1000 * 60 * 60 * 12;
+const REMINDER_CATCHUP_MAX_MS = 1000 * 60 * 60 * 48; // 48h catchup window
 const REMINDER_CATCHUP_MAX_COUNT = 6; // Limit burst after long inactivity.
-const NOTIFY_CHECK_PERSIST_MS = 30000;
+const NOTIFY_CHECK_PERSIST_MS = 5000; // Persist every 5s (was 30s — too long, risk of replay after crash)
 
 function loadNotifiedMap(storageKey) {
   const map = new Map();
@@ -287,7 +287,9 @@ async function markDedupeKeySeen(key, nowMs = Date.now()) {
     const cache = await caches.open(NOTIFY_DEDUPE_CACHE);
     const req = buildDedupeRequest(key);
     await cache.put(req, new Response(String(nowMs), { headers: { 'content-type': 'text/plain' } }));
-  } catch (e) { }
+  } catch (e) {
+    console.warn('[Notifications] Failed to mark dedupe key:', e?.message || e);
+  }
 }
 
 const notifiedEvents = loadNotifiedMap(NOTIFY_KEYS.EVENTS);

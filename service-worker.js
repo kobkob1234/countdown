@@ -1,5 +1,5 @@
 // Bump cache version when precache list or fetch strategy changes
-const CACHE_NAME = 'countdown-push-v52';
+const CACHE_NAME = 'countdown-push-v53';
 const NOTIFY_DEDUPE_CACHE = 'countdown-notify-dedupe-v1';
 const NOTIFY_DEDUPE_TTL_MS = 1000 * 60 * 60 * 24 * 7;
 const PENDING_SUB_DB = 'countdown-pending-sub';
@@ -103,23 +103,34 @@ function buildDedupeRequest(key) {
 
 async function wasDedupeKeySeen(key, nowMs = Date.now()) {
   if (!key || !self.caches) return false;
-  const cache = await caches.open(NOTIFY_DEDUPE_CACHE);
-  const req = buildDedupeRequest(key);
-  const res = await cache.match(req);
-  if (!res) return false;
-  const ts = Number(await res.text()) || 0;
-  if (!ts || (nowMs - ts) > NOTIFY_DEDUPE_TTL_MS) {
-    await cache.delete(req);
+  try {
+    const cache = await caches.open(NOTIFY_DEDUPE_CACHE);
+    const req = buildDedupeRequest(key);
+    const res = await cache.match(req);
+    if (!res) return false;
+    const ts = Number(await res.text()) || 0;
+    if (!ts || (nowMs - ts) > NOTIFY_DEDUPE_TTL_MS) {
+      await cache.delete(req).catch(() => {});
+      return false;
+    }
+    return true;
+  } catch (e) {
+    // Cache failure — safer to assume NOT seen (show notification)
+    // rather than silently dropping it
+    console.warn('[SW] Dedupe check failed:', e?.message || e);
     return false;
   }
-  return true;
 }
 
 async function markDedupeKeySeen(key, nowMs = Date.now()) {
   if (!key || !self.caches) return;
-  const cache = await caches.open(NOTIFY_DEDUPE_CACHE);
-  const req = buildDedupeRequest(key);
-  await cache.put(req, new Response(String(nowMs), { headers: { 'content-type': 'text/plain' } }));
+  try {
+    const cache = await caches.open(NOTIFY_DEDUPE_CACHE);
+    const req = buildDedupeRequest(key);
+    await cache.put(req, new Response(String(nowMs), { headers: { 'content-type': 'text/plain' } }));
+  } catch (e) {
+    console.warn('[SW] Failed to mark dedupe key:', e?.message || e);
+  }
 }
 
 // Fix #9: Batch cleanup of expired dedupe entries
