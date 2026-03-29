@@ -395,7 +395,9 @@ async function runCheck() {
       if (!shouldTrigger(nowMs, dueMs, reminderMinutes)) continue;
 
       const offset = formatReminderOffset(reminderMinutes);
-      const dedupeKey = `task|${userId}|${task.id}|${task.dueDate}|${reminderMinutes}`;
+      // Normalize dueDate to ISO to match client-side dedupe key format
+      const dueDateIso = new Date(task.dueDate).toISOString();
+      const dedupeKey = `task|${userId}|${task.id}|${dueDateIso}|${reminderMinutes}`;
       const payload = {
         title: `Task Reminder 📋`,
         body: `${task.title || 'Task'} is due in ${offset}`,
@@ -486,12 +488,19 @@ async function runCheck() {
       if (!shouldTrigger(nowMs, dueMs, reminderMinutes)) continue;
 
       const offset = formatReminderOffset(reminderMinutes);
-      // Send to each user who has access to this shared subject
+      const sharedDueDateIso = new Date(task.dueDate).toISOString();
+      // Send to each user who has active access to this shared subject
       for (const userId of allUsers) {
+        // Verify user still has access (owner always has access, members must be active)
+        if (userId !== owner) {
+          const memberEntry = members[userId];
+          // Skip removed/inactive members
+          if (!memberEntry || memberEntry === false || memberEntry.removed) continue;
+        }
         const userEntry = users.find(u => u.userId === userId);
         if (!userEntry) continue;
 
-        const dedupeKey = `shared-task|${userId}|${subject.id}|${taskId}|${task.dueDate}|${reminderMinutes}`;
+        const dedupeKey = `shared-task|${userId}|${subject.id}|${taskId}|${sharedDueDateIso}|${reminderMinutes}`;
         const payload = {
           title: `Shared Task Reminder 📋`,
           body: `${task.title || 'Task'} is due in ${offset}`,

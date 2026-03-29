@@ -90,7 +90,8 @@ export function initDailyReminder() {
 
     if (lastReminder === todayString) return;
 
-    if (now.getHours() === 9 && now.getMinutes() < 30) {
+    // Show between 8:00–10:59 (wider window so it's not missed at exactly 9:30)
+    if (now.getHours() >= 8 && now.getHours() <= 10) {
       const tasks = ctx.tasks || [];
       const subjects = ctx.subjects || [];
       if (tasks.length > 0 || subjects.length > 0) {

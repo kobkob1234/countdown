@@ -230,6 +230,7 @@ export function initDailyPlanner() {
   };
 
   let plannerCloudSyncStarted = false;
+  let cloudSyncInProgress = false; // Guard against local/cloud race
 
   const startPlannerCloudSync = () => {
     if (plannerCloudSyncStarted) return;
@@ -250,6 +251,7 @@ export function initDailyPlanner() {
       const shouldApply = updatedAt > plannerUpdatedAt
         || (updatedAt === 0 && plannerUpdatedAt === 0 && plannerBlocks.length === 0 && items.length > 0);
       if (!shouldApply) return;
+      cloudSyncInProgress = true;
       plannerBlocks = items;
       if (updatedAt === 0) {
         saveBlocks();
@@ -257,6 +259,8 @@ export function initDailyPlanner() {
         saveBlocks({ updatedAt, skipCloud: true });
       }
       render();
+      // Release lock after a short delay to let any in-flight local saves complete
+      setTimeout(() => { cloudSyncInProgress = false; }, 100);
     }, (error) => {
       console.warn('[Planner] Cloud sync failed:', error);
     });
@@ -304,7 +308,10 @@ export function initDailyPlanner() {
         const reminderMinutes = Number.parseInt(block.reminder, 10) || 0;
         if (!reminderMinutes) return;
         const blockTime = parsePlannerBlockDateTime(block);
-        if (!blockTime) return;
+        if (!blockTime) {
+          console.warn('[Planner] Block has invalid date/time, skipping reminder:', block.title, block.date, block.start);
+          return;
+        }
         const reminderKey = `${block.date || ''}|${block.start || ''}|${reminderMinutes}`;
         const entry = notifiedPlannerBlocks.get(block.id);
         if (entry && entry.key === reminderKey) return;

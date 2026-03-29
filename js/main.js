@@ -215,6 +215,13 @@ function loadNotifiedMap(storageKey) {
 
 function persistNotifiedMap(storageKey, map) {
   try {
+    // Cap map size to prevent unbounded growth — keep newest entries
+    const MAX_NOTIFIED_ENTRIES = 200;
+    if (map.size > MAX_NOTIFIED_ENTRIES) {
+      const sorted = [...map.entries()].sort((a, b) => (b[1]?.ts || 0) - (a[1]?.ts || 0));
+      map.clear();
+      sorted.slice(0, MAX_NOTIFIED_ENTRIES).forEach(([id, entry]) => map.set(id, entry));
+    }
     const payload = {};
     map.forEach((entry, id) => {
       if (!entry || !entry.key) return;

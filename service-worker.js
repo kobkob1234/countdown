@@ -1,5 +1,5 @@
 // Bump cache version when precache list or fetch strategy changes
-const CACHE_NAME = 'countdown-push-v53';
+const CACHE_NAME = 'countdown-push-v54';
 const NOTIFY_DEDUPE_CACHE = 'countdown-notify-dedupe-v1';
 const NOTIFY_DEDUPE_TTL_MS = 1000 * 60 * 60 * 24 * 7;
 const PENDING_SUB_DB = 'countdown-pending-sub';
@@ -395,14 +395,21 @@ self.addEventListener('pushsubscriptionchange', (event) => {
         // Need to resubscribe with the same application server key
         const applicationServerKey = oldSubscription.options?.applicationServerKey;
         if (applicationServerKey) {
-          try {
-            newSubscription = await self.registration.pushManager.subscribe({
-              userVisibleOnly: true,
-              applicationServerKey: applicationServerKey
-            });
-            console.log('[SW] Resubscribed successfully');
-          } catch (e) {
-            console.error('[SW] Resubscribe failed:', e);
+          // Retry with exponential backoff (3 attempts: 1s, 3s, 9s)
+          for (let attempt = 1; attempt <= 3; attempt++) {
+            try {
+              newSubscription = await self.registration.pushManager.subscribe({
+                userVisibleOnly: true,
+                applicationServerKey: applicationServerKey
+              });
+              console.log(`[SW] Resubscribed successfully (attempt ${attempt})`);
+              break;
+            } catch (e) {
+              console.warn(`[SW] Resubscribe attempt ${attempt}/3 failed:`, e?.message || e);
+              if (attempt < 3) {
+                await new Promise(r => setTimeout(r, 1000 * Math.pow(3, attempt - 1)));
+              }
+            }
           }
         }
       }
