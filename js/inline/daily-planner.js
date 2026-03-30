@@ -300,6 +300,15 @@ export function initDailyPlanner() {
     try {
       ensureBlocksLoaded();
       pruneNotifiedPlannerBlocks();
+
+      // Clean orphaned blocks whose linked task was deleted (silently, no cloud write needed)
+      if (ctx.tasks && Array.isArray(ctx.tasks)) {
+        const taskIds = new Set(ctx.tasks.map(t => t.id));
+        const before = plannerBlocks.length;
+        plannerBlocks = plannerBlocks.filter(b => !b.linkedTaskId || taskIds.has(b.linkedTaskId));
+        if (plannerBlocks.length !== before) saveBlocks();
+      }
+
       const state = reminderCheckState.planner;
       const { start, isCatchup } = getReminderWindow(state.lastCheck, nowMs);
       const candidates = [];
@@ -366,6 +375,16 @@ export function initDailyPlanner() {
     checkPlannerReminders();
     plannerReminderTickerHandle = setInterval(() => {
       checkPlannerReminders();
+      // Auto-advance date at midnight if planner was left open showing today
+      if (isToday(currentDate)) {
+        const nowDate = new Date();
+        if (nowDate.getDate() !== currentDate.getDate() ||
+            nowDate.getMonth() !== currentDate.getMonth() ||
+            nowDate.getFullYear() !== currentDate.getFullYear()) {
+          currentDate = nowDate;
+          render();
+        }
+      }
     }, 10000);
   };
 
@@ -1047,12 +1066,12 @@ export function initDailyPlanner() {
         doc.querySelectorAll('td').forEach(td => {
           if (td.querySelector('.chip') || td.classList.contains('exam-day')) {
             const dateSpan = td.querySelector('.date');
-            if (dateSpan) examDays.add(parseInt(dateSpan.textContent));
+            if (dateSpan) examDays.add(Number.parseInt(dateSpan.textContent, 10));
           }
         });
         if (examDays.size > 0) {
           refs.miniGrid.querySelectorAll('.planner-mini-day:not(.other-month)').forEach(el => {
-            const dayNum = parseInt(el.textContent);
+            const dayNum = Number.parseInt(el.textContent, 10);
             if (examDays.has(dayNum)) {
               el.classList.add('has-exam');
             }
@@ -2002,6 +2021,8 @@ export function initDailyPlanner() {
 
   // Main render function
   const render = () => {
+    // Skip re-render while user is actively dragging to avoid orphaning ghost element
+    if (timelineDragState) return;
     if (typeof ctx.eventsLoaded !== 'undefined' && typeof ctx.hasEventsCache !== 'undefined') {
       if (ctx.eventsLoaded || ctx.hasEventsCache) {
         pruneDeletedEventBlocks();
@@ -2135,35 +2156,21 @@ export function initDailyPlanner() {
       renderMiniCalendar();
     };
 
-    // Sync buttons
+    // Sync buttons — always remove syncing class even if sync throws
+    const withSyncing = (btn, fn) => {
+      btn.classList.add('syncing');
+      try { fn(); } catch (e) { console.warn('[Planner] Sync error:', e); }
+      finally { setTimeout(() => btn.classList.remove('syncing'), 500); }
+    };
+
     if (refs.syncAllBtn) {
-      refs.syncAllBtn.onclick = () => {
-        refs.syncAllBtn.classList.add('syncing');
-        const count = syncAll();
-        setTimeout(() => {
-          refs.syncAllBtn.classList.remove('syncing');
-        }, 500);
-      };
+      refs.syncAllBtn.onclick = () => withSyncing(refs.syncAllBtn, syncAll);
     }
-
     if (refs.syncCountdownsBtn) {
-      refs.syncCountdownsBtn.onclick = () => {
-        refs.syncCountdownsBtn.classList.add('syncing');
-        syncAllCountdowns();
-        setTimeout(() => {
-          refs.syncCountdownsBtn.classList.remove('syncing');
-        }, 500);
-      };
+      refs.syncCountdownsBtn.onclick = () => withSyncing(refs.syncCountdownsBtn, syncAllCountdowns);
     }
-
     if (refs.syncTasksBtn) {
-      refs.syncTasksBtn.onclick = () => {
-        refs.syncTasksBtn.classList.add('syncing');
-        syncAllScheduledTasks();
-        setTimeout(() => {
-          refs.syncTasksBtn.classList.remove('syncing');
-        }, 500);
-      };
+      refs.syncTasksBtn.onclick = () => withSyncing(refs.syncTasksBtn, syncAllScheduledTasks);
     }
 
     // Section collapse toggles

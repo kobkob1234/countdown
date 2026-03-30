@@ -1628,8 +1628,9 @@
 
         if (items.length === 0) return;
 
+        const safeTitle = (title || 'פריט').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
         items.unshift({
-            header: `<span style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block">${title || 'פריט'}</span>`
+            header: `<span style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block">${safeTitle}</span>`
         });
 
         createMenu(e.clientX, e.clientY, items, 'exam-chip-context-menu');

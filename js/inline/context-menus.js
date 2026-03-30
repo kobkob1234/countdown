@@ -83,17 +83,17 @@ export function initContextMenus() {
     if (rect.bottom > window.innerHeight) menu.style.top = (window.innerHeight - rect.height - 10) + 'px';
     if (rect.left < 0) menu.style.left = '10px';
 
-    setTimeout(() => {
-      const closeHandler = (e) => {
-        if (!menu.contains(e.target)) {
-          menu.remove();
-          document.removeEventListener('click', closeHandler);
-          document.removeEventListener('contextmenu', closeHandler);
-        }
-      };
-      document.addEventListener('click', closeHandler);
-      document.addEventListener('contextmenu', closeHandler);
-    }, 0);
+    // Attach close handler synchronously — the contextmenu event that opened the menu
+    // has already bubbled past, so this won't immediately close the menu.
+    const closeHandler = (e) => {
+      if (!menu.contains(e.target)) {
+        menu.remove();
+        document.removeEventListener('click', closeHandler);
+        document.removeEventListener('contextmenu', closeHandler);
+      }
+    };
+    document.addEventListener('click', closeHandler);
+    document.addEventListener('contextmenu', closeHandler);
 
     return menu;
   }
@@ -229,7 +229,9 @@ export function initContextMenus() {
     const task = ctx.tasks.find(t => t.id === taskId);
     if (!task) return;
     const { id, isOwn, isShared, ...clean } = task;
-    ctx.saveTask(taskId, { ...clean, subject: subjectId || '' }, subjectId || '');
+    // Always normalize to null (not '') for "no subject" to keep Firebase paths consistent
+    const normalized = subjectId || null;
+    ctx.saveTask(taskId, { ...clean, subject: normalized }, normalized || '');
   }
 
   function setTaskDueDate(taskId, daysFromNow) {

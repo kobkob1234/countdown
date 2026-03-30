@@ -185,7 +185,7 @@ const NOTIFY_KEYS = {
 const NOTIFY_TTL_MS = 1000 * 60 * 60 * 24 * 7;
 const NOTIFY_DEDUPE_CACHE = 'countdown-notify-dedupe-v1';
 const NOTIFY_DEDUPE_TTL_MS = NOTIFY_TTL_MS;
-const REMINDER_CATCHUP_MAX_MS = 1000 * 60 * 60 * 48; // 48h catchup window
+const REMINDER_CATCHUP_MAX_MS = 1000 * 60 * 30; // 30min catchup window — reminders older than this are stale
 const REMINDER_CATCHUP_MAX_COUNT = 6; // Limit burst after long inactivity.
 const NOTIFY_CHECK_PERSIST_MS = 5000; // Persist every 5s (was 30s — too long, risk of replay after crash)
 
@@ -1195,19 +1195,21 @@ async function triggerAlert(evt, nowMs = Date.now()) {
   const eventTime = new Date(evt.date).getTime();
   if (!Number.isFinite(eventTime)) return;
   const diffMinutes = Math.round((eventTime - nowMs) / 60000);
+  // Format absolute time in Israel timezone for context
+  const absTime = new Date(evt.date).toLocaleTimeString('he-IL', { timeZone: 'Asia/Jerusalem', hour: '2-digit', minute: '2-digit' });
   let msg = '';
   let inAppMsg = '';
   if (diffMinutes > 0) {
     const timeString = formatReminderOffset(Math.max(1, diffMinutes));
-    msg = `${evt.name} starts in ${timeString}!`;
-    inAppMsg = `Starting in ${timeString}`;
+    msg = `${evt.name} מתחיל בעוד ${timeString} (${absTime})`;
+    inAppMsg = `מתחיל בעוד ${timeString} (${absTime})`;
   } else if (diffMinutes < 0) {
     const timeString = formatReminderOffset(Math.max(1, Math.abs(diffMinutes)));
-    msg = `${evt.name} started ${timeString} ago`;
-    inAppMsg = `Started ${timeString} ago`;
+    msg = `${evt.name} התחיל לפני ${timeString}`;
+    inAppMsg = `התחיל לפני ${timeString}`;
   } else {
-    msg = `${evt.name} starts now!`;
-    inAppMsg = 'Starting now';
+    msg = `${evt.name} מתחיל עכשיו! (${absTime})`;
+    inAppMsg = `מתחיל עכשיו (${absTime})`;
   }
 
   showSystemNotification("Event Reminder", {
@@ -2638,8 +2640,11 @@ if (editTaskSubject) {
  * saves to Firebase, and resets the form.
  */
 function addTask() {
+  if (addTaskBtn.disabled) return;
   const title = newTaskTitle.value.trim();
   if (!title) return;
+  addTaskBtn.disabled = true;
+  setTimeout(() => { addTaskBtn.disabled = false; }, 800);
 
   const dueValue = newTaskDue.value;
   const dueDate = dueValue ? parseLocal(dueValue) : null;
@@ -2714,9 +2719,11 @@ document.querySelectorAll('.filter-pill').forEach(pill => {
   });
 });
 
-// Search
+// Search — debounced to avoid re-rendering on every keystroke
+let taskSearchDebounce = null;
 taskSearch.addEventListener('input', () => {
-  renderTasks();
+  clearTimeout(taskSearchDebounce);
+  taskSearchDebounce = setTimeout(renderTasks, 200);
 });
 
 const tasksEmptyDefaults = tasksEmpty ? {
@@ -3074,6 +3081,17 @@ function renderTasks() {
   if (filtered.length === 0 && !showingSuggested) {
     tasksEmpty.style.display = 'block';
     activeSection.style.display = 'none';
+    // Differentiate: search active vs truly no tasks
+    const searchQuery = taskSearch?.value?.trim();
+    if (searchQuery) {
+      setTasksEmptyMessage(
+        '<span class="icon" style="font-size:48px">search_off</span>',
+        `לא נמצאו תוצאות עבור "${searchQuery}"`,
+        'נסה חיפוש אחר או בטל את הסינון'
+      );
+    } else if (tasksEmptyDefaults) {
+      setTasksEmptyMessage(tasksEmptyDefaults.icon, tasksEmptyDefaults.title, tasksEmptyDefaults.desc);
+    }
   } else {
     tasksEmpty.style.display = 'none';
   }
@@ -3881,6 +3899,9 @@ async function checkTaskReminders(nowMs = Date.now()) {
   if (taskReminderCheckInFlight) return;
   taskReminderCheckInFlight = true;
   try {
+    // Prune stale entries (tasks deleted or TTL expired) to keep map lean
+    pruneNotifiedMap(NOTIFY_KEYS.TASKS, notifiedTasks, new Set((ctx.tasks || []).map(t => t.id)));
+
     const state = reminderCheckState.tasks;
     const { start, isCatchup } = getReminderWindow(state.lastCheck, nowMs);
     const candidates = [];
@@ -3894,14 +3915,14 @@ async function checkTaskReminders(nowMs = Date.now()) {
       const reminderMinutes = Number.parseInt(task.reminder, 10) || 0;
       if (!reminderMinutes) return;
       if (!task.dueDate) return;
-      
+      const taskTime = new Date(task.dueDate).getTime();
+      if (!Number.isFinite(taskTime)) return; // Guard against malformed dueDate strings
+
       // Convert dueDate to ISO string for consistent dedupe key format with server
       const dueDateIso = new Date(task.dueDate).toISOString();
       const reminderKey = `${dueDateIso}|${reminderMinutes}`;
       const entry = notifiedTasks.get(task.id);
       if (entry && entry.key === reminderKey) return;
-      const taskTime = new Date(task.dueDate).getTime();
-      if (!Number.isFinite(taskTime)) return;
       const triggerTime = taskTime - (reminderMinutes * 60000);
       if (triggerTime < start || triggerTime > nowMs) return;
       

@@ -80,18 +80,20 @@ export function initDailyReminder() {
 
   closeReminderBtn.onclick = () => {
     reminderModal.classList.remove('open');
-    localStorage.setItem('lastReminderDate', new Date().toDateString());
+    // Use ISO date in Israel timezone for timezone-safe dedup
+    localStorage.setItem('lastReminderDate', new Date().toLocaleDateString('sv', { timeZone: 'Asia/Jerusalem' }));
   };
 
   function checkDailyReminder() {
     const now = new Date();
     const lastReminder = localStorage.getItem('lastReminderDate');
-    const todayString = now.toDateString();
+    // ISO date in Israel timezone (e.g. "2026-03-29") — not toDateString() which varies by locale/TZ
+    const todayString = now.toLocaleDateString('sv', { timeZone: 'Asia/Jerusalem' });
 
     if (lastReminder === todayString) return;
 
-    // Show between 8:00–10:59 (wider window so it's not missed at exactly 9:30)
-    if (now.getHours() >= 8 && now.getHours() <= 10) {
+    // Show from 8:00 onwards — per-day dedup prevents showing twice in same day
+    if (now.getHours() >= 8) {
       const tasks = ctx.tasks || [];
       const subjects = ctx.subjects || [];
       if (tasks.length > 0 || subjects.length > 0) {
