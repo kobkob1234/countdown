@@ -1129,10 +1129,11 @@ Object.assign(ctx, { saveToCloud, updateInCloud, deleteFromCloud, clearAllCloud 
 
 function formatDate(iso) {
   const d = new Date(iso);
-  const day = d.getDate();
-  const month = d.toLocaleString('he-IL', { month: 'short' });
-  const weekday = d.toLocaleString('he-IL', { weekday: 'short' });
-  const time = d.toLocaleString('he-IL', { hour: '2-digit', minute: '2-digit' });
+  const TZ = 'Asia/Jerusalem';
+  const day = d.toLocaleString('he-IL', { timeZone: TZ, day: 'numeric' });
+  const month = d.toLocaleString('he-IL', { timeZone: TZ, month: 'short' });
+  const weekday = d.toLocaleString('he-IL', { timeZone: TZ, weekday: 'short' });
+  const time = d.toLocaleString('he-IL', { timeZone: TZ, hour: '2-digit', minute: '2-digit' });
   return `${weekday}, ${day} ${month}, ${time}`;
 }
 
@@ -3949,7 +3950,8 @@ function startTaskReminderTicker() {
 
 async function triggerTaskAlert(task) {
   const dueDate = new Date(task.dueDate);
-  const dateStr = dueDate.toLocaleDateString('he-IL', { weekday: 'long', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+  // toLocaleString (not toLocaleDateString) to include time; always use Israel timezone
+  const dateStr = dueDate.toLocaleString('he-IL', { timeZone: 'Asia/Jerusalem', weekday: 'long', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
   const title = `תזכורת משימה: ${task.title}`;
   const message = `מועד יעד: ${dateStr}`;
 

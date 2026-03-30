@@ -288,8 +288,9 @@ export function initDailyPlanner() {
   const formatPlannerReminderMessage = (block) => {
     const blockDate = parsePlannerBlockDateTime(block);
     if (!blockDate) return 'מתחיל בקרוב';
-    const dateStr = blockDate.toLocaleDateString('he-IL', { weekday: 'long', month: 'short', day: 'numeric' });
-    const timeStr = blockDate.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });
+    const TZ = 'Asia/Jerusalem';
+    const dateStr = blockDate.toLocaleDateString('he-IL', { timeZone: TZ, weekday: 'long', month: 'short', day: 'numeric' });
+    const timeStr = blockDate.toLocaleTimeString('he-IL', { timeZone: TZ, hour: '2-digit', minute: '2-digit' });
     return `מתחיל ב-${timeStr} • ${dateStr}`;
   };
 
