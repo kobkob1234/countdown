@@ -94,6 +94,7 @@ function formatPlannerWhen(startMs) {
     if (!Number.isFinite(startMs)) return '';
     try {
         return new Date(startMs).toLocaleString('he-IL', {
+            timeZone: 'Asia/Jerusalem',
             weekday: 'short',
             month: 'short',
             day: 'numeric',
