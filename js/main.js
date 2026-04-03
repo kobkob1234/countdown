@@ -5481,11 +5481,24 @@ newTaskTitle.addEventListener('keydown', (e) => {
       ? parsed.reminderMinutes
       : getTaskReminderMinutes(newTaskReminder, newTaskReminderCustomValue, newTaskReminderCustomUnit);
 
+    // Auto-fill date from smart view if NLP didn't parse one
+    let nlpDueDate = parsed.dueDate || null;
+    if (!nlpDueDate) {
+      if (currentSmartView === 'today') {
+        nlpDueDate = new Date();
+        nlpDueDate.setHours(23, 59, 0, 0);
+      } else if (currentFilter === 'tomorrow') {
+        nlpDueDate = new Date();
+        nlpDueDate.setDate(nlpDueDate.getDate() + 1);
+        nlpDueDate.setHours(23, 59, 0, 0);
+      }
+    }
+
     const taskData = {
       title: parsed.title || input,
       content: '',
       priority: parsed.priority,
-      dueDate: parsed.dueDate ? parsed.dueDate.toISOString() : null,
+      dueDate: nlpDueDate ? nlpDueDate.toISOString() : null,
       subject: selectedSubjectId || '',
       checklist: [],
       completed: false,
