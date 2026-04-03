@@ -2646,7 +2646,20 @@ function addTask() {
   addTaskBtn.disabled = true;
   setTimeout(() => { addTaskBtn.disabled = false; }, 800);
 
-  const dueValue = newTaskDue.value;
+  let dueValue = newTaskDue.value;
+  // Auto-fill date when in today/tomorrow view and user didn't set one
+  if (!dueValue) {
+    if (currentSmartView === 'today') {
+      const d = new Date();
+      d.setHours(23, 59, 0, 0);
+      dueValue = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}T23:59`;
+    } else if (currentFilter === 'tomorrow') {
+      const d = new Date();
+      d.setDate(d.getDate() + 1);
+      d.setHours(23, 59, 0, 0);
+      dueValue = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}T23:59`;
+    }
+  }
   const dueDate = dueValue ? parseLocal(dueValue) : null;
   const recurrenceResult = getTaskRecurrenceValue(newTaskRecurrence, newTaskRecurrenceCustomValue, newTaskRecurrenceCustomUnit);
   if (recurrenceResult.error) {
