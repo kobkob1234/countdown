@@ -1446,36 +1446,45 @@
                                 set(examRef, { html: saved, legend: localStorage.getItem('examLegendConfig') || null, updatedAt: Date.now() })
                                     .then(() => console.log('[ExamMode] Migration complete.'));
                             } else if (remoteContent && isInitialSync && !saved) {
-                                // Restore from cloud when localStorage is empty (e.g. after cache clear)
-                                console.log('[ExamMode] Restoring from cloud...');
-                                localStorage.setItem('examModeContent', remoteContent);
-                                // Extract per-month data from the combined HTML
-                                try {
-                                    const tempDiv = document.createElement('div');
-                                    tempDiv.innerHTML = remoteContent;
-                                    tempDiv.querySelectorAll('table[data-month]').forEach(table => {
-                                        const monthKey = table.dataset.month;
-                                        if (monthKey) {
-                                            localStorage.setItem(`examMonth_${monthKey}`, table.innerHTML);
+                                // Cloud has data but localStorage is empty (cache cleared / new device)
+                                // Show a visible recovery banner instead of silently restoring
+                                const existingBanner = overlay.querySelector('.exam-recovery-banner');
+                                if (!existingBanner) {
+                                    const banner = document.createElement('div');
+                                    banner.className = 'exam-recovery-banner';
+                                    banner.innerHTML = `
+                                        <span class="icon" style="font-size:18px;vertical-align:middle">cloud_download</span>
+                                        <span>נמצאו נתוני לוח בחינות בענן — הנתונים המקומיים חסרים</span>
+                                        <button class="exam-recovery-btn">שחזר מהענן</button>
+                                        <button class="exam-recovery-dismiss">✕</button>
+                                    `;
+                                    banner.querySelector('.exam-recovery-btn').onclick = () => {
+                                        banner.remove();
+                                        try {
+                                            localStorage.setItem('examModeContent', remoteContent);
+                                            const tempDiv = document.createElement('div');
+                                            tempDiv.innerHTML = remoteContent;
+                                            tempDiv.querySelectorAll('table[data-month]').forEach(table => {
+                                                const monthKey = table.dataset.month;
+                                                if (monthKey) localStorage.setItem(`examMonth_${monthKey}`, table.innerHTML);
+                                            });
+                                            tempDiv.querySelectorAll('h2[data-month]').forEach(h2 => {
+                                                if (h2.dataset.month) localStorage.setItem(`examMonthTitle_${h2.dataset.month}`, h2.textContent);
+                                            });
+                                            const h1 = tempDiv.querySelector('h1');
+                                            if (h1) localStorage.setItem('examTitle', h1.textContent);
+                                            if (remoteLegend) localStorage.setItem('examLegendConfig', remoteLegend);
+                                        } catch (e) {
+                                            console.warn('[ExamMode] Failed to extract per-month data:', e);
                                         }
-                                    });
-                                    tempDiv.querySelectorAll('h2[data-month]').forEach(h2 => {
-                                        if (h2.dataset.month) {
-                                            localStorage.setItem(`examMonthTitle_${h2.dataset.month}`, h2.textContent);
-                                        }
-                                    });
-                                    const h1 = tempDiv.querySelector('h1');
-                                    if (h1) localStorage.setItem('examTitle', h1.textContent);
-                                    // Restore legend config
-                                    if (remoteLegend) {
-                                        localStorage.setItem('examLegendConfig', remoteLegend);
-                                    }
-                                } catch (e) {
-                                    console.warn('[ExamMode] Failed to extract per-month data from cloud:', e);
+                                        renderMonths(container);
+                                        setupExamInteractionsInternal(container);
+                                    };
+                                    banner.querySelector('.exam-recovery-dismiss').onclick = () => banner.remove();
+                                    // Insert at top of overlay content
+                                    const overlayContent = overlay.querySelector('.exam-overlay-content') || overlay;
+                                    overlayContent.insertBefore(banner, overlayContent.firstChild);
                                 }
-                                // Re-render with restored data
-                                renderMonths(container);
-                                setupExamInteractionsInternal(container);
                             }
                             isInitialSync = false;
                         });

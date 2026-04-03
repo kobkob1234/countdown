@@ -455,6 +455,39 @@ export function initDailyPlanner() {
     }
   };
 
+  // Compute side-by-side columns for overlapping blocks (Item B)
+  const computeBlockLayout = (blocks) => {
+    const sorted = [...blocks].sort((a, b) => parseTime(a.start) - parseTime(b.start));
+    const layoutMap = new Map();
+    const colEnds = []; // colEnds[i] = end time of last block assigned to column i
+
+    for (const block of sorted) {
+      const startMin = parseTime(block.start);
+      const endMin = startMin + (block.duration || 60);
+      let col = 0;
+      while (col < colEnds.length && colEnds[col] > startMin) col++;
+      if (col === colEnds.length) colEnds.push(endMin);
+      else colEnds[col] = endMin;
+      layoutMap.set(block.id, { col, totalCols: 1 });
+    }
+
+    // Second pass: set totalCols = max overlapping column count per group
+    for (const block of sorted) {
+      const sMin = parseTime(block.start);
+      const eMin = sMin + (block.duration || 60);
+      let maxCol = layoutMap.get(block.id).col;
+      for (const other of sorted) {
+        if (other.id === block.id) continue;
+        const oS = parseTime(other.start);
+        const oE = oS + (other.duration || 60);
+        if (sMin < oE && eMin > oS) maxCol = Math.max(maxCol, layoutMap.get(other.id).col);
+      }
+      layoutMap.get(block.id).totalCols = maxCol + 1;
+    }
+
+    return layoutMap;
+  };
+
   // Render timeline for day view
   const renderTimeline = () => {
     if (!refs.timeline) return;
@@ -464,6 +497,9 @@ export function initDailyPlanner() {
     const isCurrentDay = isToday(currentDate);
     const currentMinutes = now.getHours() * 60 + now.getMinutes();
     const hasBlocks = blocks.length > 0;
+
+    // Pre-compute overlap layout for all blocks
+    const blockLayout = computeBlockLayout(blocks);
 
     let html = '';
 
@@ -488,7 +524,7 @@ export function initDailyPlanner() {
         <div class="planner-hour-label">${hourLabel}</div>
         <div class="planner-hour-content" data-hour="${hour}">
           ${hasBlocks ? '<span class="planner-empty-hour">+ לחץ להוספה</span>' : ''}
-          ${hourBlocks.map(block => renderBlock(block, hourMinutes)).join('')}
+          ${hourBlocks.map(block => renderBlock(block, hourMinutes, blockLayout.get(block.id))).join('')}
           ${isCurrentDay && currentMinutes >= hourMinutes && currentMinutes < hourMinutes + 60 ? renderNowLine(currentMinutes - hourMinutes) : ''}
         </div>
       </div>
@@ -594,12 +630,22 @@ export function initDailyPlanner() {
   };
 
   // Render a single block
-  const renderBlock = (block, hourMinutes) => {
+  const renderBlock = (block, hourMinutes, layout) => {
     const startMin = parseTime(block.start);
     const offsetMin = startMin - hourMinutes;
     const duration = block.duration || 60;
     const heightPx = Math.max(15, duration * 1); // 1px per minute, min 15px
     const topPx = offsetMin * 1;
+
+    // Side-by-side layout for overlapping blocks (Item B)
+    const totalCols = layout?.totalCols || 1;
+    const col = layout?.col || 0;
+    let overlapStyle = '';
+    if (totalCols > 1) {
+      const colWidthPct = 100 / totalCols;
+      const leftPct = col * colWidthPct;
+      overlapStyle = `left: calc(${leftPct.toFixed(1)}% + 4px); width: calc(${colWidthPct.toFixed(1)}% - 6px); right: unset;`;
+    }
 
     // Determine compact mode based on duration
     let compactClass = '';
@@ -642,13 +688,14 @@ export function initDailyPlanner() {
       }
     }
 
-    // Build tooltip for compact blocks
-    const tooltipAttr = compactClass ? `title="${escapeHtml(block.title)} | ${block.start}-${endTime}${block.notes ? ' | ' + escapeHtml(block.notes.substring(0, 80)) : ''}"` : '';
+    // Tooltip on hover: always show full title + time range (Item C)
+    const tooltipContent = `${escapeHtml(block.title)} | ${block.start}–${endTime}${block.notes ? ' | ' + escapeHtml(block.notes.substring(0, 80)) : ''}`;
+    const tooltipAttr = `title="${tooltipContent}"`;
 
     return `
 	        <div class="planner-block priority-${priority} ${block.completed ? 'planner-block-completed' : ''} ${compactClass}"
 	             data-id="${block.id}" ${tooltipAttr}
-	             style="top: ${topPx}px; height: ${heightPx}px; --priority-color: ${blockColor}; --priority-bg: ${blockBg};">
+	             style="top: ${topPx}px; height: ${heightPx}px; --priority-color: ${blockColor}; --priority-bg: ${blockBg}; ${overlapStyle}">
 	          <div class="planner-block-checkbox ${block.completed ? 'checked' : ''}" data-id="${block.id}"></div>
 	          <div class="planner-block-title">${categoryIcon} ${escapeHtml(block.title)}</div>
 	          <div class="planner-block-time">${block.start} - ${endTime}${reminderText ? ' · ' + reminderText : ''}</div>

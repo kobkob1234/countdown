@@ -8272,3 +8272,66 @@
     .quick-recurrence-btn:active {
       transform: scale(0.95);
     }
+
+    /* ── Exam Auto-Recovery Banner ── */
+    .exam-recovery-banner {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      margin: 0 0 12px 0;
+      background: hsl(210 100% 56% / 0.1);
+      border: 1px solid hsl(210 100% 56% / 0.3);
+      border-radius: var(--radius-md);
+      font-size: 13px;
+      color: var(--accent);
+      direction: rtl;
+    }
+
+    .exam-recovery-banner span:first-child {
+      font-family: 'Material Symbols Outlined', sans-serif;
+      flex-shrink: 0;
+    }
+
+    .exam-recovery-banner > span:nth-child(2) {
+      flex: 1;
+      color: var(--text);
+    }
+
+    .exam-recovery-btn {
+      padding: 4px 12px;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius-sm);
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: opacity 0.15s;
+    }
+
+    .exam-recovery-btn:hover {
+      opacity: 0.85;
+    }
+
+    .exam-recovery-dismiss {
+      background: none;
+      border: none;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 14px;
+      padding: 0 2px;
+      line-height: 1;
+      flex-shrink: 0;
+    }
+
+    .exam-recovery-dismiss:hover {
+      color: var(--text);
+    }
+
+    /* ── Overdue task visual stripe (Item E) ── */
+    .task-item.overdue {
+      border-inline-start: 3px solid var(--danger, #ef4444) !important;
+      background: hsl(0 84.2% 60.2% / 0.04);
+    }
