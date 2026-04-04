@@ -1979,6 +1979,7 @@ const cancelSubjectBtn = $("cancelSubjectBtn");
 const deleteSubjectBtn = $("deleteSubjectBtn");
 const saveSubjectBtn = $("saveSubjectBtn");
 const newTaskSubject = $("newTaskSubject");
+const newTaskShared = $("newTaskShared");
 const editTaskSubject = $("editTaskSubject");
 const parentSubjectSelect = $("parentSubjectSelect");
 const contextMenu = $("contextMenu");
@@ -2672,7 +2673,8 @@ function addTask() {
   const duration = durationEl ? Number.parseInt(durationEl.value, 10) || 0 : 0;
 
   const defaultSubjectId = getDefaultSubjectId();
-  const selectedSubjectId = newTaskSubject ? (newTaskSubject.value || defaultSubjectId) : defaultSubjectId;
+  const sharedSubjectId = newTaskShared ? newTaskShared.value : '';
+  const selectedSubjectId = sharedSubjectId || (newTaskSubject ? (newTaskSubject.value || defaultSubjectId) : defaultSubjectId);
   const orderValue = hasManualOrder() ? getNextTaskOrder(false) : null;
 
   const taskData = {
@@ -2706,6 +2708,7 @@ function addTask() {
   if (newTaskReminderCustomUnit) newTaskReminderCustomUnit.value = 'minutes';
   if (durationEl) durationEl.value = '0';
   if (newTaskSubject) newTaskSubject.value = '';
+  if (newTaskShared) newTaskShared.value = '';
   if (quickAddRow) quickAddRow.style.display = 'none';
   selectedTaskPriority = 'medium';
   taskPriorityPicker.querySelectorAll('.priority-option').forEach(o => o.classList.remove('selected'));
@@ -4977,6 +4980,17 @@ function updateSubjectSelectors() {
   newTaskSubject.innerHTML = options;
   editTaskSubject.innerHTML = options;
   syncQuickAddSubject();
+  updateSharedSubjectSelector();
+}
+
+function updateSharedSubjectSelector() {
+  if (!newTaskShared) return;
+  let sharedOptions = `<option value="">לא משותף</option>`;
+  const sharedSubs = (subjects || []).filter(s => s.isShared);
+  sharedSubs.forEach(s => {
+    sharedOptions += `<option value="${s.id}">${escapeHtml(s.name)}</option>`;
+  });
+  newTaskShared.innerHTML = sharedOptions;
 }
 
 function updateParentSubjectSelector() {
