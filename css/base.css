@@ -5953,7 +5953,7 @@
 
     .task-search-bar::before {
       content: 'search';
-      font-family: 'Material Symbols Rounded';
+      font-family: 'Material Symbols Rounded', sans-serif;
       position: absolute;
       left: var(--space-3);
       top: 50%;
