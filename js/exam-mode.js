@@ -454,12 +454,14 @@
 
         while (currentDay <= daysInMonth) {
             const tr = document.createElement('tr');
+            let hasRealDay = false;
             for (let dayOfWeek = 0; dayOfWeek < 7; dayOfWeek++) {
                 const td = document.createElement('td');
                 if ((rowCount === 0 && dayOfWeek < firstDay) || currentDay > daysInMonth) {
                     td.innerHTML = '&nbsp;';
                     td.classList.add('empty-cell');
                 } else {
+                    hasRealDay = true;
                     const dateSpan = document.createElement('span');
                     dateSpan.className = 'date';
                     dateSpan.textContent = `${currentDay}/${month + 1}`;
@@ -471,7 +473,10 @@
                 }
                 tr.appendChild(td);
             }
-            tbody.appendChild(tr);
+            // Only add the row if it contains at least one real day — skip all-empty rows
+            if (hasRealDay) {
+                tbody.appendChild(tr);
+            }
             rowCount++;
         }
 
