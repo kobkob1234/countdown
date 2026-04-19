@@ -1,0 +1,29 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(wc -l /Users/kobiamit/Library/CloudStorage/OneDrive-Technion/קורסים/counter-anti/js/*.js /Users/kobiamit/Library/CloudStorage/OneDrive-Technion/קורסים/counter-anti/css/*.css /Users/kobiamit/Library/CloudStorage/OneDrive-Technion/קורסים/counter-anti/service-worker.js)",
+      "Bash(ls -lh /Users/kobiamit/Library/CloudStorage/OneDrive-Technion/קורסים/counter-anti/index.html /Users/kobiamit/Library/CloudStorage/OneDrive-Technion/קורסים/counter-anti/js/* /Users/kobiamit/Library/CloudStorage/OneDrive-Technion/קורסים/counter-anti/css/*)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:8080/)",
+      "Bash(node --check js/inline/pwa-install.js)",
+      "Bash(node --check js/inline/pull-to-refresh.js)",
+      "Bash(node --check js/inline/mobile-nav.js)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:8081/)",
+      "Bash(sed -n '7008,9027p' js/main.js)",
+      "Read(//tmp/**)",
+      "Bash(node --check js/inline/daily-planner.js)",
+      "Bash(node --check js/main.js)",
+      "Bash(node --check js/inline/nlp-parsing.js)",
+      "Bash(node --check js/inline/undo-redo-keyboard.js)",
+      "Bash(node --check js/inline/context-menus.js)",
+      "Bash(node --check js/inline/daily-reminder.js)",
+      "Bash(lsof -ti:8081)",
+      "Bash(node --check js/inline/task-calendar.js)",
+      "Bash(wc -l /Users/kobiamit/Library/CloudStorage/OneDrive-Technion/קורסים/counter-anti/js/*.js /Users/kobiamit/Library/CloudStorage/OneDrive-Technion/קורסים/counter-anti/js/inline/*.js /Users/kobiamit/Library/CloudStorage/OneDrive-Technion/קורסים/counter-anti/js/controllers/*.js /Users/kobiamit/Library/CloudStorage/OneDrive-Technion/קורסים/counter-anti/service-worker.js)",
+      "Bash(ls -lah /Users/kobiamit/Library/CloudStorage/OneDrive-Technion/קורסים/counter-anti/js/*.js)",
+      "Read(//Users/kobiamit/Library/CloudStorage/OneDrive-Technion/קורסים/counter-anti/**)",
+      "Bash(node --check js/controllers/mobile.js)",
+      "Bash(node --check js/firebase-config.js)",
+      "Bash(node --check js/auth.js)"
+    ]
+  }
+}
