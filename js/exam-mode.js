@@ -150,22 +150,52 @@
             const rows = Array.from(tbody.querySelectorAll('tr')).filter(row => !row.classList.contains('week-goal-row'));
             rows.forEach(row => {
                 const nextRow = row.nextElementSibling;
-                if (nextRow && nextRow.classList.contains('week-goal-row')) return;
+                if (nextRow && nextRow.classList.contains('week-goal-row')) {
+                    // It exists, just ensure it has content if it was empty
+                    const goalText = nextRow.querySelector('.week-goal-text');
+                    if (goalText && !goalText.textContent.trim()) {
+                        const sunTd = row.querySelector('td[data-date]');
+                        if (sunTd) {
+                            const savedGoalHtml = localStorage.getItem(`examWeekGoal_${sunTd.dataset.date}`);
+                            if (savedGoalHtml) {
+                                const temp = document.createElement('tr');
+                                temp.innerHTML = savedGoalHtml;
+                                const savedText = temp.querySelector('.week-goal-text');
+                                if (savedText) goalText.textContent = savedText.textContent;
+                            }
+                        }
+                    }
+                    return;
+                }
                 const goalRow = document.createElement('tr');
                 goalRow.className = 'week-goal-row';
                 const cell = document.createElement('td');
                 cell.colSpan = 7;
-                cell.innerHTML = `
-                    <div class="week-goal">
-                        <span class="week-goal-label">יעד שבועי:</span>
-                        <span class="week-goal-text" contenteditable="true" data-placeholder="לדוגמה: לסגור נושא 8 + 2 מבחנים"></span>
-                        <div class="week-goal-progress">
-                            <div class="week-goal-bar"><div class="week-goal-fill" style="width:0%"></div></div>
-                            <span class="week-goal-count">0/0</span>
-                            <span class="week-goal-percent">0%</span>
+                
+                let savedContent = '';
+                const sunTd = row.querySelector('td[data-date]');
+                if (sunTd) {
+                    const savedGoalHtml = localStorage.getItem(`examWeekGoal_${sunTd.dataset.date}`);
+                    if (savedGoalHtml) {
+                        savedContent = savedGoalHtml;
+                    }
+                }
+
+                if (savedContent) {
+                    cell.innerHTML = savedContent;
+                } else {
+                    cell.innerHTML = `
+                        <div class="week-goal">
+                            <span class="week-goal-label">יעד שבועי:</span>
+                            <span class="week-goal-text" contenteditable="true" data-placeholder="לדוגמה: לסגור נושא 8 + 2 מבחנים"></span>
+                            <div class="week-goal-progress">
+                                <div class="week-goal-bar"><div class="week-goal-fill" style="width:0%"></div></div>
+                                <span class="week-goal-count">0/0</span>
+                                <span class="week-goal-percent">0%</span>
+                            </div>
                         </div>
-                    </div>
-                `;
+                    `;
+                }
                 goalRow.appendChild(cell);
                 row.after(goalRow);
             });
@@ -429,13 +459,9 @@
         return `${year}-${String(month + 1).padStart(2, '0')}`;
     }
 
-    function generateMonthTable(year, month) {
-        const daysInMonth = new Date(year, month + 1, 0).getDate();
-        // JS: 0=Sun. Hebrew calendar: 0=Sun=א
-        const firstDay = new Date(year, month, 1).getDay();
-
+    function generateContinuousGrid(baseYear, baseMonth, visibleCount) {
         const table = document.createElement('table');
-        table.dataset.month = getMonthKey(year, month);
+        table.className = 'continuous-exam-grid';
 
         const thead = document.createElement('thead');
         const headerRow = document.createElement('tr');
@@ -448,62 +474,71 @@
         table.appendChild(thead);
 
         const tbody = document.createElement('tbody');
-        let currentDay = 1;
-        let rowCount = 0;
+        
+        const startDate = new Date(baseYear, baseMonth, 1);
+        let startDayOfWeek = startDate.getDay();
+        
+        let currentRenderDate = new Date(startDate);
+        currentRenderDate.setDate(startDate.getDate() - startDayOfWeek);
+        
+        const endDate = new Date(baseYear, baseMonth + visibleCount, 0); // last day of visible months
         const now = new Date();
-
-        while (currentDay <= daysInMonth) {
-            const tr = document.createElement('tr');
-            let hasRealDay = false;
-            for (let dayOfWeek = 0; dayOfWeek < 7; dayOfWeek++) {
-                const td = document.createElement('td');
-                if ((rowCount === 0 && dayOfWeek < firstDay) || currentDay > daysInMonth) {
-                    td.innerHTML = '&nbsp;';
-                    td.classList.add('empty-cell');
-                } else {
-                    hasRealDay = true;
-                    const dateSpan = document.createElement('span');
-                    dateSpan.className = 'date';
-                    dateSpan.textContent = `${currentDay}/${month + 1}`;
-                    td.appendChild(dateSpan);
-                    if (year === now.getFullYear() && month === now.getMonth() && currentDay === now.getDate()) {
-                        td.classList.add('exam-today');
-                    }
-                    currentDay++;
-                }
-                tr.appendChild(td);
-            }
-            // Only add the row if it contains at least one real day — skip all-empty rows
-            if (hasRealDay) {
+        
+        let tr;
+        while (currentRenderDate <= endDate || currentRenderDate.getDay() !== 0) {
+            if (currentRenderDate.getDay() === 0) {
+                tr = document.createElement('tr');
                 tbody.appendChild(tr);
             }
-            rowCount++;
+            
+            const td = document.createElement('td');
+            const year = currentRenderDate.getFullYear();
+            const month = currentRenderDate.getMonth();
+            const date = currentRenderDate.getDate();
+            
+            if (currentRenderDate < startDate || currentRenderDate > endDate) {
+                td.classList.add('empty-cell');
+                td.innerHTML = '&nbsp;';
+            } else {
+                const dateKey = `${year}-${String(month+1).padStart(2,'0')}-${String(date).padStart(2,'0')}`;
+                td.dataset.date = dateKey;
+                
+                const savedDayData = localStorage.getItem(`examDay_${dateKey}`);
+                if (savedDayData) {
+                    td.innerHTML = savedDayData;
+                } else {
+                    const dateSpan = document.createElement('span');
+                    dateSpan.className = 'date';
+                    if (date === 1) {
+                        dateSpan.textContent = `1 ${HEBREW_MONTHS[month]}`;
+                        dateSpan.style.color = 'var(--accent)';
+                    } else {
+                        dateSpan.textContent = `${date}/${month + 1}`;
+                    }
+                    td.appendChild(dateSpan);
+                }
+                
+                if (year === now.getFullYear() && month === now.getMonth() && date === now.getDate()) {
+                    td.classList.add('exam-today');
+                }
+            }
+            
+            tr.appendChild(td);
+            currentRenderDate.setDate(currentRenderDate.getDate() + 1);
         }
-
+        
         table.appendChild(tbody);
         return table;
     }
 
-    function generateMonthHeader(year, month) {
-        const h2 = document.createElement('h2');
-        h2.textContent = `${HEBREW_MONTHS[month]} ${year}`;
-        h2.dataset.month = getMonthKey(year, month);
-        return h2;
-    }
-
     // ===========================
-    // PER-MONTH DATA STORAGE
+    // PER-DAY DATA STORAGE
     // ===========================
 
-    function getMonthDataKey(monthKey) {
-        return `examMonth_${monthKey}`;
-    }
-
-    function saveMonthData(container, monthKey, tableEl) {
+    function saveContinuousData(tableEl) {
         const clone = tableEl.cloneNode(true);
         // Clean interactive elements
         clone.querySelectorAll('.add-tile-btn, .chip-check, .chip-delete, .chip-drag-handle, .chip-color-swatch, .day-passed-toggle, .day-passed-x, .exam-day-toggle, .exam-banner-color-btn, .exam-tile-color-btn, .exam-countdown-toggle, .countdown-badge').forEach(el => el.remove());
-        // Strip today highlight — it's re-applied dynamically on each render
         clone.querySelectorAll('.exam-today').forEach(td => td.classList.remove('exam-today'));
         clone.querySelectorAll('.chip').forEach(c => {
             c.removeAttribute('contenteditable');
@@ -519,11 +554,71 @@
             b.removeAttribute('contenteditable');
             b.removeAttribute('spellcheck');
         });
-        localStorage.setItem(getMonthDataKey(monthKey), clone.innerHTML);
+        clone.querySelectorAll('.week-goal-text').forEach(g => {
+            g.removeAttribute('contenteditable');
+            g.removeAttribute('spellcheck');
+        });
+        
+        const rows = clone.querySelectorAll('tr');
+        let currentSunday = null;
+        rows.forEach(tr => {
+            if (tr.classList.contains('week-goal-row')) {
+                if (currentSunday) {
+                    localStorage.setItem(`examWeekGoal_${currentSunday}`, tr.innerHTML);
+                }
+            } else {
+                const sunTd = tr.querySelector('td[data-date]');
+                if (sunTd) {
+                    currentSunday = sunTd.dataset.date;
+                }
+                tr.querySelectorAll('td[data-date]').forEach(td => {
+                    localStorage.setItem(`examDay_${td.dataset.date}`, td.innerHTML);
+                });
+            }
+        });
     }
 
-    function loadMonthData(monthKey) {
-        return localStorage.getItem(getMonthDataKey(monthKey));
+    function migrateToPerDayStorage() {
+        if (localStorage.getItem('examPerDayMigrated') === 'true') return;
+        
+        for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (key && key.startsWith('examMonth_') && !key.startsWith('examMonthTitle_')) {
+                const monthStr = key.replace('examMonth_', '');
+                const [year, month] = monthStr.split('-');
+                
+                const tableHtml = localStorage.getItem(key);
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = `<table>${tableHtml}</table>`;
+                
+                let currentSunday = null;
+                const rows = tempDiv.querySelectorAll('tr');
+                rows.forEach(row => {
+                    if (row.classList.contains('week-goal-row')) {
+                        if (currentSunday) {
+                            localStorage.setItem(`examWeekGoal_${currentSunday}`, row.innerHTML);
+                        }
+                    } else {
+                        const tds = row.querySelectorAll('td');
+                        tds.forEach((td, index) => {
+                            if (td.classList.contains('empty-cell')) return;
+                            const dateSpan = td.querySelector('.date');
+                            if (dateSpan) {
+                                const text = dateSpan.textContent.trim();
+                                let dMatch = text.match(/^(\d+)/);
+                                if (dMatch) {
+                                    const day = parseInt(dMatch[1]);
+                                    const dateKey = `${year}-${month}-${String(day).padStart(2,'0')}`;
+                                    if (index === 0) currentSunday = dateKey;
+                                    localStorage.setItem(`examDay_${dateKey}`, td.innerHTML);
+                                }
+                            }
+                        });
+                    }
+                });
+            }
+        }
+        localStorage.setItem('examPerDayMigrated', 'true');
     }
 
     // ===========================
@@ -543,7 +638,10 @@
 
     function migrateOldData() {
         const oldContent = localStorage.getItem('examModeContent');
-        if (!oldContent || localStorage.getItem('examMigrated') === 'true') return false;
+        if (!oldContent || localStorage.getItem('examMigrated') === 'true') {
+            migrateToPerDayStorage();
+            return false;
+        }
 
         const tempDiv = document.createElement('div');
         tempDiv.innerHTML = oldContent;
@@ -573,7 +671,7 @@
                 }
             });
 
-            localStorage.setItem(getMonthDataKey(monthKey), table.innerHTML);
+            localStorage.setItem(`examMonth_${monthKey}`, table.innerHTML);
 
             // Save h2 title if exists
             if (h2s[i]) {
@@ -598,6 +696,7 @@
         }
 
         localStorage.setItem('examMigrated', 'true');
+        migrateToPerDayStorage();
         return true;
     }
 
@@ -652,53 +751,19 @@
         if (h1) h1.after(nav);
         else container.prepend(nav);
 
-        // Generate month tables
-        for (let i = 0; i < visibleMonthCount; i++) {
-            const d = new Date(baseYear, baseMonth + i, 1);
-            const year = d.getFullYear();
-            const month = d.getMonth();
-            const monthKey = getMonthKey(year, month);
+        // Generate the continuous grid
+        const table = generateContinuousGrid(baseYear, baseMonth, visibleMonthCount);
+        container.appendChild(table);
 
-            const header = generateMonthHeader(year, month);
-            // Load saved title override
-            const savedTitle = localStorage.getItem(`examMonthTitle_${monthKey}`);
-            if (savedTitle) header.textContent = savedTitle;
-
-            const table = generateMonthTable(year, month);
-
-            // Load saved content for this month
-            const savedData = loadMonthData(monthKey);
-            if (savedData) {
-                const tbody = table.querySelector('tbody');
-                if (tbody) {
-                    // Replace tbody content with saved data (which includes thead+tbody)
-                    const tempTable = document.createElement('table');
-                    tempTable.innerHTML = savedData;
-                    const savedTbody = tempTable.querySelector('tbody');
-                    if (savedTbody) {
-                        tbody.innerHTML = savedTbody.innerHTML;
-                    }
-                }
+        // Re-apply today highlighting dynamically just like before
+        table.querySelectorAll('td.exam-today').forEach(td => td.classList.remove('exam-today'));
+        const cells = table.querySelectorAll('td[data-date]');
+        const todayStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+        cells.forEach(cell => {
+            if (cell.dataset.date === todayStr) {
+                cell.classList.add('exam-today');
             }
-
-            // Re-apply today highlighting: remove stale, add current
-            const now = new Date();
-            // Always strip old today markers (may be baked into saved HTML from a previous day)
-            table.querySelectorAll('td.exam-today').forEach(td => td.classList.remove('exam-today'));
-            if (year === now.getFullYear() && month === now.getMonth()) {
-                const cells = table.querySelectorAll('td:not(.empty-cell)');
-                cells.forEach(cell => {
-                    const dateSpan = cell.querySelector('.date');
-                    if (dateSpan) {
-                        const dayNum = parseInt(dateSpan.textContent);
-                        if (dayNum === now.getDate()) cell.classList.add('exam-today');
-                    }
-                });
-            }
-
-            container.appendChild(header);
-            container.appendChild(table);
-        }
+        });
 
         // Re-apply interactions
         container.removeAttribute('data-drag-setup');
@@ -1227,27 +1292,12 @@
     }
 
     function parseDateFromSpan(dateSpan) {
-        const text = dateSpan.textContent.trim();
-        // Format: "day/month" e.g. "15/3"
-        const match = text.match(/^(\d+)\/(\d+)/);
-        if (match) {
-            const day = parseInt(match[1], 10);
-            const month = parseInt(match[2], 10) - 1;
-            // Determine year from table dataset
-            const table = dateSpan.closest('table');
-            if (table && table.dataset.month) {
-                const [y] = table.dataset.month.split('-');
-                return new Date(parseInt(y, 10), month, day);
-            }
-            return new Date(new Date().getFullYear(), month, day);
+        const td = dateSpan.closest('td');
+        if (td && td.dataset.date) {
+            const [y, m, d] = td.dataset.date.split('-');
+            return new Date(parseInt(y, 10), parseInt(m, 10) - 1, parseInt(d, 10));
         }
-
-        // Fallback: try parsing from h2 (for old format)
-        const table = dateSpan.closest('table');
-        if (!table) return null;
-        const h2 = table.previousElementSibling;
-        if (!h2 || h2.tagName !== 'H2') return null;
-        return parseHebrewDate(h2.textContent.trim(), parseInt(text, 10));
+        return null;
     }
 
     function parseHebrewDate(monthYearText, day) {
@@ -1279,18 +1329,9 @@
         const h1 = container.querySelector('h1');
         if (h1) localStorage.setItem('examTitle', h1.textContent);
 
-        // Save h2 titles
-        container.querySelectorAll('h2').forEach(h2 => {
-            if (h2.dataset.month) {
-                localStorage.setItem(`examMonthTitle_${h2.dataset.month}`, h2.textContent);
-            }
-        });
-
-        // Save each month table separately
-        container.querySelectorAll('table').forEach(table => {
-            const monthKey = table.dataset.month;
-            if (monthKey) saveMonthData(container, monthKey, table);
-        });
+        // Save continuous grid data
+        const table = container.querySelector('.continuous-exam-grid');
+        if (table) saveContinuousData(table);
 
         // Also save combined HTML for Firebase sync (backwards compat)
         const clone = container.cloneNode(true);
