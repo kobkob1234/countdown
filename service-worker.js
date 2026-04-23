@@ -1,5 +1,5 @@
 // Bump cache version when precache list or fetch strategy changes
-const CACHE_NAME = 'countdown-push-v58';
+const CACHE_NAME = 'countdown-push-v59';
 const NOTIFY_DEDUPE_CACHE = 'countdown-notify-dedupe-v1';
 const NOTIFY_DEDUPE_TTL_MS = 1000 * 60 * 60 * 24 * 7;
 const PENDING_SUB_DB = 'countdown-pending-sub';
@@ -353,7 +353,7 @@ self.addEventListener('notificationclick', (event) => {
 
       if (endpoint && token && userId) {
         try {
-          const response = await fetch(endpoint, {
+          await fetch(endpoint, {
             method: 'POST',
             mode: 'cors',
             headers: { 'content-type': 'application/json' },
@@ -367,20 +367,16 @@ self.addEventListener('notificationclick', (event) => {
             })
           });
 
-          if (response.ok) {
-            await self.registration.showNotification(raw.remindAgainAckTitle || 'Reminder scheduled', {
-              body: raw.remindAgainAckBody || `We will remind you again in ${reminderMinutes} minutes.`,
-              icon: new URL('./icon-192.png', self.location.origin).href,
-              tag: `remind-again-${raw.remindAgainTaskId || 'task'}`,
-              requireInteraction: false,
-              data: { url }
-            });
-            return;
-          }
+          // Snooze action is background-only: never open app/tab on press.
+          return;
         } catch (err) {
-          // Fallback below opens the app if enqueue failed.
+          // Keep this action silent even when enqueue fails.
+          return;
         }
       }
+
+      // Missing metadata: still keep snooze click silent.
+      return;
     }
 
     const targetUrl = (action === 'complete' && completeUrl) ? completeUrl : url;
