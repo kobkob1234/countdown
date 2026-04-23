@@ -147,6 +147,24 @@ function formatReminderOffset(minutes) {
   return m === 1 ? '1 minute' : `${m} minutes`;
 }
 
+function normalizeTaskReminders(reminders, legacyReminder = null) {
+  const MAX_REMINDERS = 3;
+  const MAX_MINUTES = 10080;
+  const source = [];
+  if (Array.isArray(reminders)) source.push(...reminders);
+  if (legacyReminder !== null && legacyReminder !== undefined && legacyReminder !== '') source.push(legacyReminder);
+
+  const unique = [];
+  source.forEach((value) => {
+    const minutes = Number.parseInt(value, 10);
+    if (!Number.isFinite(minutes) || minutes < 1 || minutes > MAX_MINUTES) return;
+    if (!unique.includes(minutes)) unique.push(minutes);
+  });
+
+  unique.sort((a, b) => a - b);
+  return unique.slice(0, MAX_REMINDERS);
+}
+
 async function claimOnce(path) {
   const ref = db.ref(path);
   const now = Date.now();
@@ -390,41 +408,45 @@ async function runCheck() {
     const tasks = await loadTasksForUser(userId);
     for (const task of tasks) {
       if (task.completed) continue;
-      const reminderMinutes = Number.parseInt(task.reminder || '0', 10) || 0;
+      const reminderMinutesList = normalizeTaskReminders(task.reminders, task.reminder);
+      if (!reminderMinutesList.length) continue;
       const dueMs = parseIsoMillis(task.dueDate);
-      if (!shouldTrigger(nowMs, dueMs, reminderMinutes)) continue;
 
-      const offset = formatReminderOffset(reminderMinutes);
-      // Normalize dueDate to ISO to match client-side dedupe key format
-      const dueDateIso = new Date(task.dueDate).toISOString();
-      const dedupeKey = `task|${userId}|${task.id}|${dueDateIso}|${reminderMinutes}`;
-      const payload = {
-        title: `Task Reminder 📋`,
-        body: `${task.title || 'Task'} is due in ${offset}`,
-        tag: `task-${task.id}`,
-        dedupeKey,
-        url: buildUrl('/', {}),
-        completeUrl: buildUrl('/', { completeTask: task.id, user: userId }),
-        requireInteraction: true,
-        renotify: true,
-        actions: [
-          { action: 'view', title: 'View' },
-          { action: 'complete', title: 'Done' }
-        ]
-      };
+      for (const reminderMinutes of reminderMinutesList) {
+        if (!shouldTrigger(nowMs, dueMs, reminderMinutes)) continue;
 
-      const results = await Promise.allSettled(
-        subs.map(({ subKey, sub }) =>
-          sendToSubscription({ userId, subKey, subscription: sub, payload, dedupeKey })
-        )
-      );
+        const offset = formatReminderOffset(reminderMinutes);
+        // Normalize dueDate to ISO to match client-side dedupe key format
+        const dueDateIso = new Date(task.dueDate).toISOString();
+        const dedupeKey = `task|${userId}|${task.id}|${dueDateIso}|${reminderMinutes}`;
+        const payload = {
+          title: `Task Reminder 📋`,
+          body: `${task.title || 'Task'} is due in ${offset}`,
+          tag: `task-${task.id}-${reminderMinutes}`,
+          dedupeKey,
+          url: buildUrl('/', {}),
+          completeUrl: buildUrl('/', { completeTask: task.id, user: userId }),
+          requireInteraction: true,
+          renotify: true,
+          actions: [
+            { action: 'view', title: 'View' },
+            { action: 'complete', title: 'Done' }
+          ]
+        };
 
-      for (const r of results) {
-        const v = r.status === 'fulfilled' ? r.value : null;
-        if (!v) { failed += 1; continue; }
-        if (v.skipped) skipped += 1;
-        else if (v.ok) sent += 1;
-        else failed += 1;
+        const results = await Promise.allSettled(
+          subs.map(({ subKey, sub }) =>
+            sendToSubscription({ userId, subKey, subscription: sub, payload, dedupeKey })
+          )
+        );
+
+        for (const r of results) {
+          const v = r.status === 'fulfilled' ? r.value : null;
+          if (!v) { failed += 1; continue; }
+          if (v.skipped) skipped += 1;
+          else if (v.ok) sent += 1;
+          else failed += 1;
+        }
       }
     }
   }
@@ -483,50 +505,54 @@ async function runCheck() {
 
     for (const [taskId, task] of Object.entries(subjectTasks)) {
       if (!task || task.completed) continue;
-      const reminderMinutes = Number.parseInt(task.reminder || '0', 10) || 0;
+      const reminderMinutesList = normalizeTaskReminders(task.reminders, task.reminder);
+      if (!reminderMinutesList.length) continue;
       const dueMs = parseIsoMillis(task.dueDate);
-      if (!shouldTrigger(nowMs, dueMs, reminderMinutes)) continue;
-
-      const offset = formatReminderOffset(reminderMinutes);
       const sharedDueDateIso = new Date(task.dueDate).toISOString();
-      // Send to each user who has active access to this shared subject
-      for (const userId of allUsers) {
-        // Verify user still has access (owner always has access, members must be active)
-        if (userId !== owner) {
-          const memberEntry = members[userId];
-          // Skip removed/inactive members
-          if (!memberEntry || memberEntry === false || memberEntry.removed) continue;
-        }
-        const userEntry = users.find(u => u.userId === userId);
-        if (!userEntry) continue;
 
-        const dedupeKey = `shared-task|${userId}|${subject.id}|${taskId}|${sharedDueDateIso}|${reminderMinutes}`;
-        const payload = {
-          title: `Shared Task Reminder 📋`,
-          body: `${task.title || 'Task'} is due in ${offset}`,
-          tag: `shared-task-${taskId}`,
-          dedupeKey,
-          url: buildUrl('/', {}),
-          completeUrl: buildUrl('/', { completeTask: taskId, user: userId, sharedSubject: subject.id }),
-          requireInteraction: true,
-          renotify: true,
-          actions: [
-            { action: 'view', title: 'View' },
-            { action: 'complete', title: 'Done' }
-          ]
-        };
-        const results = await Promise.allSettled(
-          userEntry.subs.map(({ subKey, sub }) =>
-            sendToSubscription({ userId, subKey, subscription: sub, payload, dedupeKey })
-          )
-        );
+      for (const reminderMinutes of reminderMinutesList) {
+        if (!shouldTrigger(nowMs, dueMs, reminderMinutes)) continue;
 
-        for (const r of results) {
-          const v = r.status === 'fulfilled' ? r.value : null;
-          if (!v) { failed += 1; continue; }
-          if (v.skipped) skipped += 1;
-          else if (v.ok) sent += 1;
-          else failed += 1;
+        const offset = formatReminderOffset(reminderMinutes);
+        // Send to each user who has active access to this shared subject
+        for (const userId of allUsers) {
+          // Verify user still has access (owner always has access, members must be active)
+          if (userId !== owner) {
+            const memberEntry = members[userId];
+            // Skip removed/inactive members
+            if (!memberEntry || memberEntry === false || memberEntry.removed) continue;
+          }
+          const userEntry = users.find(u => u.userId === userId);
+          if (!userEntry) continue;
+
+          const dedupeKey = `shared-task|${userId}|${subject.id}|${taskId}|${sharedDueDateIso}|${reminderMinutes}`;
+          const payload = {
+            title: `Shared Task Reminder 📋`,
+            body: `${task.title || 'Task'} is due in ${offset}`,
+            tag: `shared-task-${taskId}-${reminderMinutes}`,
+            dedupeKey,
+            url: buildUrl('/', {}),
+            completeUrl: buildUrl('/', { completeTask: taskId, user: userId, sharedSubject: subject.id }),
+            requireInteraction: true,
+            renotify: true,
+            actions: [
+              { action: 'view', title: 'View' },
+              { action: 'complete', title: 'Done' }
+            ]
+          };
+          const results = await Promise.allSettled(
+            userEntry.subs.map(({ subKey, sub }) =>
+              sendToSubscription({ userId, subKey, subscription: sub, payload, dedupeKey })
+            )
+          );
+
+          for (const r of results) {
+            const v = r.status === 'fulfilled' ? r.value : null;
+            if (!v) { failed += 1; continue; }
+            if (v.skipped) skipped += 1;
+            else if (v.ok) sent += 1;
+            else failed += 1;
+          }
         }
       }
     }

@@ -84,10 +84,37 @@ export function initTasks(hooks = {}) {
     return ctx.ref(ctx.db, `users/${ctx.currentUser}/tasks/${task.id}`);
   }
 
+  function normalizeTaskReminderFields(taskData) {
+    const MAX_REMINDERS = 3;
+    const MAX_MINUTES = 10080;
+    const source = [];
+
+    if (Array.isArray(taskData?.reminders)) source.push(...taskData.reminders);
+    if (taskData?.reminder !== null && taskData?.reminder !== undefined && taskData?.reminder !== '') {
+      source.push(taskData.reminder);
+    }
+
+    const normalized = [];
+    source.forEach((value) => {
+      const minutes = Number.parseInt(value, 10);
+      if (!Number.isFinite(minutes) || minutes < 1 || minutes > MAX_MINUTES) return;
+      if (!normalized.includes(minutes)) normalized.push(minutes);
+    });
+
+    normalized.sort((a, b) => a - b);
+
+    const out = { ...(taskData || {}) };
+    delete out.reminder;
+    if (normalized.length) out.reminders = normalized.slice(0, MAX_REMINDERS);
+    else delete out.reminders;
+    return out;
+  }
+
   // Helper to save task to correct location
   function saveTask(taskId, taskData, subjectId) {
     const subject = (ctx.subjects || []).find(s => s.id === subjectId);
-    const { isShared, isOwn, ...cleanTask } = taskData || {};
+    const { isShared, isOwn, ...cleanTaskRaw } = taskData || {};
+    const cleanTask = normalizeTaskReminderFields(cleanTaskRaw);
     if (subject?.isShared) {
       return ctx.set(ctx.ref(ctx.db, `sharedSubjects/${subjectId}/tasks/${taskId}`), cleanTask);
     }
@@ -112,7 +139,8 @@ export function initTasks(hooks = {}) {
   function createTask(taskData) {
     const subjectId = taskData.subject;
     const subject = (ctx.subjects || []).find(s => s.id === subjectId);
-    const { isShared, isOwn, ...cleanTask } = taskData || {};
+    const { isShared, isOwn, ...cleanTaskRaw } = taskData || {};
+    const cleanTask = normalizeTaskReminderFields(cleanTaskRaw);
     // Check both subject lookup AND taskData.isShared flag (for cloned tasks)
     if ((subject?.isShared || isShared) && subjectId) {
       const newTaskRef = ctx.push(ctx.ref(ctx.db, `sharedSubjects/${subjectId}/tasks`));

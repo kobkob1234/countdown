@@ -376,6 +376,9 @@
                     <option value="days">ימים</option>
                   </select>
                 </div>
+                  <button type="button" class="btn btn-secondary task-reminder-add-btn" id="newTaskAddReminderBtn"
+                    style="height: 32px; padding: 0 10px; font-size: 12px;">הוסף תזכורת</button>
+                  <div class="task-reminder-list" id="newTaskReminderList"></div>
               </div>
               <div class="label-input-wrapper">
                 <span class="icon" style="font-size:16px">palette</span>
@@ -1793,6 +1796,7 @@
             דקות</button>
           <button type="button" class="quick-reminder-btn" data-minutes="60">שעה</button>
         </div>
+        <div class="task-reminder-list" id="editTaskReminderList"></div>
         <select id="editTaskReminder"
           style="padding: 12px 14px; border: 2px solid var(--border); border-radius: 10px; font-size: 14px; background: var(--input-bg); color: var(--text); outline: none; width: 100%; max-width: 250px; cursor: pointer;">
           <option value="0">ללא תזכורת</option>
@@ -1817,6 +1821,8 @@
             <option value="days">ימים</option>
           </select>
         </div>
+        <button type="button" class="btn btn-secondary task-reminder-add-btn" id="editTaskAddReminderBtn"
+          style="height: 36px; padding: 0 14px; font-size: 13px; margin-top: 10px;">הוסף תזכורת</button>
       </div>
 
       <div class="task-edit-section">

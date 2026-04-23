@@ -1937,6 +1937,8 @@ const newTaskTitle = $("newTaskTitle");
 const newTaskDue = $("newTaskDue");
 const newTaskRecurrence = $("newTaskRecurrence");
 const newTaskReminder = $("newTaskReminder");
+const newTaskAddReminderBtn = $("newTaskAddReminderBtn");
+const newTaskReminderList = $("newTaskReminderList");
 const addTaskBtn = $("addTaskBtn");
 const taskPriorityPicker = $("taskPriorityPicker");
 const activeTasks = $("activeTasks");
@@ -1955,6 +1957,8 @@ const editTaskDue = $("editTaskDue");
 const editTaskDuration = $("editTaskDuration");
 const editTaskRecurrence = $("editTaskRecurrence");
 const editTaskReminder = $("editTaskReminder");
+const editTaskAddReminderBtn = $("editTaskAddReminderBtn");
+const editTaskReminderList = $("editTaskReminderList");
 const clearDueBtn = $("clearDueBtn");
 const duplicateTaskBtn = $("duplicateTaskBtn");
 Object.assign(ctx, {
@@ -2031,11 +2035,22 @@ Object.defineProperties(ctx, {
   hasTasksCache: { get: () => hasTasksCache, set: (val) => { hasTasksCache = val; } }
 });
 const pruneNotifiedTasks = () => {
-  const ids = new Set(tasks.filter(task => !task.completed).map(task => task.id));
-  pruneNotifiedMap(NOTIFY_KEYS.TASKS, notifiedTasks, ids);
+  const ids = new Set(tasks.filter(task => !task.completed || task.recurrence).map(task => task.id));
+  const now = Date.now();
+  let changed = false;
+  notifiedTasks.forEach((entry, key) => {
+    const taskId = String(key || '').split('|')[0];
+    const ts = Number(entry?.ts) || 0;
+    if (!entry?.key || !ts || (now - ts > NOTIFY_TTL_MS) || !ids.has(taskId)) {
+      notifiedTasks.delete(key);
+      changed = true;
+    }
+  });
+  if (changed) persistNotifiedMap(NOTIFY_KEYS.TASKS, notifiedTasks);
 };
 let editingTaskId = null;
 let editingTask = null;
+let newTaskReminderMinutes = [];
 let selectedTaskPriority = 'medium';
 let selectedTaskColor = '';
 let currentFilter = 'all';
@@ -2090,21 +2105,51 @@ const editTaskRecurrenceCustomWrap = $("editTaskRecurrenceCustomWrap");
 const editTaskRecurrenceCustomValue = $("editTaskRecurrenceCustomValue");
 const editTaskRecurrenceCustomUnit = $("editTaskRecurrenceCustomUnit");
 
-// Get reminder value in minutes from custom inputs
-function getTaskReminderMinutes(selectEl, customValueEl, customUnitEl) {
-  if (!selectEl) return 0;
-  if (selectEl.value === 'custom') {
-    const val = Number.parseInt(customValueEl?.value, 10) || 0;
-    const unit = customUnitEl?.value || 'minutes';
-    if (unit === 'hours') return val * 60;
-    if (unit === 'days') return val * 1440;
-    return val;
-  }
-  return Number.parseInt(selectEl.value, 10) || 0;
+const TASK_REMINDER_MAX_COUNT = 3;
+const TASK_REMINDER_MAX_MINUTES = 10080;
+
+function normalizeTaskReminderList(reminders, legacyReminder = null) {
+  const source = [];
+  if (Array.isArray(reminders)) source.push(...reminders);
+  else if (reminders !== null && reminders !== undefined && reminders !== '') source.push(reminders);
+  if (legacyReminder !== null && legacyReminder !== undefined && legacyReminder !== '') source.push(legacyReminder);
+
+  const unique = [];
+  source.forEach((value) => {
+    const minutes = Number.parseInt(value, 10);
+    if (!Number.isFinite(minutes) || minutes < 1 || minutes > TASK_REMINDER_MAX_MINUTES) return;
+    if (!unique.includes(minutes)) unique.push(minutes);
+  });
+
+  unique.sort((a, b) => a - b);
+  return unique.slice(0, TASK_REMINDER_MAX_COUNT);
 }
 
-// Set reminder UI from minutes value
-function setTaskReminderUI(selectEl, customWrapEl, customValueEl, customUnitEl, minutes) {
+function getTaskReminderList(task) {
+  return normalizeTaskReminderList(task?.reminders, task?.reminder);
+}
+
+function getTaskReminderMinutesInput(selectEl, customValueEl, customUnitEl) {
+  if (!selectEl) return { value: 0 };
+  if (selectEl.value === 'custom') {
+    const rawValue = Number.parseInt(customValueEl?.value, 10);
+    if (!Number.isFinite(rawValue) || rawValue < 1) {
+      return { value: 0, error: 'אנא הזן תזכורת מותאמת עם מספר חיובי.' };
+    }
+    const unit = customUnitEl?.value || 'minutes';
+    let minutes = rawValue;
+    if (unit === 'hours') minutes = rawValue * 60;
+    if (unit === 'days') minutes = rawValue * 1440;
+    if (minutes > TASK_REMINDER_MAX_MINUTES) {
+      return { value: 0, error: 'התזכורת המקסימלית היא עד שבוע לפני.' };
+    }
+    return { value: minutes };
+  }
+  const value = Number.parseInt(selectEl.value, 10) || 0;
+  return { value };
+}
+
+function setTaskReminderInputUI(selectEl, customWrapEl, customValueEl, customUnitEl, minutes) {
   if (!selectEl) return;
   const min = Number.parseInt(minutes, 10) || 0;
   const optionExists = Array.from(selectEl.options).some(o => o.value === String(min) && o.value !== 'custom');
@@ -2132,6 +2177,150 @@ function setTaskReminderUI(selectEl, customWrapEl, customValueEl, customUnitEl, 
   if (customValueEl) customValueEl.value = '';
   if (customUnitEl) customUnitEl.value = 'minutes';
 }
+
+function addTaskReminderMinutes(reminders, minutes) {
+  const normalized = normalizeTaskReminderList(reminders);
+  const parsed = Number.parseInt(minutes, 10);
+  if (!Number.isFinite(parsed) || parsed < 1 || parsed > TASK_REMINDER_MAX_MINUTES) return normalized;
+  if (normalized.includes(parsed)) return normalized;
+  if (normalized.length >= TASK_REMINDER_MAX_COUNT) return normalized;
+  return normalizeTaskReminderList([...normalized, parsed]);
+}
+
+function removeTaskReminderMinutes(reminders, minutes) {
+  const parsed = Number.parseInt(minutes, 10);
+  return normalizeTaskReminderList((reminders || []).filter((value) => Number.parseInt(value, 10) !== parsed));
+}
+
+function collectTaskReminderSelection(reminders, selectEl, customValueEl, customUnitEl) {
+  const base = normalizeTaskReminderList(reminders);
+  const parsed = getTaskReminderMinutesInput(selectEl, customValueEl, customUnitEl);
+  if (parsed.error) return { reminders: base, error: parsed.error };
+  if (!parsed.value) return { reminders: base };
+  if (base.includes(parsed.value)) return { reminders: base };
+  if (base.length >= TASK_REMINDER_MAX_COUNT) {
+    return { reminders: base, error: `אפשר להוסיף עד ${TASK_REMINDER_MAX_COUNT} תזכורות למשימה.` };
+  }
+  return { reminders: normalizeTaskReminderList([...base, parsed.value]) };
+}
+
+function renderTaskReminderList(container, reminders, onRemove) {
+  if (!container) return;
+  const list = normalizeTaskReminderList(reminders);
+  if (!list.length) {
+    container.innerHTML = `<span class="task-reminder-list-empty">עד ${TASK_REMINDER_MAX_COUNT} תזכורות</span>`;
+    return;
+  }
+  container.innerHTML = list.map((minutes) => `
+    <button type="button" class="task-reminder-chip" data-minutes="${minutes}" title="הסר תזכורת">
+      ${escapeHtml(formatReminderOffset(minutes))}
+      <span class="task-reminder-chip-remove">×</span>
+    </button>
+  `).join('');
+
+  if (typeof onRemove === 'function') {
+    container.querySelectorAll('.task-reminder-chip').forEach((chip) => {
+      chip.addEventListener('click', () => {
+        const minutes = Number.parseInt(chip.dataset.minutes, 10) || 0;
+        onRemove(minutes);
+      });
+    });
+  }
+}
+
+function toggleTaskReminderCustom(selectEl, customWrapEl, customValueEl, customUnitEl) {
+  if (!selectEl) return;
+  const isCustom = selectEl.value === 'custom';
+  if (customWrapEl) customWrapEl.classList.toggle('hidden', !isCustom);
+  if (isCustom) {
+    if (customUnitEl && !customUnitEl.value) customUnitEl.value = 'minutes';
+    if (customValueEl && !customValueEl.value) customValueEl.value = '10';
+    if (customValueEl) customValueEl.focus();
+  }
+}
+
+function refreshNewTaskReminderUI() {
+  renderTaskReminderList(newTaskReminderList, newTaskReminderMinutes, (minutes) => {
+    newTaskReminderMinutes = removeTaskReminderMinutes(newTaskReminderMinutes, minutes);
+    refreshNewTaskReminderUI();
+  });
+  if (newTaskAddReminderBtn) {
+    newTaskAddReminderBtn.disabled = newTaskReminderMinutes.length >= TASK_REMINDER_MAX_COUNT;
+  }
+}
+
+function ensureEditingTaskReminders() {
+  if (!editingTask) return [];
+  editingTask.reminders = normalizeTaskReminderList(editingTask.reminders, editingTask.reminder);
+  delete editingTask.reminder;
+  return editingTask.reminders;
+}
+
+function refreshEditTaskReminderUI() {
+  const reminders = ensureEditingTaskReminders();
+  renderTaskReminderList(editTaskReminderList, reminders, (minutes) => {
+    if (!editingTask) return;
+    editingTask.reminders = removeTaskReminderMinutes(ensureEditingTaskReminders(), minutes);
+    refreshEditTaskReminderUI();
+  });
+  if (editTaskAddReminderBtn) {
+    editTaskAddReminderBtn.disabled = reminders.length >= TASK_REMINDER_MAX_COUNT;
+  }
+}
+
+if (newTaskReminder) {
+  newTaskReminder.addEventListener('change', () => {
+    toggleTaskReminderCustom(newTaskReminder, newTaskReminderCustomWrap, newTaskReminderCustomValue, newTaskReminderCustomUnit);
+  });
+}
+
+if (editTaskReminder) {
+  editTaskReminder.addEventListener('change', () => {
+    toggleTaskReminderCustom(editTaskReminder, editTaskReminderCustomWrap, editTaskReminderCustomValue, editTaskReminderCustomUnit);
+  });
+}
+
+if (newTaskAddReminderBtn) {
+  newTaskAddReminderBtn.addEventListener('click', () => {
+    const parsed = getTaskReminderMinutesInput(newTaskReminder, newTaskReminderCustomValue, newTaskReminderCustomUnit);
+    if (parsed.error) {
+      alert(parsed.error);
+      return;
+    }
+    if (!parsed.value) return;
+    if (newTaskReminderMinutes.includes(parsed.value)) return;
+    if (newTaskReminderMinutes.length >= TASK_REMINDER_MAX_COUNT) {
+      alert(`אפשר להוסיף עד ${TASK_REMINDER_MAX_COUNT} תזכורות למשימה.`);
+      return;
+    }
+    newTaskReminderMinutes = addTaskReminderMinutes(newTaskReminderMinutes, parsed.value);
+    setTaskReminderInputUI(newTaskReminder, newTaskReminderCustomWrap, newTaskReminderCustomValue, newTaskReminderCustomUnit, 0);
+    refreshNewTaskReminderUI();
+  });
+}
+
+if (editTaskAddReminderBtn) {
+  editTaskAddReminderBtn.addEventListener('click', () => {
+    if (!editingTask) return;
+    const parsed = getTaskReminderMinutesInput(editTaskReminder, editTaskReminderCustomValue, editTaskReminderCustomUnit);
+    if (parsed.error) {
+      alert(parsed.error);
+      return;
+    }
+    if (!parsed.value) return;
+    const current = ensureEditingTaskReminders();
+    if (current.includes(parsed.value)) return;
+    if (current.length >= TASK_REMINDER_MAX_COUNT) {
+      alert(`אפשר להוסיף עד ${TASK_REMINDER_MAX_COUNT} תזכורות למשימה.`);
+      return;
+    }
+    editingTask.reminders = addTaskReminderMinutes(current, parsed.value);
+    setTaskReminderInputUI(editTaskReminder, editTaskReminderCustomWrap, editTaskReminderCustomValue, editTaskReminderCustomUnit, 0);
+    refreshEditTaskReminderUI();
+  });
+}
+
+refreshNewTaskReminderUI();
 
 function parseRecurrenceValue(value) {
   if (!value) return { type: 'none' };
@@ -2212,32 +2401,6 @@ function setTaskRecurrenceUI(selectEl, customWrapEl, customValueEl, customUnitEl
   if (customUnitEl) customUnitEl.value = 'days';
 }
 
-// New task reminder change handler
-if (newTaskReminder) {
-  newTaskReminder.addEventListener('change', () => {
-    const isCustom = newTaskReminder.value === 'custom';
-    if (newTaskReminderCustomWrap) newTaskReminderCustomWrap.classList.toggle('hidden', !isCustom);
-    if (isCustom) {
-      if (newTaskReminderCustomUnit && !newTaskReminderCustomUnit.value) newTaskReminderCustomUnit.value = 'minutes';
-      if (newTaskReminderCustomValue && !newTaskReminderCustomValue.value) newTaskReminderCustomValue.value = '10';
-      if (newTaskReminderCustomValue) newTaskReminderCustomValue.focus();
-    }
-  });
-}
-
-// Edit task reminder change handler
-if (editTaskReminder) {
-  editTaskReminder.addEventListener('change', () => {
-    const isCustom = editTaskReminder.value === 'custom';
-    if (editTaskReminderCustomWrap) editTaskReminderCustomWrap.classList.toggle('hidden', !isCustom);
-    if (isCustom) {
-      if (editTaskReminderCustomUnit && !editTaskReminderCustomUnit.value) editTaskReminderCustomUnit.value = 'minutes';
-      if (editTaskReminderCustomValue && !editTaskReminderCustomValue.value) editTaskReminderCustomValue.value = '10';
-      if (editTaskReminderCustomValue) editTaskReminderCustomValue.focus();
-    }
-  });
-}
-
 // New task recurrence change handler
 if (newTaskRecurrence) {
   newTaskRecurrence.addEventListener('change', () => {
@@ -2256,9 +2419,19 @@ if (editTaskRecurrence) {
 document.querySelectorAll('.quick-reminder-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     const minutes = Number.parseInt(btn.dataset.minutes, 10) || 0;
-    if (editTaskReminder) {
-      setTaskReminderUI(editTaskReminder, editTaskReminderCustomWrap, editTaskReminderCustomValue, editTaskReminderCustomUnit, minutes);
+    if (!minutes) return;
+    if (!editingTask) {
+      setTaskReminderInputUI(editTaskReminder, editTaskReminderCustomWrap, editTaskReminderCustomValue, editTaskReminderCustomUnit, minutes);
+      return;
     }
+    const current = ensureEditingTaskReminders();
+    if (current.includes(minutes)) return;
+    if (current.length >= TASK_REMINDER_MAX_COUNT) {
+      alert(`אפשר להוסיף עד ${TASK_REMINDER_MAX_COUNT} תזכורות למשימה.`);
+      return;
+    }
+    editingTask.reminders = addTaskReminderMinutes(current, minutes);
+    refreshEditTaskReminderUI();
   });
 });
 
@@ -2668,7 +2841,12 @@ function addTask() {
     return;
   }
   const recurrence = recurrenceResult.value;
-  const reminder = getTaskReminderMinutes(newTaskReminder, newTaskReminderCustomValue, newTaskReminderCustomUnit);
+  const reminderSelection = collectTaskReminderSelection(newTaskReminderMinutes, newTaskReminder, newTaskReminderCustomValue, newTaskReminderCustomUnit);
+  if (reminderSelection.error) {
+    alert(reminderSelection.error);
+    return;
+  }
+  const reminders = reminderSelection.reminders;
   const durationEl = document.getElementById('newTaskDuration');
   const duration = durationEl ? Number.parseInt(durationEl.value, 10) || 0 : 0;
 
@@ -2689,7 +2867,7 @@ function addTask() {
     ...(Number.isFinite(orderValue) ? { order: orderValue } : {}),
     ...(selectedTaskColor ? { color: selectedTaskColor } : {}),
     ...(recurrence ? { recurrence } : {}),
-    ...(reminder > 0 ? { reminder } : {}),
+    ...(reminders.length ? { reminders } : {}),
     ...(duration > 0 ? { duration } : {})
   };
 
@@ -2706,6 +2884,8 @@ function addTask() {
   if (newTaskReminderCustomWrap) newTaskReminderCustomWrap.classList.add('hidden');
   if (newTaskReminderCustomValue) newTaskReminderCustomValue.value = '';
   if (newTaskReminderCustomUnit) newTaskReminderCustomUnit.value = 'minutes';
+  newTaskReminderMinutes = [];
+  refreshNewTaskReminderUI();
   if (durationEl) durationEl.value = '0';
   if (newTaskSubject) newTaskSubject.value = '';
   if (newTaskShared) newTaskShared.value = '';
@@ -3220,10 +3400,13 @@ function renderTaskRecurrence(task) {
 }
 
 function renderTaskReminder(task) {
-  const reminderMinutes = Number.parseInt(task.reminder, 10) || 0;
-  if (reminderMinutes <= 0) return '';
-  const reminderLabel = formatReminderOffset(reminderMinutes);
-  return `<span class="task-reminder"><span class="icon" style="font-size:16px;vertical-align:middle">notifications</span> ${reminderLabel}</span>`;
+  const reminderMinutesList = getTaskReminderList(task);
+  if (!reminderMinutesList.length) return '';
+  const labels = reminderMinutesList.map(minutes => formatReminderOffset(minutes));
+  const reminderLabel = labels.length === 1
+    ? labels[0]
+    : `${labels.slice(0, 2).join(' • ')}${labels.length > 2 ? ` +${labels.length - 2}` : ''}`;
+  return `<span class="task-reminder"><span class="icon" style="font-size:16px;vertical-align:middle">notifications</span> ${escapeHtml(reminderLabel)}</span>`;
 }
 
 function renderTaskDuration(task) {
@@ -3287,6 +3470,11 @@ function renderTaskPriorityBadge(priority) {
 function renderTaskItem(task, showSubjectTag = false) {
   const priority = task.priority || 'none';
   const countdown = calcTaskCountdown(task.dueDate);
+  const taskReminders = getTaskReminderList(task);
+  const hasTaskReminder = taskReminders.length > 0;
+  const reminderTooltip = hasTaskReminder
+    ? `תזכורות: ${taskReminders.map(minutes => formatReminderOffset(minutes)).join(', ')}`
+    : 'הגדר תזכורת';
 
   const subjectData = task.subject ? subjects.find(s => s.id === task.subject) : null;
   const subjectColor = subjectData ? subjectData.color : '';
@@ -3324,15 +3512,7 @@ function renderTaskItem(task, showSubjectTag = false) {
     </div>
     <div class="task-actions">
       <div class="task-reminder-wrap">
-        <button class="task-reminder-btn ${task.reminder ? 'has-reminder' : ''}" data-action="reminder" title="${task.reminder ? `תזכורת ${task.reminder} דקות לפני` : 'הגדר תזכורת'}"><span class="icon" style="font-size:16px;vertical-align:middle">notifications</span></button>
-        <div class="task-reminder-dropdown" data-task-id="${task.id}">
-          <div class="task-reminder-option" data-minutes="1">דקה אחת</div>
-          <div class="task-reminder-option" data-minutes="5">5 דקות</div>
-          <div class="task-reminder-option" data-minutes="15">15 דקות</div>
-          <div class="task-reminder-option" data-minutes="60">שעה</div>
-          <div class="task-reminder-option" data-minutes="1440">יום</div>
-          ${task.reminder ? '<div class="task-reminder-option remove" data-minutes="0">הסר תזכורת</div>' : ''}
-        </div>
+        <button class="task-reminder-btn ${hasTaskReminder ? 'has-reminder' : ''}" data-action="reminder" title="${escapeHtml(reminderTooltip)}"><span class="icon" style="font-size:16px;vertical-align:middle">notifications</span></button>
       </div>
       <button class="task-action-btn" data-action="edit" title="Edit" aria-label="עריכה"><span class="icon" style="font-size:16px;vertical-align:middle">edit</span></button>
       <button class="task-action-btn" data-action="duplicate" title="Duplicate" aria-label="שכפל">
@@ -3502,9 +3682,15 @@ function openTaskReminderPopover(btnElement, task) {
   pop.style.boxShadow = 'var(--shadow-lg)';
   pop.style.padding = '4px';
 
-  const setReminder = (minutes) => {
+  const currentReminders = getTaskReminderList(task);
+
+  const setReminders = (reminders) => {
     const { id, isOwn, isShared, ...cleanTask } = task;
-    saveTask(task.id, { ...cleanTask, reminder: minutes || null }, task.subject);
+    const normalized = normalizeTaskReminderList(reminders);
+    delete cleanTask.reminder;
+    if (normalized.length) cleanTask.reminders = normalized;
+    else delete cleanTask.reminders;
+    saveTask(task.id, cleanTask, task.subject);
     closeReminderPopover();
   };
 
@@ -3517,19 +3703,36 @@ function openTaskReminderPopover(btnElement, task) {
   ];
 
   options.forEach(opt => {
+    const isActive = currentReminders.includes(opt.val);
+    const isDisabled = !isActive && currentReminders.length >= TASK_REMINDER_MAX_COUNT;
     const div = document.createElement('div');
-    div.className = 'task-reminder-option';
+    div.className = `task-reminder-option ${isActive ? 'active' : ''} ${isDisabled ? 'disabled' : ''}`;
     div.textContent = opt.label;
-    div.onclick = (e) => { e.stopPropagation(); setReminder(opt.val); };
+    div.onclick = (e) => {
+      e.stopPropagation();
+      if (isActive) {
+        setReminders(removeTaskReminderMinutes(currentReminders, opt.val));
+        return;
+      }
+      if (isDisabled) return;
+      setReminders(addTaskReminderMinutes(currentReminders, opt.val));
+    };
     pop.appendChild(div);
   });
 
-  if (task.reminder) {
+  if (currentReminders.length) {
     const removeDiv = document.createElement('div');
     removeDiv.className = 'task-reminder-option remove';
-    removeDiv.textContent = 'הסר תזכורת';
-    removeDiv.onclick = (e) => { e.stopPropagation(); setReminder(0); };
+    removeDiv.textContent = 'הסר את כל התזכורות';
+    removeDiv.onclick = (e) => { e.stopPropagation(); setReminders([]); };
     pop.appendChild(removeDiv);
+  }
+
+  if (currentReminders.length >= TASK_REMINDER_MAX_COUNT) {
+    const limitDiv = document.createElement('div');
+    limitDiv.className = 'task-reminder-limit';
+    limitDiv.textContent = `אפשר עד ${TASK_REMINDER_MAX_COUNT} תזכורות למשימה`;
+    pop.appendChild(limitDiv);
   }
 
   document.body.appendChild(pop);
@@ -3916,7 +4119,7 @@ async function checkTaskReminders(nowMs = Date.now()) {
   taskReminderCheckInFlight = true;
   try {
     // Prune stale entries (tasks deleted or TTL expired) to keep map lean
-    pruneNotifiedMap(NOTIFY_KEYS.TASKS, notifiedTasks, new Set((ctx.tasks || []).map(t => t.id)));
+    pruneNotifiedTasks();
 
     const state = reminderCheckState.tasks;
     const { start, isCatchup } = getReminderWindow(state.lastCheck, nowMs);
@@ -3927,26 +4130,31 @@ async function checkTaskReminders(nowMs = Date.now()) {
       // Each occurrence is independent - completion doesn't affect future reminders
       // For non-recurring tasks: skip if completed
       if (task.completed && !task.recurrence) return;
-      
-      const reminderMinutes = Number.parseInt(task.reminder, 10) || 0;
-      if (!reminderMinutes) return;
+
+      const reminderMinutesList = getTaskReminderList(task);
+      if (!reminderMinutesList.length) return;
       if (!task.dueDate) return;
       const taskTime = new Date(task.dueDate).getTime();
       if (!Number.isFinite(taskTime)) return; // Guard against malformed dueDate strings
 
       // Convert dueDate to ISO string for consistent dedupe key format with server
       const dueDateIso = new Date(task.dueDate).toISOString();
-      const reminderKey = `${dueDateIso}|${reminderMinutes}`;
-      const entry = notifiedTasks.get(task.id);
-      if (entry && entry.key === reminderKey) return;
-      const triggerTime = taskTime - (reminderMinutes * 60000);
-      if (triggerTime < start || triggerTime > nowMs) return;
-      
-      // Use ISO format for dedupe key to match server-side format exactly
-      const dedupeKey = task.isShared
-        ? `shared-task|${currentUser || ''}|${task.subject || ''}|${task.id}|${dueDateIso}|${reminderMinutes}`
-        : `task|${currentUser || ''}|${task.id}|${dueDateIso}|${reminderMinutes}`;
-      candidates.push({ task, reminderKey, triggerTime, dedupeKey });
+
+      reminderMinutesList.forEach((reminderMinutes) => {
+        const reminderStorageId = `${task.id}|${dueDateIso}|${reminderMinutes}`;
+        const reminderKey = `${dueDateIso}|${reminderMinutes}`;
+        const entry = notifiedTasks.get(reminderStorageId);
+        if (entry && entry.key === reminderKey) return;
+
+        const triggerTime = taskTime - (reminderMinutes * 60000);
+        if (triggerTime < start || triggerTime > nowMs) return;
+
+        // Use ISO format for dedupe key to match server-side format exactly
+        const dedupeKey = task.isShared
+          ? `shared-task|${currentUser || ''}|${task.subject || ''}|${task.id}|${dueDateIso}|${reminderMinutes}`
+          : `task|${currentUser || ''}|${task.id}|${dueDateIso}|${reminderMinutes}`;
+        candidates.push({ task, reminderStorageId, reminderKey, triggerTime, dedupeKey });
+      });
     });
 
     if (candidates.length) {
@@ -3958,12 +4166,12 @@ async function checkTaskReminders(nowMs = Date.now()) {
       }
       for (const item of candidates) {
         if (item.dedupeKey && await wasDedupeKeySeen(item.dedupeKey, nowMs)) {
-          notifiedTasks.set(item.task.id, { key: item.reminderKey, ts: nowMs });
+          notifiedTasks.set(item.reminderStorageId, { key: item.reminderKey, ts: nowMs });
           continue;
         }
         if (item.dedupeKey) await markDedupeKeySeen(item.dedupeKey, nowMs);
         triggerTaskAlert(item.task);
-        notifiedTasks.set(item.task.id, { key: item.reminderKey, ts: nowMs });
+        notifiedTasks.set(item.reminderStorageId, { key: item.reminderKey, ts: nowMs });
       }
       persistNotifiedMap(NOTIFY_KEYS.TASKS, notifiedTasks);
     }
@@ -4045,10 +4253,14 @@ function openTaskEditModal(taskId) {
     setTaskRecurrenceUI(editTaskRecurrence, editTaskRecurrenceCustomWrap, editTaskRecurrenceCustomValue, editTaskRecurrenceCustomUnit, editingTask.recurrence);
   }
 
-  // Set reminder with custom support
+  editingTask.reminders = getTaskReminderList(editingTask);
+  delete editingTask.reminder;
+
+  // Set reminder input + list
   if (editTaskReminder) {
-    setTaskReminderUI(editTaskReminder, editTaskReminderCustomWrap, editTaskReminderCustomValue, editTaskReminderCustomUnit, editingTask.reminder || 0);
+    setTaskReminderInputUI(editTaskReminder, editTaskReminderCustomWrap, editTaskReminderCustomValue, editTaskReminderCustomUnit, 0);
   }
+  refreshEditTaskReminderUI();
 
   // Render checklist
   renderEditChecklist();
@@ -4060,6 +4272,7 @@ function closeTaskEditModal() {
   taskEditModal.classList.remove('open');
   editingTaskId = null;
   editingTask = null;
+  renderTaskReminderList(editTaskReminderList, []);
 }
 ctx.closeTaskEditModal = closeTaskEditModal;
 ctx.openTaskEditModal = openTaskEditModal;
@@ -4203,13 +4416,15 @@ saveTaskBtn.onclick = () => {
     delete editingTask.recurrence;
   }
 
-  // Update reminder (with custom support)
-  const reminderValue = getTaskReminderMinutes(editTaskReminder, editTaskReminderCustomValue, editTaskReminderCustomUnit);
-  if (reminderValue > 0) {
-    editingTask.reminder = reminderValue;
-  } else {
-    delete editingTask.reminder;
+  // Update reminders (multi reminder support)
+  const reminderSelection = collectTaskReminderSelection(ensureEditingTaskReminders(), editTaskReminder, editTaskReminderCustomValue, editTaskReminderCustomUnit);
+  if (reminderSelection.error) {
+    alert(reminderSelection.error);
+    return;
   }
+  editingTask.reminders = reminderSelection.reminders;
+  delete editingTask.reminder;
+  if (!editingTask.reminders.length) delete editingTask.reminders;
 
   // Update due date
   const dueValue = editTaskDue.value;
@@ -5491,9 +5706,14 @@ newTaskTitle.addEventListener('keydown', (e) => {
       return;
     }
     const recurrence = parsed.recurrence || recurrenceResult.value;
-    const reminder = parsed.reminderMinutes > 0
-      ? parsed.reminderMinutes
-      : getTaskReminderMinutes(newTaskReminder, newTaskReminderCustomValue, newTaskReminderCustomUnit);
+    const reminderSelection = parsed.reminderMinutes > 0
+      ? { reminders: normalizeTaskReminderList([parsed.reminderMinutes, ...newTaskReminderMinutes]) }
+      : collectTaskReminderSelection(newTaskReminderMinutes, newTaskReminder, newTaskReminderCustomValue, newTaskReminderCustomUnit);
+    if (reminderSelection.error) {
+      alert(reminderSelection.error);
+      return;
+    }
+    const reminders = reminderSelection.reminders;
 
     // Auto-fill date from smart view if NLP didn't parse one
     let nlpDueDate = parsed.dueDate || null;
@@ -5520,7 +5740,7 @@ newTaskTitle.addEventListener('keydown', (e) => {
       ...(Number.isFinite(orderValue) ? { order: orderValue } : {}),
       ...(selectedTaskColor ? { color: selectedTaskColor } : {}),
       ...(recurrence ? { recurrence } : {}),
-      ...(reminder > 0 ? { reminder } : {})
+      ...(reminders.length ? { reminders } : {})
     };
 
     createTask(taskData);
@@ -5540,6 +5760,8 @@ newTaskTitle.addEventListener('keydown', (e) => {
     if (newTaskReminderCustomWrap) newTaskReminderCustomWrap.classList.add('hidden');
     if (newTaskReminderCustomValue) newTaskReminderCustomValue.value = '';
     if (newTaskReminderCustomUnit) newTaskReminderCustomUnit.value = 'minutes';
+    newTaskReminderMinutes = [];
+    refreshNewTaskReminderUI();
     setTaskColorSelection(quickTaskColorPicker, selectedTaskColor);
     syncQuickAddSubject();
   } else {

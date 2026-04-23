@@ -1,5 +1,5 @@
 // Bump cache version when precache list or fetch strategy changes
-const CACHE_NAME = 'countdown-push-v57';
+const CACHE_NAME = 'countdown-push-v58';
 const NOTIFY_DEDUPE_CACHE = 'countdown-notify-dedupe-v1';
 const NOTIFY_DEDUPE_TTL_MS = 1000 * 60 * 60 * 24 * 7;
 const PENDING_SUB_DB = 'countdown-pending-sub';
@@ -296,6 +296,21 @@ self.addEventListener('push', (event) => {
       }
     }
 
+    const rawData = {
+      ...(data && typeof data === 'object' ? data : {}),
+      ...((data && typeof data.data === 'object' && data.data) ? data.data : {})
+    };
+
+    delete rawData.title;
+    delete rawData.body;
+    delete rawData.icon;
+    delete rawData.badge;
+    delete rawData.vibrate;
+    delete rawData.tag;
+    delete rawData.renotify;
+    delete rawData.requireInteraction;
+    delete rawData.actions;
+
     const title = data.title || 'Task Reminder';
     const options = {
       body: data.body || '',
@@ -308,7 +323,7 @@ self.addEventListener('push', (event) => {
       data: {
         url: data.url || '/',
         completeUrl: data.completeUrl || null,
-        raw: data.data || null
+        raw: rawData
       },
       actions: Array.isArray(data.actions) && data.actions.length
         ? data.actions
@@ -325,10 +340,49 @@ self.addEventListener('push', (event) => {
 self.addEventListener('notificationclick', (event) => {
   const url = event.notification?.data?.url || '/';
   const completeUrl = event.notification?.data?.completeUrl || null;
+  const raw = event.notification?.data?.raw || {};
   const action = event.action || 'view';
   event.notification.close();
 
   event.waitUntil((async () => {
+    if (action === 'remind-again-10') {
+      const endpoint = raw.remindAgainEndpoint || '';
+      const token = raw.remindAgainToken || '';
+      const userId = raw.remindAgainUserId || '';
+      const reminderMinutes = Number.parseInt(raw.remindAgainMinutes, 10) || 10;
+
+      if (endpoint && token && userId) {
+        try {
+          const response = await fetch(endpoint, {
+            method: 'POST',
+            mode: 'cors',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({
+              token,
+              userId,
+              taskId: raw.remindAgainTaskId || '',
+              subjectId: raw.remindAgainSubjectId || '',
+              occurrence: raw.remindAgainOccurrence || '',
+              minutes: reminderMinutes
+            })
+          });
+
+          if (response.ok) {
+            await self.registration.showNotification(raw.remindAgainAckTitle || 'Reminder scheduled', {
+              body: raw.remindAgainAckBody || `We will remind you again in ${reminderMinutes} minutes.`,
+              icon: new URL('./icon-192.png', self.location.origin).href,
+              tag: `remind-again-${raw.remindAgainTaskId || 'task'}`,
+              requireInteraction: false,
+              data: { url }
+            });
+            return;
+          }
+        } catch (err) {
+          // Fallback below opens the app if enqueue failed.
+        }
+      }
+    }
+
     const targetUrl = (action === 'complete' && completeUrl) ? completeUrl : url;
 
     const allClients = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
