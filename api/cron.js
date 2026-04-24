@@ -460,14 +460,24 @@ async function sendFCMToUser(userId, tokens, payload, dedupeKey) {
     if (!committed) return { skipped: true };
 
     const extraData = stringifyDataMap(payload.data || {});
+    const actionList = Array.isArray(payload.actions) && payload.actions.length
+        ? payload.actions
+        : [
+            { action: 'view', title: 'View' },
+            { action: 'complete', title: 'Done' }
+        ];
 
     const message = {
         tokens: tokens,
-        notification: {
-            title: payload.title,
-            body: payload.body,
-        },
+        // Data-first payload avoids browser-managed notification clicks on some Android/FCM paths.
         data: {
+            title: payload.title || 'Task Reminder',
+            body: payload.body || '',
+            icon: `${APP_URL}icon-192.png`,
+            vibrate: JSON.stringify([200, 100, 200]),
+            renotify: 'true',
+            requireInteraction: 'true',
+            actions: JSON.stringify(actionList),
             url: payload.url || APP_URL,
             completeUrl: payload.completeUrl || '',
             tag: payload.tag || 'reminder',
@@ -485,16 +495,6 @@ async function sendFCMToUser(userId, tokens, payload, dedupeKey) {
         webpush: {
             headers: {
                 Urgency: 'high'
-            },
-            notification: {
-                icon: `${APP_URL}icon-192.png`,
-                badge: `${APP_URL}icon-192.png`,
-                vibrate: [200, 100, 200],
-                requireInteraction: true,
-                actions: payload.actions || [
-                    { action: 'view', title: 'View' },
-                    { action: 'complete', title: 'Done' }
-                ]
             }
         }
     };

@@ -1,5 +1,5 @@
 // Bump cache version when precache list or fetch strategy changes
-const CACHE_NAME = 'countdown-push-v61';
+const CACHE_NAME = 'countdown-push-v62';
 const NOTIFY_DEDUPE_CACHE = 'countdown-notify-dedupe-v1';
 const NOTIFY_DEDUPE_TTL_MS = 1000 * 60 * 60 * 24 * 7;
 const PENDING_SUB_DB = 'countdown-pending-sub';
@@ -286,7 +286,66 @@ self.addEventListener('push', (event) => {
       data = { title: 'Reminder', body: event.data ? event.data.text() : '' };
     }
 
-    const dedupeKey = data?.dedupeKey || data?.data?.dedupeKey || '';
+    const parseBooleanish = (value, fallback) => {
+      if (typeof value === 'boolean') return value;
+      if (typeof value === 'string') {
+        const normalized = value.trim().toLowerCase();
+        if (normalized === 'true') return true;
+        if (normalized === 'false') return false;
+      }
+      return fallback;
+    };
+
+    const parseArrayCandidate = (value) => {
+      if (Array.isArray(value)) return value;
+      if (typeof value === 'string') {
+        try {
+          const parsed = JSON.parse(value);
+          if (Array.isArray(parsed)) return parsed;
+        } catch (err) {
+          // Ignore invalid JSON strings.
+        }
+      }
+      return null;
+    };
+
+    const parseActions = (...candidates) => {
+      for (const candidate of candidates) {
+        const list = parseArrayCandidate(candidate);
+        if (!list || !list.length) continue;
+        const normalized = list
+          .map((item) => {
+            if (!item || typeof item !== 'object') return null;
+            const action = String(item.action || '').trim();
+            const title = String(item.title || '').trim();
+            if (!action || !title) return null;
+            return { action, title };
+          })
+          .filter(Boolean);
+        if (normalized.length) return normalized;
+      }
+      return null;
+    };
+
+    const parseVibrate = (...candidates) => {
+      for (const candidate of candidates) {
+        const list = parseArrayCandidate(candidate);
+        if (!list || !list.length) continue;
+        const normalized = list
+          .map((value) => Number(value))
+          .filter((value) => Number.isFinite(value) && value >= 0);
+        if (normalized.length) return normalized;
+      }
+      return null;
+    };
+
+    const rootData = data && typeof data === 'object' ? data : {};
+    const nestedData = (rootData.data && typeof rootData.data === 'object') ? rootData.data : {};
+    const nestedNotification = (rootData.notification && typeof rootData.notification === 'object') ? rootData.notification : {};
+    const fcmMsg = (rootData.FCM_MSG && typeof rootData.FCM_MSG === 'object') ? rootData.FCM_MSG : {};
+    const fcmMsgData = (fcmMsg.data && typeof fcmMsg.data === 'object') ? fcmMsg.data : {};
+
+    const dedupeKey = rootData?.dedupeKey || nestedData?.dedupeKey || fcmMsgData?.dedupeKey || '';
     if (dedupeKey) {
       try {
         if (await wasDedupeKeySeen(dedupeKey)) return;
@@ -297,10 +356,15 @@ self.addEventListener('push', (event) => {
     }
 
     const rawData = {
-      ...(data && typeof data === 'object' ? data : {}),
-      ...((data && typeof data.data === 'object' && data.data) ? data.data : {})
+      ...rootData,
+      ...nestedNotification,
+      ...nestedData,
+      ...fcmMsgData
     };
 
+    delete rawData.FCM_MSG;
+    delete rawData.data;
+    delete rawData.notification;
     delete rawData.title;
     delete rawData.body;
     delete rawData.icon;
@@ -311,22 +375,24 @@ self.addEventListener('push', (event) => {
     delete rawData.requireInteraction;
     delete rawData.actions;
 
-    const title = data.title || 'Task Reminder';
+    const title = rootData.title || nestedData.title || nestedNotification.title || fcmMsgData.title || 'Task Reminder';
+    const actions = parseActions(rootData.actions, nestedData.actions, nestedNotification.actions, fcmMsgData.actions);
+    const vibrate = parseVibrate(rootData.vibrate, nestedData.vibrate, nestedNotification.vibrate, fcmMsgData.vibrate);
     const options = {
-      body: data.body || '',
-      icon: data.icon || new URL('./icon-192.png', self.location.origin).href,
+      body: rootData.body || nestedData.body || nestedNotification.body || fcmMsgData.body || '',
+      icon: rootData.icon || nestedData.icon || nestedNotification.icon || fcmMsgData.icon || new URL('./icon-192.png', self.location.origin).href,
       // badge: data.badge || './icon-192.png', // Removed to fix Android white square issue
-      vibrate: data.vibrate || [200, 100, 200, 100, 200],
-      tag: data.tag || 'reminder',
-      renotify: data.renotify ?? true,
-      requireInteraction: data.requireInteraction ?? true,
+      vibrate: vibrate || [200, 100, 200, 100, 200],
+      tag: rootData.tag || nestedData.tag || nestedNotification.tag || fcmMsgData.tag || 'reminder',
+      renotify: parseBooleanish(rootData.renotify, parseBooleanish(nestedData.renotify, parseBooleanish(nestedNotification.renotify, parseBooleanish(fcmMsgData.renotify, true)))),
+      requireInteraction: parseBooleanish(rootData.requireInteraction, parseBooleanish(nestedData.requireInteraction, parseBooleanish(nestedNotification.requireInteraction, parseBooleanish(fcmMsgData.requireInteraction, true)))),
       data: {
-        url: data.url || data?.data?.url || self.registration.scope || './',
-        completeUrl: data.completeUrl || data?.data?.completeUrl || null,
+        url: rootData.url || nestedData.url || nestedNotification.url || fcmMsgData.url || self.registration.scope || './',
+        completeUrl: rootData.completeUrl || nestedData.completeUrl || nestedNotification.completeUrl || fcmMsgData.completeUrl || null,
         raw: rawData
       },
-      actions: Array.isArray(data.actions) && data.actions.length
-        ? data.actions
+      actions: Array.isArray(actions) && actions.length
+        ? actions
         : [
           { action: 'view', title: 'View' },
           { action: 'complete', title: 'Done' }
@@ -339,14 +405,18 @@ self.addEventListener('push', (event) => {
 
 self.addEventListener('notificationclick', (event) => {
   const notificationData = event.notification?.data || {};
+  const fcmMsg = (notificationData?.FCM_MSG && typeof notificationData.FCM_MSG === 'object') ? notificationData.FCM_MSG : {};
+  const fcmMsgData = (fcmMsg?.data && typeof fcmMsg.data === 'object') ? fcmMsg.data : {};
   const raw = {
     ...(notificationData && typeof notificationData === 'object' ? notificationData : {}),
-    ...((notificationData && typeof notificationData.raw === 'object' && notificationData.raw) ? notificationData.raw : {})
+    ...((notificationData && typeof notificationData.raw === 'object' && notificationData.raw) ? notificationData.raw : {}),
+    ...fcmMsgData
   };
-  const url = notificationData?.url || notificationData?.raw?.url || self.registration.scope || './';
-  const completeUrl = notificationData?.completeUrl || notificationData?.raw?.completeUrl || null;
+  const url = notificationData?.url || notificationData?.raw?.url || fcmMsgData?.url || self.registration.scope || './';
+  const completeUrl = notificationData?.completeUrl || notificationData?.raw?.completeUrl || fcmMsgData?.completeUrl || null;
   delete raw.url;
   delete raw.completeUrl;
+  delete raw.FCM_MSG;
   delete raw.raw;
   const rawAction = typeof event.action === 'string' ? event.action.trim().toLowerCase() : '';
   const action = rawAction || 'view';
