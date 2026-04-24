@@ -321,8 +321,8 @@ self.addEventListener('push', (event) => {
       renotify: data.renotify ?? true,
       requireInteraction: data.requireInteraction ?? true,
       data: {
-        url: data.url || '/',
-        completeUrl: data.completeUrl || null,
+        url: data.url || data?.data?.url || self.registration.scope || './',
+        completeUrl: data.completeUrl || data?.data?.completeUrl || null,
         raw: rawData
       },
       actions: Array.isArray(data.actions) && data.actions.length
@@ -343,15 +343,19 @@ self.addEventListener('notificationclick', (event) => {
     ...(notificationData && typeof notificationData === 'object' ? notificationData : {}),
     ...((notificationData && typeof notificationData.raw === 'object' && notificationData.raw) ? notificationData.raw : {})
   };
-  const url = notificationData?.url || notificationData?.raw?.url || '/';
+  const url = notificationData?.url || notificationData?.raw?.url || self.registration.scope || './';
   const completeUrl = notificationData?.completeUrl || notificationData?.raw?.completeUrl || null;
   delete raw.url;
   delete raw.completeUrl;
   delete raw.raw;
-  const rawAction = typeof event.action === 'string' ? event.action : '';
+  const rawAction = typeof event.action === 'string' ? event.action.trim().toLowerCase() : '';
   const action = rawAction || 'view';
   const hasRemindAgainToken = !!raw.remindAgainToken;
-  const shouldHandleRemindAgain = rawAction === 'remind-again-10' || (rawAction === '' && hasRemindAgainToken);
+  const isRemindCapable = hasRemindAgainToken
+    || !!raw.remindAgainEndpoint
+    || !!raw.remindAgainTaskId
+    || !!raw.remindAgainMinutes;
+  const shouldHandleRemindAgain = rawAction === 'remind-again-10' || (isRemindCapable && rawAction !== 'complete');
   event.notification.close();
 
   event.waitUntil((async () => {
