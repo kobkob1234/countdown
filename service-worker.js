@@ -1,5 +1,5 @@
 // Bump cache version when precache list or fetch strategy changes
-const CACHE_NAME = 'countdown-push-v60';
+const CACHE_NAME = 'countdown-push-v61';
 const NOTIFY_DEDUPE_CACHE = 'countdown-notify-dedupe-v1';
 const NOTIFY_DEDUPE_TTL_MS = 1000 * 60 * 60 * 24 * 7;
 const PENDING_SUB_DB = 'countdown-pending-sub';
@@ -338,9 +338,16 @@ self.addEventListener('push', (event) => {
 });
 
 self.addEventListener('notificationclick', (event) => {
-  const url = event.notification?.data?.url || '/';
-  const completeUrl = event.notification?.data?.completeUrl || null;
-  const raw = event.notification?.data?.raw || {};
+  const notificationData = event.notification?.data || {};
+  const raw = {
+    ...(notificationData && typeof notificationData === 'object' ? notificationData : {}),
+    ...((notificationData && typeof notificationData.raw === 'object' && notificationData.raw) ? notificationData.raw : {})
+  };
+  const url = notificationData?.url || notificationData?.raw?.url || '/';
+  const completeUrl = notificationData?.completeUrl || notificationData?.raw?.completeUrl || null;
+  delete raw.url;
+  delete raw.completeUrl;
+  delete raw.raw;
   const rawAction = typeof event.action === 'string' ? event.action : '';
   const action = rawAction || 'view';
   const hasRemindAgainToken = !!raw.remindAgainToken;
