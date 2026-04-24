@@ -39,7 +39,28 @@ const db = admin.database();
 
 // Configuration
 const WINDOW_MS = 90000; // 90 seconds late-allowed window
-const APP_URL = process.env.APP_URL || 'https://kobkob1234.github.io/countdown/';
+
+function normalizeAppUrl(rawUrl) {
+    const fallback = 'https://kobkob1234.github.io/countdown/';
+    const value = String(rawUrl || '').trim();
+    if (!value) return fallback;
+
+    try {
+        const parsed = new URL(value);
+
+        // Prevent accidental GitHub Pages root links that lead to 404 for project pages.
+        if (parsed.hostname === 'kobkob1234.github.io' && (parsed.pathname === '/' || parsed.pathname === '')) {
+            parsed.pathname = '/countdown/';
+        }
+
+        if (!parsed.pathname.endsWith('/')) parsed.pathname += '/';
+        return parsed.toString();
+    } catch {
+        return fallback;
+    }
+}
+
+const APP_URL = normalizeAppUrl(process.env.APP_URL || 'https://kobkob1234.github.io/countdown/');
 const REMIND_AGAIN_DELAY_MINUTES = Number.parseInt(process.env.REMIND_AGAIN_DELAY_MINUTES || '10', 10) || 10;
 const REMIND_AGAIN_TOKEN_TTL_MS = Number.parseInt(process.env.REMIND_AGAIN_TOKEN_TTL_MS || '', 10) || (30 * 60 * 1000);
 const REMIND_AGAIN_QUEUE_TTL_MS = Number.parseInt(process.env.REMIND_AGAIN_QUEUE_TTL_MS || '', 10) || (24 * 60 * 60 * 1000);
@@ -570,16 +591,27 @@ async function sendVAPIDPush(userId, pushSubs, payload, dedupeKey) {
     return { sent, failed };
 }
 
-// Combined notification sender - tries FCM first, falls back to VAPID
+// Combined notification sender - prefers Web Push, falls back to FCM
 async function sendNotificationToUser(userId, tokens, pushSubs, payload, dedupeKey) {
-    // Try FCM first if tokens are available
-    if (tokens && tokens.length > 0) {
+    const hasPushSubs = !!(pushSubs && Object.keys(pushSubs).length > 0);
+    const hasFCMTokens = !!(tokens && tokens.length > 0);
+
+    // Prefer Web Push subscriptions first to keep click handling bound to the active site SW.
+    if (hasPushSubs) {
+        const webPushResult = await sendVAPIDPush(userId, pushSubs, payload, dedupeKey);
+        const sentCount = Number(webPushResult?.sent) || 0;
+
+        if (sentCount > 0 || !hasFCMTokens) {
+            return webPushResult;
+        }
+
+        console.warn(`[Notify] Web Push sent 0 for ${userId.slice(0, 8)}..., trying FCM fallback`);
         return sendFCMToUser(userId, tokens, payload, dedupeKey);
     }
 
-    // Fall back to VAPID push if no FCM tokens but has push subscriptions
-    if (pushSubs && Object.keys(pushSubs).length > 0) {
-        return sendVAPIDPush(userId, pushSubs, payload, dedupeKey);
+    // Use FCM if no Web Push subscriptions are available.
+    if (hasFCMTokens) {
+        return sendFCMToUser(userId, tokens, payload, dedupeKey);
     }
 
     // Log when user has no notification tokens at all
