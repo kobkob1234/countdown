@@ -1,5 +1,5 @@
 // Bump cache version when precache list or fetch strategy changes
-const CACHE_NAME = 'countdown-push-v63';
+const CACHE_NAME = 'countdown-push-v62';
 const NOTIFY_DEDUPE_CACHE = 'countdown-notify-dedupe-v1';
 const NOTIFY_DEDUPE_TTL_MS = 1000 * 60 * 60 * 24 * 7;
 const PENDING_SUB_DB = 'countdown-pending-sub';
@@ -425,10 +425,7 @@ self.addEventListener('notificationclick', (event) => {
     || !!raw.remindAgainEndpoint
     || !!raw.remindAgainTaskId
     || !!raw.remindAgainMinutes;
-  // Only treat the explicit snooze button press as a remind-again action.
-  // Previously, ANY click (body tap, 'view') was hijacked when isRemindCapable was true,
-  // causing the notification to silently snooze instead of opening the app.
-  const shouldHandleRemindAgain = rawAction === 'remind-again-10';
+  const shouldHandleRemindAgain = rawAction === 'remind-again-10' || (isRemindCapable && rawAction !== 'complete');
   event.notification.close();
 
   event.waitUntil((async () => {

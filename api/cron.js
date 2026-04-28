@@ -484,10 +484,13 @@ async function sendFCMToUser(userId, tokens, payload, dedupeKey) {
             dedupeKey: dedupeKey,
             ...extraData,
         },
-        // Data-only: no android.notification to avoid system-managed notification
-        // that would bypass the service worker's click handler.
         android: {
-            priority: 'high'
+            priority: 'high',
+            notification: {
+                channelId: 'reminders',
+                priority: 'high',
+                defaultVibrateTimings: true,
+            }
         },
         webpush: {
             headers: {
@@ -990,7 +993,7 @@ async function processRemindAgainQueue(users, nowMs) {
 
                 const payload = {
                     title: type === 'shared-task' ? 'Shared Task Reminder 📋' : 'Task Reminder 📋',
-                    body: `${title} — snoozed reminder`,
+                    body: `${title} reminder again in ${REMIND_AGAIN_DELAY_MINUTES} minutes`,
                     tag: `remind-again-${currentItem.taskId || queueId}`,
                     url: currentItem.baseUrl || APP_URL,
                     completeUrl: `${APP_URL}?${completeParams.toString()}`,
