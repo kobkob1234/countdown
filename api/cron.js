@@ -601,7 +601,10 @@ async function sendNotificationToUser(userId, tokens, pushSubs, payload, dedupeK
         const webPushResult = await sendVAPIDPush(userId, pushSubs, payload, dedupeKey);
         const sentCount = Number(webPushResult?.sent) || 0;
 
-        if (sentCount > 0 || !hasFCMTokens) {
+        // If VAPID was skipped (dedupe already claimed this key), the message
+        // was already sent on a prior run — do NOT fall through to FCM, which
+        // uses a separate dedupe path and would deliver a duplicate.
+        if (webPushResult?.skipped || sentCount > 0 || !hasFCMTokens) {
             return webPushResult;
         }
 
@@ -909,12 +912,33 @@ async function loadTaskForRemindAgain(userId, queueItem) {
     return null;
 }
 
+// Items left in 'sending' for longer than this are presumed orphaned by a
+// crashed/timed-out invocation and reset back to 'pending' so they can fire.
+const REMIND_AGAIN_SENDING_STALE_MS = 3 * 60 * 1000;
+
 async function processRemindAgainQueue(users, nowMs) {
     let sent = 0, skipped = 0, failed = 0;
 
     for (const user of users) {
         const queueSnap = await db.ref(`users/${user.userId}/remindAgainQueue`).once('value');
         const queueItems = queueSnap.val() || {};
+
+        // Recover any queue items left in 'sending' from a crashed invocation
+        // before processing — otherwise they remain stuck forever and the user
+        // never gets their snoozed reminder.
+        for (const [queueId, queueItem] of Object.entries(queueItems)) {
+            if (!queueItem || queueItem.status !== 'sending') continue;
+            const updatedAt = Number(queueItem.updatedAt) || 0;
+            if (!updatedAt || (nowMs - updatedAt) <= REMIND_AGAIN_SENDING_STALE_MS) continue;
+            const staleRef = db.ref(`users/${user.userId}/remindAgainQueue/${queueId}`);
+            await staleRef.transaction((cur) => {
+                if (!cur || cur.status !== 'sending') return;
+                const ts = Number(cur.updatedAt) || 0;
+                if (ts && (nowMs - ts) <= REMIND_AGAIN_SENDING_STALE_MS) return;
+                return { ...cur, status: 'pending', updatedAt: nowMs, recoveredFromStaleAt: nowMs };
+            }).catch(() => { });
+            queueItems[queueId] = { ...queueItem, status: 'pending', updatedAt: nowMs };
+        }
 
         for (const [queueId, queueItem] of Object.entries(queueItems)) {
             if (!queueItem || queueItem.status !== 'pending') continue;

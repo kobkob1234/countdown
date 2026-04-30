@@ -1,9 +1,13 @@
 // Bump cache version when precache list or fetch strategy changes
-const CACHE_NAME = 'countdown-push-v63';
+const CACHE_NAME = 'countdown-push-v64';
 const NOTIFY_DEDUPE_CACHE = 'countdown-notify-dedupe-v1';
 const NOTIFY_DEDUPE_TTL_MS = 1000 * 60 * 60 * 24 * 7;
 const PENDING_SUB_DB = 'countdown-pending-sub';
 const PENDING_SUB_STORE = 'subscriptions';
+const PENDING_SNOOZE_DB = 'countdown-pending-snooze';
+const PENDING_SNOOZE_STORE = 'snoozes';
+const PENDING_SNOOZE_TTL_MS = 1000 * 60 * 30; // give up after 30min — token would expire anyway
+const SNOOZE_SYNC_TAG = 'remind-again-retry';
 const CACHE_URLS = [
   './',
   './manifest.webmanifest',
@@ -90,6 +94,122 @@ async function clearPendingSubscription() {
   } catch (e) {
     // Best effort
   }
+}
+
+// ============================================
+// Pending snooze IndexedDB helpers
+// Used to recover from a failed remind-again POST so the user's snooze
+// is not silently lost on a transient network/server hiccup.
+// ============================================
+function openPendingSnoozeDB() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(PENDING_SNOOZE_DB, 1);
+    request.onerror = () => reject(request.error);
+    request.onsuccess = () => resolve(request.result);
+    request.onupgradeneeded = (event) => {
+      const db = event.target.result;
+      if (!db.objectStoreNames.contains(PENDING_SNOOZE_STORE)) {
+        db.createObjectStore(PENDING_SNOOZE_STORE, { keyPath: 'id' });
+      }
+    };
+  });
+}
+
+async function savePendingSnooze(record) {
+  try {
+    const db = await openPendingSnoozeDB();
+    const tx = db.transaction(PENDING_SNOOZE_STORE, 'readwrite');
+    tx.objectStore(PENDING_SNOOZE_STORE).put(record);
+    await new Promise((resolve, reject) => {
+      tx.oncomplete = resolve;
+      tx.onerror = () => reject(tx.error);
+    });
+    db.close();
+  } catch (e) {
+    console.warn('[SW] Failed to save pending snooze:', e?.message || e);
+  }
+}
+
+async function deletePendingSnooze(id) {
+  try {
+    const db = await openPendingSnoozeDB();
+    const tx = db.transaction(PENDING_SNOOZE_STORE, 'readwrite');
+    tx.objectStore(PENDING_SNOOZE_STORE).delete(id);
+    await new Promise((resolve, reject) => {
+      tx.oncomplete = resolve;
+      tx.onerror = () => reject(tx.error);
+    });
+    db.close();
+  } catch (e) {
+    // Best effort
+  }
+}
+
+async function listPendingSnoozes() {
+  try {
+    const db = await openPendingSnoozeDB();
+    const tx = db.transaction(PENDING_SNOOZE_STORE, 'readonly');
+    const store = tx.objectStore(PENDING_SNOOZE_STORE);
+    const records = await new Promise((resolve, reject) => {
+      const request = store.getAll();
+      request.onsuccess = () => resolve(request.result || []);
+      request.onerror = () => reject(request.error);
+    });
+    db.close();
+    return Array.isArray(records) ? records : [];
+  } catch (e) {
+    return [];
+  }
+}
+
+async function postSnooze(endpoint, payload) {
+  const res = await fetch(endpoint, {
+    method: 'POST',
+    mode: 'cors',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
+  if (!res.ok) {
+    // 409 = token already used/expired — pointless to retry, treat as terminal.
+    const terminal = res.status === 409 || res.status === 400;
+    const err = new Error(`remind-again POST returned ${res.status}`);
+    err.terminal = terminal;
+    throw err;
+  }
+  return true;
+}
+
+async function flushPendingSnoozes() {
+  const records = await listPendingSnoozes();
+  if (!records.length) return { flushed: 0, dropped: 0, remaining: 0 };
+  const now = Date.now();
+  let flushed = 0, dropped = 0, remaining = 0;
+  for (const record of records) {
+    const savedAt = Number(record.savedAt) || 0;
+    if (savedAt && (now - savedAt) > PENDING_SNOOZE_TTL_MS) {
+      await deletePendingSnooze(record.id);
+      dropped++;
+      continue;
+    }
+    if (!record.endpoint || !record.payload) {
+      await deletePendingSnooze(record.id);
+      dropped++;
+      continue;
+    }
+    try {
+      await postSnooze(record.endpoint, record.payload);
+      await deletePendingSnooze(record.id);
+      flushed++;
+    } catch (err) {
+      if (err && err.terminal) {
+        await deletePendingSnooze(record.id);
+        dropped++;
+        continue;
+      }
+      remaining++;
+    }
+  }
+  return { flushed, dropped, remaining };
 }
 
 // ============================================
@@ -193,6 +313,8 @@ self.addEventListener('activate', (event) => {
       }),
       // Fix #9: Cleanup expired dedupe entries on activate
       cleanupExpiredDedupeEntries(),
+      // Retry any snooze POSTs that failed while we were terminated
+      flushPendingSnoozes().catch((e) => console.warn('[SW] flushPendingSnoozes failed:', e?.message || e)),
       // Register periodic sync if available (helps keep SW alive on Android)
       (async () => {
         if ('periodicSync' in self.registration) {
@@ -275,6 +397,21 @@ self.addEventListener('periodicsync', (event) => {
   if (event.tag === 'push-keepalive') {
     console.log('[SW] Periodic sync triggered - service worker active');
   }
+  if (event.tag === SNOOZE_SYNC_TAG) {
+    event.waitUntil(flushPendingSnoozes().catch(() => { }));
+  }
+});
+
+// Background Sync handler — retries snooze POSTs that failed while offline.
+self.addEventListener('sync', (event) => {
+  if (event.tag !== SNOOZE_SYNC_TAG) return;
+  event.waitUntil((async () => {
+    const { remaining } = await flushPendingSnoozes();
+    if (remaining > 0) {
+      // Re-throw so the browser retries this sync later.
+      throw new Error(`Snooze retry incomplete, ${remaining} pending`);
+    }
+  })());
 });
 
 self.addEventListener('push', (event) => {
@@ -420,13 +557,8 @@ self.addEventListener('notificationclick', (event) => {
   delete raw.raw;
   const rawAction = typeof event.action === 'string' ? event.action.trim().toLowerCase() : '';
   const action = rawAction || 'view';
-  const hasRemindAgainToken = !!raw.remindAgainToken;
-  const isRemindCapable = hasRemindAgainToken
-    || !!raw.remindAgainEndpoint
-    || !!raw.remindAgainTaskId
-    || !!raw.remindAgainMinutes;
-  
-  // Explicitly tie snooze to the actual action ID, so body-clicks (view) 
+
+  // Explicitly tie snooze to the actual action ID, so body-clicks (view)
   // correctly open the app instead of snoozing silently.
   const shouldHandleRemindAgain = rawAction === 'remind-again-10';
   event.notification.close();
@@ -438,32 +570,49 @@ self.addEventListener('notificationclick', (event) => {
       const userId = raw.remindAgainUserId || '';
       const reminderMinutes = Number.parseInt(raw.remindAgainMinutes, 10) || 10;
 
-      if (endpoint && token && userId) {
-        try {
-          await fetch(endpoint, {
-            method: 'POST',
-            mode: 'cors',
-            headers: { 'content-type': 'application/json' },
-            body: JSON.stringify({
-              token,
-              userId,
-              taskId: raw.remindAgainTaskId || '',
-              subjectId: raw.remindAgainSubjectId || '',
-              occurrence: raw.remindAgainOccurrence || '',
-              minutes: reminderMinutes
-            })
-          });
-
-          // Snooze action is background-only: never open app/tab on press.
-          return;
-        } catch (err) {
-          // Keep this action silent even when enqueue fails.
-          return;
-        }
+      if (!endpoint || !token || !userId) {
+        // Missing metadata: nothing we can do, fail silently.
+        console.warn('[SW] Snooze click missing endpoint/token/userId');
+        return;
       }
 
-      // Missing metadata: still keep snooze click silent.
-      return;
+      const snoozePayload = {
+        token,
+        userId,
+        taskId: raw.remindAgainTaskId || '',
+        subjectId: raw.remindAgainSubjectId || '',
+        occurrence: raw.remindAgainOccurrence || '',
+        minutes: reminderMinutes
+      };
+
+      try {
+        await postSnooze(endpoint, snoozePayload);
+        // Snooze action is background-only: never open app/tab on press.
+        return;
+      } catch (err) {
+        if (err && err.terminal) {
+          // 4xx — token already used or invalid, retrying won't help.
+          console.warn('[SW] Snooze rejected by server:', err.message);
+          return;
+        }
+        // Transient failure — persist and retry via Background Sync if available,
+        // otherwise we'll flush on the next SW activation.
+        console.warn('[SW] Snooze POST failed, queuing for retry:', err?.message || err);
+        await savePendingSnooze({
+          id: token,
+          endpoint,
+          payload: snoozePayload,
+          savedAt: Date.now()
+        });
+        if ('sync' in self.registration) {
+          try {
+            await self.registration.sync.register(SNOOZE_SYNC_TAG);
+          } catch (e) {
+            // Background Sync not granted — the next activate will flush.
+          }
+        }
+        return;
+      }
     }
 
     const targetUrl = (action === 'complete' && completeUrl) ? completeUrl : url;
