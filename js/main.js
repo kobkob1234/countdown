@@ -33,6 +33,7 @@ import { initTasks } from "./tasks.js";
 import { initCalendar } from "./calendar.js";
 import { createPomodoro } from "./pomodoro.js";
 import { initUi } from "./ui.js";
+import { getMessaging, getToken, deleteToken, isSupported as isMessagingSupported } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging.js";
 Object.assign(ctx, {
   db, ref, set, get, onValue, push, remove,
   onChildAdded, onChildChanged, onChildRemoved,
@@ -355,6 +356,8 @@ Object.assign(ctx, { readCache, writeCache });
 // 1) Generate VAPID keys on your backend, then paste the PUBLIC key here.
 const PUSH_VAPID_PUBLIC_KEY = "BL-m24SrurFUNIQxH7S77r1yYShIiCibpw2CbtK8FwYATHzYiR0kQGKzWilEGRHyRK2jxqRPUR_RJoAVUgrO-24";
 const PUSH_LOCAL_USER_KEY = 'countdown_push_subscription_user';
+const FCM_LOCAL_TOKEN_KEY = 'countdown_fcm_token';
+let fcmMessaging = null;
 
 const isPushSupported = () => (
   window.isSecureContext &&
@@ -495,6 +498,54 @@ async function removePushSubscriptionForUser(userId, subscription) {
   await remove(ref(db, `users/${userId}/pushSubscriptions/${key}`));
 }
 
+async function initFCMMessaging() {
+  if (fcmMessaging) return fcmMessaging;
+  try {
+    const supported = await isMessagingSupported();
+    if (!supported) return null;
+    fcmMessaging = getMessaging();
+    return fcmMessaging;
+  } catch (e) {
+    console.warn('[FCM] Init failed:', e);
+    return null;
+  }
+}
+
+async function getFCMToken() {
+  try {
+    const messaging = await initFCMMessaging();
+    if (!messaging) return null;
+    const reg = await ensurePushRegistration();
+    if (!reg) return null;
+    const token = await getToken(messaging, {
+      vapidKey: PUSH_VAPID_PUBLIC_KEY,
+      serviceWorkerRegistration: reg
+    });
+    return token || null;
+  } catch (e) {
+    console.warn('[FCM] getToken failed:', e);
+    return null;
+  }
+}
+
+async function saveFCMTokenForUser(userId, token) {
+  if (!userId || !token) return;
+  const payload = {
+    ua: navigator.userAgent,
+    createdAt: Date.now()
+  };
+  await set(ref(db, `users/${userId}/fcmTokens/${token}`), payload);
+  localStorage.setItem(FCM_LOCAL_TOKEN_KEY, token);
+}
+
+async function removeFCMTokenForUser(userId, token) {
+  if (!userId || !token) return;
+  await remove(ref(db, `users/${userId}/fcmTokens/${token}`));
+  localStorage.removeItem(FCM_LOCAL_TOKEN_KEY);
+}
+
+const hasFCMToken = () => !!localStorage.getItem(FCM_LOCAL_TOKEN_KEY);
+
 // Fix #5: Check for pending subscriptions saved by SW when no windows were open
 async function syncPendingSubscriptionFromIndexedDB() {
   const PENDING_SUB_DB = 'countdown-pending-sub';
@@ -587,6 +638,11 @@ async function syncExistingSubscriptionToCurrentUser() {
       }
     }
 
+    const localFcmToken = localStorage.getItem(FCM_LOCAL_TOKEN_KEY);
+    if (localFcmToken) {
+      await saveFCMTokenForUser(currentUser, localFcmToken).catch(() => { });
+    }
+
     if (!sub) return;
     const prevUser = localStorage.getItem(PUSH_LOCAL_USER_KEY);
     if (prevUser && prevUser !== currentUser) {
@@ -643,7 +699,8 @@ async function refreshNotifyButton() {
     try {
       const reg = await getPushRegistration();
       const sub = reg ? await reg.pushManager.getSubscription() : null;
-      if (sub && perm === 'granted') {
+      const hasFcm = hasFCMToken();
+      if ((sub || hasFcm) && perm === 'granted') {
         // PUSH ENABLED - show distinct active state
         notifyBtn.innerHTML = '<span class="icon" style="font-size:16px;vertical-align:middle">notifications</span>';
         notifyBtn.title = `Push enabled for "${currentUser}" (works when closed) - click to disable`;
@@ -721,12 +778,24 @@ async function toggleNotificationsFromUser() {
 
   const reg = await ensurePushRegistration();
   const existing = await reg.pushManager.getSubscription();
-  if (existing) {
+  const existingFcmToken = localStorage.getItem(FCM_LOCAL_TOKEN_KEY);
+  if (existing || existingFcmToken) {
     const ok = confirm(`Push is enabled for "${currentUser}".\n\nDisable it on this device?`);
     if (!ok) return;
-    await removePushSubscriptionForUser(currentUser, existing).catch(() => { });
-    await existing.unsubscribe().catch(() => { });
+    if (existing) {
+      await removePushSubscriptionForUser(currentUser, existing).catch(() => { });
+      await existing.unsubscribe().catch(() => { });
+    }
     localStorage.removeItem(PUSH_LOCAL_USER_KEY);
+    if (existingFcmToken) {
+      await removeFCMTokenForUser(currentUser, existingFcmToken).catch(() => { });
+      try {
+        const messaging = await initFCMMessaging();
+        if (messaging) await deleteToken(messaging);
+      } catch (e) {
+        console.warn('[FCM] deleteToken failed:', e);
+      }
+    }
     await refreshNotifyButton();
     return;
   }
@@ -737,6 +806,10 @@ async function toggleNotificationsFromUser() {
     sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: appServerKey });
     await savePushSubscriptionForUser(currentUser, sub);
     localStorage.setItem(PUSH_LOCAL_USER_KEY, currentUser);
+    const fcmToken = await getFCMToken();
+    if (fcmToken) {
+      await saveFCMTokenForUser(currentUser, fcmToken);
+    }
     showSystemNotification("Push enabled", { body: `Push is enabled for "${currentUser}".`, requireInteraction: false }).catch(() => { });
 
     // Verify sync completed successfully with a short delay
