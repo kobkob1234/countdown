@@ -117,8 +117,8 @@ jobs:
           REMIND_AGAIN_API_URL: ${{ secrets.REMIND_AGAIN_API_URL }}
           # No loop, run once per workflow invocation to save Firebase quota
           LOOP_SECONDS: "0"
-          # 90 seconds window
-          TRIGGER_WINDOW_MS: "90000"
+          # 10 minute window - guarantees no missed notifications if GitHub Actions delays cron
+          TRIGGER_WINDOW_MS: "600000"
         run: node send-reminders.mjs
 
       - name: Cleanup credentials

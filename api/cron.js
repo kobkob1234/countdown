@@ -1145,11 +1145,11 @@ async function runCheck() {
 // ============================================
 
 module.exports = async (req, res) => {
-    // Security: Check for API key
+    // Security: Check for API key (MANDATORY)
     const apiKey = req.query.key || req.headers['x-api-key'];
     const expectedKey = process.env.CRON_API_KEY;
 
-    if (expectedKey && apiKey !== expectedKey) {
+    if (!expectedKey || !apiKey || apiKey !== expectedKey) {
         return res.status(401).json({ error: 'Unauthorized' });
     }
 
