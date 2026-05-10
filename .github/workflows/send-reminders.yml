@@ -112,6 +112,9 @@ jobs:
           VAPID_PUBLIC_KEY: ${{ secrets.VAPID_PUBLIC_KEY }}
           VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
           PUSH_APP_URL: ${{ secrets.PUSH_APP_URL }}
+          # URL of the Vercel remind-again API endpoint, e.g. https://your-app.vercel.app/api/remind-again
+          # Set this GitHub secret to enable the "Remind me in 10 minutes" snooze button.
+          REMIND_AGAIN_API_URL: ${{ secrets.REMIND_AGAIN_API_URL }}
           # Loop for 14 minutes, checking every 15 seconds for near-real-time notifications
           LOOP_SECONDS: "840"
           # 2 minute window - tight since we check every 15 seconds with overlapping workflows
