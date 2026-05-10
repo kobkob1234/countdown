@@ -2,8 +2,8 @@ name: Send Push Reminders
 
 on:
   schedule:
-    # Run every 10 minutes - overlapping with 14-min loops ensures no gaps
-    - cron: '*/10 * * * *'
+    # Run every 1 minute
+    - cron: '*/1 * * * *'
   workflow_dispatch: # Allow manual trigger
 
 concurrency:
@@ -115,10 +115,10 @@ jobs:
           # URL of the Vercel remind-again API endpoint, e.g. https://your-app.vercel.app/api/remind-again
           # Set this GitHub secret to enable the "Remind me in 10 minutes" snooze button.
           REMIND_AGAIN_API_URL: ${{ secrets.REMIND_AGAIN_API_URL }}
-          # Loop for 14 minutes, checking every 15 seconds for near-real-time notifications
-          LOOP_SECONDS: "840"
-          # 2 minute window - tight since we check every 15 seconds with overlapping workflows
-          TRIGGER_WINDOW_MS: "120000"
+          # No loop, run once per workflow invocation to save Firebase quota
+          LOOP_SECONDS: "0"
+          # 90 seconds window
+          TRIGGER_WINDOW_MS: "90000"
         run: node send-reminders.mjs
 
       - name: Cleanup credentials

@@ -846,7 +846,46 @@ async function cleanupOldPushSent() {
   }
 }
 
+// ============================================
+// Israel-time helpers for smart scheduling
+// ============================================
+
+/** Returns current { hour, minute } in Israel time (Asia/Jerusalem, DST-aware). */
+function getIsraelTime() {
+  try {
+    const now = new Date();
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone: 'Asia/Jerusalem',
+      hour: 'numeric',
+      minute: 'numeric',
+      hour12: false
+    }).formatToParts(now);
+    const hour = Number(parts.find(p => p.type === 'hour')?.value ?? 0);
+    const minute = Number(parts.find(p => p.type === 'minute')?.value ?? 0);
+    return { hour: isNaN(hour) ? 0 : hour, minute: isNaN(minute) ? 0 : minute };
+  } catch {
+    // Fallback: treat as UTC+2
+    const off = new Date();
+    off.setTime(off.getTime() + 2 * 60 * 60 * 1000);
+    return { hour: off.getUTCHours(), minute: off.getUTCMinutes() };
+  }
+}
+
 async function main() {
+  const { hour, minute } = getIsraelTime();
+
+  // ── Night-mode: 01:00–06:00 Israel time ──────────────────────────────────
+  // During these hours most users are asleep. Only check every 30 minutes
+  // (when minute is 0 or 30) to save Firebase quota.
+  const isNightHours = hour >= 1 && hour < 6;
+  if (isNightHours && minute % 30 !== 0) {
+    console.log(`[${new Date().toISOString()}] Night-mode (Israel ${hour}:${String(minute).padStart(2, '0')}) — next check at :00 or :30`);
+    // Close Firebase and exit cleanly without running any DB queries
+    try { if (typeof db.goOffline === 'function') db.goOffline(); } catch {}
+    try { await admin.app().delete(); } catch {}
+    return;
+  }
+
   const loopSeconds = Number(LOOP_SECONDS) || 0;
 
   if (loopSeconds > 0) {
@@ -871,11 +910,15 @@ async function main() {
     await runCheck();
   }
 
-  // Cleanup old pushSent records (run occasionally to prevent DB bloat)
-  try {
-    await cleanupOldPushSent();
-  } catch (e) {
-    console.warn('Cleanup error:', e);
+  // ── Daily cleanup: only at midnight Israel time (00:00–00:01) ─────────────
+  // Runs once per day instead of every invocation — saves ~1,400 heavy DB reads/day.
+  const isMidnight = hour === 0 && minute < 2;
+  if (isMidnight) {
+    try {
+      await cleanupOldPushSent();
+    } catch (e) {
+      console.warn('Cleanup error:', e);
+    }
   }
 
   // Cleanup Firebase connection
@@ -895,3 +938,4 @@ main().catch(err => {
   console.error('Fatal error:', err);
   process.exit(1);
 });
+
