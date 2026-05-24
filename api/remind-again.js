@@ -19,13 +19,30 @@ function hashKey(input) {
   return crypto.createHash('sha256').update(String(input || '')).digest('base64url');
 }
 
-function setCorsHeaders(res) {
-  res.setHeader('Access-Control-Allow-Origin', 'https://kobkob1234.github.io');
+function setCorsHeaders(req, res) {
+  const origin = req.headers.origin || '';
+  if (
+    origin === 'https://kobkob1234.github.io' ||
+    /^http:\/\/localhost:\d+$/.test(origin) ||
+    /^http:\/\/127\.0\.0\.1:\d+$/.test(origin)
+  ) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  } else {
+    res.setHeader('Access-Control-Allow-Origin', 'https://kobkob1234.github.io');
+  }
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 }
 
 function parseRequestBody(req) {
+  if (!req.body) return {};
+  if (Buffer.isBuffer(req.body)) {
+    try {
+      return JSON.parse(req.body.toString('utf8'));
+    } catch {
+      return {};
+    }
+  }
   if (req.body && typeof req.body === 'object') return req.body;
   if (typeof req.body === 'string' && req.body.trim()) {
     try {
@@ -38,7 +55,7 @@ function parseRequestBody(req) {
 }
 
 module.exports = async (req, res) => {
-  setCorsHeaders(res);
+  setCorsHeaders(req, res);
 
   if (req.method === 'OPTIONS') {
     return res.status(204).end();

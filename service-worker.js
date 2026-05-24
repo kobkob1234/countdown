@@ -1,5 +1,5 @@
 // Bump cache version when precache list or fetch strategy changes
-const CACHE_NAME = 'countdown-push-v64';
+const CACHE_NAME = 'countdown-push-v65';
 const NOTIFY_DEDUPE_CACHE = 'countdown-notify-dedupe-v1';
 const NOTIFY_DEDUPE_TTL_MS = 1000 * 60 * 60 * 24 * 7;
 const PENDING_SUB_DB = 'countdown-pending-sub';
@@ -416,6 +416,9 @@ self.addEventListener('sync', (event) => {
 
 self.addEventListener('push', (event) => {
   event.waitUntil((async () => {
+    // Opportunistically retry failed snoozes on platforms without Background Sync (like iOS)
+    flushPendingSnoozes().catch(() => {});
+
     let data = {};
     try {
       data = event.data ? event.data.json() : {};
@@ -564,6 +567,9 @@ self.addEventListener('notificationclick', (event) => {
   event.notification.close();
 
   event.waitUntil((async () => {
+    // Opportunistically retry failed snoozes on platforms without Background Sync (like iOS)
+    flushPendingSnoozes().catch(() => {});
+
     if (shouldHandleRemindAgain) {
       const endpoint = raw.remindAgainEndpoint || '';
       const token = raw.remindAgainToken || '';

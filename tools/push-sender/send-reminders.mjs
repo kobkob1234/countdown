@@ -324,7 +324,7 @@ async function sendToSubscription({ userId, subKey, subscription, payload, dedup
 
       // Non-retryable or max retries reached
       await markFailed(ref, statusCode || null, { message, dedupeKey, attempts: attempt });
-      await markFailed(globalRef, statusCode || null, { message, dedupeKey, subKey, attempts: attempt });
+      await globalRef.remove().catch(() => {});
       console.warn(`[push] Failed user=${userId} sub=${subKey.slice(0, 8)}... status=${statusCode || 'unknown'} msg=${message.slice(0, 100)}`);
 
       // Cleanup expired subscriptions (410 Gone / 404 Not Found)
@@ -497,18 +497,23 @@ async function runCheck() {
           } : {})
         };
 
-        const results = await Promise.allSettled(
-          subs.map(({ subKey, sub }) =>
-            sendToSubscription({ userId, subKey, subscription: sub, payload, dedupeKey })
-          )
-        );
+        let sentAny = false;
+        let skippedAny = false;
 
-        for (const r of results) {
-          const v = r.status === 'fulfilled' ? r.value : null;
-          if (!v) { failed += 1; continue; }
-          if (v.skipped) skipped += 1;
-          else if (v.ok) sent += 1;
-          else failed += 1;
+        for (const { subKey, sub } of subs) {
+          const res = await sendToSubscription({ userId, subKey, subscription: sub, payload, dedupeKey });
+          if (res.ok) {
+            sentAny = true;
+            sent += 1;
+            break;
+          } else if (res.skipped) {
+            skippedAny = true;
+            skipped += 1;
+            break;
+          }
+        }
+        if (!sentAny && !skippedAny && subs.length > 0) {
+          failed += 1;
         }
       }
     }
@@ -626,18 +631,23 @@ async function runCheck() {
               remindAgainMinutes: String(REMIND_AGAIN_DELAY_MINUTES)
             } : {})
           };
-          const results = await Promise.allSettled(
-            userEntry.subs.map(({ subKey, sub }) =>
-              sendToSubscription({ userId, subKey, subscription: sub, payload, dedupeKey })
-            )
-          );
+          let sentAny = false;
+          let skippedAny = false;
 
-          for (const r of results) {
-            const v = r.status === 'fulfilled' ? r.value : null;
-            if (!v) { failed += 1; continue; }
-            if (v.skipped) skipped += 1;
-            else if (v.ok) sent += 1;
-            else failed += 1;
+          for (const { subKey, sub } of userEntry.subs) {
+            const res = await sendToSubscription({ userId, subKey, subscription: sub, payload, dedupeKey });
+            if (res.ok) {
+              sentAny = true;
+              sent += 1;
+              break;
+            } else if (res.skipped) {
+              skippedAny = true;
+              skipped += 1;
+              break;
+            }
+          }
+          if (!sentAny && !skippedAny && userEntry.subs.length > 0) {
+            failed += 1;
           }
         }
       }
@@ -778,18 +788,23 @@ async function processRemindAgainQueue(users, nowMs) {
         continue;
       }
 
-      const results = await Promise.allSettled(
-        subs.map(({ subKey, sub }) =>
-          sendToSubscription({ userId, subKey, subscription: sub, payload, dedupeKey })
-        )
-      );
+      let sentAny = false;
+      let skippedAny = false;
 
-      const anyOk = results.some(r => r.status === 'fulfilled' && r.value?.ok);
-      const anySkipped = results.some(r => r.status === 'fulfilled' && r.value?.skipped);
+      for (const { subKey, sub } of subs) {
+        const res = await sendToSubscription({ userId, subKey, subscription: sub, payload, dedupeKey });
+        if (res.ok) {
+          sentAny = true;
+          break;
+        } else if (res.skipped) {
+          skippedAny = true;
+          break;
+        }
+      }
 
-      if (anyOk || anySkipped) {
+      if (sentAny || skippedAny) {
         await itemRef.update({ status: 'sent', sentAt: Date.now(), updatedAt: Date.now() }).catch(() => {});
-        if (anyOk) sent++; else skipped++;
+        if (sentAny) sent++; else skipped++;
       } else {
         await itemRef.update({ status: 'failed', updatedAt: Date.now(), reason: 'send_failed' }).catch(() => {});
         failed++;
