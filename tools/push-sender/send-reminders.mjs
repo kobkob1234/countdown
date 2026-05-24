@@ -429,19 +429,26 @@ async function runCheck() {
       actions: [{ action: 'view', title: 'View' }]
     };
 
-    await Promise.allSettled(users.flatMap(({ userId, subs }) =>
-      subs.map(({ subKey, sub }) =>
-        sendToSubscription({ userId, subKey, subscription: sub, payload, dedupeKey })
-      )
-    )).then((results) => {
-      for (const r of results) {
-        const v = r.status === 'fulfilled' ? r.value : null;
-        if (!v) { failed += 1; continue; }
-        if (v.skipped) skipped += 1;
-        else if (v.ok) sent += 1;
-        else failed += 1;
+    for (const { userId, subs } of users) {
+      let sentAny = false;
+      let skippedAny = false;
+
+      for (const { subKey, sub } of subs) {
+        const res = await sendToSubscription({ userId, subKey, subscription: sub, payload, dedupeKey });
+        if (res.ok) {
+          sentAny = true;
+          sent += 1;
+          break;
+        } else if (res.skipped) {
+          skippedAny = true;
+          skipped += 1;
+          break;
+        }
       }
-    });
+      if (!sentAny && !skippedAny && subs.length > 0) {
+        failed += 1;
+      }
+    }
   }
 
   // Per-user tasks -> user subscriptions only
@@ -548,18 +555,23 @@ async function runCheck() {
         actions: [{ action: 'view', title: 'View' }]
       };
 
-      const results = await Promise.allSettled(
-        subs.map(({ subKey, sub }) =>
-          sendToSubscription({ userId, subKey, subscription: sub, payload, dedupeKey })
-        )
-      );
+      let sentAny = false;
+      let skippedAny = false;
 
-      for (const r of results) {
-        const v = r.status === 'fulfilled' ? r.value : null;
-        if (!v) { failed += 1; continue; }
-        if (v.skipped) skipped += 1;
-        else if (v.ok) sent += 1;
-        else failed += 1;
+      for (const { subKey, sub } of subs) {
+        const res = await sendToSubscription({ userId, subKey, subscription: sub, payload, dedupeKey });
+        if (res.ok) {
+          sentAny = true;
+          sent += 1;
+          break;
+        } else if (res.skipped) {
+          skippedAny = true;
+          skipped += 1;
+          break;
+        }
+      }
+      if (!sentAny && !skippedAny && subs.length > 0) {
+        failed += 1;
       }
     }
   }

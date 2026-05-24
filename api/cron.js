@@ -361,15 +361,25 @@ async function claimOnce(path) {
     const ref = db.ref(path);
     const now = Date.now();
     const SENDING_STALE_MS = 5 * 60 * 1000;
+    const runId = `${process.pid}-${now}-${Math.random().toString(36).slice(2, 8)}`;
 
     const res = await ref.transaction((cur) => {
         if (cur?.status === 'sent') return;
+        if (cur?.status === 'failed') return;
         if (cur?.status === 'sending') {
             const ts = Number(cur.ts) || 0;
             if (ts && (now - ts) < SENDING_STALE_MS) return;
         }
-        return { status: 'sending', ts: now };
+        return { status: 'sending', ts: now, runId };
     });
+
+    if (res.committed) {
+        const snap = await ref.once('value');
+        const val = snap.val();
+        if (!val || val.runId !== runId) {
+            return { committed: false, ref };
+        }
+    }
     return { committed: !!res.committed, ref };
 }
 
@@ -454,10 +464,18 @@ async function sendFCMToUser(userId, tokens, payload, dedupeKey) {
     if (!tokens || tokens.length === 0) return { sent: 0, failed: 0 };
 
     const sentHash = hashKey(dedupeKey);
-    const sentPath = `users/${userId}/fcmSent/${sentHash}`;
+    const userSentPath = `users/${userId}/pushSentGlobal/${sentHash}`;
+    const fcmSentPath = `users/${userId}/fcmSent/${sentHash}`;
 
-    const { committed, ref } = await claimOnce(sentPath);
-    if (!committed) return { skipped: true };
+    // Claim global path first to coordinate with VAPID/GitHub senders
+    const { committed: globalClaimed, ref: globalRef } = await claimOnce(userSentPath);
+    if (!globalClaimed) return { skipped: true };
+
+    const { committed, ref } = await claimOnce(fcmSentPath);
+    if (!committed) {
+        await markSent(globalRef, { dedupeKey, mechanism: 'fcm' });
+        return { skipped: true };
+    }
 
     const extraData = stringifyDataMap(payload.data || {});
     const actionList = Array.isArray(payload.actions) && payload.actions.length
@@ -501,10 +519,11 @@ async function sendFCMToUser(userId, tokens, payload, dedupeKey) {
 
     try {
         const response = await admin.messaging().sendEachForMulticast(message);
-        await markSent(ref, { dedupeKey, successCount: response.successCount });
+        if (response.successCount > 0) {
+            await markSent(ref, { dedupeKey, successCount: response.successCount });
+            await markSent(globalRef, { dedupeKey, mechanism: 'fcm', successCount: response.successCount });
 
-        // Clean up invalid tokens
-        if (response.failureCount > 0) {
+            // Clean up invalid tokens
             response.responses.forEach((resp, idx) => {
                 if (!resp.success && resp.error?.code === 'messaging/registration-token-not-registered') {
                     const badToken = tokens[idx];
@@ -513,11 +532,18 @@ async function sendFCMToUser(userId, tokens, payload, dedupeKey) {
                     });
                 }
             });
-        }
 
-        return { sent: response.successCount, failed: response.failureCount };
+            return { sent: response.successCount, failed: response.failureCount };
+        } else {
+            // Completely failed, release both claims so a retry can occur
+            await ref.remove().catch(() => {});
+            await globalRef.remove().catch(() => {});
+            return { sent: 0, failed: tokens.length };
+        }
     } catch (err) {
         console.error(`[FCM] Error sending to ${userId}:`, err.message);
+        await ref.remove().catch(() => {});
+        await globalRef.remove().catch(() => {});
         return { sent: 0, failed: tokens.length };
     }
 }
@@ -532,14 +558,11 @@ async function sendVAPIDPush(userId, pushSubs, payload, dedupeKey) {
         return { sent: 0, failed: 0 };
     }
 
-    const subscriptions = Object.values(pushSubs || {});
+    const subscriptions = Object.entries(pushSubs || {});
     if (subscriptions.length === 0) return { sent: 0, failed: 0 };
 
     const sentHash = hashKey(dedupeKey);
-    const sentPath = `users/${userId}/pushSent/${sentHash}`;
-
-    const { committed, ref } = await claimOnce(sentPath);
-    if (!committed) return { skipped: true };
+    const userSentPath = `users/${userId}/pushSentGlobal/${sentHash}`;
 
     const extraData = payload.data || {};
 
@@ -563,31 +586,64 @@ async function sendVAPIDPush(userId, pushSubs, payload, dedupeKey) {
 
     let sent = 0;
     let failed = 0;
+    let skippedAny = false;
+    let sentAny = false;
 
-    for (const entry of subscriptions) {
+    // Loop through subscriptions sequentially, breaking on the first success
+    for (const [subKey, entry] of subscriptions) {
         const sub = entry.sub || entry; // Handle wrapped or raw subscription
         if (!sub?.endpoint) continue;
 
+        const perSubPath = `users/${userId}/pushSent/${subKey}/${sentHash}`;
+
+        // First check per-user global claim
+        const { committed: globalClaimed, ref: globalRef } = await claimOnce(userSentPath);
+        if (!globalClaimed) {
+            skippedAny = true;
+            break;
+        }
+
+        // Also claim per-subscription path
+        const { committed: subClaimed, ref: subRef } = await claimOnce(perSubPath);
+        if (!subClaimed) {
+            // Per-sub already sent — mark global as sent too
+            await markSent(globalRef, { dedupeKey, subKey });
+            skippedAny = true;
+            break;
+        }
+
         try {
-            await webPush.sendNotification(sub, pushPayload);
-            sent++;
-        } catch (err) {
-            failed++;
-            // Remove expired subscriptions
-            if (err.statusCode === 410 || err.statusCode === 404) {
-                const key = Object.keys(pushSubs).find(k =>
-                    (pushSubs[k].sub?.endpoint || pushSubs[k].endpoint) === sub.endpoint
-                );
-                if (key) {
-                    db.ref(`users/${userId}/pushSubscriptions/${key}`).remove().catch((err) => {
-                        console.warn('[VAPID] Failed to remove expired subscription:', key, err.message);
-                    });
+            await webPush.sendNotification(sub, pushPayload, {
+                headers: {
+                    'Urgency': 'high'
                 }
+            });
+            await markSent(subRef, { dedupeKey });
+            await markSent(globalRef, { dedupeKey, subKey });
+            sent++;
+            sentAny = true;
+            break; // Break loop on first successful VAPID delivery
+        } catch (err) {
+            const statusCode = err?.statusCode;
+            const message = err?.message || String(err);
+            failed++;
+
+            const isPermanent = (statusCode === 410 || statusCode === 404);
+            if (isPermanent) {
+                await subRef.set({ status: 'failed', ts: Date.now(), statusCode, message, dedupeKey });
+                db.ref(`users/${userId}/pushSubscriptions/${subKey}`).remove().catch((e) => {
+                    console.warn('[VAPID] Failed to remove expired subscription:', subKey, e.message);
+                });
+            } else {
+                await subRef.remove().catch(() => {});
             }
+
+            // Always release global claim on failure so others can try
+            await globalRef.remove().catch(() => {});
         }
     }
 
-    await markSent(ref, { dedupeKey, successCount: sent });
+    if (skippedAny && !sentAny) return { skipped: true };
     return { sent, failed };
 }
 
