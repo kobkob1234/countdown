@@ -487,19 +487,16 @@ async function sendFCMToUser(userId, tokens, payload, dedupeKey) {
 
     const message = {
         tokens: tokens,
-        // Data-first payload avoids browser-managed notification clicks on some Android/FCM paths.
-        data: {
+        notification: {
             title: payload.title || 'Task Reminder',
             body: payload.body || '',
-            icon: `${APP_URL}icon-192.png`,
-            vibrate: JSON.stringify([200, 100, 200]),
-            renotify: 'true',
-            requireInteraction: 'true',
-            actions: JSON.stringify(actionList),
+        },
+        data: {
             url: payload.url || APP_URL,
             completeUrl: payload.completeUrl || '',
             tag: payload.tag || 'reminder',
             dedupeKey: dedupeKey,
+            actions: JSON.stringify(actionList),
             ...extraData,
         },
         android: {
@@ -513,6 +510,13 @@ async function sendFCMToUser(userId, tokens, payload, dedupeKey) {
         webpush: {
             headers: {
                 Urgency: 'high'
+            },
+            notification: {
+                icon: `${APP_URL}icon-192.png`,
+                badge: `${APP_URL}icon-192.png`,
+                vibrate: [200, 100, 200],
+                requireInteraction: true,
+                actions: actionList
             }
         }
     };
