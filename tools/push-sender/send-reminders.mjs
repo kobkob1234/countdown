@@ -267,22 +267,25 @@ function buildUrl(pathname = '/', params = {}) {
   return u.toString();
 }
 
-async function sendToSubscription({ userId, subKey, subscription, payload, dedupeKey }) {
-  // Use per-user claim (not per-subscription) to prevent duplicate notifications
-  // across multiple devices for the same reminder
+async function sendToSubscription({ userId, subKey, subscription, payload, dedupeKey, skipGlobalClaim = false }) {
   const sentHash = hashKey(dedupeKey);
   const userSentPath = `users/${userId}/pushSentGlobal/${sentHash}`;
   const perSubPath = `users/${userId}/pushSent/${subKey}/${sentHash}`;
 
-  // First check per-user global claim — only one subscription should send per reminder
-  const { committed: globalClaimed, ref: globalRef } = await claimOnce(userSentPath);
-  if (!globalClaimed) return { skipped: true };
+  let globalRef = null;
+  if (!skipGlobalClaim) {
+    // First check per-user global claim
+    const { committed: globalClaimed, ref: gRef } = await claimOnce(userSentPath);
+    if (!globalClaimed) return { skipped: true };
+    globalRef = gRef;
+  } else {
+    globalRef = db.ref(userSentPath);
+  }
 
   // Also claim per-subscription path for backward compat / cleanup
   const { committed, ref } = await claimOnce(perSubPath);
   if (!committed) {
-    // Per-sub already sent — mark global as sent too
-    await markSent(globalRef, { dedupeKey, subKey });
+    if (!skipGlobalClaim) await markSent(globalRef, { dedupeKey, subKey });
     return { skipped: true };
   }
 
@@ -324,7 +327,7 @@ async function sendToSubscription({ userId, subKey, subscription, payload, dedup
 
       // Non-retryable or max retries reached
       await markFailed(ref, statusCode || null, { message, dedupeKey, attempts: attempt });
-      await globalRef.remove().catch(() => {});
+      if (!skipGlobalClaim) await globalRef.remove().catch(() => {});
       console.warn(`[push] Failed user=${userId} sub=${subKey.slice(0, 8)}... status=${statusCode || 'unknown'} msg=${message.slice(0, 100)}`);
 
       // Cleanup expired subscriptions (410 Gone / 404 Not Found)
@@ -349,26 +352,32 @@ function stringifyDataMap(data) {
   return out;
 }
 
-async function sendFCMToUser(userId, tokens, payload, dedupeKey) {
+async function sendFCMToUser(userId, tokens, payload, dedupeKey, skipGlobalClaim = false) {
   if (!tokens || tokens.length === 0) return { sent: 0, failed: 0 };
 
   const sentHash = hashKey(dedupeKey);
   const userSentPath = `users/${userId}/pushSentGlobal/${sentHash}`;
   const fcmSentPath = `users/${userId}/fcmSent/${sentHash}`;
 
-  const { committed: globalClaimed, ref: globalRef } = await claimOnce(userSentPath);
-  if (!globalClaimed) return { skipped: true };
+  let globalRef = null;
+  if (!skipGlobalClaim) {
+    const { committed: globalClaimed, ref: gRef } = await claimOnce(userSentPath);
+    if (!globalClaimed) return { skipped: true };
+    globalRef = gRef;
+  } else {
+    globalRef = db.ref(userSentPath);
+  }
 
   const { committed, ref } = await claimOnce(fcmSentPath);
   if (!committed) {
-    await markSent(globalRef, { dedupeKey, mechanism: 'fcm' });
+    if (!skipGlobalClaim) await markSent(globalRef, { dedupeKey, mechanism: 'fcm' });
     return { skipped: true };
   }
 
   if (isDryRun) {
     console.log(`[DRY_RUN] Would send FCM to user=${userId} (${tokens.length} tokens)`);
     await markSent(ref, { dryRun: true, dedupeKey });
-    await markSent(globalRef, { dryRun: true, dedupeKey, mechanism: 'fcm' });
+    if (!skipGlobalClaim) await markSent(globalRef, { dryRun: true, dedupeKey, mechanism: 'fcm' });
     return { sent: tokens.length, failed: 0 };
   }
 
@@ -432,13 +441,13 @@ async function sendFCMToUser(userId, tokens, payload, dedupeKey) {
       return { sent: response.successCount, failed: response.failureCount };
     } else {
       await ref.remove().catch(() => {});
-      await globalRef.remove().catch(() => {});
+      if (!skipGlobalClaim) await globalRef.remove().catch(() => {});
       return { sent: 0, failed: tokens.length };
     }
   } catch (err) {
     console.error(`[FCM] Error sending to ${userId}:`, err.message);
     await ref.remove().catch(() => {});
-    await globalRef.remove().catch(() => {});
+    if (!skipGlobalClaim) await globalRef.remove().catch(() => {});
     return { sent: 0, failed: tokens.length };
   }
 }
@@ -449,26 +458,18 @@ async function sendNotificationToUser(userId, tokens, subs, payload, dedupeKey) 
   let failed = 0;
   let sent = 0;
 
-  if (subs && subs.length > 0) {
-    for (const { subKey, sub } of subs) {
-      const res = await sendToSubscription({ userId, subKey, subscription: sub, payload, dedupeKey });
-      if (res.ok) {
-        sentAny = true;
-        sent += 1;
-        break;
-      } else if (res.skipped) {
-        skippedAny = true;
-        break;
-      } else {
-        failed += 1;
-      }
-    }
+  // Claim global lock ONCE per user so we don't spam if this function is called concurrently
+  const sentHash = hashKey(dedupeKey);
+  const userSentPath = `users/${userId}/pushSentGlobal/${sentHash}`;
+  const { committed: globalClaimed, ref: globalRef } = await claimOnce(userSentPath);
+  
+  if (!globalClaimed) {
+    return { sentAny: false, skippedAny: true, failed: 0, sent: 0 };
   }
 
-  if (sentAny || skippedAny) return { sentAny, skippedAny, failed, sent };
-
+  // 1. Send to all FCM tokens
   if (tokens && tokens.length > 0) {
-    const fcmResult = await sendFCMToUser(userId, tokens, payload, dedupeKey);
+    const fcmResult = await sendFCMToUser(userId, tokens, payload, dedupeKey, true); // true = skip global claim in inner function
     if (fcmResult.sent > 0) {
       sentAny = true;
       sent += fcmResult.sent;
@@ -477,6 +478,28 @@ async function sendNotificationToUser(userId, tokens, subs, payload, dedupeKey) 
     } else {
       failed += fcmResult.failed;
     }
+  }
+
+  // 2. Send to ALL VAPID subscriptions (don't break on first)
+  if (subs && subs.length > 0) {
+    for (const { subKey, sub } of subs) {
+      const res = await sendToSubscription({ userId, subKey, subscription: sub, payload, dedupeKey, skipGlobalClaim: true });
+      if (res.ok) {
+        sentAny = true;
+        sent += 1;
+      } else if (res.skipped) {
+        skippedAny = true;
+      } else {
+        failed += 1;
+      }
+    }
+  }
+
+  if (sentAny) {
+    await markSent(globalRef, { dedupeKey, sentAny: true });
+  } else {
+    // If we failed to send to anything, remove the global claim so we can retry next minute
+    await globalRef.remove().catch(() => {});
   }
 
   return { sentAny, skippedAny, failed, sent };
