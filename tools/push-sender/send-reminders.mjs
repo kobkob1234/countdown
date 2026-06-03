@@ -339,6 +339,149 @@ async function sendToSubscription({ userId, subKey, subscription, payload, dedup
   }
 }
 
+
+function stringifyDataMap(data) {
+  const out = {};
+  for (const [k, v] of Object.entries(data || {})) {
+    if (v === null || v === undefined) continue;
+    out[k] = typeof v === 'object' ? JSON.stringify(v) : String(v);
+  }
+  return out;
+}
+
+async function sendFCMToUser(userId, tokens, payload, dedupeKey) {
+  if (!tokens || tokens.length === 0) return { sent: 0, failed: 0 };
+
+  const sentHash = hashKey(dedupeKey);
+  const userSentPath = `users/${userId}/pushSentGlobal/${sentHash}`;
+  const fcmSentPath = `users/${userId}/fcmSent/${sentHash}`;
+
+  const { committed: globalClaimed, ref: globalRef } = await claimOnce(userSentPath);
+  if (!globalClaimed) return { skipped: true };
+
+  const { committed, ref } = await claimOnce(fcmSentPath);
+  if (!committed) {
+    await markSent(globalRef, { dedupeKey, mechanism: 'fcm' });
+    return { skipped: true };
+  }
+
+  if (isDryRun) {
+    console.log(`[DRY_RUN] Would send FCM to user=${userId} (${tokens.length} tokens)`);
+    await markSent(ref, { dryRun: true, dedupeKey });
+    await markSent(globalRef, { dryRun: true, dedupeKey, mechanism: 'fcm' });
+    return { sent: tokens.length, failed: 0 };
+  }
+
+  const extraData = stringifyDataMap(Object.keys(payload).reduce((acc, key) => {
+    if (!['title', 'body', 'tag', 'actions'].includes(key)) acc[key] = payload[key];
+    return acc;
+  }, {}));
+
+  const actionList = Array.isArray(payload.actions) && payload.actions.length
+    ? payload.actions
+    : [
+        { action: 'view', title: 'View' },
+        { action: 'complete', title: 'Done' }
+      ];
+
+  const message = {
+    tokens: tokens,
+    notification: {
+      title: payload.title || 'Task Reminder',
+      body: payload.body || '',
+    },
+    data: {
+      url: payload.url || APP_URL.toString(),
+      completeUrl: payload.completeUrl || '',
+      tag: payload.tag || 'reminder',
+      dedupeKey: dedupeKey,
+      actions: JSON.stringify(actionList),
+      ...extraData,
+    },
+    android: {
+      priority: 'high',
+      notification: {
+        channelId: 'reminders',
+        priority: 'high',
+        defaultVibrateTimings: true,
+      }
+    },
+    webpush: {
+      headers: { Urgency: 'high' },
+      notification: {
+        icon: `${APP_URL.toString()}icon-192.png`,
+        badge: `${APP_URL.toString()}icon-192.png`,
+        vibrate: [200, 100, 200],
+        requireInteraction: true,
+        actions: actionList
+      }
+    }
+  };
+
+  try {
+    const response = await admin.messaging().sendEachForMulticast(message);
+    if (response.successCount > 0) {
+      await markSent(ref, { dedupeKey, successCount: response.successCount });
+      await markSent(globalRef, { dedupeKey, mechanism: 'fcm', successCount: response.successCount });
+
+      response.responses.forEach((resp, idx) => {
+        if (!resp.success && resp.error?.code === 'messaging/registration-token-not-registered') {
+          db.ref(`users/${userId}/fcmTokens/${tokens[idx]}`).remove().catch(() => {});
+        }
+      });
+      return { sent: response.successCount, failed: response.failureCount };
+    } else {
+      await ref.remove().catch(() => {});
+      await globalRef.remove().catch(() => {});
+      return { sent: 0, failed: tokens.length };
+    }
+  } catch (err) {
+    console.error(`[FCM] Error sending to ${userId}:`, err.message);
+    await ref.remove().catch(() => {});
+    await globalRef.remove().catch(() => {});
+    return { sent: 0, failed: tokens.length };
+  }
+}
+
+async function sendNotificationToUser(userId, tokens, subs, payload, dedupeKey) {
+  let sentAny = false;
+  let skippedAny = false;
+  let failed = 0;
+  let sent = 0;
+
+  if (subs && subs.length > 0) {
+    for (const { subKey, sub } of subs) {
+      const res = await sendToSubscription({ userId, subKey, subscription: sub, payload, dedupeKey });
+      if (res.ok) {
+        sentAny = true;
+        sent += 1;
+        break;
+      } else if (res.skipped) {
+        skippedAny = true;
+        break;
+      } else {
+        failed += 1;
+      }
+    }
+  }
+
+  if (sentAny || skippedAny) return { sentAny, skippedAny, failed, sent };
+
+  if (tokens && tokens.length > 0) {
+    const fcmResult = await sendFCMToUser(userId, tokens, payload, dedupeKey);
+    if (fcmResult.sent > 0) {
+      sentAny = true;
+      sent += fcmResult.sent;
+    } else if (fcmResult.skipped) {
+      skippedAny = true;
+    } else {
+      failed += fcmResult.failed;
+    }
+  }
+
+  return { sentAny, skippedAny, failed, sent };
+}
+
 function shouldTrigger(nowMs, targetMs, reminderMinutes) {
   const rem = Number.parseInt(reminderMinutes || '0', 10) || 0;
   if (!rem) return false;
@@ -353,14 +496,23 @@ async function loadUsersWithSubscriptions() {
   const out = [];
   for (const [userId, userData] of Object.entries(users)) {
     if (PUSH_TARGET_USER && userId !== PUSH_TARGET_USER) continue;
+    
     const pushSubs = userData?.pushSubscriptions || {};
     const subs = [];
     for (const [subKey, entry] of Object.entries(pushSubs)) {
       const sub = entry?.sub;
       if (isValidSubscription(sub)) subs.push({ subKey, sub });
     }
-    if (subs.length === 0) continue;
-    out.push({ userId, subs });
+
+    const fcmTokensObj = userData?.fcmTokens || {};
+    const fcmTokens = Object.keys(fcmTokensObj).filter(t => t && t.length > 20);
+
+    const remindAgainQueue = userData?.remindAgainQueue || {};
+    const hasPendingRemindAgain = Object.values(remindAgainQueue).some((entry) => entry && entry.status === 'pending');
+
+    if (subs.length === 0 && fcmTokens.length === 0 && !hasPendingRemindAgain) continue;
+    
+    out.push({ userId, subs, fcmTokens });
   }
   return out;
 }
@@ -402,8 +554,9 @@ async function runCheck() {
 
   // Log subscription details for debugging
   const totalSubs = users.reduce((sum, u) => sum + u.subs.length, 0);
-  console.log(`[push] Loaded ${users.length} users with ${totalSubs} total subscriptions`);
-  users.forEach(u => console.log(`[push]   - ${u.userId}: ${u.subs.length} subscription(s)`));
+  const totalTokens = users.reduce((sum, u) => sum + (u.fcmTokens?.length || 0), 0);
+  console.log(`[push] Loaded ${users.length} users with ${totalSubs} total subscriptions and ${totalTokens} FCM tokens`);
+  users.forEach(u => console.log(`[push]   - ${u.userId}: ${u.subs.length} sub(s), ${u.fcmTokens?.length || 0} FCM token(s)`));
 
   let sent = 0;
   let skipped = 0;
@@ -429,30 +582,18 @@ async function runCheck() {
       actions: [{ action: 'view', title: 'View' }]
     };
 
-    for (const { userId, subs } of users) {
-      let sentAny = false;
-      let skippedAny = false;
-
-      for (const { subKey, sub } of subs) {
-        const res = await sendToSubscription({ userId, subKey, subscription: sub, payload, dedupeKey });
-        if (res.ok) {
-          sentAny = true;
-          sent += 1;
-          break;
-        } else if (res.skipped) {
-          skippedAny = true;
-          skipped += 1;
-          break;
-        }
-      }
-      if (!sentAny && !skippedAny && subs.length > 0) {
-        failed += 1;
+    for (const { userId, subs, fcmTokens } of users) {
+      const res = await sendNotificationToUser(userId, fcmTokens, subs, payload, dedupeKey);
+      if (res.sentAny) sent += res.sent;
+      if (res.skippedAny) skipped += 1;
+      if (!res.sentAny && !res.skippedAny && (subs.length > 0 || (fcmTokens && fcmTokens.length > 0))) {
+        failed += res.failed || 1;
       }
     }
   }
 
   // Per-user tasks -> user subscriptions only
-  for (const { userId, subs } of users) {
+  for (const { userId, subs, fcmTokens } of users) {
     const tasks = await loadTasksForUser(userId);
     for (const task of tasks) {
       if (task.completed) continue;
@@ -527,7 +668,7 @@ async function runCheck() {
   }
 
   // Per-user planner blocks -> user subscriptions only
-  for (const { userId, subs } of users) {
+  for (const { userId, subs, fcmTokens } of users) {
     const blocks = await loadPlannerBlocksForUser(userId);
     for (const block of blocks) {
       if (!block || block.completed) continue;
@@ -555,23 +696,11 @@ async function runCheck() {
         actions: [{ action: 'view', title: 'View' }]
       };
 
-      let sentAny = false;
-      let skippedAny = false;
-
-      for (const { subKey, sub } of subs) {
-        const res = await sendToSubscription({ userId, subKey, subscription: sub, payload, dedupeKey });
-        if (res.ok) {
-          sentAny = true;
-          sent += 1;
-          break;
-        } else if (res.skipped) {
-          skippedAny = true;
-          skipped += 1;
-          break;
-        }
-      }
-      if (!sentAny && !skippedAny && subs.length > 0) {
-        failed += 1;
+      const res = await sendNotificationToUser(userId, fcmTokens, subs, payload, dedupeKey);
+      if (res.sentAny) sent += res.sent;
+      if (res.skippedAny) skipped += 1;
+      if (!res.sentAny && !res.skippedAny && (subs.length > 0 || (fcmTokens && fcmTokens.length > 0))) {
+        failed += res.failed || 1;
       }
     }
   }
@@ -643,23 +772,11 @@ async function runCheck() {
               remindAgainMinutes: String(REMIND_AGAIN_DELAY_MINUTES)
             } : {})
           };
-          let sentAny = false;
-          let skippedAny = false;
-
-          for (const { subKey, sub } of userEntry.subs) {
-            const res = await sendToSubscription({ userId, subKey, subscription: sub, payload, dedupeKey });
-            if (res.ok) {
-              sentAny = true;
-              sent += 1;
-              break;
-            } else if (res.skipped) {
-              skippedAny = true;
-              skipped += 1;
-              break;
-            }
-          }
-          if (!sentAny && !skippedAny && userEntry.subs.length > 0) {
-            failed += 1;
+          const res = await sendNotificationToUser(userId, userEntry.fcmTokens, userEntry.subs, payload, dedupeKey);
+          if (res.sentAny) sent += res.sent;
+          if (res.skippedAny) skipped += 1;
+          if (!res.sentAny && !res.skippedAny && (userEntry.subs.length > 0 || (userEntry.fcmTokens && userEntry.fcmTokens.length > 0))) {
+            failed += res.failed || 1;
           }
         }
       }
@@ -683,7 +800,7 @@ async function runCheck() {
 async function processRemindAgainQueue(users, nowMs) {
   let sent = 0, skipped = 0, failed = 0;
 
-  for (const { userId, subs } of users) {
+  for (const { userId, subs, fcmTokens } of users) {
     const queueSnap = await db.ref(`users/${userId}/remindAgainQueue`).once('value');
     const queueItems = queueSnap.val() || {};
 
@@ -794,29 +911,17 @@ async function processRemindAgainQueue(users, nowMs) {
         } : {})
       };
 
-      if (subs.length === 0) {
+      if (subs.length === 0 && (!fcmTokens || fcmTokens.length === 0)) {
         await itemRef.update({ status: 'failed', updatedAt: Date.now(), reason: 'no_subscriptions' }).catch(() => {});
         failed++;
         continue;
       }
 
-      let sentAny = false;
-      let skippedAny = false;
+      const res = await sendNotificationToUser(userId, fcmTokens, subs, payload, dedupeKey);
 
-      for (const { subKey, sub } of subs) {
-        const res = await sendToSubscription({ userId, subKey, subscription: sub, payload, dedupeKey });
-        if (res.ok) {
-          sentAny = true;
-          break;
-        } else if (res.skipped) {
-          skippedAny = true;
-          break;
-        }
-      }
-
-      if (sentAny || skippedAny) {
+      if (res.sentAny || res.skippedAny) {
         await itemRef.update({ status: 'sent', sentAt: Date.now(), updatedAt: Date.now() }).catch(() => {});
-        if (sentAny) sent++; else skipped++;
+        if (res.sentAny) sent++; else skipped++;
       } else {
         await itemRef.update({ status: 'failed', updatedAt: Date.now(), reason: 'send_failed' }).catch(() => {});
         failed++;
