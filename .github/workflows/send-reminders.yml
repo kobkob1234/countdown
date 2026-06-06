@@ -115,10 +115,12 @@ jobs:
           # URL of the Vercel remind-again API endpoint, e.g. https://your-app.vercel.app/api/remind-again
           # Set this GitHub secret to enable the "Remind me in 10 minutes" snooze button.
           REMIND_AGAIN_API_URL: ${{ secrets.REMIND_AGAIN_API_URL }}
-          # No loop, run once per workflow invocation to save Firebase quota
-          LOOP_SECONDS: "0"
-          # 10 minute window - guarantees no missed notifications if GitHub Actions delays cron
-          TRIGGER_WINDOW_MS: "600000"
+          # Loop for 18 minutes (under 20-min job timeout), checking every 15s
+          # This compensates for GitHub Actions free-tier cron throttling
+          LOOP_SECONDS: "1080"
+          # 6 hour window - GitHub free-tier cron is heavily throttled (runs every 2-5 hours)
+          # so we need a large window to catch reminders since the last run
+          TRIGGER_WINDOW_MS: "21600000"
         run: node send-reminders.mjs
 
       - name: Cleanup credentials
