@@ -586,10 +586,16 @@ async function runCheck() {
   let failed = 0;
 
   // Shared events -> all users/subscriptions
+  console.log(`[debug] Processing ${sharedEvents.length} shared events`);
   for (const evt of sharedEvents) {
     if (isImportedEvent(evt) && !evt.reminderUserSet) continue;
     const reminderMinutes = Number.parseInt(evt.reminder || '0', 10) || 0;
     const eventTimeMs = parseIsoMillis(evt.date);
+    if (reminderMinutes > 0) {
+      const triggerAt = eventTimeMs - reminderMinutes * 60000;
+      const deltaMs = nowMs - triggerAt;
+      console.log(`[debug] Event "${evt.name}" reminder=${reminderMinutes}min dueAt=${new Date(eventTimeMs||0).toISOString()} triggerAt=${new Date(triggerAt||0).toISOString()} delta=${Math.round(deltaMs/1000)}s inWindow=${deltaMs >= 0 && deltaMs < WINDOW_MS}`);
+    }
     if (!shouldTrigger(nowMs, eventTimeMs, reminderMinutes)) continue;
 
     const offset = formatReminderOffset(reminderMinutes);
@@ -605,6 +611,7 @@ async function runCheck() {
       actions: [{ action: 'view', title: 'View' }]
     };
 
+    console.log(`[debug] TRIGGERING event "${evt.name}" -> sending to ${users.length} users`);
     for (const { userId, subs, fcmTokens } of users) {
       const res = await sendNotificationToUser(userId, fcmTokens, subs, payload, dedupeKey);
       if (res.sentAny) sent += res.sent;
@@ -618,13 +625,22 @@ async function runCheck() {
   // Per-user tasks -> user subscriptions only
   for (const { userId, subs, fcmTokens } of users) {
     const tasks = await loadTasksForUser(userId);
+    let taskCount = 0;
+    let taskWithReminder = 0;
     for (const task of tasks) {
+      taskCount++;
       if (task.completed) continue;
       const reminderMinutesList = normalizeTaskReminders(task.reminders, task.reminder);
       if (!reminderMinutesList.length) continue;
+      taskWithReminder++;
       const dueMs = parseIsoMillis(task.dueDate);
 
       for (const reminderMinutes of reminderMinutesList) {
+        const triggerAt = dueMs ? dueMs - reminderMinutes * 60000 : null;
+        const deltaMs = triggerAt ? nowMs - triggerAt : null;
+        if (triggerAt) {
+          console.log(`[debug] Task "${task.title}" user=${userId} reminder=${reminderMinutes}min due=${new Date(dueMs).toISOString()} triggerAt=${new Date(triggerAt).toISOString()} delta=${Math.round(deltaMs/1000)}s inWindow=${deltaMs >= 0 && deltaMs < WINDOW_MS}`);
+        }
         if (!shouldTrigger(nowMs, dueMs, reminderMinutes)) continue;
 
         const offset = formatReminderOffset(reminderMinutes);
@@ -668,26 +684,16 @@ async function runCheck() {
           } : {})
         };
 
-        let sentAny = false;
-        let skippedAny = false;
-
-        for (const { subKey, sub } of subs) {
-          const res = await sendToSubscription({ userId, subKey, subscription: sub, payload, dedupeKey });
-          if (res.ok) {
-            sentAny = true;
-            sent += 1;
-            break;
-          } else if (res.skipped) {
-            skippedAny = true;
-            skipped += 1;
-            break;
-          }
-        }
-        if (!sentAny && !skippedAny && subs.length > 0) {
-          failed += 1;
+        console.log(`[debug] TRIGGERING task "${task.title}" for user=${userId} -> sending`);
+        const res = await sendNotificationToUser(userId, fcmTokens, subs, payload, dedupeKey);
+        if (res.sentAny) sent += res.sent;
+        if (res.skippedAny) skipped += 1;
+        if (!res.sentAny && !res.skippedAny && (subs.length > 0 || (fcmTokens && fcmTokens.length > 0))) {
+          failed += res.failed || 1;
         }
       }
     }
+    console.log(`[debug] User ${userId}: ${taskCount} tasks total, ${taskWithReminder} with reminders`);
   }
 
   // Per-user planner blocks -> user subscriptions only
