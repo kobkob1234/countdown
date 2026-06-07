@@ -420,7 +420,7 @@ async function loadUsersWithSubscriptions() {
   const users = snap.val() || {};
   const out = [];
   for (const [userId, userData] of Object.entries(users)) {
-    if (PUSH_TARGET_USER && userId !== PUSH_TARGET_USER) continue;
+    if (process.env.PUSH_TARGET_USER && userId !== process.env.PUSH_TARGET_USER) continue;
     const pushSubs = userData?.pushSubscriptions || {};
     const subs = [];
     for (const [subKey, entry] of Object.entries(pushSubs)) {
