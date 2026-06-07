@@ -15,7 +15,7 @@
 const admin = require('firebase-admin');
 const webpush = require('web-push');
 const crypto = require('crypto');
-const { setTimeout: sleep } = require('timers/promises');
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const FIREBASE_DATABASE_URL = process.env.FIREBASE_DATABASE_URL || 'https://countdown-463de-default-rtdb.firebaseio.com';
 const VAPID_SUBJECT = process.env.VAPID_SUBJECT || 'mailto:kobeamit1@gmail.com';
