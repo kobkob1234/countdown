@@ -24,14 +24,6 @@ const {
   LOOP_SECONDS
 } = process.env;
 
-// Optional: URL of the remind-again API endpoint (hosted on Vercel).
-// Set REMIND_AGAIN_API_URL GitHub secret to enable the "Remind me in 10 min" button.
-const REMIND_AGAIN_API_URL = (process.env.REMIND_AGAIN_API_URL || '').trim();
-const REMIND_AGAIN_DELAY_MINUTES = Number.parseInt(process.env.REMIND_AGAIN_DELAY_MINUTES || '10', 10) || 10;
-const REMIND_AGAIN_TOKEN_TTL_MS = 30 * 60 * 1000;        // 30 min (token lifetime)
-const REMIND_AGAIN_QUEUE_TTL_MS = 24 * 60 * 60 * 1000;   // 24 h  (queue item lifetime)
-const REMIND_AGAIN_SENDING_STALE_MS = 3 * 60 * 1000;     // 3 min (recover orphaned 'sending' items)
-
 if (!FIREBASE_DATABASE_URL) throw new Error('Missing env FIREBASE_DATABASE_URL');
 if (!GOOGLE_APPLICATION_CREDENTIALS) throw new Error('Missing env GOOGLE_APPLICATION_CREDENTIALS');
 if (!VAPID_SUBJECT) throw new Error('Missing env VAPID_SUBJECT');
@@ -155,24 +147,6 @@ function formatReminderOffset(minutes) {
   return m === 1 ? '1 minute' : `${m} minutes`;
 }
 
-function normalizeTaskReminders(reminders, legacyReminder = null) {
-  const MAX_REMINDERS = 3;
-  const MAX_MINUTES = 10080;
-  const source = [];
-  if (Array.isArray(reminders)) source.push(...reminders);
-  if (legacyReminder !== null && legacyReminder !== undefined && legacyReminder !== '') source.push(legacyReminder);
-
-  const unique = [];
-  source.forEach((value) => {
-    const minutes = Number.parseInt(value, 10);
-    if (!Number.isFinite(minutes) || minutes < 1 || minutes > MAX_MINUTES) return;
-    if (!unique.includes(minutes)) unique.push(minutes);
-  });
-
-  unique.sort((a, b) => a - b);
-  return unique.slice(0, MAX_REMINDERS);
-}
-
 async function claimOnce(path) {
   const ref = db.ref(path);
   const now = Date.now();
@@ -223,39 +197,6 @@ async function markFailed(ref, statusCode, extra = {}) {
   await ref.set({ status, ts: Date.now(), ...extra });
 }
 
-// ============================================
-// Remind-Again helpers
-// ============================================
-
-/**
- * Write a one-time token to Firebase and return the raw token string.
- * Returns null if REMIND_AGAIN_API_URL is not configured.
- */
-async function issueRemindAgainToken(userId, context = {}) {
-  if (!userId || !REMIND_AGAIN_API_URL) return null;
-  const token = crypto.randomBytes(24).toString('base64url');
-  const tokenHash = crypto.createHash('sha256').update(`remind-again:${token}`).digest('base64url');
-  const now = Date.now();
-  await db.ref(`users/${userId}/remindAgainTokens/${tokenHash}`).set({
-    status: 'pending',
-    userId,
-    createdAt: now,
-    expiresAt: now + REMIND_AGAIN_TOKEN_TTL_MS,
-    ...context
-  });
-  return token;
-}
-
-/** Build notification action list, optionally including the snooze button. */
-function buildTaskActions(includeRemindAgain) {
-  const actions = [{ action: 'view', title: 'View' }];
-  if (includeRemindAgain) {
-    actions.push({ action: 'remind-again-10', title: 'Remind me again in 10 minutes' });
-  }
-  actions.push({ action: 'complete', title: 'Done' });
-  return actions;
-}
-
 function buildUrl(pathname = '/', params = {}) {
   const rawPath = String(pathname || '.');
   const relPath = rawPath === '/' ? '.' : rawPath.replace(/^\/+/, '') || '.';
@@ -267,25 +208,22 @@ function buildUrl(pathname = '/', params = {}) {
   return u.toString();
 }
 
-async function sendToSubscription({ userId, subKey, subscription, payload, dedupeKey, skipGlobalClaim = false }) {
+async function sendToSubscription({ userId, subKey, subscription, payload, dedupeKey }) {
+  // Use per-user claim (not per-subscription) to prevent duplicate notifications
+  // across multiple devices for the same reminder
   const sentHash = hashKey(dedupeKey);
   const userSentPath = `users/${userId}/pushSentGlobal/${sentHash}`;
   const perSubPath = `users/${userId}/pushSent/${subKey}/${sentHash}`;
 
-  let globalRef = null;
-  if (!skipGlobalClaim) {
-    // First check per-user global claim
-    const { committed: globalClaimed, ref: gRef } = await claimOnce(userSentPath);
-    if (!globalClaimed) return { skipped: true };
-    globalRef = gRef;
-  } else {
-    globalRef = db.ref(userSentPath);
-  }
+  // First check per-user global claim — only one subscription should send per reminder
+  const { committed: globalClaimed, ref: globalRef } = await claimOnce(userSentPath);
+  if (!globalClaimed) return { skipped: true };
 
   // Also claim per-subscription path for backward compat / cleanup
   const { committed, ref } = await claimOnce(perSubPath);
   if (!committed) {
-    if (!skipGlobalClaim) await markSent(globalRef, { dedupeKey, subKey });
+    // Per-sub already sent — mark global as sent too
+    await markSent(globalRef, { dedupeKey, subKey });
     return { skipped: true };
   }
 
@@ -327,7 +265,7 @@ async function sendToSubscription({ userId, subKey, subscription, payload, dedup
 
       // Non-retryable or max retries reached
       await markFailed(ref, statusCode || null, { message, dedupeKey, attempts: attempt });
-      if (!skipGlobalClaim) await globalRef.remove().catch(() => {});
+      await markFailed(globalRef, statusCode || null, { message, dedupeKey, subKey, attempts: attempt });
       console.warn(`[push] Failed user=${userId} sub=${subKey.slice(0, 8)}... status=${statusCode || 'unknown'} msg=${message.slice(0, 100)}`);
 
       // Cleanup expired subscriptions (410 Gone / 404 Not Found)
@@ -340,169 +278,6 @@ async function sendToSubscription({ userId, subKey, subscription, payload, dedup
       return { ok: false, statusCode, message };
     }
   }
-}
-
-
-function stringifyDataMap(data) {
-  const out = {};
-  for (const [k, v] of Object.entries(data || {})) {
-    if (v === null || v === undefined) continue;
-    out[k] = typeof v === 'object' ? JSON.stringify(v) : String(v);
-  }
-  return out;
-}
-
-async function sendFCMToUser(userId, tokens, payload, dedupeKey, skipGlobalClaim = false) {
-  if (!tokens || tokens.length === 0) return { sent: 0, failed: 0 };
-
-  const sentHash = hashKey(dedupeKey);
-  const userSentPath = `users/${userId}/pushSentGlobal/${sentHash}`;
-  const fcmSentPath = `users/${userId}/fcmSent/${sentHash}`;
-
-  let globalRef = null;
-  if (!skipGlobalClaim) {
-    const { committed: globalClaimed, ref: gRef } = await claimOnce(userSentPath);
-    if (!globalClaimed) return { skipped: true };
-    globalRef = gRef;
-  } else {
-    globalRef = db.ref(userSentPath);
-  }
-
-  const { committed, ref } = await claimOnce(fcmSentPath);
-  if (!committed) {
-    if (!skipGlobalClaim) await markSent(globalRef, { dedupeKey, mechanism: 'fcm' });
-    return { skipped: true };
-  }
-
-  if (isDryRun) {
-    console.log(`[DRY_RUN] Would send FCM to user=${userId} (${tokens.length} tokens)`);
-    await markSent(ref, { dryRun: true, dedupeKey });
-    if (!skipGlobalClaim) await markSent(globalRef, { dryRun: true, dedupeKey, mechanism: 'fcm' });
-    return { sent: tokens.length, failed: 0 };
-  }
-
-  const extraData = stringifyDataMap(Object.keys(payload).reduce((acc, key) => {
-    if (!['title', 'body', 'tag', 'actions'].includes(key)) acc[key] = payload[key];
-    return acc;
-  }, {}));
-
-  const actionList = Array.isArray(payload.actions) && payload.actions.length
-    ? payload.actions
-    : [
-        { action: 'view', title: 'View' },
-        { action: 'complete', title: 'Done' }
-      ];
-
-  const message = {
-    tokens: tokens,
-    notification: {
-      title: payload.title || 'Task Reminder',
-      body: payload.body || '',
-    },
-    data: {
-      url: payload.url || APP_URL.toString(),
-      completeUrl: payload.completeUrl || '',
-      tag: payload.tag || 'reminder',
-      dedupeKey: dedupeKey,
-      actions: JSON.stringify(actionList),
-      ...extraData,
-    },
-    android: {
-      priority: 'high',
-      notification: {
-        channelId: 'reminders',
-        priority: 'high',
-        defaultVibrateTimings: true,
-      }
-    },
-    webpush: {
-      headers: { Urgency: 'high' },
-      notification: {
-        icon: `${APP_URL.toString()}icon-192.png`,
-        badge: `${APP_URL.toString()}icon-192.png`,
-        vibrate: [200, 100, 200],
-        requireInteraction: true,
-        actions: actionList
-      }
-    }
-  };
-
-  try {
-    const response = await admin.messaging().sendEachForMulticast(message);
-    if (response.successCount > 0) {
-      await markSent(ref, { dedupeKey, successCount: response.successCount });
-      await markSent(globalRef, { dedupeKey, mechanism: 'fcm', successCount: response.successCount });
-
-      response.responses.forEach((resp, idx) => {
-        if (!resp.success && resp.error?.code === 'messaging/registration-token-not-registered') {
-          db.ref(`users/${userId}/fcmTokens/${tokens[idx]}`).remove().catch(() => {});
-        }
-      });
-      return { sent: response.successCount, failed: response.failureCount };
-    } else {
-      await ref.remove().catch(() => {});
-      if (!skipGlobalClaim) await globalRef.remove().catch(() => {});
-      return { sent: 0, failed: tokens.length };
-    }
-  } catch (err) {
-    console.error(`[FCM] Error sending to ${userId}:`, err.message);
-    await ref.remove().catch(() => {});
-    if (!skipGlobalClaim) await globalRef.remove().catch(() => {});
-    return { sent: 0, failed: tokens.length };
-  }
-}
-
-async function sendNotificationToUser(userId, tokens, subs, payload, dedupeKey) {
-  let sentAny = false;
-  let skippedAny = false;
-  let failed = 0;
-  let sent = 0;
-
-  // Claim global lock ONCE per user so we don't spam if this function is called concurrently
-  const sentHash = hashKey(dedupeKey);
-  const userSentPath = `users/${userId}/pushSentGlobal/${sentHash}`;
-  const { committed: globalClaimed, ref: globalRef } = await claimOnce(userSentPath);
-  
-  if (!globalClaimed) {
-    return { sentAny: false, skippedAny: true, failed: 0, sent: 0 };
-  }
-
-  // 1. Send to all FCM tokens
-  if (tokens && tokens.length > 0) {
-    const fcmResult = await sendFCMToUser(userId, tokens, payload, dedupeKey, true); // true = skip global claim in inner function
-    if (fcmResult.sent > 0) {
-      sentAny = true;
-      sent += fcmResult.sent;
-    } else if (fcmResult.skipped) {
-      skippedAny = true;
-    } else {
-      failed += fcmResult.failed;
-    }
-  }
-
-  // 2. Send to ALL VAPID subscriptions (don't break on first)
-  if (subs && subs.length > 0) {
-    for (const { subKey, sub } of subs) {
-      const res = await sendToSubscription({ userId, subKey, subscription: sub, payload, dedupeKey, skipGlobalClaim: true });
-      if (res.ok) {
-        sentAny = true;
-        sent += 1;
-      } else if (res.skipped) {
-        skippedAny = true;
-      } else {
-        failed += 1;
-      }
-    }
-  }
-
-  if (sentAny) {
-    await markSent(globalRef, { dedupeKey, sentAny: true });
-  } else {
-    // If we failed to send to anything, remove the global claim so we can retry next minute
-    await globalRef.remove().catch(() => {});
-  }
-
-  return { sentAny, skippedAny, failed, sent };
 }
 
 function shouldTrigger(nowMs, targetMs, reminderMinutes) {
@@ -519,23 +294,14 @@ async function loadUsersWithSubscriptions() {
   const out = [];
   for (const [userId, userData] of Object.entries(users)) {
     if (PUSH_TARGET_USER && userId !== PUSH_TARGET_USER) continue;
-    
     const pushSubs = userData?.pushSubscriptions || {};
     const subs = [];
     for (const [subKey, entry] of Object.entries(pushSubs)) {
       const sub = entry?.sub;
       if (isValidSubscription(sub)) subs.push({ subKey, sub });
     }
-
-    const fcmTokensObj = userData?.fcmTokens || {};
-    const fcmTokens = Object.keys(fcmTokensObj).filter(t => t && t.length > 20);
-
-    const remindAgainQueue = userData?.remindAgainQueue || {};
-    const hasPendingRemindAgain = Object.values(remindAgainQueue).some((entry) => entry && entry.status === 'pending');
-
-    if (subs.length === 0 && fcmTokens.length === 0 && !hasPendingRemindAgain) continue;
-    
-    out.push({ userId, subs, fcmTokens });
+    if (subs.length === 0) continue;
+    out.push({ userId, subs });
   }
   return out;
 }
@@ -577,25 +343,18 @@ async function runCheck() {
 
   // Log subscription details for debugging
   const totalSubs = users.reduce((sum, u) => sum + u.subs.length, 0);
-  const totalTokens = users.reduce((sum, u) => sum + (u.fcmTokens?.length || 0), 0);
-  console.log(`[push] Loaded ${users.length} users with ${totalSubs} total subscriptions and ${totalTokens} FCM tokens`);
-  users.forEach(u => console.log(`[push]   - ${u.userId}: ${u.subs.length} sub(s), ${u.fcmTokens?.length || 0} FCM token(s)`));
+  console.log(`[push] Loaded ${users.length} users with ${totalSubs} total subscriptions`);
+  users.forEach(u => console.log(`[push]   - ${u.userId}: ${u.subs.length} subscription(s)`));
 
   let sent = 0;
   let skipped = 0;
   let failed = 0;
 
   // Shared events -> all users/subscriptions
-  console.log(`[debug] Processing ${sharedEvents.length} shared events`);
   for (const evt of sharedEvents) {
     if (isImportedEvent(evt) && !evt.reminderUserSet) continue;
     const reminderMinutes = Number.parseInt(evt.reminder || '0', 10) || 0;
     const eventTimeMs = parseIsoMillis(evt.date);
-    if (reminderMinutes > 0) {
-      const triggerAt = eventTimeMs - reminderMinutes * 60000;
-      const deltaMs = nowMs - triggerAt;
-      console.log(`[debug] Event "${evt.name}" reminder=${reminderMinutes}min dueAt=${new Date(eventTimeMs||0).toISOString()} triggerAt=${new Date(triggerAt||0).toISOString()} delta=${Math.round(deltaMs/1000)}s inWindow=${deltaMs >= 0 && deltaMs < WINDOW_MS}`);
-    }
     if (!shouldTrigger(nowMs, eventTimeMs, reminderMinutes)) continue;
 
     const offset = formatReminderOffset(reminderMinutes);
@@ -611,93 +370,67 @@ async function runCheck() {
       actions: [{ action: 'view', title: 'View' }]
     };
 
-    console.log(`[debug] TRIGGERING event "${evt.name}" -> sending to ${users.length} users`);
-    for (const { userId, subs, fcmTokens } of users) {
-      const res = await sendNotificationToUser(userId, fcmTokens, subs, payload, dedupeKey);
-      if (res.sentAny) sent += res.sent;
-      if (res.skippedAny) skipped += 1;
-      if (!res.sentAny && !res.skippedAny && (subs.length > 0 || (fcmTokens && fcmTokens.length > 0))) {
-        failed += res.failed || 1;
+    await Promise.allSettled(users.flatMap(({ userId, subs }) =>
+      subs.map(({ subKey, sub }) =>
+        sendToSubscription({ userId, subKey, subscription: sub, payload, dedupeKey })
+      )
+    )).then((results) => {
+      for (const r of results) {
+        const v = r.status === 'fulfilled' ? r.value : null;
+        if (!v) { failed += 1; continue; }
+        if (v.skipped) skipped += 1;
+        else if (v.ok) sent += 1;
+        else failed += 1;
       }
-    }
+    });
   }
 
   // Per-user tasks -> user subscriptions only
-  for (const { userId, subs, fcmTokens } of users) {
+  for (const { userId, subs } of users) {
     const tasks = await loadTasksForUser(userId);
-    let taskCount = 0;
-    let taskWithReminder = 0;
     for (const task of tasks) {
-      taskCount++;
       if (task.completed) continue;
-      const reminderMinutesList = normalizeTaskReminders(task.reminders, task.reminder);
-      if (!reminderMinutesList.length) continue;
-      taskWithReminder++;
+      const reminderMinutes = Number.parseInt(task.reminder || '0', 10) || 0;
       const dueMs = parseIsoMillis(task.dueDate);
+      if (!shouldTrigger(nowMs, dueMs, reminderMinutes)) continue;
 
-      for (const reminderMinutes of reminderMinutesList) {
-        const triggerAt = dueMs ? dueMs - reminderMinutes * 60000 : null;
-        const deltaMs = triggerAt ? nowMs - triggerAt : null;
-        if (triggerAt) {
-          console.log(`[debug] Task "${task.title}" user=${userId} reminder=${reminderMinutes}min due=${new Date(dueMs).toISOString()} triggerAt=${new Date(triggerAt).toISOString()} delta=${Math.round(deltaMs/1000)}s inWindow=${deltaMs >= 0 && deltaMs < WINDOW_MS}`);
-        }
-        if (!shouldTrigger(nowMs, dueMs, reminderMinutes)) continue;
+      const offset = formatReminderOffset(reminderMinutes);
+      // Normalize dueDate to ISO to match client-side dedupe key format
+      const dueDateIso = new Date(task.dueDate).toISOString();
+      const dedupeKey = `task|${userId}|${task.id}|${dueDateIso}|${reminderMinutes}`;
+      const payload = {
+        title: `Task Reminder 📋`,
+        body: `${task.title || 'Task'} is due in ${offset}`,
+        tag: `task-${task.id}`,
+        dedupeKey,
+        url: buildUrl('/', {}),
+        completeUrl: buildUrl('/', { completeTask: task.id, user: userId }),
+        requireInteraction: true,
+        renotify: true,
+        actions: [
+          { action: 'view', title: 'View' },
+          { action: 'complete', title: 'Done' }
+        ]
+      };
 
-        const offset = formatReminderOffset(reminderMinutes);
-        // Normalize dueDate to ISO to match client-side dedupe key format
-        const dueDateIso = new Date(task.dueDate).toISOString();
-        const dedupeKey = `task|${userId}|${task.id}|${dueDateIso}|${reminderMinutes}`;
+      const results = await Promise.allSettled(
+        subs.map(({ subKey, sub }) =>
+          sendToSubscription({ userId, subKey, subscription: sub, payload, dedupeKey })
+        )
+      );
 
-        // Issue a one-time remind-again token (no-op if REMIND_AGAIN_API_URL not set)
-        let remindAgainToken = null;
-        try {
-          remindAgainToken = await issueRemindAgainToken(userId, {
-            type: 'task',
-            taskId: task.id,
-            occurrence: dueDateIso,
-            baseDedupeKey: dedupeKey,
-            baseUrl: APP_URL.toString(),
-            title: task.title || 'Task'
-          });
-        } catch (e) {
-          console.warn('[remind-again] Failed to issue token for task:', e.message);
-        }
-
-        const payload = {
-          title: 'Task Reminder 📋',
-          body: `${task.title || 'Task'} is due in ${offset}`,
-          tag: `task-${task.id}-${reminderMinutes}`,
-          dedupeKey,
-          url: buildUrl('/', {}),
-          completeUrl: buildUrl('/', { completeTask: task.id, user: userId }),
-          requireInteraction: true,
-          renotify: true,
-          actions: buildTaskActions(!!remindAgainToken),
-          ...(remindAgainToken ? {
-            remindAgainToken,
-            remindAgainEndpoint: REMIND_AGAIN_API_URL,
-            remindAgainUserId: userId,
-            remindAgainTaskId: task.id,
-            remindAgainSubjectId: '',
-            remindAgainOccurrence: dueDateIso,
-            remindAgainMinutes: String(REMIND_AGAIN_DELAY_MINUTES)
-          } : {})
-        };
-
-        console.log(`[debug] TRIGGERING task "${task.title}" for user=${userId} -> sending`);
-        const res = await sendNotificationToUser(userId, fcmTokens, subs, payload, dedupeKey);
-        if (res.sentAny) sent += res.sent;
-        if (res.skippedAny) skipped += 1;
-        if (!res.sentAny && !res.skippedAny && (subs.length > 0 || (fcmTokens && fcmTokens.length > 0))) {
-          failed += res.failed || 1;
-        }
+      for (const r of results) {
+        const v = r.status === 'fulfilled' ? r.value : null;
+        if (!v) { failed += 1; continue; }
+        if (v.skipped) skipped += 1;
+        else if (v.ok) sent += 1;
+        else failed += 1;
       }
     }
-    console.log(`[debug] User ${userId}: ${taskCount} tasks total, ${taskWithReminder} with reminders`);
   }
 
   // Per-user planner blocks -> user subscriptions only
-  for (const { userId, subs, fcmTokens } of users) {
+  for (const { userId, subs } of users) {
     const blocks = await loadPlannerBlocksForUser(userId);
     for (const block of blocks) {
       if (!block || block.completed) continue;
@@ -725,11 +458,18 @@ async function runCheck() {
         actions: [{ action: 'view', title: 'View' }]
       };
 
-      const res = await sendNotificationToUser(userId, fcmTokens, subs, payload, dedupeKey);
-      if (res.sentAny) sent += res.sent;
-      if (res.skippedAny) skipped += 1;
-      if (!res.sentAny && !res.skippedAny && (subs.length > 0 || (fcmTokens && fcmTokens.length > 0))) {
-        failed += res.failed || 1;
+      const results = await Promise.allSettled(
+        subs.map(({ subKey, sub }) =>
+          sendToSubscription({ userId, subKey, subscription: sub, payload, dedupeKey })
+        )
+      );
+
+      for (const r of results) {
+        const v = r.status === 'fulfilled' ? r.value : null;
+        if (!v) { failed += 1; continue; }
+        if (v.skipped) skipped += 1;
+        else if (v.ok) sent += 1;
+        else failed += 1;
       }
     }
   }
@@ -743,225 +483,56 @@ async function runCheck() {
 
     for (const [taskId, task] of Object.entries(subjectTasks)) {
       if (!task || task.completed) continue;
-      const reminderMinutesList = normalizeTaskReminders(task.reminders, task.reminder);
-      if (!reminderMinutesList.length) continue;
+      const reminderMinutes = Number.parseInt(task.reminder || '0', 10) || 0;
       const dueMs = parseIsoMillis(task.dueDate);
+      if (!shouldTrigger(nowMs, dueMs, reminderMinutes)) continue;
+
+      const offset = formatReminderOffset(reminderMinutes);
       const sharedDueDateIso = new Date(task.dueDate).toISOString();
+      // Send to each user who has active access to this shared subject
+      for (const userId of allUsers) {
+        // Verify user still has access (owner always has access, members must be active)
+        if (userId !== owner) {
+          const memberEntry = members[userId];
+          // Skip removed/inactive members
+          if (!memberEntry || memberEntry === false || memberEntry.removed) continue;
+        }
+        const userEntry = users.find(u => u.userId === userId);
+        if (!userEntry) continue;
 
-      for (const reminderMinutes of reminderMinutesList) {
-        if (!shouldTrigger(nowMs, dueMs, reminderMinutes)) continue;
+        const dedupeKey = `shared-task|${userId}|${subject.id}|${taskId}|${sharedDueDateIso}|${reminderMinutes}`;
+        const payload = {
+          title: `Shared Task Reminder 📋`,
+          body: `${task.title || 'Task'} is due in ${offset}`,
+          tag: `shared-task-${taskId}`,
+          dedupeKey,
+          url: buildUrl('/', {}),
+          completeUrl: buildUrl('/', { completeTask: taskId, user: userId, sharedSubject: subject.id }),
+          requireInteraction: true,
+          renotify: true,
+          actions: [
+            { action: 'view', title: 'View' },
+            { action: 'complete', title: 'Done' }
+          ]
+        };
+        const results = await Promise.allSettled(
+          userEntry.subs.map(({ subKey, sub }) =>
+            sendToSubscription({ userId, subKey, subscription: sub, payload, dedupeKey })
+          )
+        );
 
-        const offset = formatReminderOffset(reminderMinutes);
-        // Send to each user who has active access to this shared subject
-        for (const userId of allUsers) {
-          // Verify user still has access (owner always has access, members must be active)
-          if (userId !== owner) {
-            const memberEntry = members[userId];
-            // Skip removed/inactive members
-            if (!memberEntry || memberEntry === false || memberEntry.removed) continue;
-          }
-          const userEntry = users.find(u => u.userId === userId);
-          if (!userEntry) continue;
-
-          const dedupeKey = `shared-task|${userId}|${subject.id}|${taskId}|${sharedDueDateIso}|${reminderMinutes}`;
-
-          // Issue a one-time remind-again token
-          let remindAgainToken = null;
-          try {
-            remindAgainToken = await issueRemindAgainToken(userId, {
-              type: 'shared-task',
-              taskId,
-              subjectId: subject.id,
-              occurrence: sharedDueDateIso,
-              baseDedupeKey: dedupeKey,
-              baseUrl: APP_URL.toString(),
-              title: task.title || 'Task'
-            });
-          } catch (e) {
-            console.warn('[remind-again] Failed to issue token for shared task:', e.message);
-          }
-
-          const payload = {
-            title: 'Shared Task Reminder 📋',
-            body: `${task.title || 'Task'} is due in ${offset}`,
-            tag: `shared-task-${taskId}-${reminderMinutes}`,
-            dedupeKey,
-            url: buildUrl('/', {}),
-            completeUrl: buildUrl('/', { completeTask: taskId, user: userId, sharedSubject: subject.id }),
-            requireInteraction: true,
-            renotify: true,
-            actions: buildTaskActions(!!remindAgainToken),
-            ...(remindAgainToken ? {
-              remindAgainToken,
-              remindAgainEndpoint: REMIND_AGAIN_API_URL,
-              remindAgainUserId: userId,
-              remindAgainTaskId: taskId,
-              remindAgainSubjectId: subject.id,
-              remindAgainOccurrence: sharedDueDateIso,
-              remindAgainMinutes: String(REMIND_AGAIN_DELAY_MINUTES)
-            } : {})
-          };
-          const res = await sendNotificationToUser(userId, userEntry.fcmTokens, userEntry.subs, payload, dedupeKey);
-          if (res.sentAny) sent += res.sent;
-          if (res.skippedAny) skipped += 1;
-          if (!res.sentAny && !res.skippedAny && (userEntry.subs.length > 0 || (userEntry.fcmTokens && userEntry.fcmTokens.length > 0))) {
-            failed += res.failed || 1;
-          }
+        for (const r of results) {
+          const v = r.status === 'fulfilled' ? r.value : null;
+          if (!v) { failed += 1; continue; }
+          if (v.skipped) skipped += 1;
+          else if (v.ok) sent += 1;
+          else failed += 1;
         }
       }
     }
   }
-
-  // Process remind-again queue (snoozed reminders from previous notifications)
-  const raResult = await processRemindAgainQueue(users, nowMs);
-  sent += raResult.sent;
-  skipped += raResult.skipped;
-  failed += raResult.failed;
 
   console.log(`[${new Date().toISOString()}] Result: Sent ${sent}, Skipped ${skipped}, Failed ${failed}`);
-}
-
-// ============================================
-// Remind-Again Queue Processor
-// Reads Firebase remindAgainQueue written by api/remind-again.js
-// and sends snoozed notifications via VAPID web-push.
-// ============================================
-async function processRemindAgainQueue(users, nowMs) {
-  let sent = 0, skipped = 0, failed = 0;
-
-  for (const { userId, subs, fcmTokens } of users) {
-    const queueSnap = await db.ref(`users/${userId}/remindAgainQueue`).once('value');
-    const queueItems = queueSnap.val() || {};
-
-    // Recover any items stuck in 'sending' from a crashed prior run
-    for (const [queueId, item] of Object.entries(queueItems)) {
-      if (!item || item.status !== 'sending') continue;
-      const updatedAt = Number(item.updatedAt) || 0;
-      if (!updatedAt || (nowMs - updatedAt) <= REMIND_AGAIN_SENDING_STALE_MS) continue;
-      await db.ref(`users/${userId}/remindAgainQueue/${queueId}`).transaction((cur) => {
-        if (!cur || cur.status !== 'sending') return;
-        if ((nowMs - (Number(cur.updatedAt) || 0)) <= REMIND_AGAIN_SENDING_STALE_MS) return;
-        return { ...cur, status: 'pending', updatedAt: nowMs };
-      }).catch(() => {});
-      queueItems[queueId] = { ...item, status: 'pending', updatedAt: nowMs };
-    }
-
-    for (const [queueId, item] of Object.entries(queueItems)) {
-      if (!item || item.status !== 'pending') continue;
-
-      const dueAt = Number(item.dueAt) || 0;
-      if (dueAt > nowMs) continue;
-
-      const expiresAt = Number(item.expiresAt) || 0;
-      const itemRef = db.ref(`users/${userId}/remindAgainQueue/${queueId}`);
-
-      if (expiresAt && expiresAt < nowMs) {
-        await itemRef.update({ status: 'expired', updatedAt: nowMs }).catch(() => {});
-        skipped++;
-        continue;
-      }
-
-      // Atomic claim — prevents double-send across overlapping workflow runs
-      const claim = await itemRef.transaction((cur) => {
-        if (!cur || cur.status !== 'pending') return;
-        if ((Number(cur.dueAt) || 0) > nowMs) return;
-        const curExpires = Number(cur.expiresAt) || 0;
-        if (curExpires && curExpires < nowMs) return { ...cur, status: 'expired', updatedAt: nowMs };
-        return { ...cur, status: 'sending', updatedAt: nowMs };
-      });
-      if (!claim.committed) continue;
-      const currentItem = claim.snapshot.val() || {};
-      if (currentItem.status !== 'sending') { skipped++; continue; }
-
-      // Load the task to verify it's still active
-      let task = null;
-      try {
-        if (currentItem.type === 'shared-task' && currentItem.subjectId && currentItem.taskId) {
-          const snap = await db.ref(`sharedSubjects/${currentItem.subjectId}/tasks/${currentItem.taskId}`).once('value');
-          task = snap.val();
-        } else if (currentItem.taskId) {
-          const snap = await db.ref(`users/${userId}/tasks/${currentItem.taskId}`).once('value');
-          task = snap.val();
-        }
-      } catch (e) {
-        console.warn('[remind-again] Failed to load task:', e.message);
-      }
-
-      if (!task || (task.completed && !task.recurrence)) {
-        await itemRef.update({ status: 'cancelled', updatedAt: Date.now(), reason: 'task_not_active' }).catch(() => {});
-        skipped++;
-        continue;
-      }
-
-      const taskTitle = task.title || currentItem.title || 'Task';
-      const occurrenceKey = currentItem.occurrence || (task.dueDate ? new Date(task.dueDate).toISOString() : '');
-      const dedupeBase = currentItem.baseDedupeKey || `remind-again|${userId}|${currentItem.taskId || ''}|${occurrenceKey}`;
-      const dedupeKey = `${dedupeBase}|again|${queueId}`;
-
-      // Issue a new token so the user can snooze the snoozed reminder too
-      let remindAgainToken = null;
-      try {
-        remindAgainToken = await issueRemindAgainToken(userId, {
-          type: currentItem.type || 'task',
-          taskId: currentItem.taskId,
-          subjectId: currentItem.subjectId || '',
-          occurrence: occurrenceKey,
-          baseDedupeKey: dedupeKey,
-          baseUrl: currentItem.baseUrl || APP_URL.toString(),
-          title: taskTitle
-        });
-      } catch (e) {
-        console.warn('[remind-again] Failed to issue follow-up token:', e.message);
-      }
-
-      const baseUrl = currentItem.baseUrl || APP_URL.toString();
-      const completeParams = new URLSearchParams({ completeTask: String(currentItem.taskId || ''), user: userId });
-      if (currentItem.subjectId) completeParams.set('sharedSubject', String(currentItem.subjectId));
-      if (occurrenceKey) completeParams.set('occurrence', occurrenceKey);
-
-      const payload = {
-        title: currentItem.type === 'shared-task' ? 'Shared Task Reminder 📋' : 'Task Reminder 📋',
-        body: `${taskTitle} — snoozed reminder`,
-        tag: `remind-again-${currentItem.taskId || queueId}`,
-        dedupeKey,
-        url: baseUrl,
-        completeUrl: `${new URL('?', APP_URL).href.replace('?', '')}?${completeParams.toString()}`,
-        requireInteraction: true,
-        renotify: true,
-        actions: buildTaskActions(!!remindAgainToken),
-        ...(remindAgainToken ? {
-          remindAgainToken,
-          remindAgainEndpoint: REMIND_AGAIN_API_URL,
-          remindAgainUserId: userId,
-          remindAgainTaskId: String(currentItem.taskId || ''),
-          remindAgainSubjectId: String(currentItem.subjectId || ''),
-          remindAgainOccurrence: occurrenceKey,
-          remindAgainMinutes: String(REMIND_AGAIN_DELAY_MINUTES)
-        } : {})
-      };
-
-      if (subs.length === 0 && (!fcmTokens || fcmTokens.length === 0)) {
-        await itemRef.update({ status: 'failed', updatedAt: Date.now(), reason: 'no_subscriptions' }).catch(() => {});
-        failed++;
-        continue;
-      }
-
-      const res = await sendNotificationToUser(userId, fcmTokens, subs, payload, dedupeKey);
-
-      if (res.sentAny || res.skippedAny) {
-        await itemRef.update({ status: 'sent', sentAt: Date.now(), updatedAt: Date.now() }).catch(() => {});
-        if (res.sentAny) sent++; else skipped++;
-      } else {
-        await itemRef.update({ status: 'failed', updatedAt: Date.now(), reason: 'send_failed' }).catch(() => {});
-        failed++;
-      }
-    }
-  }
-
-  if (sent + failed > 0) {
-    console.log(`[remind-again] Queue: Sent ${sent}, Skipped ${skipped}, Failed ${failed}`);
-  }
-  return { sent, skipped, failed };
 }
 
 async function cleanupOldPushSent() {
@@ -1007,46 +578,7 @@ async function cleanupOldPushSent() {
   }
 }
 
-// ============================================
-// Israel-time helpers for smart scheduling
-// ============================================
-
-/** Returns current { hour, minute } in Israel time (Asia/Jerusalem, DST-aware). */
-function getIsraelTime() {
-  try {
-    const now = new Date();
-    const parts = new Intl.DateTimeFormat('en-US', {
-      timeZone: 'Asia/Jerusalem',
-      hour: 'numeric',
-      minute: 'numeric',
-      hour12: false
-    }).formatToParts(now);
-    const hour = Number(parts.find(p => p.type === 'hour')?.value ?? 0);
-    const minute = Number(parts.find(p => p.type === 'minute')?.value ?? 0);
-    return { hour: isNaN(hour) ? 0 : hour, minute: isNaN(minute) ? 0 : minute };
-  } catch {
-    // Fallback: treat as UTC+2
-    const off = new Date();
-    off.setTime(off.getTime() + 2 * 60 * 60 * 1000);
-    return { hour: off.getUTCHours(), minute: off.getUTCMinutes() };
-  }
-}
-
 async function main() {
-  const { hour, minute } = getIsraelTime();
-
-  // ── Night-mode: 01:00–06:00 Israel time ──────────────────────────────────
-  // During these hours most users are asleep. Only check every 30 minutes
-  // (when minute is 0 or 30) to save Firebase quota.
-  const isNightHours = hour >= 1 && hour < 6;
-  if (isNightHours && minute % 30 !== 0) {
-    console.log(`[${new Date().toISOString()}] Night-mode (Israel ${hour}:${String(minute).padStart(2, '0')}) — next check at :00 or :30`);
-    // Close Firebase and exit cleanly without running any DB queries
-    try { if (typeof db.goOffline === 'function') db.goOffline(); } catch {}
-    try { await admin.app().delete(); } catch {}
-    return;
-  }
-
   const loopSeconds = Number(LOOP_SECONDS) || 0;
 
   if (loopSeconds > 0) {
@@ -1071,15 +603,11 @@ async function main() {
     await runCheck();
   }
 
-  // ── Daily cleanup: only at midnight Israel time (00:00–00:01) ─────────────
-  // Runs once per day instead of every invocation — saves ~1,400 heavy DB reads/day.
-  const isMidnight = hour === 0 && minute < 2;
-  if (isMidnight) {
-    try {
-      await cleanupOldPushSent();
-    } catch (e) {
-      console.warn('Cleanup error:', e);
-    }
+  // Cleanup old pushSent records (run occasionally to prevent DB bloat)
+  try {
+    await cleanupOldPushSent();
+  } catch (e) {
+    console.warn('Cleanup error:', e);
   }
 
   // Cleanup Firebase connection
@@ -1099,4 +627,3 @@ main().catch(err => {
   console.error('Fatal error:', err);
   process.exit(1);
 });
-
