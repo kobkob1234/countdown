@@ -267,29 +267,34 @@ function buildUrl(pathname = '/', params = {}) {
   return u.toString();
 }
 
-async function sendToSubscription({ userId, subKey, subscription, payload, dedupeKey }) {
+async function sendToSubscription({ userId, subKey, subscription, payload, dedupeKey, skipGlobalClaim = false }) {
   // Use per-user claim (not per-subscription) to prevent duplicate notifications
   // across multiple devices for the same reminder
   const sentHash = hashKey(dedupeKey);
   const userSentPath = `users/${userId}/pushSentGlobal/${sentHash}`;
   const perSubPath = `users/${userId}/pushSent/${subKey}/${sentHash}`;
 
-  // First check per-user global claim — only one subscription should send per reminder
-  const { committed: globalClaimed, ref: globalRef } = await claimOnce(userSentPath);
-  if (!globalClaimed) return { skipped: true };
+  let globalRef = null;
+  if (!skipGlobalClaim) {
+    const { committed: globalClaimed, ref: gRef } = await claimOnce(userSentPath);
+    if (!globalClaimed) return { skipped: true };
+    globalRef = gRef;
+  } else {
+    globalRef = db.ref(userSentPath);
+  }
 
   // Also claim per-subscription path for backward compat / cleanup
   const { committed, ref } = await claimOnce(perSubPath);
   if (!committed) {
     // Per-sub already sent — mark global as sent too
-    await markSent(globalRef, { dedupeKey, subKey });
+    if (!skipGlobalClaim) await markSent(globalRef, { dedupeKey, subKey });
     return { skipped: true };
   }
 
   if (isDryRun) {
     console.log(`[DRY_RUN] Would send to user=${userId} sub=${subKey.slice(0, 8)}...`);
     await markSent(ref, { dryRun: true, dedupeKey });
-    await markSent(globalRef, { dryRun: true, dedupeKey, subKey });
+    if (!skipGlobalClaim) await markSent(globalRef, { dryRun: true, dedupeKey, subKey });
     return { ok: true, dryRun: true };
   }
 
@@ -305,7 +310,7 @@ async function sendToSubscription({ userId, subKey, subscription, payload, dedup
         }
       });
       await markSent(ref, { dedupeKey, attempt });
-      await markSent(globalRef, { dedupeKey, subKey, attempt });
+      if (!skipGlobalClaim) await markSent(globalRef, { dedupeKey, subKey, attempt });
       if (attempt > 1) {
         console.log(`[push] Success on attempt ${attempt} for user=${userId}`);
       }
@@ -324,7 +329,7 @@ async function sendToSubscription({ userId, subKey, subscription, payload, dedup
 
       // Non-retryable or max retries reached
       await markFailed(ref, statusCode || null, { message, dedupeKey, attempts: attempt });
-      await markFailed(globalRef, statusCode || null, { message, dedupeKey, subKey, attempts: attempt });
+      if (!skipGlobalClaim) await markFailed(globalRef, statusCode || null, { message, dedupeKey, subKey, attempts: attempt });
       console.warn(`[push] Failed user=${userId} sub=${subKey.slice(0, 8)}... status=${statusCode || 'unknown'} msg=${message.slice(0, 100)}`);
 
       // Cleanup expired subscriptions (410 Gone / 404 Not Found)
@@ -337,6 +342,48 @@ async function sendToSubscription({ userId, subKey, subscription, payload, dedup
       return { ok: false, statusCode, message };
     }
   }
+}
+
+async function sendNotificationToUser(userId, subs, payload, dedupeKey) {
+  let sentAny = false;
+  let skippedAny = false;
+  let failed = 0;
+  let sent = 0;
+
+  // Claim global lock ONCE per user so we don't spam if this function is called concurrently
+  const sentHash = hashKey(dedupeKey);
+  const userSentPath = `users/${userId}/pushSentGlobal/${sentHash}`;
+  const { committed: globalClaimed, ref: globalRef } = await claimOnce(userSentPath);
+  
+  if (!globalClaimed) {
+    return { sentAny: false, skippedAny: true, failed: 0, sent: 0 };
+  }
+
+  // Send to ALL VAPID subscriptions (don't break on first)
+  if (subs && subs.length > 0) {
+    const results = await Promise.allSettled(
+      subs.map(({ subKey, sub }) =>
+        sendToSubscription({ userId, subKey, subscription: sub, payload, dedupeKey, skipGlobalClaim: true })
+      )
+    );
+    for (const r of results) {
+      const v = r.status === 'fulfilled' ? r.value : null;
+      if (!v) { failed += 1; continue; }
+      if (v.ok) { sentAny = true; sent += 1; }
+      else if (v.skipped) { skippedAny = true; }
+      else { failed += 1; }
+    }
+  }
+
+  if (sentAny) {
+    await markSent(globalRef, { dedupeKey, sentAny: true });
+  } else if (!skippedAny) {
+    // If we failed to send to anything and weren't just skipping dupes, 
+    // remove the global claim so we can retry next minute
+    await globalRef.remove().catch(() => {});
+  }
+
+  return { sentAny, skippedAny, failed, sent };
 }
 
 function shouldTrigger(nowMs, targetMs, reminderMinutes) {
@@ -429,19 +476,12 @@ async function runCheck() {
       actions: [{ action: 'view', title: 'View' }]
     };
 
-    await Promise.allSettled(users.flatMap(({ userId, subs }) =>
-      subs.map(({ subKey, sub }) =>
-        sendToSubscription({ userId, subKey, subscription: sub, payload, dedupeKey })
-      )
-    )).then((results) => {
-      for (const r of results) {
-        const v = r.status === 'fulfilled' ? r.value : null;
-        if (!v) { failed += 1; continue; }
-        if (v.skipped) skipped += 1;
-        else if (v.ok) sent += 1;
-        else failed += 1;
-      }
-    });
+    for (const { userId, subs } of users) {
+      const res = await sendNotificationToUser(userId, subs, payload, dedupeKey);
+      if (res.sentAny) sent += res.sent;
+      else if (res.skippedAny) skipped += 1;
+      failed += res.failed;
+    }
   }
 
   // Per-user tasks -> user subscriptions only
@@ -497,19 +537,10 @@ async function runCheck() {
           } : {})
         };
 
-        const results = await Promise.allSettled(
-          subs.map(({ subKey, sub }) =>
-            sendToSubscription({ userId, subKey, subscription: sub, payload, dedupeKey })
-          )
-        );
-
-        for (const r of results) {
-          const v = r.status === 'fulfilled' ? r.value : null;
-          if (!v) { failed += 1; continue; }
-          if (v.skipped) skipped += 1;
-          else if (v.ok) sent += 1;
-          else failed += 1;
-        }
+        const res = await sendNotificationToUser(userId, subs, payload, dedupeKey);
+        if (res.sentAny) sent += res.sent;
+        else if (res.skippedAny) skipped += 1;
+        failed += res.failed;
       }
     }
   }
@@ -543,19 +574,10 @@ async function runCheck() {
         actions: [{ action: 'view', title: 'View' }]
       };
 
-      const results = await Promise.allSettled(
-        subs.map(({ subKey, sub }) =>
-          sendToSubscription({ userId, subKey, subscription: sub, payload, dedupeKey })
-        )
-      );
-
-      for (const r of results) {
-        const v = r.status === 'fulfilled' ? r.value : null;
-        if (!v) { failed += 1; continue; }
-        if (v.skipped) skipped += 1;
-        else if (v.ok) sent += 1;
-        else failed += 1;
-      }
+      const res = await sendNotificationToUser(userId, subs, payload, dedupeKey);
+      if (res.sentAny) sent += res.sent;
+      else if (res.skippedAny) skipped += 1;
+      failed += res.failed;
     }
   }
 
@@ -626,19 +648,10 @@ async function runCheck() {
               remindAgainMinutes: String(REMIND_AGAIN_DELAY_MINUTES)
             } : {})
           };
-          const results = await Promise.allSettled(
-            userEntry.subs.map(({ subKey, sub }) =>
-              sendToSubscription({ userId, subKey, subscription: sub, payload, dedupeKey })
-            )
-          );
-
-          for (const r of results) {
-            const v = r.status === 'fulfilled' ? r.value : null;
-            if (!v) { failed += 1; continue; }
-            if (v.skipped) skipped += 1;
-            else if (v.ok) sent += 1;
-            else failed += 1;
-          }
+          const res = await sendNotificationToUser(userId, userEntry.subs, payload, dedupeKey);
+          if (res.sentAny) sent += res.sent;
+          else if (res.skippedAny) skipped += 1;
+          failed += res.failed;
         }
       }
     }
@@ -778,14 +791,9 @@ async function processRemindAgainQueue(users, nowMs) {
         continue;
       }
 
-      const results = await Promise.allSettled(
-        subs.map(({ subKey, sub }) =>
-          sendToSubscription({ userId, subKey, subscription: sub, payload, dedupeKey })
-        )
-      );
-
-      const anyOk = results.some(r => r.status === 'fulfilled' && r.value?.ok);
-      const anySkipped = results.some(r => r.status === 'fulfilled' && r.value?.skipped);
+      const res = await sendNotificationToUser(userId, subs, payload, dedupeKey);
+      const anyOk = res.sentAny;
+      const anySkipped = res.skippedAny;
 
       if (anyOk || anySkipped) {
         await itemRef.update({ status: 'sent', sentAt: Date.now(), updatedAt: Date.now() }).catch(() => {});
