@@ -877,3 +877,32 @@ async function cleanupOldPushSent() {
 
 
 // ============================================
+module.exports = async (req, res) => {
+    // Security: Check for API key (MANDATORY)
+    const apiKey = req.query.key || req.headers['x-api-key'];
+    const expectedKey = process.env.CRON_API_KEY;
+
+    if (!expectedKey || !apiKey || apiKey !== expectedKey) {
+        return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    try {
+        const result = await runCheck();
+        
+        // Cleanup old pushSent records (run occasionally to prevent DB bloat)
+        try {
+            await cleanupOldPushSent();
+        } catch (e) {
+            console.warn('Cleanup error:', e);
+        }
+        
+        res.status(200).json({
+            ok: true,
+            timestamp: new Date().toISOString(),
+            ...result
+        });
+    } catch (err) {
+        console.error('Cron error:', err);
+        res.status(500).json({ error: err.message });
+    }
+};
