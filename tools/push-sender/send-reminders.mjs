@@ -24,6 +24,14 @@ const {
   LOOP_SECONDS
 } = process.env;
 
+// Optional: URL of the remind-again API endpoint (hosted on Vercel).
+// Set REMIND_AGAIN_API_URL GitHub secret to enable the "Remind me in 10 min" button.
+const REMIND_AGAIN_API_URL = (process.env.REMIND_AGAIN_API_URL || '').trim();
+const REMIND_AGAIN_DELAY_MINUTES = Number.parseInt(process.env.REMIND_AGAIN_DELAY_MINUTES || '10', 10) || 10;
+const REMIND_AGAIN_TOKEN_TTL_MS = 30 * 60 * 1000;        // 30 min (token lifetime)
+const REMIND_AGAIN_QUEUE_TTL_MS = 24 * 60 * 60 * 1000;   // 24 h  (queue item lifetime)
+const REMIND_AGAIN_SENDING_STALE_MS = 3 * 60 * 1000;     // 3 min (recover orphaned 'sending' items)
+
 if (!FIREBASE_DATABASE_URL) throw new Error('Missing env FIREBASE_DATABASE_URL');
 if (!GOOGLE_APPLICATION_CREDENTIALS) throw new Error('Missing env GOOGLE_APPLICATION_CREDENTIALS');
 if (!VAPID_SUBJECT) throw new Error('Missing env VAPID_SUBJECT');
@@ -147,6 +155,24 @@ function formatReminderOffset(minutes) {
   return m === 1 ? '1 minute' : `${m} minutes`;
 }
 
+function normalizeTaskReminders(reminders, legacyReminder = null) {
+  const MAX_REMINDERS = 3;
+  const MAX_MINUTES = 10080;
+  const source = [];
+  if (Array.isArray(reminders)) source.push(...reminders);
+  if (legacyReminder !== null && legacyReminder !== undefined && legacyReminder !== '') source.push(legacyReminder);
+
+  const unique = [];
+  source.forEach((value) => {
+    const minutes = Number.parseInt(value, 10);
+    if (!Number.isFinite(minutes) || minutes < 1 || minutes > MAX_MINUTES) return;
+    if (!unique.includes(minutes)) unique.push(minutes);
+  });
+
+  unique.sort((a, b) => a - b);
+  return unique.slice(0, MAX_REMINDERS);
+}
+
 async function claimOnce(path) {
   const ref = db.ref(path);
   const now = Date.now();
@@ -195,6 +221,39 @@ async function markFailed(ref, statusCode, extra = {}) {
   const isPermanent = statusCode === 404 || statusCode === 410;
   const status = isPermanent ? 'failed' : 'transient';
   await ref.set({ status, ts: Date.now(), ...extra });
+}
+
+// ============================================
+// Remind-Again helpers
+// ============================================
+
+/**
+ * Write a one-time token to Firebase and return the raw token string.
+ * Returns null if REMIND_AGAIN_API_URL is not configured.
+ */
+async function issueRemindAgainToken(userId, context = {}) {
+  if (!userId || !REMIND_AGAIN_API_URL) return null;
+  const token = crypto.randomBytes(24).toString('base64url');
+  const tokenHash = crypto.createHash('sha256').update(`remind-again:${token}`).digest('base64url');
+  const now = Date.now();
+  await db.ref(`users/${userId}/remindAgainTokens/${tokenHash}`).set({
+    status: 'pending',
+    userId,
+    createdAt: now,
+    expiresAt: now + REMIND_AGAIN_TOKEN_TTL_MS,
+    ...context
+  });
+  return token;
+}
+
+/** Build notification action list, optionally including the snooze button. */
+function buildTaskActions(includeRemindAgain) {
+  const actions = [{ action: 'view', title: 'View' }];
+  if (includeRemindAgain) {
+    actions.push({ action: 'remind-again-10', title: 'Remind me again in 10 minutes' });
+  }
+  actions.push({ action: 'complete', title: 'Done' });
+  return actions;
 }
 
 function buildUrl(pathname = '/', params = {}) {
@@ -390,41 +449,67 @@ async function runCheck() {
     const tasks = await loadTasksForUser(userId);
     for (const task of tasks) {
       if (task.completed) continue;
-      const reminderMinutes = Number.parseInt(task.reminder || '0', 10) || 0;
+      const reminderMinutesList = normalizeTaskReminders(task.reminders, task.reminder);
+      if (!reminderMinutesList.length) continue;
       const dueMs = parseIsoMillis(task.dueDate);
-      if (!shouldTrigger(nowMs, dueMs, reminderMinutes)) continue;
 
-      const offset = formatReminderOffset(reminderMinutes);
-      // Normalize dueDate to ISO to match client-side dedupe key format
-      const dueDateIso = new Date(task.dueDate).toISOString();
-      const dedupeKey = `task|${userId}|${task.id}|${dueDateIso}|${reminderMinutes}`;
-      const payload = {
-        title: `Task Reminder 📋`,
-        body: `${task.title || 'Task'} is due in ${offset}`,
-        tag: `task-${task.id}`,
-        dedupeKey,
-        url: buildUrl('/', {}),
-        completeUrl: buildUrl('/', { completeTask: task.id, user: userId }),
-        requireInteraction: true,
-        renotify: true,
-        actions: [
-          { action: 'view', title: 'View' },
-          { action: 'complete', title: 'Done' }
-        ]
-      };
+      for (const reminderMinutes of reminderMinutesList) {
+        if (!shouldTrigger(nowMs, dueMs, reminderMinutes)) continue;
 
-      const results = await Promise.allSettled(
-        subs.map(({ subKey, sub }) =>
-          sendToSubscription({ userId, subKey, subscription: sub, payload, dedupeKey })
-        )
-      );
+        const offset = formatReminderOffset(reminderMinutes);
+        // Normalize dueDate to ISO to match client-side dedupe key format
+        const dueDateIso = new Date(task.dueDate).toISOString();
+        const dedupeKey = `task|${userId}|${task.id}|${dueDateIso}|${reminderMinutes}`;
 
-      for (const r of results) {
-        const v = r.status === 'fulfilled' ? r.value : null;
-        if (!v) { failed += 1; continue; }
-        if (v.skipped) skipped += 1;
-        else if (v.ok) sent += 1;
-        else failed += 1;
+        // Issue a one-time remind-again token (no-op if REMIND_AGAIN_API_URL not set)
+        let remindAgainToken = null;
+        try {
+          remindAgainToken = await issueRemindAgainToken(userId, {
+            type: 'task',
+            taskId: task.id,
+            occurrence: dueDateIso,
+            baseDedupeKey: dedupeKey,
+            baseUrl: APP_URL.toString(),
+            title: task.title || 'Task'
+          });
+        } catch (e) {
+          console.warn('[remind-again] Failed to issue token for task:', e.message);
+        }
+
+        const payload = {
+          title: 'Task Reminder 📋',
+          body: `${task.title || 'Task'} is due in ${offset}`,
+          tag: `task-${task.id}-${reminderMinutes}`,
+          dedupeKey,
+          url: buildUrl('/', {}),
+          completeUrl: buildUrl('/', { completeTask: task.id, user: userId }),
+          requireInteraction: true,
+          renotify: true,
+          actions: buildTaskActions(!!remindAgainToken),
+          ...(remindAgainToken ? {
+            remindAgainToken,
+            remindAgainEndpoint: REMIND_AGAIN_API_URL,
+            remindAgainUserId: userId,
+            remindAgainTaskId: task.id,
+            remindAgainSubjectId: '',
+            remindAgainOccurrence: dueDateIso,
+            remindAgainMinutes: String(REMIND_AGAIN_DELAY_MINUTES)
+          } : {})
+        };
+
+        const results = await Promise.allSettled(
+          subs.map(({ subKey, sub }) =>
+            sendToSubscription({ userId, subKey, subscription: sub, payload, dedupeKey })
+          )
+        );
+
+        for (const r of results) {
+          const v = r.status === 'fulfilled' ? r.value : null;
+          if (!v) { failed += 1; continue; }
+          if (v.skipped) skipped += 1;
+          else if (v.ok) sent += 1;
+          else failed += 1;
+        }
       }
     }
   }
@@ -483,56 +568,239 @@ async function runCheck() {
 
     for (const [taskId, task] of Object.entries(subjectTasks)) {
       if (!task || task.completed) continue;
-      const reminderMinutes = Number.parseInt(task.reminder || '0', 10) || 0;
+      const reminderMinutesList = normalizeTaskReminders(task.reminders, task.reminder);
+      if (!reminderMinutesList.length) continue;
       const dueMs = parseIsoMillis(task.dueDate);
-      if (!shouldTrigger(nowMs, dueMs, reminderMinutes)) continue;
-
-      const offset = formatReminderOffset(reminderMinutes);
       const sharedDueDateIso = new Date(task.dueDate).toISOString();
-      // Send to each user who has active access to this shared subject
-      for (const userId of allUsers) {
-        // Verify user still has access (owner always has access, members must be active)
-        if (userId !== owner) {
-          const memberEntry = members[userId];
-          // Skip removed/inactive members
-          if (!memberEntry || memberEntry === false || memberEntry.removed) continue;
-        }
-        const userEntry = users.find(u => u.userId === userId);
-        if (!userEntry) continue;
 
-        const dedupeKey = `shared-task|${userId}|${subject.id}|${taskId}|${sharedDueDateIso}|${reminderMinutes}`;
-        const payload = {
-          title: `Shared Task Reminder 📋`,
-          body: `${task.title || 'Task'} is due in ${offset}`,
-          tag: `shared-task-${taskId}`,
-          dedupeKey,
-          url: buildUrl('/', {}),
-          completeUrl: buildUrl('/', { completeTask: taskId, user: userId, sharedSubject: subject.id }),
-          requireInteraction: true,
-          renotify: true,
-          actions: [
-            { action: 'view', title: 'View' },
-            { action: 'complete', title: 'Done' }
-          ]
-        };
-        const results = await Promise.allSettled(
-          userEntry.subs.map(({ subKey, sub }) =>
-            sendToSubscription({ userId, subKey, subscription: sub, payload, dedupeKey })
-          )
-        );
+      for (const reminderMinutes of reminderMinutesList) {
+        if (!shouldTrigger(nowMs, dueMs, reminderMinutes)) continue;
 
-        for (const r of results) {
-          const v = r.status === 'fulfilled' ? r.value : null;
-          if (!v) { failed += 1; continue; }
-          if (v.skipped) skipped += 1;
-          else if (v.ok) sent += 1;
-          else failed += 1;
+        const offset = formatReminderOffset(reminderMinutes);
+        // Send to each user who has active access to this shared subject
+        for (const userId of allUsers) {
+          // Verify user still has access (owner always has access, members must be active)
+          if (userId !== owner) {
+            const memberEntry = members[userId];
+            // Skip removed/inactive members
+            if (!memberEntry || memberEntry === false || memberEntry.removed) continue;
+          }
+          const userEntry = users.find(u => u.userId === userId);
+          if (!userEntry) continue;
+
+          const dedupeKey = `shared-task|${userId}|${subject.id}|${taskId}|${sharedDueDateIso}|${reminderMinutes}`;
+
+          // Issue a one-time remind-again token
+          let remindAgainToken = null;
+          try {
+            remindAgainToken = await issueRemindAgainToken(userId, {
+              type: 'shared-task',
+              taskId,
+              subjectId: subject.id,
+              occurrence: sharedDueDateIso,
+              baseDedupeKey: dedupeKey,
+              baseUrl: APP_URL.toString(),
+              title: task.title || 'Task'
+            });
+          } catch (e) {
+            console.warn('[remind-again] Failed to issue token for shared task:', e.message);
+          }
+
+          const payload = {
+            title: 'Shared Task Reminder 📋',
+            body: `${task.title || 'Task'} is due in ${offset}`,
+            tag: `shared-task-${taskId}-${reminderMinutes}`,
+            dedupeKey,
+            url: buildUrl('/', {}),
+            completeUrl: buildUrl('/', { completeTask: taskId, user: userId, sharedSubject: subject.id }),
+            requireInteraction: true,
+            renotify: true,
+            actions: buildTaskActions(!!remindAgainToken),
+            ...(remindAgainToken ? {
+              remindAgainToken,
+              remindAgainEndpoint: REMIND_AGAIN_API_URL,
+              remindAgainUserId: userId,
+              remindAgainTaskId: taskId,
+              remindAgainSubjectId: subject.id,
+              remindAgainOccurrence: sharedDueDateIso,
+              remindAgainMinutes: String(REMIND_AGAIN_DELAY_MINUTES)
+            } : {})
+          };
+          const results = await Promise.allSettled(
+            userEntry.subs.map(({ subKey, sub }) =>
+              sendToSubscription({ userId, subKey, subscription: sub, payload, dedupeKey })
+            )
+          );
+
+          for (const r of results) {
+            const v = r.status === 'fulfilled' ? r.value : null;
+            if (!v) { failed += 1; continue; }
+            if (v.skipped) skipped += 1;
+            else if (v.ok) sent += 1;
+            else failed += 1;
+          }
         }
       }
     }
   }
 
+  // Process remind-again queue (snoozed reminders from previous notifications)
+  const raResult = await processRemindAgainQueue(users, nowMs);
+  sent += raResult.sent;
+  skipped += raResult.skipped;
+  failed += raResult.failed;
+
   console.log(`[${new Date().toISOString()}] Result: Sent ${sent}, Skipped ${skipped}, Failed ${failed}`);
+}
+
+// ============================================
+// Remind-Again Queue Processor
+// Reads Firebase remindAgainQueue written by api/remind-again.js
+// and sends snoozed notifications via VAPID web-push.
+// ============================================
+async function processRemindAgainQueue(users, nowMs) {
+  let sent = 0, skipped = 0, failed = 0;
+
+  for (const { userId, subs } of users) {
+    const queueSnap = await db.ref(`users/${userId}/remindAgainQueue`).once('value');
+    const queueItems = queueSnap.val() || {};
+
+    // Recover any items stuck in 'sending' from a crashed prior run
+    for (const [queueId, item] of Object.entries(queueItems)) {
+      if (!item || item.status !== 'sending') continue;
+      const updatedAt = Number(item.updatedAt) || 0;
+      if (!updatedAt || (nowMs - updatedAt) <= REMIND_AGAIN_SENDING_STALE_MS) continue;
+      await db.ref(`users/${userId}/remindAgainQueue/${queueId}`).transaction((cur) => {
+        if (!cur || cur.status !== 'sending') return;
+        if ((nowMs - (Number(cur.updatedAt) || 0)) <= REMIND_AGAIN_SENDING_STALE_MS) return;
+        return { ...cur, status: 'pending', updatedAt: nowMs };
+      }).catch(() => {});
+      queueItems[queueId] = { ...item, status: 'pending', updatedAt: nowMs };
+    }
+
+    for (const [queueId, item] of Object.entries(queueItems)) {
+      if (!item || item.status !== 'pending') continue;
+
+      const dueAt = Number(item.dueAt) || 0;
+      if (dueAt > nowMs) continue;
+
+      const expiresAt = Number(item.expiresAt) || 0;
+      const itemRef = db.ref(`users/${userId}/remindAgainQueue/${queueId}`);
+
+      if (expiresAt && expiresAt < nowMs) {
+        await itemRef.update({ status: 'expired', updatedAt: nowMs }).catch(() => {});
+        skipped++;
+        continue;
+      }
+
+      // Atomic claim — prevents double-send across overlapping workflow runs
+      const claim = await itemRef.transaction((cur) => {
+        if (!cur || cur.status !== 'pending') return;
+        if ((Number(cur.dueAt) || 0) > nowMs) return;
+        const curExpires = Number(cur.expiresAt) || 0;
+        if (curExpires && curExpires < nowMs) return { ...cur, status: 'expired', updatedAt: nowMs };
+        return { ...cur, status: 'sending', updatedAt: nowMs };
+      });
+      if (!claim.committed) continue;
+      const currentItem = claim.snapshot.val() || {};
+      if (currentItem.status !== 'sending') { skipped++; continue; }
+
+      // Load the task to verify it's still active
+      let task = null;
+      try {
+        if (currentItem.type === 'shared-task' && currentItem.subjectId && currentItem.taskId) {
+          const snap = await db.ref(`sharedSubjects/${currentItem.subjectId}/tasks/${currentItem.taskId}`).once('value');
+          task = snap.val();
+        } else if (currentItem.taskId) {
+          const snap = await db.ref(`users/${userId}/tasks/${currentItem.taskId}`).once('value');
+          task = snap.val();
+        }
+      } catch (e) {
+        console.warn('[remind-again] Failed to load task:', e.message);
+      }
+
+      if (!task || (task.completed && !task.recurrence)) {
+        await itemRef.update({ status: 'cancelled', updatedAt: Date.now(), reason: 'task_not_active' }).catch(() => {});
+        skipped++;
+        continue;
+      }
+
+      const taskTitle = task.title || currentItem.title || 'Task';
+      const occurrenceKey = currentItem.occurrence || (task.dueDate ? new Date(task.dueDate).toISOString() : '');
+      const dedupeBase = currentItem.baseDedupeKey || `remind-again|${userId}|${currentItem.taskId || ''}|${occurrenceKey}`;
+      const dedupeKey = `${dedupeBase}|again|${queueId}`;
+
+      // Issue a new token so the user can snooze the snoozed reminder too
+      let remindAgainToken = null;
+      try {
+        remindAgainToken = await issueRemindAgainToken(userId, {
+          type: currentItem.type || 'task',
+          taskId: currentItem.taskId,
+          subjectId: currentItem.subjectId || '',
+          occurrence: occurrenceKey,
+          baseDedupeKey: dedupeKey,
+          baseUrl: currentItem.baseUrl || APP_URL.toString(),
+          title: taskTitle
+        });
+      } catch (e) {
+        console.warn('[remind-again] Failed to issue follow-up token:', e.message);
+      }
+
+      const baseUrl = currentItem.baseUrl || APP_URL.toString();
+      const completeParams = new URLSearchParams({ completeTask: String(currentItem.taskId || ''), user: userId });
+      if (currentItem.subjectId) completeParams.set('sharedSubject', String(currentItem.subjectId));
+      if (occurrenceKey) completeParams.set('occurrence', occurrenceKey);
+
+      const payload = {
+        title: currentItem.type === 'shared-task' ? 'Shared Task Reminder 📋' : 'Task Reminder 📋',
+        body: `${taskTitle} — snoozed reminder`,
+        tag: `remind-again-${currentItem.taskId || queueId}`,
+        dedupeKey,
+        url: baseUrl,
+        completeUrl: `${new URL('?', APP_URL).href.replace('?', '')}?${completeParams.toString()}`,
+        requireInteraction: true,
+        renotify: true,
+        actions: buildTaskActions(!!remindAgainToken),
+        ...(remindAgainToken ? {
+          remindAgainToken,
+          remindAgainEndpoint: REMIND_AGAIN_API_URL,
+          remindAgainUserId: userId,
+          remindAgainTaskId: String(currentItem.taskId || ''),
+          remindAgainSubjectId: String(currentItem.subjectId || ''),
+          remindAgainOccurrence: occurrenceKey,
+          remindAgainMinutes: String(REMIND_AGAIN_DELAY_MINUTES)
+        } : {})
+      };
+
+      if (subs.length === 0) {
+        await itemRef.update({ status: 'failed', updatedAt: Date.now(), reason: 'no_subscriptions' }).catch(() => {});
+        failed++;
+        continue;
+      }
+
+      const results = await Promise.allSettled(
+        subs.map(({ subKey, sub }) =>
+          sendToSubscription({ userId, subKey, subscription: sub, payload, dedupeKey })
+        )
+      );
+
+      const anyOk = results.some(r => r.status === 'fulfilled' && r.value?.ok);
+      const anySkipped = results.some(r => r.status === 'fulfilled' && r.value?.skipped);
+
+      if (anyOk || anySkipped) {
+        await itemRef.update({ status: 'sent', sentAt: Date.now(), updatedAt: Date.now() }).catch(() => {});
+        if (anyOk) sent++; else skipped++;
+      } else {
+        await itemRef.update({ status: 'failed', updatedAt: Date.now(), reason: 'send_failed' }).catch(() => {});
+        failed++;
+      }
+    }
+  }
+
+  if (sent + failed > 0) {
+    console.log(`[remind-again] Queue: Sent ${sent}, Skipped ${skipped}, Failed ${failed}`);
+  }
+  return { sent, skipped, failed };
 }
 
 async function cleanupOldPushSent() {
