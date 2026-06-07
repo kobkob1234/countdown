@@ -466,8 +466,8 @@ async function runCheck() {
     const offset = formatReminderOffset(reminderMinutes);
     const dedupeKey = `event|${evt.id}|${evt.date}|${reminderMinutes}`;
     const payload = {
-      title: 'Event Reminder ⏰',
-      body: `${evt.name || 'Event'} starts in ${offset}`,
+      title: evt.name || 'Event',
+      body: `Event reminder: Starts in ${offset}`,
       tag: `event-${evt.id}`,
       dedupeKey,
       url: buildUrl('/', {}),
@@ -517,8 +517,8 @@ async function runCheck() {
         }
 
         const payload = {
-          title: 'Task Reminder 📋',
-          body: `${task.title || 'Task'} is due in ${offset}`,
+          title: task.title || 'Task',
+          body: (task.recurrence ? 'Recurring task reminder: ' : 'Task reminder: ') + `Due in ${offset}`,
           tag: `task-${task.id}-${reminderMinutes}`,
           dedupeKey,
           url: buildUrl('/', {}),
@@ -557,11 +557,10 @@ async function runCheck() {
 
       const blockKey = block.id || hashKey(`${block.title || ''}|${block.date || ''}|${block.start || ''}`);
       const whenStr = formatPlannerWhen(startMs);
-      // Fix #12: Consistent English title like other notifications
-      const title = 'Planner Reminder 📅';
+      const title = block.title || 'פעילות';
       const body = whenStr
-        ? `${block.title || 'פעילות'} • ${whenStr}`
-        : `${block.title || 'פעילות'} מתחיל בקרוב`;
+        ? `Planner reminder: ${whenStr}`
+        : `Planner reminder: מתחיל בקרוב`;
       const dedupeKey = `planner|${userId}|${blockKey}|${block.startAt || block.date || ''}|${block.start || ''}|${reminderMinutes}`;
       const payload = {
         title,
@@ -629,8 +628,8 @@ async function runCheck() {
           }
 
           const payload = {
-            title: 'Shared Task Reminder 📋',
-            body: `${task.title || 'Task'} is due in ${offset}`,
+            title: task.title || 'Task',
+            body: `Shared task reminder: Due in ${offset}`,
             tag: `shared-task-${taskId}-${reminderMinutes}`,
             dedupeKey,
             url: buildUrl('/', {}),
@@ -765,8 +764,8 @@ async function processRemindAgainQueue(users, nowMs) {
       if (occurrenceKey) completeParams.set('occurrence', occurrenceKey);
 
       const payload = {
-        title: currentItem.type === 'shared-task' ? 'Shared Task Reminder 📋' : 'Task Reminder 📋',
-        body: `${taskTitle} — snoozed reminder`,
+        title: taskTitle,
+        body: `Snoozed reminder: Due in 10 minutes`,
         tag: `remind-again-${currentItem.taskId || queueId}`,
         dedupeKey,
         url: baseUrl,
