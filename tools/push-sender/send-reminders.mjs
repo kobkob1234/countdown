@@ -138,6 +138,83 @@ function isImportedEvent(evt) {
   return typeof evt.notes === 'string' && evt.notes.includes('[Imported');
 }
 
+const RECURRENCE_UNIT_LABELS = {
+  days: true, weeks: true, months: true, years: true
+};
+
+function parseRecurrenceValue(value) {
+  if (!value) return { type: 'none' };
+  if (typeof value === 'string') {
+    if (value === 'none') return { type: 'none' };
+    if (value.startsWith('custom:')) {
+      const parts = value.split(':');
+      const interval = Number.parseInt(parts[1], 10);
+      const unit = parts[2];
+      if (Number.isFinite(interval) && interval > 0 && RECURRENCE_UNIT_LABELS[unit]) {
+        return { type: 'custom', interval, unit };
+      }
+      return { type: 'none' };
+    }
+    return { type: value };
+  }
+  if (typeof value === 'object' && value.type === 'custom') {
+    const interval = Number.parseInt(value.interval, 10);
+    const unit = value.unit;
+    if (Number.isFinite(interval) && interval > 0 && RECURRENCE_UNIT_LABELS[unit]) {
+      return { type: 'custom', interval, unit };
+    }
+  }
+  return { type: 'none' };
+}
+
+function getOccurrencesToCheck(baseIso, recurrence, nowMs, maxReminderMs) {
+  const parsedRecurrence = parseRecurrenceValue(recurrence);
+  const type = parsedRecurrence.type || 'none';
+  if (type === 'none') return [new Date(baseIso)];
+
+  let base = baseIso ? new Date(baseIso) : new Date();
+  if (Number.isNaN(base.getTime())) return [];
+
+  const advance = (date) => {
+    const next = new Date(date);
+    switch (type) {
+      case 'daily': next.setDate(next.getDate() + 1); break;
+      case 'weekdays':
+        do { next.setDate(next.getDate() + 1); } while (next.getDay() === 5 || next.getDay() === 6);
+        break;
+      case 'weekly': next.setDate(next.getDate() + 7); break;
+      case 'biweekly': next.setDate(next.getDate() + 14); break;
+      case 'monthly': next.setMonth(next.getMonth() + 1); break;
+      case 'yearly': next.setFullYear(next.getFullYear() + 1); break;
+      case 'custom':
+        if (!parsedRecurrence.interval || !parsedRecurrence.unit) return null;
+        if (parsedRecurrence.unit === 'days') next.setDate(next.getDate() + parsedRecurrence.interval);
+        else if (parsedRecurrence.unit === 'weeks') next.setDate(next.getDate() + (parsedRecurrence.interval * 7));
+        else if (parsedRecurrence.unit === 'months') next.setMonth(next.getMonth() + parsedRecurrence.interval);
+        else if (parsedRecurrence.unit === 'years') next.setFullYear(next.getFullYear() + parsedRecurrence.interval);
+        else return null;
+        break;
+      default: return null;
+    }
+    return next;
+  };
+
+  const maxFutureTime = nowMs + maxReminderMs + 2 * WINDOW_MS;
+  const occurrences = [base];
+  
+  let next = advance(base);
+  let iterations = 0;
+  
+  while (next && next.getTime() <= maxFutureTime && iterations < 10000) {
+    occurrences.push(next);
+    next = advance(next);
+    iterations++;
+  }
+  
+  return occurrences;
+}
+
+
 function formatReminderOffset(minutes) {
   const m = Number(minutes) || 0;
   if (m >= 10080) {
@@ -488,18 +565,26 @@ async function runCheck() {
   for (const { userId, subs } of users) {
     const tasks = await loadTasksForUser(userId);
     for (const task of tasks) {
-      if (task.completed) continue;
+      if (task.completed && !task.recurrence) continue;
       const reminderMinutesList = normalizeTaskReminders(task.reminders, task.reminder);
       if (!reminderMinutesList.length) continue;
-      const dueMs = parseIsoMillis(task.dueDate);
+      
+      const maxReminderMs = Math.max(...reminderMinutesList) * 60000;
+      const occurrencesToCheck = getOccurrencesToCheck(task.dueDate, task.recurrence, nowMs, maxReminderMs);
 
-      for (const reminderMinutes of reminderMinutesList) {
-        if (!shouldTrigger(nowMs, dueMs, reminderMinutes)) continue;
+      for (const occurrenceDate of occurrencesToCheck) {
+        const dueMs = occurrenceDate.getTime();
+        const dueDateIso = occurrenceDate.toISOString();
+        
+        if (task.completedOccurrences && task.completedOccurrences.includes(dueDateIso)) {
+           continue;
+        }
 
-        const offset = formatReminderOffset(reminderMinutes);
-        // Normalize dueDate to ISO to match client-side dedupe key format
-        const dueDateIso = new Date(task.dueDate).toISOString();
-        const dedupeKey = `task|${userId}|${task.id}|${dueDateIso}|${reminderMinutes}`;
+        for (const reminderMinutes of reminderMinutesList) {
+          if (!shouldTrigger(nowMs, dueMs, reminderMinutes)) continue;
+
+          const offset = formatReminderOffset(reminderMinutes);
+          const dedupeKey = `task|${userId}|${task.id}|${dueDateIso}|${reminderMinutes}`;
 
         // Issue a one-time remind-again token (no-op if REMIND_AGAIN_API_URL not set)
         let remindAgainToken = null;
@@ -541,9 +626,10 @@ async function runCheck() {
         if (res.sentAny) sent += res.sent;
         else if (res.skippedAny) skipped += 1;
         failed += res.failed;
-      }
-    }
-  }
+        } // end reminderMinutes loop
+      } // end occurrencesToCheck loop
+    } // end tasks loop
+  } // end users loop
 
   // Per-user planner blocks -> user subscriptions only
   for (const { userId, subs } of users) {
@@ -588,17 +674,26 @@ async function runCheck() {
     const allUsers = [owner, ...Object.keys(members)].filter(Boolean);
 
     for (const [taskId, task] of Object.entries(subjectTasks)) {
-      if (!task || task.completed) continue;
+      if (!task || (task.completed && !task.recurrence)) continue;
       const reminderMinutesList = normalizeTaskReminders(task.reminders, task.reminder);
       if (!reminderMinutesList.length) continue;
-      const dueMs = parseIsoMillis(task.dueDate);
-      const sharedDueDateIso = new Date(task.dueDate).toISOString();
+      
+      const maxReminderMs = Math.max(...reminderMinutesList) * 60000;
+      const occurrencesToCheck = getOccurrencesToCheck(task.dueDate, task.recurrence, nowMs, maxReminderMs);
 
-      for (const reminderMinutes of reminderMinutesList) {
-        if (!shouldTrigger(nowMs, dueMs, reminderMinutes)) continue;
+      for (const occurrenceDate of occurrencesToCheck) {
+        const dueMs = occurrenceDate.getTime();
+        const sharedDueDateIso = occurrenceDate.toISOString();
+        
+        if (task.completedOccurrences && task.completedOccurrences.includes(sharedDueDateIso)) {
+           continue;
+        }
 
-        const offset = formatReminderOffset(reminderMinutes);
-        // Send to each user who has active access to this shared subject
+        for (const reminderMinutes of reminderMinutesList) {
+          if (!shouldTrigger(nowMs, dueMs, reminderMinutes)) continue;
+
+          const offset = formatReminderOffset(reminderMinutes);
+          // Send to each user who has active access to this shared subject
         for (const userId of allUsers) {
           // Verify user still has access (owner always has access, members must be active)
           if (userId !== owner) {
@@ -651,9 +746,10 @@ async function runCheck() {
           if (res.sentAny) sent += res.sent;
           else if (res.skippedAny) skipped += 1;
           failed += res.failed;
-        }
-      }
-    }
+          } // end allUsers loop
+        } // end reminderMinutes loop
+      } // end occurrencesToCheck loop
+    } // end subjectTasks loop
   }
 
   // Process remind-again queue (snoozed reminders from previous notifications)
