@@ -17,18 +17,13 @@ const webpush = require('web-push');
 const crypto = require('crypto');
 const { setTimeout: sleep } = require('timers/promises');
 
-const {
-  FIREBASE_DATABASE_URL,
-  GOOGLE_APPLICATION_CREDENTIALS,
-  VAPID_SUBJECT,
-  VAPID_PUBLIC_KEY,
-  VAPID_PRIVATE_KEY,
-  PUSH_APP_URL,
-  PUSH_TARGET_USER,
-  TRIGGER_WINDOW_MS,
-  DRY_RUN,
-  LOOP_SECONDS
-} = process.env;
+const FIREBASE_DATABASE_URL = process.env.FIREBASE_DATABASE_URL || 'https://countdown-463de-default-rtdb.firebaseio.com';
+const VAPID_SUBJECT = process.env.VAPID_SUBJECT || 'mailto:kobeamit1@gmail.com';
+const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY || 'BL-m24SrurFUNIQxH7S77r1yYShIiCibpw2CbtK8FwYATHzYiR0kQGKzWilEGRHyRK2jxqRPUR_RJoAVUgrO-24';
+const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY || '';
+const PUSH_APP_URL = process.env.APP_URL || 'https://kobkob1234.github.io/countdown/';
+const TRIGGER_WINDOW_MS = process.env.TRIGGER_WINDOW_MS;
+const DRY_RUN = process.env.DRY_RUN;
 
 // Optional: URL of the remind-again API endpoint (hosted on Vercel).
 // Set REMIND_AGAIN_API_URL GitHub secret to enable the "Remind me in 10 min" button.
@@ -38,11 +33,9 @@ const REMIND_AGAIN_TOKEN_TTL_MS = 30 * 60 * 1000;        // 30 min (token lifeti
 const REMIND_AGAIN_QUEUE_TTL_MS = 24 * 60 * 60 * 1000;   // 24 h  (queue item lifetime)
 const REMIND_AGAIN_SENDING_STALE_MS = 3 * 60 * 1000;     // 3 min (recover orphaned 'sending' items)
 
-if (!FIREBASE_DATABASE_URL) throw new Error('Missing env FIREBASE_DATABASE_URL');
-if (!GOOGLE_APPLICATION_CREDENTIALS) throw new Error('Missing env GOOGLE_APPLICATION_CREDENTIALS');
-if (!VAPID_SUBJECT) throw new Error('Missing env VAPID_SUBJECT');
-if (!VAPID_PUBLIC_KEY) throw new Error('Missing env VAPID_PUBLIC_KEY');
-if (!VAPID_PRIVATE_KEY) throw new Error('Missing env VAPID_PRIVATE_KEY');
+if (!VAPID_PRIVATE_KEY) {
+  console.warn('[VAPID] No private key configured - cannot send');
+}
 
 function normalizeAppUrl(input) {
   const u = new URL(input || 'http://localhost/');
@@ -56,14 +49,18 @@ const APP_URL = normalizeAppUrl(PUSH_APP_URL);
 const WINDOW_MS = Number.parseInt(TRIGGER_WINDOW_MS || '90000', 10); // default: 90s late-allowed window
 const isDryRun = String(DRY_RUN || '').toLowerCase() === 'true';
 
-admin.initializeApp({
-  credential: admin.credential.applicationDefault(),
-  databaseURL: FIREBASE_DATABASE_URL
-});
-
-webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
-
+if (!admin.apps.length) {
+  const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT || '{}');
+  admin.initializeApp({
+    credential: admin.credential.cert(serviceAccount),
+    databaseURL: FIREBASE_DATABASE_URL
+  });
+}
 const db = admin.database();
+
+if (VAPID_PRIVATE_KEY) {
+  webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
+}
 
 function isValidSubscription(sub) {
   return sub && typeof sub.endpoint === 'string' && sub.keys && sub.keys.p256dh && sub.keys.auth;
