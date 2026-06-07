@@ -49,17 +49,35 @@ const APP_URL = normalizeAppUrl(PUSH_APP_URL);
 const WINDOW_MS = Number.parseInt(TRIGGER_WINDOW_MS || '90000', 10); // default: 90s late-allowed window
 const isDryRun = String(DRY_RUN || '').toLowerCase() === 'true';
 
-if (!admin.apps.length) {
-  const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT || '{}');
-  admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount),
-    databaseURL: FIREBASE_DATABASE_URL
-  });
-}
-const db = admin.database();
+let db;
+function ensureInit() {
+  if (!admin.apps.length) {
+    const serviceAccountStr = process.env.FIREBASE_SERVICE_ACCOUNT || '{}';
+    let serviceAccount;
+    try {
+      serviceAccount = JSON.parse(serviceAccountStr);
+    } catch (e) {
+      throw new Error('Failed to parse FIREBASE_SERVICE_ACCOUNT: ' + e.message);
+    }
+    
+    if (Object.keys(serviceAccount).length === 0) {
+      // Fallback to applicationDefault if no service account is provided
+      admin.initializeApp({
+        credential: admin.credential.applicationDefault(),
+        databaseURL: FIREBASE_DATABASE_URL
+      });
+    } else {
+      admin.initializeApp({
+        credential: admin.credential.cert(serviceAccount),
+        databaseURL: FIREBASE_DATABASE_URL
+      });
+    }
+  }
+  if (!db) db = admin.database();
 
-if (VAPID_PRIVATE_KEY) {
-  webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
+  if (VAPID_PRIVATE_KEY) {
+    webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
+  }
 }
 
 function isValidSubscription(sub) {
@@ -443,6 +461,7 @@ async function loadSharedEvents() {
 }
 
 async function runCheck() {
+    ensureInit();
   const nowMs = Date.now();
   console.log(`[${new Date(nowMs).toISOString()}] Checking...`);
 
