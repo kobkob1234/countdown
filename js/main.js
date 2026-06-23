@@ -4398,6 +4398,8 @@ function buildLocalSnoozeData(kind, { refId = '', title = '', body = '', minutes
   return {
     localRemindAgain: true,
     remindKind: kind === 'event' ? 'event' : 'task',
+    // The SW needs the user id to record the snooze in Firebase (no app reopen).
+    remindAgainUserId: String(currentUser || ''),
     taskId: kind === 'event' ? '' : String(refId || ''),
     eventId: kind === 'event' ? String(refId || '') : '',
     occurrence: String(occurrence || ''),

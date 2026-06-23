@@ -1,5 +1,5 @@
 // Bump cache version when precache list or fetch strategy changes
-const CACHE_NAME = 'countdown-push-v67';
+const CACHE_NAME = 'countdown-push-v68';
 const NOTIFY_DEDUPE_CACHE = 'countdown-notify-dedupe-v1';
 const NOTIFY_DEDUPE_TTL_MS = 1000 * 60 * 60 * 24 * 7;
 const PENDING_SUB_DB = 'countdown-pending-sub';
@@ -8,6 +8,10 @@ const PENDING_SNOOZE_DB = 'countdown-pending-snooze';
 const PENDING_SNOOZE_STORE = 'snoozes';
 const PENDING_SNOOZE_TTL_MS = 1000 * 60 * 30; // give up after 30min — token would expire anyway
 const SNOOZE_SYNC_TAG = 'remind-again-retry';
+// Firebase Realtime DB — the SW records a snooze directly here (users/<uid>/snoozeQueue)
+// so the cron re-sends it as a push. This is how "remind in 10 min" works WITHOUT
+// ever opening the app. Rules allow unauthenticated writes under users/* (same as the client).
+const REMIND_AGAIN_DB_URL = 'https://countdown-463de-default-rtdb.firebaseio.com';
 const CACHE_URLS = [
   './',
   './manifest.webmanifest',
@@ -543,80 +547,90 @@ self.addEventListener('push', (event) => {
   })());
 });
 
-// Handle the "remind me in 10 minutes" action for an in-app (local) notification,
-// i.e. one without a server snooze token. In priority order:
-//   1. Notification Triggers API (Chromium/Android) — schedules the re-reminder
-//      to fire at the target time even if the app stays fully closed. Most
-//      reliable, and never reopens the app.
-//   2. Dispatch to an open client so its in-page ticker schedules the snooze.
-//   3. No window open — reopen the app with params so it can persist the snooze.
-async function handleLocalRemindAgain(raw, notification, completeUrl) {
+// Handle the "remind me in 10 minutes" action for an in-app notification
+// (one without a server snooze token). The snooze is recorded DIRECTLY in
+// Firebase (users/<uid>/snoozeQueue) so the existing cron re-sends it as a
+// push — the app is NEVER opened. On write failure it's queued for
+// Background-Sync retry (still no app open).
+async function handleLocalRemindAgain(raw, notification, completeUrl, url) {
   const minutes = Number.parseInt(raw.minutes || raw.remindAgainMinutes, 10) || 10;
-  const kind = raw.remindKind === 'event' ? 'event' : 'task';
-  const snooze = {
-    kind,
-    taskId: raw.taskId || raw.remindAgainTaskId || '',
-    eventId: raw.eventId || '',
-    occurrence: raw.occurrence || raw.remindAgainOccurrence || '',
-    title: raw.title || (notification && notification.title) || 'תזכורת',
-    body: raw.body || (notification && notification.body) || '',
-    minutes
+  const userId = String(raw.remindAgainUserId || raw.userId || '').trim();
+  const now = Date.now();
+
+  // Rebuild a self-contained payload the cron can re-push verbatim, so the
+  // re-fired notification keeps its action buttons + metadata (re-snooze, Done).
+  const actions = (Array.isArray(notification && notification.actions) && notification.actions.length)
+    ? notification.actions.map((a) => ({ action: a.action, title: a.title }))
+    : [{ action: 'remind-again-10', title: 'Remind in 10 min' }, { action: 'view', title: 'View' }];
+
+  const repushPayload = {
+    title: (notification && notification.title) || raw.title || 'תזכורת',
+    body: (notification && notification.body) || raw.body || '',
+    icon: (notification && notification.icon) || new URL('./icon-192.png', self.location.origin).href,
+    tag: (notification && notification.tag) || `snooze-${userId || 'x'}-${now}`,
+    requireInteraction: true,
+    renotify: true,
+    url: url || self.registration.scope || './',
+    completeUrl: completeUrl || null,
+    actions,
+    remindKind: raw.remindKind || 'task',
+    remindAgainUserId: userId,
+    remindAgainTaskId: raw.remindAgainTaskId || raw.taskId || '',
+    remindAgainSubjectId: raw.remindAgainSubjectId || '',
+    remindAgainOccurrence: raw.remindAgainOccurrence || raw.occurrence || '',
+    remindAgainMinutes: String(minutes),
+    eventId: raw.eventId || ''
   };
 
-  // 1) Notification Triggers API — fires even with the app closed.
-  if ('TimestampTrigger' in self) {
+  const queueItem = {
+    status: 'pending',
+    dueAt: now + minutes * 60000,
+    expiresAt: now + 24 * 60 * 60 * 1000,
+    requestedAt: now,
+    updatedAt: now,
+    source: 'sw-local-snooze',
+    payload: repushPayload
+  };
+
+  if (userId) {
+    const endpoint = `${REMIND_AGAIN_DB_URL}/users/${encodeURIComponent(userId)}/snoozeQueue.json`;
     try {
-      const actions = [{ action: 'remind-again-10', title: 'Remind in 10 min' }];
-      if (completeUrl) actions.push({ action: 'complete', title: 'Done' });
-      actions.push({ action: 'view', title: 'View' });
-      await self.registration.showNotification(snooze.title, {
-        body: snooze.body,
-        icon: new URL('./icon-192.png', self.location.origin).href,
-        tag: `${kind}-${snooze.taskId || snooze.eventId || 'snooze'}-snooze`,
-        renotify: true,
-        requireInteraction: true,
-        showTrigger: new self.TimestampTrigger(Date.now() + minutes * 60000),
-        actions,
-        data: {
-          url: self.registration.scope || './',
-          completeUrl: completeUrl || null,
-          localRemindAgain: true,
-          remindKind: kind,
-          taskId: snooze.taskId,
-          eventId: snooze.eventId,
-          occurrence: snooze.occurrence,
-          title: snooze.title,
-          body: snooze.body,
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(queueItem)
+      });
+      if (res.ok) return;
+      throw new Error(`snoozeQueue write returned ${res.status}`);
+    } catch (err) {
+      // Persist for Background-Sync retry — never open the app.
+      console.warn('[SW] snoozeQueue write failed, queuing for retry:', err?.message || err);
+      await savePendingSnooze({ id: `snooze-${userId}-${now}`, endpoint, payload: queueItem, savedAt: now });
+      if ('sync' in self.registration) {
+        try { await self.registration.sync.register(SNOOZE_SYNC_TAG); } catch (e) { /* next activate flushes */ }
+      }
+      return;
+    }
+  }
+
+  // No userId on the notification (older payload): best-effort hand-off to an
+  // already-open client so it can snooze in-page. Never reopen the app.
+  const clients = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+  for (const client of clients) {
+    try {
+      client.postMessage({
+        type: 'local-remind-again',
+        snooze: {
+          kind: raw.remindKind === 'event' ? 'event' : 'task',
+          taskId: raw.remindAgainTaskId || raw.taskId || '',
+          eventId: raw.eventId || '',
+          occurrence: raw.remindAgainOccurrence || raw.occurrence || '',
+          title: repushPayload.title,
+          body: repushPayload.body,
           minutes
         }
       });
-      return;
-    } catch (e) {
-      console.warn('[SW] TimestampTrigger schedule failed, falling back:', e?.message || e);
-    }
-  }
-
-  // 2) Dispatch to an open client (its ticker persists + fires the snooze).
-  const clients = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
-  if (clients && clients.length) {
-    for (const client of clients) {
-      try { client.postMessage({ type: 'local-remind-again', snooze }); } catch (e) { /* ignore */ }
-    }
-    return;
-  }
-
-  // 3) No window open — reopen the app with params so it can persist the snooze.
-  try {
-    const base = new URL('./', self.location.href);
-    const params = new URLSearchParams({ remindAgain: '1', kind: snooze.kind, minutes: String(minutes) });
-    if (snooze.taskId) params.set('taskId', snooze.taskId);
-    if (snooze.eventId) params.set('eventId', snooze.eventId);
-    if (snooze.occurrence) params.set('occurrence', snooze.occurrence);
-    if (snooze.title) params.set('rtitle', snooze.title);
-    if (snooze.body) params.set('rbody', snooze.body);
-    await self.clients.openWindow(`${base.href}?${params.toString()}`);
-  } catch (e) {
-    console.warn('[SW] Local snooze reopen failed:', e?.message || e);
+    } catch (e) { /* ignore */ }
   }
 }
 
@@ -654,9 +668,9 @@ self.addEventListener('notificationclick', (event) => {
       const reminderMinutes = Number.parseInt(raw.remindAgainMinutes, 10) || 10;
 
       if (!endpoint || !token || !userId) {
-        // No server snooze token — this is an in-app (local) notification.
-        // Schedule a local re-reminder instead of hitting the server.
-        await handleLocalRemindAgain(raw, event.notification, completeUrl);
+        // No server snooze token — record the snooze in Firebase so the cron
+        // re-sends it as a push, without ever opening the app.
+        await handleLocalRemindAgain(raw, event.notification, completeUrl, url);
         return;
       }
 

@@ -530,26 +530,29 @@ async function runCheck() {
 
     const offset = formatReminderOffset(reminderMinutes);
     const dedupeKey = `event|${evt.id}|${evt.date}|${reminderMinutes}`;
-    const payload = {
-      title: evt.name || 'Event',
-      body: `Event reminder: Starts in ${offset}`,
-      tag: `event-${evt.id}`,
-      dedupeKey,
-      url: buildUrl('/', {}),
-      requireInteraction: true,
-      renotify: true,
-      actions: [
-        { action: 'remind-again-10', title: 'Remind in 10 min' },
-        { action: 'view', title: 'View' }
-      ],
-      // Local-snooze context (events have no server token, so the SW snoozes in-app).
-      remindKind: 'event',
-      eventId: evt.id,
-      remindAgainOccurrence: evt.date || '',
-      remindAgainMinutes: String(REMIND_AGAIN_DELAY_MINUTES)
-    };
 
+    // Built per-user so each payload can carry remindAgainUserId — the SW needs
+    // it to record an in-app snooze under the right user (no server token).
     for (const { userId, subs } of users) {
+      const payload = {
+        title: evt.name || 'Event',
+        body: `Event reminder: Starts in ${offset}`,
+        tag: `event-${evt.id}`,
+        dedupeKey,
+        url: buildUrl('/', {}),
+        requireInteraction: true,
+        renotify: true,
+        actions: [
+          { action: 'remind-again-10', title: 'Remind in 10 min' },
+          { action: 'view', title: 'View' }
+        ],
+        // Local-snooze context (events have no server token, so the SW snoozes in-app).
+        remindKind: 'event',
+        eventId: evt.id,
+        remindAgainUserId: userId,
+        remindAgainOccurrence: evt.date || '',
+        remindAgainMinutes: String(REMIND_AGAIN_DELAY_MINUTES)
+      };
       const res = await sendNotificationToUser(userId, subs, payload, dedupeKey);
       if (res.sentAny) sent += res.sent;
       else if (res.skippedAny) skipped += 1;
@@ -610,13 +613,13 @@ async function runCheck() {
           // Local-snooze context — always present so the SW can snooze in-app
           // even when no server token is available.
           remindKind: 'task',
+          remindAgainUserId: userId,
           remindAgainTaskId: task.id,
           remindAgainOccurrence: dueDateIso,
           remindAgainMinutes: String(REMIND_AGAIN_DELAY_MINUTES),
           ...(remindAgainToken ? {
             remindAgainToken,
             remindAgainEndpoint: REMIND_AGAIN_API_URL,
-            remindAgainUserId: userId,
             remindAgainSubjectId: ''
           } : {})
         };
@@ -661,6 +664,7 @@ async function runCheck() {
         ],
         // Local-snooze context (planner blocks have no server token).
         remindKind: 'planner',
+        remindAgainUserId: userId,
         remindAgainTaskId: blockKey,
         remindAgainOccurrence: block.startAt || block.date || '',
         remindAgainMinutes: String(REMIND_AGAIN_DELAY_MINUTES)
@@ -742,14 +746,14 @@ async function runCheck() {
             // Local-snooze context — always present so the SW can snooze in-app
             // even when no server token is available.
             remindKind: 'shared-task',
+            remindAgainUserId: userId,
             remindAgainTaskId: taskId,
             remindAgainSubjectId: subject.id,
             remindAgainOccurrence: sharedDueDateIso,
             remindAgainMinutes: String(REMIND_AGAIN_DELAY_MINUTES),
             ...(remindAgainToken ? {
               remindAgainToken,
-              remindAgainEndpoint: REMIND_AGAIN_API_URL,
-              remindAgainUserId: userId
+              remindAgainEndpoint: REMIND_AGAIN_API_URL
             } : {})
           };
           const res = await sendNotificationToUser(userId, userEntry.subs, payload, dedupeKey);
@@ -762,13 +766,117 @@ async function runCheck() {
     } // end subjectTasks loop
   } // end sharedSubjects loop
 
-  // Process remind-again queue (snoozed reminders from previous notifications)
+  // Process remind-again queue (token-based snoozes via api/remind-again.js)
   const raResult = await processRemindAgainQueue(users, nowMs);
   sent += raResult.sent;
   skipped += raResult.skipped;
   failed += raResult.failed;
 
+  // Process the generic snooze queue (written DIRECTLY by the service worker
+  // when "remind in 10 min" is tapped — re-sends the captured payload, so the
+  // snooze works for any reminder kind without ever opening the app).
+  const sqResult = await processSnoozeQueue(users, nowMs);
+  sent += sqResult.sent;
+  skipped += sqResult.skipped;
+  failed += sqResult.failed;
+
   console.log(`[${new Date().toISOString()}] Result: Sent ${sent}, Skipped ${skipped}, Failed ${failed}`);
+}
+
+// ============================================
+// Snooze Queue Processor
+// Reads users/<uid>/snoozeQueue written directly by the service worker and
+// re-sends the stored payload when due. Kind-agnostic: it just replays the
+// captured notification, so task/event/planner snoozes all work and the app
+// is never opened.
+// ============================================
+async function processSnoozeQueue(users, nowMs) {
+  let sent = 0, skipped = 0, failed = 0;
+  const TERMINAL_KEEP_MS = 60 * 60 * 1000; // tidy up sent/expired items after 1h
+
+  for (const { userId, subs } of users) {
+    const snap = await db.ref(`users/${userId}/snoozeQueue`).once('value');
+    const items = snap.val() || {};
+
+    // Recover items stuck in 'sending' from a crashed prior run.
+    for (const [id, item] of Object.entries(items)) {
+      if (!item || item.status !== 'sending') continue;
+      const updatedAt = Number(item.updatedAt) || 0;
+      if (updatedAt && (nowMs - updatedAt) <= REMIND_AGAIN_SENDING_STALE_MS) continue;
+      await db.ref(`users/${userId}/snoozeQueue/${id}`).transaction((cur) => {
+        if (!cur || cur.status !== 'sending') return;
+        if ((nowMs - (Number(cur.updatedAt) || 0)) <= REMIND_AGAIN_SENDING_STALE_MS) return;
+        return { ...cur, status: 'pending', updatedAt: nowMs };
+      }).catch(() => {});
+      items[id] = { ...item, status: 'pending', updatedAt: nowMs };
+    }
+
+    for (const [id, item] of Object.entries(items)) {
+      if (!item) continue;
+      const itemRef = db.ref(`users/${userId}/snoozeQueue/${id}`);
+
+      // Tidy up old terminal items so the queue can't grow unbounded.
+      if (item.status !== 'pending') {
+        const updatedAt = Number(item.updatedAt) || 0;
+        if (updatedAt && (nowMs - updatedAt) > TERMINAL_KEEP_MS) {
+          await itemRef.remove().catch(() => {});
+        }
+        continue;
+      }
+
+      const dueAt = Number(item.dueAt) || 0;
+      if (dueAt > nowMs) continue;
+
+      const expiresAt = Number(item.expiresAt) || 0;
+      if (expiresAt && expiresAt < nowMs) {
+        await itemRef.update({ status: 'expired', updatedAt: nowMs }).catch(() => {});
+        skipped++;
+        continue;
+      }
+
+      // Atomic claim — prevents double-send across overlapping cron runs.
+      const claim = await itemRef.transaction((cur) => {
+        if (!cur || cur.status !== 'pending') return;
+        if ((Number(cur.dueAt) || 0) > nowMs) return;
+        const ce = Number(cur.expiresAt) || 0;
+        if (ce && ce < nowMs) return { ...cur, status: 'expired', updatedAt: nowMs };
+        return { ...cur, status: 'sending', updatedAt: nowMs };
+      });
+      if (!claim.committed) continue;
+      const current = claim.snapshot.val() || {};
+      if (current.status !== 'sending') { skipped++; continue; }
+
+      const payload = (current.payload && typeof current.payload === 'object') ? { ...current.payload } : null;
+      if (!payload) {
+        await itemRef.update({ status: 'failed', reason: 'no_payload', updatedAt: Date.now() }).catch(() => {});
+        failed++;
+        continue;
+      }
+      if (subs.length === 0) {
+        await itemRef.update({ status: 'failed', reason: 'no_subscriptions', updatedAt: Date.now() }).catch(() => {});
+        failed++;
+        continue;
+      }
+
+      // Unique dedupe key so this re-send isn't suppressed by the original.
+      const dedupeKey = `snooze|${userId}|${id}`;
+      payload.dedupeKey = dedupeKey;
+
+      const res = await sendNotificationToUser(userId, subs, payload, dedupeKey);
+      if (res.sentAny || res.skippedAny) {
+        await itemRef.update({ status: 'sent', sentAt: Date.now(), updatedAt: Date.now() }).catch(() => {});
+        if (res.sentAny) sent++; else skipped++;
+      } else {
+        await itemRef.update({ status: 'failed', reason: 'send_failed', updatedAt: Date.now() }).catch(() => {});
+        failed++;
+      }
+    }
+  }
+
+  if (sent + failed > 0) {
+    console.log(`[snooze-queue] Sent ${sent}, Skipped ${skipped}, Failed ${failed}`);
+  }
+  return { sent, skipped, failed };
 }
 
 // ============================================
