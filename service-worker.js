@@ -1,5 +1,5 @@
 // Bump cache version when precache list or fetch strategy changes
-const CACHE_NAME = 'countdown-push-v68';
+const CACHE_NAME = 'countdown-push-v69';
 const NOTIFY_DEDUPE_CACHE = 'countdown-notify-dedupe-v1';
 const NOTIFY_DEDUPE_TTL_MS = 1000 * 60 * 60 * 24 * 7;
 const PENDING_SUB_DB = 'countdown-pending-sub';
@@ -47,7 +47,8 @@ const CACHE_URLS = [
   './js/inline/undo-redo-keyboard.js',
   './js/inline/context-menus.js',
   './js/inline/daily-reminder.js',
-  './js/inline/task-calendar.js'
+  './js/inline/task-calendar.js',
+  './js/inline/recurrence.js'
 ];
 
 // ============================================

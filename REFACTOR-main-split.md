@@ -64,17 +64,21 @@ are already extracted with the `init*(ctx)` pattern. This is "continue the patte
 
 ## Phase 0 — prep (do first; highest safety leverage)
 
-- [ ] **0a — Verification harness:** repeatable "serve + load as test user + assert no
-      console errors + exercise feature" loop (already proven during the snooze work).
-- [ ] **0b — State unification:** add reactive `ctx` bridges for all shared mutable state a
-      planned module touches; reconcile the `ctx.tasks` vs local `tasks` inconsistency.
-      One commit, **no behavior change**. *This is the single most important step.*
-- [ ] **0c — Commit discipline:** one module per commit, descriptive messages, push each.
+- [x] **0a — Verification harness:** `.claude/launch.json` (python static server) + preview
+      tools — load as `testuser`, assert no console errors, dynamic-import the new module to
+      test its exports. Proven on step 1.
+- [ ] **0b — State unification:** add reactive `ctx` bridges for shared mutable state.
+      **Deferred to just-in-time, per stateful module** (doing all ~50 up front is itself a
+      large risky change). Pure modules (e.g. recurrence) need none. Still must reconcile the
+      `ctx.tasks` vs local `tasks` inconsistency before extracting task logic.
+- [x] **0c — Commit discipline:** one module per commit, push each.
 
 ## Extraction sequence (leaf-first; ~one commit each)
 
-- [ ] **1 — Recurrence helpers** (`parseRecurrenceValue`, `getReminderOccurrences`,
-      `getNextRecurrenceDate`) — nearly pure, minimal state. Safest warm-up.
+- [x] **1 — Recurrence helpers** → `js/inline/recurrence.js` (`RECURRENCE_UNIT_LABELS`,
+      `parseRecurrenceValue`, `normalizeRecurrence`, `getNextRecurrenceDate`,
+      `getReminderOccurrences`). Verbatim move (diff-verified), −147 lines from main.js,
+      app boots clean, module exports tested in-browser.
 - [ ] **2 — Reminders + snooze** (§ ~4383–4810, ~430 lines) — fairly self-contained;
       recently worked on, well understood.
 - [ ] **3 — Event / countdown management** (§4, ~800 lines).
@@ -108,4 +112,4 @@ stays intact.
 
 _(append one line per completed step: date · step · commit)_
 
-- (not started)
+- 2026-06-23 · Phase 0a (harness) + Step 1 (recurrence → js/inline/recurrence.js)
