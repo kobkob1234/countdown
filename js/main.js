@@ -186,6 +186,13 @@ const NOTIFY_KEYS = {
 const NOTIFY_TTL_MS = 1000 * 60 * 60 * 24 * 7;
 const NOTIFY_DEDUPE_CACHE = 'countdown-notify-dedupe-v1';
 const NOTIFY_DEDUPE_TTL_MS = NOTIFY_TTL_MS;
+// Local "remind me in 10 minutes" snooze (fires while the PWA is open/active).
+// Server push has its own token-based snooze for when the app is closed.
+const LOCAL_SNOOZE_KEY = `countdown-local-snoozes-v1${notifyScope}`;
+const LOCAL_SNOOZE_ACTION = 'remind-again-10';
+const LOCAL_SNOOZE_DEFAULT_MINUTES = 10;
+const LOCAL_SNOOZE_TTL_MS = 1000 * 60 * 60 * 24; // drop snoozes not fired within 24h
+const LOCAL_SNOOZE_MAX = 50;
 const REMINDER_CATCHUP_MAX_MS = 1000 * 60 * 30; // 30min catchup window — reminders older than this are stale
 const REMINDER_CATCHUP_MAX_COUNT = 6; // Limit burst after long inactivity.
 const NOTIFY_CHECK_PERSIST_MS = 5000; // Persist every 5s (was 30s — too long, risk of replay after crash)
@@ -885,7 +892,8 @@ Object.assign(ctx, {
   wasDedupeKeySeen, markDedupeKeySeen,
   loadNotifiedMap, persistNotifiedMap, pruneNotifiedMap,
   NOTIFY_KEYS, REMINDER_CATCHUP_MAX_COUNT,
-  notifiedEvents, notifiedTasks
+  notifiedEvents, notifiedTasks,
+  buildLocalReminderActions, buildLocalSnoozeData
 });
 
 const setEventsLoading = (isLoading) => {
@@ -1064,6 +1072,7 @@ document.addEventListener('visibilitychange', () => {
   }
   checkEventReminders(Date.now());
   checkTaskReminders();
+  checkLocalSnoozes();
   if (window.DailyPlanner && typeof window.DailyPlanner.checkReminders === 'function') {
     window.DailyPlanner.checkReminders();
   }
@@ -1288,7 +1297,9 @@ async function triggerAlert(evt, nowMs = Date.now()) {
   showSystemNotification("Event Reminder", {
     body: msg,
     tag: `event-${evt.id || evt.name || 'reminder'}`,
-    renotify: true
+    renotify: true,
+    actions: buildLocalReminderActions(),
+    data: buildLocalSnoozeData('event', { refId: evt.id || evt.name || '', title: 'Event Reminder', body: msg })
   }).catch(() => { });
 
   // Show in-app alert if visible, or queue for later
@@ -4261,8 +4272,10 @@ async function checkTaskReminders(nowMs = Date.now()) {
 function startTaskReminderTicker() {
   if (taskReminderTickerHandle) return;
   checkTaskReminders();
+  checkLocalSnoozes();
   taskReminderTickerHandle = setInterval(() => {
     checkTaskReminders();
+    checkLocalSnoozes();
   }, 10000);
 }
 
@@ -4279,11 +4292,131 @@ async function triggerTaskAlert(task) {
   showSystemNotification(title, {
     body: message,
     tag: `task-${task.id}`,
-    renotify: true
+    renotify: true,
+    actions: buildLocalReminderActions(),
+    data: buildLocalSnoozeData('task', { refId: task.id, title, body: message })
   }).catch(() => { });
 
   // Show in-app alert
   showEventAlert(title, message, true);
+}
+
+// ============================================
+// Local "Remind me in 10 minutes" snooze
+// Re-fires an in-app notification after a delay while the PWA is open/active.
+// (Server push handles snooze-while-closed via api/remind-again.js + cron.)
+// ============================================
+
+// Persistent (Service Worker) notifications reliably show up to 2 actions.
+function buildLocalReminderActions() {
+  return [
+    { action: 'view', title: 'פתח' },
+    { action: LOCAL_SNOOZE_ACTION, title: 'הזכר בעוד 10 דק׳' }
+  ];
+}
+
+function buildLocalSnoozeData(kind, { refId = '', title = '', body = '', minutes = LOCAL_SNOOZE_DEFAULT_MINUTES } = {}) {
+  return {
+    localRemindAgain: true,
+    remindKind: kind === 'event' ? 'event' : 'task',
+    taskId: kind === 'event' ? '' : String(refId || ''),
+    eventId: kind === 'event' ? String(refId || '') : '',
+    title: String(title || ''),
+    body: String(body || ''),
+    minutes
+  };
+}
+
+function loadLocalSnoozes() {
+  try {
+    const raw = localStorage.getItem(LOCAL_SNOOZE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    const items = Array.isArray(parsed) ? parsed : (parsed && Array.isArray(parsed.items) ? parsed.items : []);
+    const now = Date.now();
+    return items.filter(it =>
+      it && Number.isFinite(Number(it.dueAt)) &&
+      (now - (Number(it.createdAt) || 0)) < LOCAL_SNOOZE_TTL_MS
+    );
+  } catch (e) {
+    return [];
+  }
+}
+
+function saveLocalSnoozes(items) {
+  try {
+    const trimmed = (Array.isArray(items) ? items : []).slice(-LOCAL_SNOOZE_MAX);
+    localStorage.setItem(LOCAL_SNOOZE_KEY, JSON.stringify({ ts: Date.now(), items: trimmed }));
+  } catch (e) { /* best effort */ }
+}
+
+function scheduleLocalSnooze(snooze = {}) {
+  const parsedMinutes = Number.parseInt(snooze.minutes, 10);
+  const minutes = Number.isFinite(parsedMinutes) && parsedMinutes > 0 ? parsedMinutes : LOCAL_SNOOZE_DEFAULT_MINUTES;
+  const kind = (snooze.kind || snooze.remindKind) === 'event' ? 'event' : 'task';
+  const refId = String(snooze.refId || snooze.taskId || snooze.eventId || snooze.id || '');
+  const now = Date.now();
+  const item = {
+    id: `${kind}:${refId}:${now}`,
+    kind,
+    refId,
+    title: String(snooze.title || 'תזכורת'),
+    body: String(snooze.body || ''),
+    minutes,
+    createdAt: now,
+    dueAt: now + minutes * 60000
+  };
+  // Replace any existing pending snooze for the same item so repeated taps reset the timer.
+  const items = loadLocalSnoozes();
+  const filtered = refId ? items.filter(it => !(it.kind === kind && it.refId === refId)) : items;
+  filtered.push(item);
+  saveLocalSnoozes(filtered);
+  return item;
+}
+
+async function fireLocalSnooze(item) {
+  const title = item.title || 'תזכורת';
+  await showSystemNotification(title, {
+    body: item.body || '',
+    tag: `${item.kind}-${item.refId || item.id}-snooze`,
+    renotify: true,
+    actions: buildLocalReminderActions(),
+    data: buildLocalSnoozeData(item.kind, {
+      refId: item.refId,
+      title,
+      body: item.body || '',
+      minutes: item.minutes || LOCAL_SNOOZE_DEFAULT_MINUTES
+    })
+  }).catch(() => { });
+  if (!document.hidden) {
+    try { showEventAlert(title, item.body || '', true); } catch (e) { /* ignore */ }
+  }
+}
+
+let localSnoozeCheckInFlight = false;
+async function checkLocalSnoozes(nowMs = Date.now()) {
+  if (localSnoozeCheckInFlight) return;
+  localSnoozeCheckInFlight = true;
+  try {
+    const items = loadLocalSnoozes();
+    if (!items.length) return;
+    const due = [];
+    const remaining = [];
+    for (const it of items) {
+      if (Number(it.dueAt) <= nowMs) due.push(it);
+      else remaining.push(it);
+    }
+    if (!due.length) return;
+    // Remove due items before firing so a slow/failed fire can't double-notify.
+    saveLocalSnoozes(remaining);
+    for (const it of due) {
+      await fireLocalSnooze(it);
+    }
+  } catch (e) {
+    console.warn('[Notifications] Local snooze check failed:', e);
+  } finally {
+    localSnoozeCheckInFlight = false;
+  }
 }
 
 function stopTaskTicker() {
@@ -6054,6 +6187,26 @@ if (completeTaskId && shouldProcessComplete) {
   }, 10000);
 }
 
+// Handle a local "remind me in 10 minutes" request opened by the SW when no
+// window was available to receive the postMessage (in-app notification snooze).
+if (urlParams.get('remindAgain')) {
+  try {
+    scheduleLocalSnooze({
+      kind: urlParams.get('kind') || 'task',
+      taskId: urlParams.get('taskId') || '',
+      eventId: urlParams.get('eventId') || '',
+      title: urlParams.get('rtitle') || 'תזכורת',
+      body: urlParams.get('rbody') || '',
+      minutes: urlParams.get('minutes') || LOCAL_SNOOZE_DEFAULT_MINUTES
+    });
+  } catch (e) {
+    console.warn('[App] Failed to schedule local snooze from URL:', e);
+  }
+  const url = new URL(window.location);
+  ['remindAgain', 'kind', 'taskId', 'eventId', 'rtitle', 'rbody', 'minutes'].forEach(p => url.searchParams.delete(p));
+  window.history.replaceState({}, '', url);
+}
+
 // Handle PWA app shortcut URL params (?view=X, ?action=X)
 {
   const shortcutView = urlParams.get('view');
@@ -6095,6 +6248,17 @@ if ('serviceWorker' in navigator) {
     if (event.data?.type === 'pushsubscriptionchange') {
       syncExistingSubscriptionToCurrentUser().catch(() => { });
       refreshNotifyButton().catch(() => { });
+      return;
+    }
+    // Handle local "remind me in 10 minutes" snooze dispatched by the SW for
+    // an in-app notification (one with no server token).
+    if (event.data?.type === 'local-remind-again') {
+      try {
+        const item = scheduleLocalSnooze(event.data.snooze || {});
+        console.log('[App] Local reminder snoozed for', item.minutes, 'min');
+      } catch (e) {
+        console.warn('[App] Failed to schedule local snooze:', e);
+      }
       return;
     }
     // Handle notification click messages from SW

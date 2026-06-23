@@ -12,7 +12,8 @@ export function initDailyPlanner() {
           notifiedPlannerBlocks, reminderCheckState,
           getReminderWindow, persistLastCheck,
           wasDedupeKeySeen, markDedupeKeySeen,
-          persistNotifiedMap, pruneNotifiedMap, NOTIFY_KEYS, REMINDER_CATCHUP_MAX_COUNT } = ctx;
+          persistNotifiedMap, pruneNotifiedMap, NOTIFY_KEYS, REMINDER_CATCHUP_MAX_COUNT,
+          buildLocalReminderActions, buildLocalSnoozeData } = ctx;
 
   // Dynamic getters for reactive data (these arrays change over time)
   const getTasks = () => ctx.tasks || [];
@@ -351,7 +352,11 @@ export function initDailyPlanner() {
           showSystemNotification(title, {
             body: message,
             tag: `planner-${item.block.id}`,
-            renotify: true
+            renotify: true,
+            actions: typeof buildLocalReminderActions === 'function' ? buildLocalReminderActions() : undefined,
+            data: typeof buildLocalSnoozeData === 'function'
+              ? buildLocalSnoozeData('planner', { refId: item.block.id, title, body: message })
+              : undefined
           }).catch(() => { });
           showEventAlert(title, message, true);
           notifiedPlannerBlocks.set(item.block.id, { key: item.reminderKey, ts: nowMs });

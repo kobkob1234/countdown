@@ -1,5 +1,5 @@
 // Bump cache version when precache list or fetch strategy changes
-const CACHE_NAME = 'countdown-push-v65';
+const CACHE_NAME = 'countdown-push-v66';
 const NOTIFY_DEDUPE_CACHE = 'countdown-notify-dedupe-v1';
 const NOTIFY_DEDUPE_TTL_MS = 1000 * 60 * 60 * 24 * 7;
 const PENDING_SUB_DB = 'countdown-pending-sub';
@@ -543,6 +543,42 @@ self.addEventListener('push', (event) => {
   })());
 });
 
+// Handle the "remind me in 10 minutes" action for an in-app (local) notification,
+// i.e. one without a server snooze token. Dispatch to an open client so it can
+// schedule the re-reminder; if none is open, reopen the app with params.
+async function handleLocalRemindAgain(raw, notification) {
+  const minutes = Number.parseInt(raw.minutes || raw.remindAgainMinutes, 10) || 10;
+  const snooze = {
+    kind: raw.remindKind === 'event' ? 'event' : 'task',
+    taskId: raw.taskId || raw.remindAgainTaskId || '',
+    eventId: raw.eventId || '',
+    title: raw.title || (notification && notification.title) || 'תזכורת',
+    body: raw.body || (notification && notification.body) || '',
+    minutes
+  };
+
+  const clients = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+  if (clients && clients.length) {
+    for (const client of clients) {
+      try { client.postMessage({ type: 'local-remind-again', snooze }); } catch (e) { /* ignore */ }
+    }
+    return;
+  }
+
+  // No window open — reopen the app with params so it can persist the snooze.
+  try {
+    const base = new URL('./', self.location.href);
+    const params = new URLSearchParams({ remindAgain: '1', kind: snooze.kind, minutes: String(minutes) });
+    if (snooze.taskId) params.set('taskId', snooze.taskId);
+    if (snooze.eventId) params.set('eventId', snooze.eventId);
+    if (snooze.title) params.set('rtitle', snooze.title);
+    if (snooze.body) params.set('rbody', snooze.body);
+    await self.clients.openWindow(`${base.href}?${params.toString()}`);
+  } catch (e) {
+    console.warn('[SW] Local snooze reopen failed:', e?.message || e);
+  }
+}
+
 self.addEventListener('notificationclick', (event) => {
   const notificationData = event.notification?.data || {};
   const fcmMsg = (notificationData?.FCM_MSG && typeof notificationData.FCM_MSG === 'object') ? notificationData.FCM_MSG : {};
@@ -577,8 +613,9 @@ self.addEventListener('notificationclick', (event) => {
       const reminderMinutes = Number.parseInt(raw.remindAgainMinutes, 10) || 10;
 
       if (!endpoint || !token || !userId) {
-        // Missing metadata: nothing we can do, fail silently.
-        console.warn('[SW] Snooze click missing endpoint/token/userId');
+        // No server snooze token — this is an in-app (local) notification.
+        // Schedule a local re-reminder instead of hitting the server.
+        await handleLocalRemindAgain(raw, event.notification);
         return;
       }
 
