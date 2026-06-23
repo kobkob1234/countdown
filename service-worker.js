@@ -1,5 +1,5 @@
 // Bump cache version when precache list or fetch strategy changes
-const CACHE_NAME = 'countdown-push-v66';
+const CACHE_NAME = 'countdown-push-v67';
 const NOTIFY_DEDUPE_CACHE = 'countdown-notify-dedupe-v1';
 const NOTIFY_DEDUPE_TTL_MS = 1000 * 60 * 60 * 24 * 7;
 const PENDING_SUB_DB = 'countdown-pending-sub';
@@ -544,19 +544,59 @@ self.addEventListener('push', (event) => {
 });
 
 // Handle the "remind me in 10 minutes" action for an in-app (local) notification,
-// i.e. one without a server snooze token. Dispatch to an open client so it can
-// schedule the re-reminder; if none is open, reopen the app with params.
-async function handleLocalRemindAgain(raw, notification) {
+// i.e. one without a server snooze token. In priority order:
+//   1. Notification Triggers API (Chromium/Android) — schedules the re-reminder
+//      to fire at the target time even if the app stays fully closed. Most
+//      reliable, and never reopens the app.
+//   2. Dispatch to an open client so its in-page ticker schedules the snooze.
+//   3. No window open — reopen the app with params so it can persist the snooze.
+async function handleLocalRemindAgain(raw, notification, completeUrl) {
   const minutes = Number.parseInt(raw.minutes || raw.remindAgainMinutes, 10) || 10;
+  const kind = raw.remindKind === 'event' ? 'event' : 'task';
   const snooze = {
-    kind: raw.remindKind === 'event' ? 'event' : 'task',
+    kind,
     taskId: raw.taskId || raw.remindAgainTaskId || '',
     eventId: raw.eventId || '',
+    occurrence: raw.occurrence || raw.remindAgainOccurrence || '',
     title: raw.title || (notification && notification.title) || 'תזכורת',
     body: raw.body || (notification && notification.body) || '',
     minutes
   };
 
+  // 1) Notification Triggers API — fires even with the app closed.
+  if ('TimestampTrigger' in self) {
+    try {
+      const actions = [{ action: 'remind-again-10', title: 'Remind in 10 min' }];
+      if (completeUrl) actions.push({ action: 'complete', title: 'Done' });
+      actions.push({ action: 'view', title: 'View' });
+      await self.registration.showNotification(snooze.title, {
+        body: snooze.body,
+        icon: new URL('./icon-192.png', self.location.origin).href,
+        tag: `${kind}-${snooze.taskId || snooze.eventId || 'snooze'}-snooze`,
+        renotify: true,
+        requireInteraction: true,
+        showTrigger: new self.TimestampTrigger(Date.now() + minutes * 60000),
+        actions,
+        data: {
+          url: self.registration.scope || './',
+          completeUrl: completeUrl || null,
+          localRemindAgain: true,
+          remindKind: kind,
+          taskId: snooze.taskId,
+          eventId: snooze.eventId,
+          occurrence: snooze.occurrence,
+          title: snooze.title,
+          body: snooze.body,
+          minutes
+        }
+      });
+      return;
+    } catch (e) {
+      console.warn('[SW] TimestampTrigger schedule failed, falling back:', e?.message || e);
+    }
+  }
+
+  // 2) Dispatch to an open client (its ticker persists + fires the snooze).
   const clients = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
   if (clients && clients.length) {
     for (const client of clients) {
@@ -565,12 +605,13 @@ async function handleLocalRemindAgain(raw, notification) {
     return;
   }
 
-  // No window open — reopen the app with params so it can persist the snooze.
+  // 3) No window open — reopen the app with params so it can persist the snooze.
   try {
     const base = new URL('./', self.location.href);
     const params = new URLSearchParams({ remindAgain: '1', kind: snooze.kind, minutes: String(minutes) });
     if (snooze.taskId) params.set('taskId', snooze.taskId);
     if (snooze.eventId) params.set('eventId', snooze.eventId);
+    if (snooze.occurrence) params.set('occurrence', snooze.occurrence);
     if (snooze.title) params.set('rtitle', snooze.title);
     if (snooze.body) params.set('rbody', snooze.body);
     await self.clients.openWindow(`${base.href}?${params.toString()}`);
@@ -615,7 +656,7 @@ self.addEventListener('notificationclick', (event) => {
       if (!endpoint || !token || !userId) {
         // No server snooze token — this is an in-app (local) notification.
         // Schedule a local re-reminder instead of hitting the server.
-        await handleLocalRemindAgain(raw, event.notification);
+        await handleLocalRemindAgain(raw, event.notification, completeUrl);
         return;
       }
 

@@ -1058,6 +1058,26 @@ const flushReminderChecks = () => {
   persistLastCheck(reminderCheckState.planner, now, true);
 };
 
+// Run every reminder + snooze check immediately. Bound to all the events that
+// signal "the user is back on the PWA" so due reminders/snoozes fire ASAP even
+// after the page was backgrounded, frozen, or restored from the bfcache —
+// where the 10s ticker is throttled or suspended by the browser.
+const runReminderChecksNow = () => {
+  try {
+    checkEventReminders(Date.now());
+    checkTaskReminders();
+    checkLocalSnoozes();
+    if (window.DailyPlanner && typeof window.DailyPlanner.checkReminders === 'function') {
+      window.DailyPlanner.checkReminders();
+    }
+  } catch (e) {
+    console.warn('[Notifications] reminder re-entry check failed:', e);
+  }
+};
+window.addEventListener('pageshow', runReminderChecksNow);
+window.addEventListener('focus', runReminderChecksNow);
+window.addEventListener('online', runReminderChecksNow);
+
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) {
     flushReminderChecks();
@@ -2695,6 +2715,54 @@ function getNextRecurrenceDate(baseIso, recurrence) {
   return next;
 }
 
+// Expand a (possibly recurring) task's due date into the occurrences whose
+// reminder could fire within the current check window. Mirrors the server's
+// getOccurrencesToCheck so in-app reminders match push reminders for every
+// occurrence of a recurring task (not just the first one).
+function getReminderOccurrences(baseIso, recurrence, nowMs, maxReminderMs, windowStartMs) {
+  const parsed = parseRecurrenceValue(recurrence);
+  const type = parsed.type || 'none';
+  const base = baseIso ? new Date(baseIso) : null;
+  if (!base || Number.isNaN(base.getTime())) return [];
+  if (type === 'none') return [base];
+
+  const advance = (date) => {
+    const next = new Date(date);
+    switch (type) {
+      case 'daily': next.setDate(next.getDate() + 1); break;
+      case 'weekdays':
+        do { next.setDate(next.getDate() + 1); } while (next.getDay() === 5 || next.getDay() === 6);
+        break;
+      case 'weekly': next.setDate(next.getDate() + 7); break;
+      case 'biweekly': next.setDate(next.getDate() + 14); break;
+      case 'monthly': next.setMonth(next.getMonth() + 1); break;
+      case 'yearly': next.setFullYear(next.getFullYear() + 1); break;
+      case 'custom':
+        if (!parsed.interval || !parsed.unit) return null;
+        if (parsed.unit === 'days') next.setDate(next.getDate() + parsed.interval);
+        else if (parsed.unit === 'weeks') next.setDate(next.getDate() + parsed.interval * 7);
+        else if (parsed.unit === 'months') next.setMonth(next.getMonth() + parsed.interval);
+        else if (parsed.unit === 'years') next.setFullYear(next.getFullYear() + parsed.interval);
+        else return null;
+        break;
+      default: return null;
+    }
+    return next;
+  };
+
+  const maxFutureTime = nowMs + maxReminderMs + 60000;
+  const minTime = (Number.isFinite(windowStartMs) ? windowStartMs : (nowMs - maxReminderMs)) - 60000;
+  const occurrences = [];
+  let cur = base;
+  let iterations = 0;
+  while (cur && cur.getTime() <= maxFutureTime && iterations < 10000) {
+    if (cur.getTime() >= minTime) occurrences.push(new Date(cur));
+    cur = advance(cur);
+    iterations++;
+  }
+  return occurrences;
+}
+
 function buildTaskClone(task, overrides = {}) {
   const { id, ...clean } = task;
   const orderValue = hasManualOrder() ? getNextTaskOrder(false) : null;
@@ -4210,34 +4278,43 @@ async function checkTaskReminders(nowMs = Date.now()) {
     const candidates = [];
 
     tasks.forEach(task => {
-      // For recurring tasks: notifications fire regardless of completion status
-      // Each occurrence is independent - completion doesn't affect future reminders
-      // For non-recurring tasks: skip if completed
+      // For non-recurring tasks: skip if completed.
+      // For recurring tasks: keep going — each occurrence is tracked separately
+      // via completedOccurrences (a recurring task is never "fully" completed).
       if (task.completed && !task.recurrence) return;
 
       const reminderMinutesList = getTaskReminderList(task);
       if (!reminderMinutesList.length) return;
       if (!task.dueDate) return;
-      const taskTime = new Date(task.dueDate).getTime();
-      if (!Number.isFinite(taskTime)) return; // Guard against malformed dueDate strings
 
-      // Convert dueDate to ISO string for consistent dedupe key format with server
-      const dueDateIso = new Date(task.dueDate).toISOString();
+      // Expand recurrence so every upcoming occurrence can fire (not just the
+      // base date). Mirrors the push server, so in-app and push stay in sync.
+      const maxReminderMs = Math.max(...reminderMinutesList) * 60000;
+      const occurrences = getReminderOccurrences(task.dueDate, task.recurrence, nowMs, maxReminderMs, start);
+      const completedOccurrences = Array.isArray(task.completedOccurrences) ? task.completedOccurrences : [];
 
-      reminderMinutesList.forEach((reminderMinutes) => {
-        const reminderStorageId = `${task.id}|${dueDateIso}|${reminderMinutes}`;
-        const reminderKey = `${dueDateIso}|${reminderMinutes}`;
-        const entry = notifiedTasks.get(reminderStorageId);
-        if (entry && entry.key === reminderKey) return;
+      occurrences.forEach((occurrenceDate) => {
+        const occTime = occurrenceDate.getTime();
+        if (!Number.isFinite(occTime)) return; // Guard against malformed dueDate strings
+        const dueDateIso = occurrenceDate.toISOString();
+        // Skip occurrences already marked done on a recurring task.
+        if (task.recurrence && completedOccurrences.includes(dueDateIso)) return;
 
-        const triggerTime = taskTime - (reminderMinutes * 60000);
-        if (triggerTime < start || triggerTime > nowMs) return;
+        reminderMinutesList.forEach((reminderMinutes) => {
+          const reminderStorageId = `${task.id}|${dueDateIso}|${reminderMinutes}`;
+          const reminderKey = `${dueDateIso}|${reminderMinutes}`;
+          const entry = notifiedTasks.get(reminderStorageId);
+          if (entry && entry.key === reminderKey) return;
 
-        // Use ISO format for dedupe key to match server-side format exactly
-        const dedupeKey = task.isShared
-          ? `shared-task|${currentUser || ''}|${task.subject || ''}|${task.id}|${dueDateIso}|${reminderMinutes}`
-          : `task|${currentUser || ''}|${task.id}|${dueDateIso}|${reminderMinutes}`;
-        candidates.push({ task, reminderStorageId, reminderKey, triggerTime, dedupeKey });
+          const triggerTime = occTime - (reminderMinutes * 60000);
+          if (triggerTime < start || triggerTime > nowMs) return;
+
+          // Use ISO format for dedupe key to match server-side format exactly
+          const dedupeKey = task.isShared
+            ? `shared-task|${currentUser || ''}|${task.subject || ''}|${task.id}|${dueDateIso}|${reminderMinutes}`
+            : `task|${currentUser || ''}|${task.id}|${dueDateIso}|${reminderMinutes}`;
+          candidates.push({ task, occurrenceIso: dueDateIso, reminderStorageId, reminderKey, triggerTime, dedupeKey });
+        });
       });
     });
 
@@ -4254,7 +4331,7 @@ async function checkTaskReminders(nowMs = Date.now()) {
           continue;
         }
         if (item.dedupeKey) await markDedupeKeySeen(item.dedupeKey, nowMs);
-        triggerTaskAlert(item.task);
+        triggerTaskAlert(item.task, item.occurrenceIso);
         notifiedTasks.set(item.reminderStorageId, { key: item.reminderKey, ts: nowMs });
       }
       persistNotifiedMap(NOTIFY_KEYS.TASKS, notifiedTasks);
@@ -4279,8 +4356,10 @@ function startTaskReminderTicker() {
   }, 10000);
 }
 
-async function triggerTaskAlert(task) {
-  const dueDate = new Date(task.dueDate);
+async function triggerTaskAlert(task, occurrenceIso = null) {
+  // Use the specific occurrence date for recurring tasks (falls back to the
+  // base due date for one-off tasks) so the shown time is always correct.
+  const dueDate = new Date(occurrenceIso || task.dueDate);
   // toLocaleString (not toLocaleDateString) to include time; always use Israel timezone
   const dateStr = dueDate.toLocaleString('he-IL', { timeZone: 'Asia/Jerusalem', weekday: 'long', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
   const title = `תזכורת משימה: ${task.title}`;
@@ -4294,7 +4373,7 @@ async function triggerTaskAlert(task) {
     tag: `task-${task.id}`,
     renotify: true,
     actions: buildLocalReminderActions(),
-    data: buildLocalSnoozeData('task', { refId: task.id, title, body: message })
+    data: buildLocalSnoozeData('task', { refId: task.id, title, body: message, occurrence: occurrenceIso || '' })
   }).catch(() => { });
 
   // Show in-app alert
@@ -4315,12 +4394,13 @@ function buildLocalReminderActions() {
   ];
 }
 
-function buildLocalSnoozeData(kind, { refId = '', title = '', body = '', minutes = LOCAL_SNOOZE_DEFAULT_MINUTES } = {}) {
+function buildLocalSnoozeData(kind, { refId = '', title = '', body = '', minutes = LOCAL_SNOOZE_DEFAULT_MINUTES, occurrence = '' } = {}) {
   return {
     localRemindAgain: true,
     remindKind: kind === 'event' ? 'event' : 'task',
     taskId: kind === 'event' ? '' : String(refId || ''),
     eventId: kind === 'event' ? String(refId || '') : '',
+    occurrence: String(occurrence || ''),
     title: String(title || ''),
     body: String(body || ''),
     minutes
@@ -4360,6 +4440,7 @@ function scheduleLocalSnooze(snooze = {}) {
     id: `${kind}:${refId}:${now}`,
     kind,
     refId,
+    occurrence: String(snooze.occurrence || ''),
     title: String(snooze.title || 'תזכורת'),
     body: String(snooze.body || ''),
     minutes,
@@ -4385,7 +4466,8 @@ async function fireLocalSnooze(item) {
       refId: item.refId,
       title,
       body: item.body || '',
-      minutes: item.minutes || LOCAL_SNOOZE_DEFAULT_MINUTES
+      minutes: item.minutes || LOCAL_SNOOZE_DEFAULT_MINUTES,
+      occurrence: item.occurrence || ''
     })
   }).catch(() => { });
   if (!document.hidden) {
@@ -6195,6 +6277,7 @@ if (urlParams.get('remindAgain')) {
       kind: urlParams.get('kind') || 'task',
       taskId: urlParams.get('taskId') || '',
       eventId: urlParams.get('eventId') || '',
+      occurrence: urlParams.get('occurrence') || '',
       title: urlParams.get('rtitle') || 'תזכורת',
       body: urlParams.get('rbody') || '',
       minutes: urlParams.get('minutes') || LOCAL_SNOOZE_DEFAULT_MINUTES
@@ -6203,7 +6286,7 @@ if (urlParams.get('remindAgain')) {
     console.warn('[App] Failed to schedule local snooze from URL:', e);
   }
   const url = new URL(window.location);
-  ['remindAgain', 'kind', 'taskId', 'eventId', 'rtitle', 'rbody', 'minutes'].forEach(p => url.searchParams.delete(p));
+  ['remindAgain', 'kind', 'taskId', 'eventId', 'occurrence', 'rtitle', 'rbody', 'minutes'].forEach(p => url.searchParams.delete(p));
   window.history.replaceState({}, '', url);
 }
 

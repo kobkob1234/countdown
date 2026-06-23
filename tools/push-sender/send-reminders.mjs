@@ -325,12 +325,16 @@ async function issueRemindAgainToken(userId, context = {}) {
 
 /** Build notification action list, optionally including the snooze button. */
 function buildTaskActions(includeRemindAgain) {
-  const actions = [{ action: 'view', title: 'View' }];
-  if (includeRemindAgain) {
-    actions.push({ action: 'remind-again-10', title: 'Remind me again in 10 minutes' });
-  }
-  actions.push({ action: 'complete', title: 'Done' });
-  return actions;
+  // The snooze button is ALWAYS offered. With a server token the SW performs a
+  // durable server-side snooze; without one it falls back to an in-app (local)
+  // snooze. Order matters: most platforms (Android) render only the first 2
+  // actions, and the notification body is already tappable to open the app, so
+  // "View" is listed last.
+  return [
+    { action: 'remind-again-10', title: 'Remind in 10 min' },
+    { action: 'complete', title: 'Done' },
+    { action: 'view', title: 'View' }
+  ];
 }
 
 function buildUrl(pathname = '/', params = {}) {
@@ -550,7 +554,15 @@ async function runCheck() {
       url: buildUrl('/', {}),
       requireInteraction: true,
       renotify: true,
-      actions: [{ action: 'view', title: 'View' }]
+      actions: [
+        { action: 'remind-again-10', title: 'Remind in 10 min' },
+        { action: 'view', title: 'View' }
+      ],
+      // Local-snooze context (events have no server token, so the SW snoozes in-app).
+      remindKind: 'event',
+      eventId: evt.id,
+      remindAgainOccurrence: evt.date || '',
+      remindAgainMinutes: String(REMIND_AGAIN_DELAY_MINUTES)
     };
 
     for (const { userId, subs } of users) {
@@ -611,14 +623,17 @@ async function runCheck() {
           requireInteraction: true,
           renotify: true,
           actions: buildTaskActions(!!remindAgainToken),
+          // Local-snooze context — always present so the SW can snooze in-app
+          // even when no server token is available.
+          remindKind: 'task',
+          remindAgainTaskId: task.id,
+          remindAgainOccurrence: dueDateIso,
+          remindAgainMinutes: String(REMIND_AGAIN_DELAY_MINUTES),
           ...(remindAgainToken ? {
             remindAgainToken,
             remindAgainEndpoint: REMIND_AGAIN_API_URL,
             remindAgainUserId: userId,
-            remindAgainTaskId: task.id,
-            remindAgainSubjectId: '',
-            remindAgainOccurrence: dueDateIso,
-            remindAgainMinutes: String(REMIND_AGAIN_DELAY_MINUTES)
+            remindAgainSubjectId: ''
           } : {})
         };
 
@@ -656,7 +671,15 @@ async function runCheck() {
         url: buildUrl('/', {}),
         requireInteraction: true,
         renotify: true,
-        actions: [{ action: 'view', title: 'View' }]
+        actions: [
+          { action: 'remind-again-10', title: 'Remind in 10 min' },
+          { action: 'view', title: 'View' }
+        ],
+        // Local-snooze context (planner blocks have no server token).
+        remindKind: 'planner',
+        remindAgainTaskId: blockKey,
+        remindAgainOccurrence: block.startAt || block.date || '',
+        remindAgainMinutes: String(REMIND_AGAIN_DELAY_MINUTES)
       };
 
       const res = await sendNotificationToUser(userId, subs, payload, dedupeKey);
@@ -732,14 +755,17 @@ async function runCheck() {
             requireInteraction: true,
             renotify: true,
             actions: buildTaskActions(!!remindAgainToken),
+            // Local-snooze context — always present so the SW can snooze in-app
+            // even when no server token is available.
+            remindKind: 'shared-task',
+            remindAgainTaskId: taskId,
+            remindAgainSubjectId: subject.id,
+            remindAgainOccurrence: sharedDueDateIso,
+            remindAgainMinutes: String(REMIND_AGAIN_DELAY_MINUTES),
             ...(remindAgainToken ? {
               remindAgainToken,
               remindAgainEndpoint: REMIND_AGAIN_API_URL,
-              remindAgainUserId: userId,
-              remindAgainTaskId: taskId,
-              remindAgainSubjectId: subject.id,
-              remindAgainOccurrence: sharedDueDateIso,
-              remindAgainMinutes: String(REMIND_AGAIN_DELAY_MINUTES)
+              remindAgainUserId: userId
             } : {})
           };
           const res = await sendNotificationToUser(userId, userEntry.subs, payload, dedupeKey);
@@ -869,14 +895,17 @@ async function processRemindAgainQueue(users, nowMs) {
         requireInteraction: true,
         renotify: true,
         actions: buildTaskActions(!!remindAgainToken),
+        // Local-snooze context — always present so a snoozed reminder can be
+        // snoozed again in-app even if a follow-up server token wasn't issued.
+        remindKind: currentItem.type === 'shared-task' ? 'shared-task' : 'task',
+        remindAgainTaskId: String(currentItem.taskId || ''),
+        remindAgainSubjectId: String(currentItem.subjectId || ''),
+        remindAgainOccurrence: occurrenceKey,
+        remindAgainMinutes: String(REMIND_AGAIN_DELAY_MINUTES),
         ...(remindAgainToken ? {
           remindAgainToken,
           remindAgainEndpoint: REMIND_AGAIN_API_URL,
-          remindAgainUserId: userId,
-          remindAgainTaskId: String(currentItem.taskId || ''),
-          remindAgainSubjectId: String(currentItem.subjectId || ''),
-          remindAgainOccurrence: occurrenceKey,
-          remindAgainMinutes: String(REMIND_AGAIN_DELAY_MINUTES)
+          remindAgainUserId: userId
         } : {})
       };
 
